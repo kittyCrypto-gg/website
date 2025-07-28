@@ -124,7 +124,7 @@ async function initialiseUI() {
     themeToggle.title = data.themeToggle.title || "Theme";
 
     if (!document.location.pathname.includes("reader.html")) return; // Only run if on reader page
-    
+
     const readerToggle = document.createElement("button");
     readerToggle.id = "reader-toggle";
     readerToggle.classList.add("theme-toggle-button");
@@ -150,6 +150,16 @@ async function initialiseUI() {
 
     if (readAloudToggle) readAloudToggle.addEventListener('click', showReadAloudMenu);
 
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has("darkmode") && params.get("darkmode").toLowerCase() === "true")
+      applyDarkTheme();
+    else if (params.has("darkmode") && params.get("darkmode").toLowerCase() === "false")
+      applyLightTheme();
+    else
+      getCookie("darkMode") === "true" ? applyDarkTheme() : applyLightTheme();
+
+
   } catch (error) {
     console.error('Error loading JSON or updating DOM:', error);
   }
@@ -158,4 +168,3 @@ async function initialiseUI() {
 document.addEventListener("DOMContentLoaded", () => {
   initialiseUI();
 });
-
