@@ -823,4 +823,4 @@ export function forceBookmark(bookmarkId) {
   //showTemporaryNotice("Bookmark manually set.");
 }
 
-if (window.location.pathname.endsWith("reader.html")) initiateReader();
+if (/\/reader(?:\.html)?(?:\/|$)/.test(window.location.pathname)) initiateReader();
