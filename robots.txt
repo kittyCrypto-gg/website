@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+Sitemap: https://render.kittycrypto.gg/sitemap.xml
+Host: kittycrypto.gg
