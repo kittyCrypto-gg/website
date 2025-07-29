@@ -323,41 +323,44 @@ async function loadChapter(n) {
   }
 }
 
-async function discoverChapters() {
-  let i = 1;
-  let chapters = [];
+export async function getChapters(storyPath) {
+  const chapters = [];
+  const urls = [];
 
-  // Check for Chapter 0 existence first
   try {
-    const path = `${window.storyPath}/chapt0.xml`;
-    //console.log(`Checking for Chapter 0 at ${path}`);
-    const res = await fetch(path, { method: "HEAD" });
-    if (res.ok) {
+    const url0 = `${storyPath}/chapt0.xml`;  // Check for Chapter 0 first
+    const res0 = await fetch(url0, { method: "HEAD" });
+    if (res0.ok) {
       chapters.push(0);
+      urls.push(url0);
     }
-  } catch (err) {
-    //console.log('No chapter 0');
-  }
+  } catch (e) {/*All good, no chapter 0*/}
 
-  // Discover remaining chapters
+  let i = 1;
   while (true) {
+    const url = `${storyPath}/chapt${i}.xml`;
     try {
-      const path = `${window.storyPath}/chapt${i}.xml`;
-      //console.log(`Reading Chapter ${i} in ${path}`);
-      const res = await fetch(path, { method: "HEAD" });
+      const res = await fetch(url, { method: "HEAD" });
       if (!res.ok) break;
       chapters.push(i);
+      urls.push(url);
       i++;
-    } catch (err) {
-      console.error(`Error at chapt${i}:`, err);
-      break;
+    } catch (e) {
+      console.log(`Discovered ${chapters.length} chapters for ${storyPath}.`);
+      break; // Last chapter found, this is not an error.
     }
   }
 
-  const last = i - 1;
-  window.lastKnownChapter = chapters.length > 0 ? Math.max(...chapters) : 0;
+  console.log(`Discovered ${chapters.length} chapters for ${storyPath}.`);
+  return { chapters, urls };
+}
+
+async function discoverChapters() {
+  const { chapters } = await getChapters(window.storyPath);
+
+  const last = chapters.length > 0 ? Math.max(...chapters) : 0;
+  window.lastKnownChapter = last;
   localStorage.setItem(window.chapterCacheKey, JSON.stringify(chapters));
-  window.lastKnownChapter = chapters.length > 0 ? Math.max(...chapters) : 0;
   return chapters;
 }
 
