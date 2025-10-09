@@ -1,5 +1,5 @@
-window.CHAT_SERVER = window.CHAT_SERVER || "https://kittycrypto.ddns.net:7619/chat";
-window.MAIN_SERVER = window.MAIN_SERVER || "https://kittycrypto.ddns.net:7619";
+window.CHAT_SERVER = window.CHAT_SERVER || "https://api.kittycrypto.gg/chat";
+window.MAIN_SERVER = window.MAIN_SERVER || "https://api.kittycrypto.gg";
 window.GET_IP_HASH_URL = window.GET_IP_HASH_URL || `${window.MAIN_SERVER}/get-ip/sha256`;
 window.nicknameInput = window.nicknameInput || document.getElementById("nickname");
 
