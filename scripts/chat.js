@@ -1,8 +1,8 @@
 import { Clusteriser } from "./clusterise.js";
 
-const CHAT_SERVER = "https://api.kittycrypto.gg/chat";
-const CHAT_STREAM_URL = "https://api.kittycrypto.gg/chat/stream";
-const SESSION_TOKEN_URL = "https://api.kittycrypto.gg/session-token";
+const CHAT_SERVER = "https://srv.api.kittycrypto.gg/chat";
+const CHAT_STREAM_URL = "https://srv.api.kittycrypto.gg/chat/stream";
+const SESSION_TOKEN_URL = "https://srv.api.kittycrypto.gg/session-token";
 
 const chatroom = document.getElementById("chatroom");
 const nicknameInput = document.getElementById("nickname");

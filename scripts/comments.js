@@ -2,10 +2,10 @@ import { drawSpiralIdenticon } from './avatar.js';
 
 if (window.location.pathname === '/') window.history.replaceState(null, '', '/index.html');
 
-const COMMENT_POST_URL = "https://api.kittycrypto.gg/comment";
-const COMMENT_LOAD_URL = "https://api.kittycrypto.gg/comments/load";
-const SESSION_TOKEN_URL = "https://api.kittycrypto.gg/session-token";
-const USER_IP_URL = "https://api.kittycrypto.gg/get-ip";
+const COMMENT_POST_URL = "https://srv.api.kittycrypto.gg/comment";
+const COMMENT_LOAD_URL = "https://srv.api.kittycrypto.gg/comments/load";
+const SESSION_TOKEN_URL = "https://srv.api.kittycrypto.gg/session-token";
+const USER_IP_URL = "https://srv.api.kittycrypto.gg/get-ip";
 
 let sessionToken = null;
 let userIP = null;
