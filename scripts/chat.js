@@ -1,8 +1,8 @@
 import { Clusteriser } from "./clusterise.js";
 
-const CHAT_SERVER = "https://srv.api.kittycrypto.gg/chat";
-const CHAT_STREAM_URL = "https://srv.api.kittycrypto.gg/chat/stream";
-const SESSION_TOKEN_URL = "https://srv.api.kittycrypto.gg/session-token";
+const CHAT_SERVER = "https://srv.kittycrypto.gg/chat";
+const CHAT_STREAM_URL = "https://srv.kittycrypto.gg/chat/stream";
+const SESSION_TOKEN_URL = "https://srv.kittycrypto.gg/session-token";
 
 const chatroom = document.getElementById("chatroom");
 const nicknameInput = document.getElementById("nickname");
@@ -114,7 +114,7 @@ function connectToChatStream() {
 
 export async function fetchUserIP() {
   try {
-    const response = await fetch("https://srv.api.kittycrypto.gg/get-ip");
+    const response = await fetch("https://srv.kittycrypto.gg/get-ip");
     if (!response.ok) throw new Error(`Failed to fetch IP: ${response.status}`);
 
     const data = await response.json();
