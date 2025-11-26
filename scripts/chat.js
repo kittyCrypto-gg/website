@@ -114,7 +114,7 @@ function connectToChatStream() {
 
 export async function fetchUserIP() {
   try {
-    const response = await fetch("https://api.kittycrypto.gg/get-ip");
+    const response = await fetch("https://srv.api.kittycrypto.gg/get-ip");
     if (!response.ok) throw new Error(`Failed to fetch IP: ${response.status}`);
 
     const data = await response.json();
