@@ -189,7 +189,7 @@ async function loadBlogFeed() {
   const { scrollBox, blogContainer: container } = result;
   container.innerHTML = '';
 
-  const response = await fetch('https://kittycrypto.ddns.net:6819/rss/kittycrypto');
+  const response = await fetch('https://rss.kittycrypto.gg/rss/kittycrypto');
   const xmlText = await response.text();
   const posts = parseRSS(xmlText);
   const rows = posts.map(post => renderPost(post));
