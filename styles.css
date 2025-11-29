@@ -756,7 +756,7 @@ footer {
   flex-direction: column;
   justify-content: flex-start;
   color: var(--chatroom-text-colour);
-  min-height: auto !important;
+  min-height: 500px !important;
   flex-grow: 1;
   overflow-y: auto;
 }
