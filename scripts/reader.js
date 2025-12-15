@@ -4,7 +4,7 @@ window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
 window.storyName = window.storyPath? window.storyPath.split("/").pop() : null;
 window.chapter = parseInt(window.params.get("chapter") || "1");
-const apiPath = "https://api.kittycrypto.gg"
+const apiPath = "https://srv.kittycrypto.gg"
 
 window.fallback = document.getElementById('js-content-fallback');
 if (window.fallback) window.fallback.style.display = 'none';
