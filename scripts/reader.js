@@ -2,12 +2,14 @@ import { replaceTategaki } from './tategaki.js';
 
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
+window.storyName = window.storyPath? window.storyPath.split("/").pop() : null;
 window.chapter = parseInt(window.params.get("chapter") || "1");
+const apiPath = "https://api.kittycrypto.gg"
 
 window.fallback = document.getElementById('js-content-fallback');
 if (window.fallback) window.fallback.style.display = 'none';
 
-window.chapterCacheKey = `chapterCache_${window.storyPath}`;
+window.chapterCacheKey = `chapterCache_${window.storyName}`;
 window.lastKnownChapter = parseInt(localStorage.getItem(window.chapterCacheKey) || "0");
 
 window.readerRoot = document.getElementById("reader");
@@ -65,9 +67,11 @@ function updatePrevButtonState(root = document) {
 }
 
 function clearBookmarkForCurrentChapter() {
-  const storyKey = makeStoryKey(window.storyPath);
-  const key = `bookmark_${storyKey}_ch${window.chapter}`;
-  localStorage.removeItem(key);
+  const base = getStoryBaseUrl();
+  if (!base) return;
+
+  const storyKey = makeStoryKey(base);
+  localStorage.removeItem(`bookmark_${storyKey}_ch${window.chapter}`);
   showTemporaryNotice("Bookmark cleared for this chapter.");
 }
 
@@ -210,36 +214,42 @@ function bindNavigationEvents(root = document) {
 async function populateStoryPicker(root = document) {
   if (!window.storyPickerRoot) return;
   try {
-    const res = await fetch("scripts/stories.json");
+    const res = await fetch(`${apiPath}/stories.json`);
     if (!res.ok) throw new Error("No stories found");
     const stories = await res.json();
-
     const select = root.createElement("select");
     select.className = "story-selector";
     select.innerHTML = `<option value="">Select a story...</option>`;
-    Object.entries(stories).forEach(([name, path]) => {
+    Object.keys(stories).forEach((name) => {
       const opt = root.createElement("option");
-      opt.value = path;
+      opt.value = name;
       opt.textContent = name;
-      if (path === window.storyPath) opt.selected = true;
+      if (name === window.storyName) opt.selected = true;
       select.appendChild(opt);
     });
-
     select.onchange = () => {
       if (select.value) {
         window.location.search = `?story=${encodeURIComponent(select.value)}&chapter=1`;
       }
     };
-
     window.storyPickerRoot.appendChild(select);
   } catch (err) {
     console.warn("No stories found or failed to load stories.json", err);
   }
 }
 
+function getStoryBaseUrl(storyName = null) {
+  const name = storyName || window.storyName ||  (window.storyPath ? window.storyPath.split("/").pop() : null);
+  if (!name) return null;
+  return `${apiPath}/stories/${encodeURIComponent(name)}`;
+}
+
 async function loadChapter(n) {
   try {
-    const res = await fetch(`${window.storyPath}/chapt${n}.xml`);
+    const base = getStoryBaseUrl();
+    if (!base) throw new Error("No story selected.");
+
+    const res = await fetch(`${base}/chapt${n}.xml`);
     if (!res.ok) throw new Error("Chapter not found");
     const xmlText = await res.text();
     const parser = new DOMParser();
@@ -291,7 +301,8 @@ async function loadChapter(n) {
     // Process Tategaki and images
     htmlContent = replaceTategaki(htmlContent);
     htmlContent = replaceImageTags(htmlContent);
-    htmlContent = injectBookmarksIntoHTML(htmlContent, window.storyPath, window.chapter);
+    window.chapter = n;
+    htmlContent = injectBookmarksIntoHTML(htmlContent, base, window.chapter);
 
     // Render the HTML
     window.readerRoot.innerHTML = htmlContent;
@@ -301,15 +312,15 @@ async function loadChapter(n) {
 
     // Scroll to the saved bookmark after DOM layout is ready
     requestAnimationFrame(() => {
-      restoreBookmark(window.storyPath, window.chapter);
+      restoreBookmark(base, window.chapter);
     });
 
     // Activate features
     activateImageNavigation(document);
-    chapter = n;
+
     updateNav(document);
     bindNavigationEvents(document);
-    setReaderCookie(`bookmark_${encodeURIComponent(window.storyPath)}`, window.chapter);
+    setReaderCookie(`bookmark_${makeStoryKey(base)}`, window.chapter);
     window.scrollTo(0, 0);
 
   } catch (err) {
@@ -323,44 +334,41 @@ async function loadChapter(n) {
   }
 }
 
-export async function getChapters(storyPath) {
-  const chapters = [];
-  const urls = [];
+export async function getChapters(storyName) {
+  const indexRes = await fetch(`${apiPath}/stories.json`);
+  if (!indexRes.ok) throw new Error("Failed to load stories index");
 
-  try {
-    const url0 = `${storyPath}/chapt0.xml`;  // Check for Chapter 0 first
-    const res0 = await fetch(url0, { method: "HEAD" });
-    if (res0.ok) {
-      chapters.push(0);
-      urls.push(url0);
-    }
-  } catch (e) {/*All good, no chapter 0*/}
+  const index = await indexRes.json();
 
-  let i = 1;
-  while (true) {
-    const url = `${storyPath}/chapt${i}.xml`;
-    try {
-      const res = await fetch(url, { method: "HEAD" });
-      if (!res.ok) break;
-      chapters.push(i);
-      urls.push(url);
-      i++;
-    } catch (e) {
-      console.log(`Discovered ${chapters.length} chapters for ${storyPath}.`);
-      break; // Last chapter found, this is not an error.
-    }
-  }
+  const files = index[storyName];
+  if (!Array.isArray(files)) return { chapters: [], urls: [] };
 
-  console.log(`Discovered ${chapters.length} chapters for ${storyPath}.`);
+  const base = getStoryBaseUrl(storyName);
+
+  const chapters = files
+    .map((f) => {
+      const m = /^chapt(\d+)\.xml$/i.exec(f);
+      return m ? Number(m[1]) : null;
+    })
+    .filter((n) => Number.isInteger(n))
+    .sort((a, b) => a - b);
+
+  const urls = chapters.map((n) => `${base}/chapt${n}.xml`);
+
   return { chapters, urls };
 }
 
-async function discoverChapters() {
-  const { chapters } = await getChapters(window.storyPath);
+async function discoverChapters(storyName = null) {
+  const { chapters } = await getChapters(storyName || window.storyName);
 
   const last = chapters.length > 0 ? Math.max(...chapters) : 0;
   window.lastKnownChapter = last;
-  localStorage.setItem(window.chapterCacheKey, JSON.stringify(chapters));
+
+  localStorage.setItem(
+    window.chapterCacheKey,
+    JSON.stringify(chapters)
+  );
+
   return chapters;
 }
 
@@ -642,12 +650,12 @@ export function activateImageNavigation(root = document) {
   }
 }
 
-function makeStoryKey() {
-  return encodeURIComponent(window.storyPath).replace(/\W/g, '_');
+function makeStoryKey(storyBase) {
+  return encodeURIComponent(storyBase).replace(/\W/g, "_");
 }
 
-export function injectBookmarksIntoHTML(htmlContent, chapter) {
-  const storyKey = makeStoryKey(window.storyPath);
+export function injectBookmarksIntoHTML(htmlContent, storyBase, chapter) {
+  const storyKey = makeStoryKey(storyBase);
   const bookmarkId = localStorage.getItem(`bookmark_${storyKey}_ch${chapter}`);
   let counter = 0;
 
@@ -657,12 +665,11 @@ export function injectBookmarksIntoHTML(htmlContent, chapter) {
       const id = `bm-${storyKey}-ch${chapter}-${counter++}`;
       const emojiSpan = id === bookmarkId
         ? `<span class="bookmark-emoji" aria-label="bookmark">🔖</span> `
-        : '';
+        : "";
       return `<div class="reader-bookmark" id="${id}"><${tag}${attrs}>${emojiSpan}${inner}</${tag}></div>`;
     }
   );
 }
-
 function observeAndSaveBookmarkProgress(root = document) {
   const bookmarks = Array.from(root.querySelectorAll(".reader-bookmark"));
   const observer = new IntersectionObserver((entries) => {
@@ -698,8 +705,8 @@ function observeAndSaveBookmarkProgress(root = document) {
   }, 1000);
 }
 
-function restoreBookmark(chapter) {
-  const storyKey = makeStoryKey(window.storyPath);
+function restoreBookmark(storyBase, chapter) {
+  const storyKey = makeStoryKey(storyBase);
   const key = `bookmark_${storyKey}_ch${chapter}`;
   const id = localStorage.getItem(key);
   if (!id) return;
@@ -707,14 +714,12 @@ function restoreBookmark(chapter) {
   const bookmarkDiv = document.getElementById(id);
   if (!bookmarkDiv) return;
 
-  // Scroll to the next bokmark if available
   const nextBookmark = bookmarkDiv.nextElementSibling;
   if (nextBookmark) {
-    const scrollY = nextBookmark.getBoundingClientRect().top
+    const scrollY = nextBookmark.getBoundingClientRect().top;
     window.scrollTo({ top: scrollY, behavior: "smooth" });
   }
 
-  // Apply highlight to the actual bookmarked paragraph (not the one we're scrolling to)
   bookmarkDiv.classList.add("reader-highlight");
 
   setTimeout(() => {
@@ -813,17 +818,19 @@ export function getParams() {
 }
 
 export function forceBookmark(bookmarkId) {
-  const storyKey = makeStoryKey(window.storyPath);
-  const key = `bookmark_${storyKey}_ch${window.chapter}`;
-  const target = document.getElementById(bookmarkId);
+  const base = getStoryBaseUrl();
+  if (!base) return;
 
+  const storyKey = makeStoryKey(base);
+  const key = `bookmark_${storyKey}_ch${window.chapter}`;
+
+  const target = document.getElementById(bookmarkId);
   if (!target) {
     console.warn(`No element found with ID "${bookmarkId}".`);
     return;
   }
 
   localStorage.setItem(key, bookmarkId);
-  //showTemporaryNotice("Bookmark manually set.");
 }
 
 if (/\/reader(?:\.html)?(?:\/|$)/.test(window.location.pathname)) initiateReader();
