@@ -68,16 +68,6 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
 
     const getText = (node, tag) => (node.querySelector(tag)?.textContent || "").trim();
 
-    const splitNameEmail = (raw) => {
-        const s = (raw || "").trim();
-
-        // Supports: Name(email) and Name（email）
-        const m = /^(.*?)[(（]\s*([^()（）]+?)\s*[)）]\s*$/.exec(s);
-        if (!m) return { name: s, email: "" };
-
-        return { name: m[1].trim(), email: m[2].trim() };
-    };
-
     const re = /<email\b[^>]*>[\s\S]*?<\/email>/gi;
 
     return htmlContent.replace(re, (block) => {
@@ -85,14 +75,19 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         const email = doc.querySelector("email");
         if (!email) return block;
 
-        const fromRaw = getText(email, "from");
-        const toRaw = getText(email, "to");
+        const from = email.querySelector("from");
+        const to = email.querySelector("to");
+
+        const fromName = esc(from ? getText(from, "name") : "");
+        const fromAddr = esc(from ? getText(from, "addr") : "");
+        const toName = esc(to ? getText(to, "name") : "");
+        const toAddr = esc(to ? getText(to, "addr") : "");
+
         const timestamp = esc(getText(email, "timestamp"));
         const subject = esc(getText(email, "subject"));
-        const content = esc(getText(email, "content"));
 
-        const { name: fromName, email: fromEmail } = splitNameEmail(fromRaw);
-        const { name: toName, email: toEmail } = splitNameEmail(toRaw);
+        // content is plain text for now (safe). If you later want <br> etc, we can preserve markup.
+        const content = esc(getText(email, "content"));
 
         return `
             <div class="email-wrapper show">
@@ -101,26 +96,21 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
                     <div class="email-meta">
                     <div class="email-row">
                         <span class="email-label">From</span>
-                        <span class="email-value">${fromName}<span class="email-address">(${fromEmail})</span></span>
+                        <span class="email-value">${fromName}<span class="email-address">(${fromAddr})</span></span>
                     </div>
                     <div class="email-row">
                         <span class="email-label">To</span>
-                        <span class="email-value">${toName}<span class="email-address">(${toEmail})</span></span>
+                        <span class="email-value">${toName}<span class="email-address">(${toAddr})</span></span>
                     </div>
-                    </div>
-
-                    <div class="email-subject-row">
-                    <div class="email-subject">
-                        <span class="email-label-inline">Subject</span>
+                    <div class="email-row email-subject-row">
+                        <span class="email-label">Subject</span>
                         <span class="email-subject-text">${subject}</span>
+                        <span class="email-timestamp">${timestamp}</span>
                     </div>
-                    <div class="email-timestamp">${timestamp}</div>
                     </div>
                 </div>
 
-                <div class="email-content">
-                    ${content}
-                </div>
+                <div class="email-content">${content}</div>
                 </div>
             </div>
         `;

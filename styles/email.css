@@ -77,47 +77,36 @@
     white-space: nowrap;
 }
 
-/* Subject row: subject left, timestamp right */
 .email-subject-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    column-gap: 10px;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 10px 10px 0;
+    padding: 8px 10px;
+    background: #eef1f5;
 }
 
-.email-subject {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-    font-weight: 400;
-    font-size: 0.95em;
-    color: #111827;
-}
-
-.email-subject .email-label-inline {
+.email-subject-label {
     font-weight: 700;
     color: #6b7280;
     text-transform: uppercase;
     font-size: 0.75em;
     letter-spacing: 0.04em;
-    white-space: nowrap;
 }
 
-.email-subject .email-subject-text {
+.email-subject-text {
     font-weight: 400;
+    font-size: 0.95em;
+    color: #111827;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .email-timestamp {
     font-size: 0.78em;
     color: #6b7280;
     white-space: nowrap;
-    flex: 0 0 auto;
 }
 
 /* Body */
