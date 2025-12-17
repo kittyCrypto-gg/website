@@ -18,6 +18,12 @@ nicknameInput.addEventListener("input", () => {
   setChatCookie("nickname", nicknameInput.value.trim());
 });
 
+function closeEventSource() {
+  if (!eventSource) return;
+  eventSource.close();
+  eventSource = null;
+}
+
 async function attemptReconnect(retryMS = 3000) {
   if (reconnecting) return;
   reconnecting = true;
@@ -47,6 +53,8 @@ async function attemptReconnect(retryMS = 3000) {
       retry(); // server offline
       return;
     }
+
+    console.log("🔁 reregister status:", res.status);
 
     if (res.status === 200) {
       reconnecting = false;
@@ -126,7 +134,7 @@ function connectToChatStream() {
 
   if (eventSource) {
     console.log("⚠️ SSE connection already exists, closing old connection...");
-    eventSource.close();
+    closeEventSource();
   }
 
   console.log("🔄 Attempting to connect to chat stream...");
@@ -157,7 +165,7 @@ function connectToChatStream() {
 
   eventSource.onerror = () => {
     console.error("❌ Connection to chat stream lost. Retrying...");
-    eventSource.close();
+    closeEventSource();
     attemptReconnect(); // Start reconnection attempts every 3 seconds
   };
 }
