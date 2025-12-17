@@ -1,0 +1,115 @@
+/* === Email === */
+
+.email-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    margin: 10px 0;
+}
+
+.email-wrapper.in {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.email-wrapper.out {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.email-wrapper.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Card */
+.email {
+    width: 100%;
+    max-width: 520px;
+    background: #f7f8fa;
+    border: 1px solid #d9dde3;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    color: #1f2937;
+    font-size: 0.85em;
+    line-height: 1.45;
+}
+
+/* Subtle top bar (like the blue strip in your screenshot, but toned down) */
+.email-bar {
+    background: #2b5fa6;
+    height: 20px;
+}
+
+/* Inner padding area */
+.email-body {
+    padding: 12px 14px 14px;
+    background: #ffffff;
+}
+
+/* Header fields */
+.email-meta {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    row-gap: 6px;
+    column-gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e6e8ec;
+}
+
+.email-label {
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-size: 0.75em;
+    letter-spacing: 0.04em;
+}
+
+.email-value {
+    color: #111827;
+    overflow-wrap: anywhere;
+}
+
+/* Subject */
+.email-subject {
+    margin-top: 10px;
+    font-weight: 800;
+    font-size: 1.05em;
+    color: #111827;
+}
+
+/* Content */
+.email-content {
+    margin-top: 8px;
+    color: #374151;
+}
+
+.email-content p {
+    margin: 0 0 8px 0;
+}
+
+.email-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Timestamp outside card */
+.email-timestamp {
+    font-size: 0.78em;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* Match the side the card sits on */
+.email-wrapper.in .email-timestamp {
+    text-align: left;
+    width: 100%;
+}
+
+.email-wrapper.out .email-timestamp {
+    text-align: right;
+    width: 100%;
+}
