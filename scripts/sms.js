@@ -39,8 +39,8 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
                 <div class="message ${type}">
                     <div class="nickname-strip">${nickname}</div>
                     <div class="message-text">${content}</div>
-            </div>
-                <div class="timestamp ${type}">${timestamp}</div>
+                    <div class="timestamp ${type}">${timestamp}</div>
+                </div>
             </div>
         `;
     });
