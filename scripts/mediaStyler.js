@@ -46,7 +46,7 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
     });
 }
 
-export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
+export function replaceEmailMessages(htmlContent, cssHref = "../styles/email.css") {
     const hasCss =
         Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
         document.querySelector(`link[rel="stylesheet"][href="${cssHref}"]`);
@@ -66,7 +66,17 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&#39;");
 
-    const get = (node, tag) => (node.querySelector(tag)?.textContent || "").trim();
+    const getText = (node, tag) => (node.querySelector(tag)?.textContent || "").trim();
+
+    const splitNameEmail = (raw) => {
+        const s = (raw || "").trim();
+
+        // Supports: Name(email) and Name（email）
+        const m = /^(.*?)[(（]\s*([^()（）]+?)\s*[)）]\s*$/.exec(s);
+        if (!m) return { name: s, email: "" };
+
+        return { name: m[1].trim(), email: m[2].trim() };
+    };
 
     const re = /<email\b[^>]*>[\s\S]*?<\/email>/gi;
 
@@ -75,13 +85,14 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         const email = doc.querySelector("email");
         if (!email) return block;
 
-        const from = esc(get(email, "from"));
-        const to = esc(get(email, "to"));
-        const timestamp = esc(get(email, "timestamp"));
-        const subject = esc(get(email, "subject"));
+        const fromRaw = getText(email, "from");
+        const toRaw = getText(email, "to");
+        const timestamp = esc(getText(email, "timestamp"));
+        const subject = esc(getText(email, "subject"));
+        const content = esc(getText(email, "content"));
 
-        // content can be long, keep it safe and predictable
-        const content = esc(get(email, "content")).replaceAll("\n", "<br>");
+        const { name: fromName, email: fromEmail } = splitNameEmail(fromRaw);
+        const { name: toName, email: toEmail } = splitNameEmail(toRaw);
 
         return `
             <div class="email-wrapper show">
@@ -90,11 +101,11 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
                     <div class="email-meta">
                     <div class="email-row">
                         <span class="email-label">From</span>
-                        <span class="email-value">${fromName}<span class="email-address">(${fromEmail})</span></span>
+                        <span class="email-value">${esc(fromName)}<span class="email-address">${fromEmail ? `(${esc(fromEmail)})` : ""}</span></span>
                     </div>
                     <div class="email-row">
                         <span class="email-label">To</span>
-                        <span class="email-value">${toName}<span class="email-address">(${toEmail})</span></span>
+                        <span class="email-value">${esc(toName)}<span class="email-address">${toEmail ? `(${esc(toEmail)})` : ""}</span></span>
                     </div>
                     </div>
 
