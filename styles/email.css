@@ -2,7 +2,7 @@
 
 .email-wrapper {
     display: flex;
-    justify-content: centre;
+    justify-content: center;
     width: 100%;
     margin: 14px 0;
     opacity: 0;
@@ -18,6 +18,7 @@
 /* Card */
 .email-card {
     width: min(560px, 92%);
+    margin: 0 auto; /* belt and braces */
     background: #ffffff;
     border: 1px solid #d7dbe2;
     border-radius: 14px;

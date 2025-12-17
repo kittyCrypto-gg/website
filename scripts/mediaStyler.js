@@ -46,7 +46,7 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
     });
 }
 
-export function replaceEmailMessages(htmlContent, cssHref = "../styles/email.css") {
+export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
     const hasCss =
         Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
         document.querySelector(`link[rel="stylesheet"][href="${cssHref}"]`);
