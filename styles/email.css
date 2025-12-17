@@ -2,22 +2,12 @@
 
 .email-wrapper {
     display: flex;
-    flex-direction: column;
-    max-width: 82%;
+    justify-content: centre;
+    width: 100%;
+    margin: 14px 0;
     opacity: 0;
     transform: translateY(4px);
     transition: opacity 0.35s ease, transform 0.35s ease;
-    margin: 10px 0;
-}
-
-.email-wrapper.in {
-    align-self: flex-start;
-    align-items: flex-start;
-}
-
-.email-wrapper.out {
-    align-self: flex-end;
-    align-items: flex-end;
 }
 
 .email-wrapper.show {
@@ -26,39 +16,44 @@
 }
 
 /* Card */
-.email {
-    width: 100%;
-    max-width: 520px;
-    background: #f7f8fa;
-    border: 1px solid #d9dde3;
+.email-card {
+    width: min(560px, 92%);
+    background: #ffffff;
+    border: 1px solid #d7dbe2;
     border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-    color: #1f2937;
-    font-size: 0.85em;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
+    color: #111827;
+    font-size: 0.9em;
     line-height: 1.45;
 }
 
-/* Subtle top bar (like the blue strip in your screenshot, but toned down) */
-.email-bar {
-    background: #2b5fa6;
-    height: 20px;
+/* Header */
+.email-header {
+    background: #f6f7f9;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid #e3e6ec;
 }
 
-/* Inner padding area */
-.email-body {
-    padding: 12px 14px 14px;
-    background: #ffffff;
-}
-
-/* Header fields */
 .email-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.email-row {
     display: grid;
-    grid-template-columns: 56px 1fr;
-    row-gap: 6px;
+    grid-template-columns: 90px 1fr;
     column-gap: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e6e8ec;
+    align-items: start;
+    padding: 8px 10px;
+}
+
+.email-row:nth-child(odd) {
+    background: #f3f5f8;
+}
+
+.email-row:nth-child(even) {
+    background: #eef1f5;
 }
 
 .email-label {
@@ -71,45 +66,64 @@
 
 .email-value {
     color: #111827;
-    overflow-wrap: anywhere;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+    line-break: strict;
 }
 
-/* Subject */
+/* Name stays as-is, address is smaller and left-aligned */
+.email-value .email-address {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.85em;
+    color: #4b5563;
+    text-align: left;
+    white-space: nowrap;
+}
+
+/* Subject row */
+.email-subject-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 10px 0;
+}
+
+.email-timestamp {
+    font-size: 0.78em;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
 .email-subject {
-    margin-top: 10px;
+    flex: 1;
     font-weight: 800;
     font-size: 1.05em;
     color: #111827;
 }
 
-/* Content */
+.email-subject .email-label-inline {
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-size: 0.75em;
+    letter-spacing: 0.04em;
+    margin-right: 6px;
+}
+
+/* Body */
 .email-content {
-    margin-top: 8px;
-    color: #374151;
+    background: #ffffff;
+    padding: 14px;
+    color: #1f2937;
+    min-height: 100px;
 }
 
 .email-content p {
-    margin: 0 0 8px 0;
+    margin: 0 0 10px 0;
 }
 
 .email-content p:last-child {
     margin-bottom: 0;
-}
-
-/* Timestamp outside card */
-.email-timestamp {
-    font-size: 0.78em;
-    color: #6b7280;
-    margin-top: 4px;
-}
-
-/* Match the side the card sits on */
-.email-wrapper.in .email-timestamp {
-    text-align: left;
-    width: 100%;
-}
-
-.email-wrapper.out .email-timestamp {
-    text-align: right;
-    width: 100%;
 }

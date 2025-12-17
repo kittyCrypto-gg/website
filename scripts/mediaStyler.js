@@ -87,11 +87,20 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
             <div class="email-wrapper show">
                 <div class="email-card">
                 <div class="email-header">
-                    <div class="email-subject">${subject}</div>
                     <div class="email-meta">
-                    <div class="email-row"><span class="email-label">From</span><span class="email-value">${from}</span></div>
-                    <div class="email-row"><span class="email-label">To</span><span class="email-value">${to}</span></div>
-                    <div class="email-row"><span class="email-label">Timestamp</span><span class="email-value">${timestamp}</span></div>
+                    <div class="email-row">
+                        <span class="email-label">From</span>
+                        <span class="email-value">${fromName}<span class="email-address">(${fromEmail})</span></span>
+                    </div>
+                    <div class="email-row">
+                        <span class="email-label">To</span>
+                        <span class="email-value">${toName}<span class="email-address">(${toEmail})</span></span>
+                    </div>
+                    </div>
+
+                    <div class="email-subject-row">
+                    <div class="email-timestamp">${timestamp}</div>
+                    <div class="email-subject"><span class="email-label-inline">Subject</span>${subject}</div>
                     </div>
                 </div>
 
