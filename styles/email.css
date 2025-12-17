@@ -18,7 +18,7 @@
 /* Card */
 .email-card {
     width: min(560px, 92%);
-    margin: 0 auto; /* belt and braces */
+    margin: 0 auto;
     background: #ffffff;
     border: 1px solid #d7dbe2;
     border-radius: 14px;
@@ -49,13 +49,8 @@
     padding: 8px 10px;
 }
 
-.email-row:nth-child(odd) {
-    background: #f3f5f8;
-}
-
-.email-row:nth-child(even) {
-    background: #eef1f5;
-}
+.email-row:nth-child(odd) { background: #f3f5f8; }
+.email-row:nth-child(even) { background: #c4c7ca; }
 
 .email-label {
     font-weight: 700;
@@ -73,34 +68,32 @@
     line-break: strict;
 }
 
-/* Name stays as-is, address is smaller and left-aligned */
+/* Email address: smaller + greyscale like timestamp */
 .email-value .email-address {
     display: inline-block;
     margin-left: 6px;
-    font-size: 0.85em;
-    color: #4b5563;
-    text-align: left;
-    white-space: nowrap;
-}
-
-/* Subject row */
-.email-subject-row {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    padding: 10px 10px 0;
-}
-
-.email-timestamp {
     font-size: 0.78em;
     color: #6b7280;
     white-space: nowrap;
 }
 
+/* Subject row: subject left, timestamp right */
+.email-subject-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 10px 0;
+}
+
 .email-subject {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
     flex: 1;
-    font-weight: 800;
-    font-size: 1.05em;
+    min-width: 0;
+    font-weight: 400;
+    font-size: 0.95em;
     color: #111827;
 }
 
@@ -110,7 +103,21 @@
     text-transform: uppercase;
     font-size: 0.75em;
     letter-spacing: 0.04em;
-    margin-right: 6px;
+    white-space: nowrap;
+}
+
+.email-subject .email-subject-text {
+    font-weight: 400;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.email-timestamp {
+    font-size: 0.78em;
+    color: #6b7280;
+    white-space: nowrap;
+    flex: 0 0 auto;
 }
 
 /* Body */
@@ -118,7 +125,7 @@
     background: #ffffff;
     padding: 14px;
     color: #1f2937;
-    min-height: 100px;
+    min-height: 500px;
 }
 
 .email-content p {
