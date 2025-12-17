@@ -1,5 +1,5 @@
 import { replaceTategaki } from './tategaki.js';
-import { replaceSmsMessages, replaceEmails } from "./mediaStyle.js";
+import { replaceSmsMessages, replaceEmails } from "./mediaStyler.js";
 
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
