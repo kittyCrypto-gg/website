@@ -3,6 +3,7 @@ import { Clusteriser } from "./clusterise.js";
 const CHAT_SERVER = "https://srv.kittycrypto.gg/chat";
 const CHAT_STREAM_URL = "https://srv.kittycrypto.gg/chat/stream";
 const SESSION_TOKEN_URL = "https://srv.kittycrypto.gg/session-token";
+const SESSION_REREGISTER_URL = "https://srv.kittycrypto.gg/session-token/reregister";
 
 const chatroom = document.getElementById("chatroom");
 const nicknameInput = document.getElementById("nickname");
@@ -11,11 +12,60 @@ const sendButton = document.getElementById("send-button");
 
 let sessionToken = null;
 let eventSource = null; // Track SSE connection
-let alerted = false;
+let reconnecting = false;
 
 nicknameInput.addEventListener("input", () => {
   setChatCookie("nickname", nicknameInput.value.trim());
 });
+
+async function attemptReconnect(retryMS = 3000) {
+  if (reconnecting) return;
+  reconnecting = true;
+
+  const retry = () => {
+    reconnecting = false;
+    setTimeout(attemptReconnect, retryMS);
+  };
+
+  try {
+    const token = typeof sessionToken === "string" ? sessionToken : "";
+
+    if (!token) {
+      reconnecting = false;
+      fetchSessionToken();
+      return;
+    }
+
+    let res;
+    try {
+      res = await fetch(SESSION_REREGISTER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionToken: token })
+      });
+    } catch {
+      retry(); // server offline
+      return;
+    }
+
+    if (res.status === 200) {
+      reconnecting = false;
+      connectToChatStream();
+      return;
+    }
+
+    if (res.status === 403) {
+      reconnecting = false;
+      fetchSessionToken(); // expired, get a new one
+      return;
+    }
+
+    // 503 or anything else: retry forever
+    retry();
+  } catch {
+    retry();
+  }
+}
 
 function updateClusterisedChat() {
   if (!chatClusteriser) return;
@@ -108,7 +158,7 @@ function connectToChatStream() {
   eventSource.onerror = () => {
     console.error("❌ Connection to chat stream lost. Retrying...");
     eventSource.close();
-    setTimeout(connectToChatStream, 3000); // Retry after 3s
+    attemptReconnect(); // Start reconnection attempts every 3 seconds
   };
 }
 
@@ -287,7 +337,7 @@ let chatClusteriser = null;
   updateClusterisedChat(); // Optionally, call after init to set initial rows
 })();
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
   window.scrollTo(0, document.body.scrollHeight);
 });
 
