@@ -3,7 +3,7 @@ import { replaceSmsMessages } from "./sms.js";
 
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
-window.storyName = window.storyPath? window.storyPath.split("/").pop() : null;
+window.storyName = window.storyPath ? window.storyPath.split("/").pop() : null;
 window.chapter = parseInt(window.params.get("chapter") || "1");
 const apiPath = "https://srv.kittycrypto.gg"
 
@@ -240,7 +240,7 @@ async function populateStoryPicker(root = document) {
 }
 
 function getStoryBaseUrl(storyName = null) {
-  const name = storyName || window.storyName ||  (window.storyPath ? window.storyPath.split("/").pop() : null);
+  const name = storyName || window.storyName || (window.storyPath ? window.storyPath.split("/").pop() : null);
   if (!name) return null;
   return `${apiPath}/stories/${encodeURIComponent(name)}`;
 }
@@ -281,13 +281,15 @@ async function loadChapter(n) {
         className = "reader-quote reader-intense";
       }
       const runs = isCleaned
-        ? [p.textContent || ""]
+        ? Array.from(p.childNodes)
+          .map(n => n.nodeType === 1 ? new XMLSerializer().serializeToString(n) : (n.textContent || ""))
+          .join("")
         : Array.from(p.getElementsByTagName("w:r")).map(run => {
           const text = Array.from(run.getElementsByTagName("w:t"))
             .map(t => t.textContent)
             .join("");
           const rPr = run.getElementsByTagName("w:rPr")[0];
-          let spanClass = [];
+          const spanClass = [];
           if (rPr) {
             if (rPr.getElementsByTagName("w:b").length) spanClass.push("reader-bold");
             if (rPr.getElementsByTagName("w:i").length) spanClass.push("reader-italic");
@@ -297,6 +299,7 @@ async function loadChapter(n) {
           }
           return `<span class="${spanClass.join(" ")}">${text}</span>`;
         }).join("");
+
       return `<${tag} class="${className}">${runs}</${tag}>`;
     }).join("\n");
     // Process Special Tags
