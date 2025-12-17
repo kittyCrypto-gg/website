@@ -1,4 +1,5 @@
 import { replaceTategaki } from './tategaki.js';
+import { replaceSmsMessages } from "./sms.js";
 
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
@@ -298,7 +299,8 @@ async function loadChapter(n) {
         }).join("");
       return `<${tag} class="${className}">${runs}</${tag}>`;
     }).join("\n");
-    // Process Tategaki and images
+    // Process Special Tags
+    htmlContent = replaceSmsMessages(htmlContent);
     htmlContent = replaceTategaki(htmlContent);
     htmlContent = replaceImageTags(htmlContent);
     window.chapter = n;
