@@ -5,7 +5,7 @@ window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
 window.storyName = window.storyPath ? window.storyPath.split("/").pop() : null;
 window.chapter = parseInt(window.params.get("chapter") || "1");
-const apiPath = "https://srv.kittycrypto.gg"
+const apiPath = "https://srv.kittycrypto.gg";
 
 window.fallback = document.getElementById('js-content-fallback');
 if (window.fallback) window.fallback.style.display = 'none';
@@ -838,5 +838,161 @@ export function forceBookmark(bookmarkId) {
 
   localStorage.setItem(key, bookmarkId);
 }
+
+function renderXmlDoc(xmlDoc, opts) {
+  const paras = getElementsByAliases(xmlDoc, ["w:p", "paragraph"]);
+
+  let htmlContent = paras.map(p => {
+    const isCleaned = p.tagName === "paragraph";
+    const pPr = isCleaned ? null : p.getElementsByTagName("w:pPr")[0];
+    let style = "";
+
+    if (!isCleaned && pPr) {
+      const styleEl = pPr.getElementsByTagName("w:pStyle")[0];
+      if (styleEl) style = styleEl.getAttribute("w:val") || "";
+    }
+
+    let tag = "p";
+    let className = "reader-paragraph";
+
+    if (style === "Title") {
+      tag = "h1";
+      className = "reader-title";
+    } else if (style === "Heading1" || style === "Heading2") {
+      tag = "h2";
+      className = "reader-subtitle";
+    } else if (style === "Quote") {
+      tag = "blockquote";
+      className = "reader-quote";
+    } else if (style === "IntenseQuote") {
+      tag = "blockquote";
+      className = "reader-quote reader-intense";
+    }
+
+    const runs = isCleaned
+      ? Array.from(p.childNodes)
+        .map(n => n.nodeType === 1 ? new XMLSerializer().serializeToString(n) : (n.textContent || ""))
+        .join("")
+      : Array.from(p.getElementsByTagName("w:r")).map(run => {
+        const text = Array.from(run.getElementsByTagName("w:t"))
+          .map(t => t.textContent)
+          .join("");
+
+        const rPr = run.getElementsByTagName("w:rPr")[0];
+        const spanClass = [];
+
+        if (rPr) {
+          if (rPr.getElementsByTagName("w:b").length) spanClass.push("reader-bold");
+          if (rPr.getElementsByTagName("w:i").length) spanClass.push("reader-italic");
+          if (rPr.getElementsByTagName("w:u").length) spanClass.push("reader-underline");
+          if (rPr.getElementsByTagName("w:strike").length) spanClass.push("reader-strike");
+          if (rPr.getElementsByTagName("w:smallCaps").length) spanClass.push("reader-smallcaps");
+        }
+
+        return `<span class="${spanClass.join(" ")}">${text}</span>`;
+      }).join("");
+
+    return `<${tag} class="${className}">${runs}</${tag}>`;
+  }).join("\n");
+
+  htmlContent = replaceEmails(htmlContent);
+  htmlContent = replaceSmsMessages(htmlContent);
+  htmlContent = replaceTategaki(htmlContent);
+  htmlContent = replaceImageTags(htmlContent);
+
+  if (opts.withBookmarks && opts.storyBase && Number.isInteger(opts.chapter)) {
+    htmlContent = injectBookmarksIntoHTML(htmlContent, opts.storyBase, opts.chapter);
+  }
+
+  window.readerRoot.innerHTML = htmlContent;
+
+  observeAndSaveBookmarkProgress(document);
+  activateImageNavigation(document);
+  bindNavigationEvents(document);
+  refreshTategakiFont(document);
+
+  if (opts.withBookmarks && opts.storyBase && Number.isInteger(opts.chapter)) {
+    requestAnimationFrame(() => {
+      restoreBookmark(opts.storyBase, opts.chapter);
+    });
+  }
+}
+
+function parseXmlText(xmlText) {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+
+  const parseError = xmlDoc.getElementsByTagName("parsererror")[0];
+  if (parseError) {
+    const msg = parseError.textContent || "Invalid XML";
+    throw new Error(msg);
+  }
+
+  return xmlDoc;
+}
+
+function pickSingleFile(accept) {
+  return new Promise(resolve => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.style.display = "none";
+
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0] ? input.files[0] : null;
+      input.remove();
+      resolve(file);
+    }, { once: true });
+
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.readAsText(file);
+  });
+}
+
+window.debug = window.debug || {};
+
+window.debug.pickXml = async function () {
+  const file = await pickSingleFile(".xml,application/xml,text/xml");
+  if (!file) return;
+
+  const xmlText = await readFileAsText(file);
+  const xmlDoc = parseXmlText(xmlText);
+
+  renderXmlDoc(xmlDoc, {
+    withBookmarks: false,
+    storyBase: null,
+    chapter: null
+  });
+};
+
+window.debug.renderXmlText = async function (xmlText) {
+  const xmlDoc = parseXmlText(xmlText);
+
+  renderXmlDoc(xmlDoc, {
+    withBookmarks: false,
+    storyBase: null,
+    chapter: null
+  });
+};
+
+window.debug.renderXmlFile = async function (file) {
+  const xmlText = await readFileAsText(file);
+  const xmlDoc = parseXmlText(xmlText);
+
+  renderXmlDoc(xmlDoc, {
+    withBookmarks: false,
+    storyBase: null,
+    chapter: null
+  });
+};
 
 if (/\/reader(?:\.html)?(?:\/|$)/.test(window.location.pathname)) initiateReader();
