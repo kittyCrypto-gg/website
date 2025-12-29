@@ -304,7 +304,6 @@ async function loadChapter(n) {
     }).join("\n");
     // Process Special Tags
     htmlContent = replaceEmails(htmlContent);
-    htmlContent = await inlineSvgs(htmlContent);
     htmlContent = replaceSmsMessages(htmlContent);
     htmlContent = replaceTategaki(htmlContent);
     htmlContent = replaceImageTags(htmlContent);
@@ -313,6 +312,7 @@ async function loadChapter(n) {
 
     // Render the HTML
     window.readerRoot.innerHTML = htmlContent;
+    await inlineSvgs(window.readerRoot);
 
     // Start tracking scroll progress
     observeAndSaveBookmarkProgress(document);
@@ -840,7 +840,7 @@ export function forceBookmark(bookmarkId) {
   localStorage.setItem(key, bookmarkId);
 }
 
-function renderXmlDoc(xmlDoc, opts) {
+async function renderXmlDoc(xmlDoc, opts) {
   const paras = getElementsByAliases(xmlDoc, ["w:p", "paragraph"]);
 
   let htmlContent = paras.map(p => {
@@ -906,6 +906,7 @@ function renderXmlDoc(xmlDoc, opts) {
   }
 
   window.readerRoot.innerHTML = htmlContent;
+  await inlineSvgs(window.readerRoot);
 
   observeAndSaveBookmarkProgress(document);
   activateImageNavigation(document);
@@ -968,7 +969,7 @@ window.debug.pickXml = async function () {
   const xmlText = await readFileAsText(file);
   const xmlDoc = parseXmlText(xmlText);
 
-  renderXmlDoc(xmlDoc, {
+  await renderXmlDoc(xmlDoc, {
     withBookmarks: false,
     storyBase: null,
     chapter: null
@@ -978,7 +979,7 @@ window.debug.pickXml = async function () {
 window.debug.renderXmlText = async function (xmlText) {
   const xmlDoc = parseXmlText(xmlText);
 
-  renderXmlDoc(xmlDoc, {
+  await renderXmlDoc(xmlDoc, {
     withBookmarks: false,
     storyBase: null,
     chapter: null
@@ -989,7 +990,7 @@ window.debug.renderXmlFile = async function (file) {
   const xmlText = await readFileAsText(file);
   const xmlDoc = parseXmlText(xmlText);
 
-  renderXmlDoc(xmlDoc, {
+  await renderXmlDoc(xmlDoc, {
     withBookmarks: false,
     storyBase: null,
     chapter: null

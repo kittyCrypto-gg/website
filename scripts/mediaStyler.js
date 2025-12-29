@@ -145,6 +145,16 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
 }
 
 export async function inlineSvgs(root = document) {
+    if (typeof root === "string") {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = root;
+        root = wrapper;
+    }
+
+    if (!(root instanceof Document || root instanceof Element)) {
+        return;
+    }
+
     const images = Array.from(root.querySelectorAll("img"));
 
     for (const img of images) {
@@ -152,28 +162,27 @@ export async function inlineSvgs(root = document) {
         if (!src || !src.endsWith(".svg")) continue;
 
         try {
-        const res = await fetch(src);
-        if (!res.ok) continue;
+            const res = await fetch(src);
+            if (!res.ok) continue;
 
-        const svgText = await res.text();
+            const svgText = await res.text();
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(svgText, "image/svg+xml");
-        const svg = doc.querySelector("svg");
-        if (!svg) continue;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgText, "image/svg+xml");
+            const svg = doc.querySelector("svg");
+            if (!svg) continue;
 
-        // Preserve sizing / classes if needed
-        if (img.className) svg.classList.add(...img.classList);
-        if (img.width) svg.setAttribute("width", String(img.width));
-        if (img.height) svg.setAttribute("height", String(img.height));
+            // Preserve sizing / classes
+            if (img.className) svg.classList.add(...img.classList);
+            if (img.getAttribute("width")) svg.setAttribute("width", img.getAttribute("width"));
+            if (img.getAttribute("height")) svg.setAttribute("height", img.getAttribute("height"));
 
-        img.replaceWith(svg);
+            img.replaceWith(svg);
         } catch {
-        /* silently fail */
+            /* silently fail */
         }
     }
 }
-
 
 function bindEmailActions() {
     document.addEventListener("click", (e) => {
