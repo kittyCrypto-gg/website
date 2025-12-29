@@ -57,25 +57,27 @@ function renderSignatureFromXml(sig, esc) {
     const address = esc(t("address"));
     const telephone = esc(t("telephone"));
     const email = esc(t("email"));
-    const logo = esc(t("logo"));
+
+    // Do not text-escape URLs
+    const logo = (t("logo") || "").trim();
 
     const positions = Array.from(sig.querySelectorAll("position"))
-        .map(p => esc(p.textContent || "").trim())
+        .map(p => esc((p.textContent || "").trim()))
         .filter(Boolean);
 
     const disclaimers = Array.from(sig.querySelectorAll("disclaimer"))
-        .map(d => esc(d.textContent || "").trim())
+        .map(d => esc((d.textContent || "").trim()))
         .filter(Boolean);
 
     const hasAny =
         name ||
-        positions.length ||
+        positions.length > 0 ||
         company ||
         address ||
         telephone ||
         email ||
         logo ||
-        disclaimers.length;
+        disclaimers.length > 0;
 
     if (!hasAny) return "";
 
@@ -86,45 +88,39 @@ function renderSignatureFromXml(sig, esc) {
                 src="${logo}"
                 alt="${company || "Company logo"}"
                 class="email-signature-logo-img"
-                style="width:clamp(110px, 28cqi, 180px); height:auto;"
                 />
             </div>
         `
         : "";
 
     const lines = [
-        name && `<strong>${name}</strong>`,
-        ...positions.map(p => `<span>${p}</span>`),
-        company,
-        address,
-        telephone && `Tel: ${telephone}`,
-        email && `Email: ${email}`,
+        name && `<strong class="email-signature-name">${name}</strong>`,
+        ...positions.map(p => `<span class="email-signature-position">${p}</span>`),
+        company && `<span class="email-signature-company">${company}</span>`,
+        address && `<span class="email-signature-address">${address}</span>`,
+        telephone && `<span class="email-signature-telephone">Tel: ${telephone}</span>`,
+        email && `<span class="email-signature-email">Email: ${email}</span>`,
     ].filter(Boolean);
 
     const disclaimerHtml = disclaimers.length
         ? `
-            <div class="email-signature-disclaimer"
-                style="margin-top:10px; font-size:0.75em; opacity:0.75;">
-                ${disclaimers.join("<br/>")}
+            <div class="email-signature-disclaimer">
+                ${disclaimers.map(d => `<div class="email-signature-disclaimer-line">${d}</div>`).join("")}
             </div>
         `
         : "";
 
     return `
-        <hr class="email-signature-sep"
-            style="margin:16px 0; border:none; border-top:1px solid rgba(0,0,0,0.20);" />
-        <div class="email-signature"
-            style="display:flex; align-items:flex-start; gap:14px;">
-        ${logoHtml}
-            <div class="email-signature-text"
-                style="font-size:0.9em; line-height:1.5; text-align:left;">
+        <hr class="email-signature-sep" />
+        <div class="email-signature">
+            ${logoHtml}
+            <div class="email-signature-text">
                 ${lines.join("<br/>")}
                 ${disclaimerHtml}
             </div>
         </div>
     `;
 }
-
 
 export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
     const hasCss =
@@ -276,8 +272,8 @@ export async function inlineSvgs(root = document) {
             if (img.getAttribute("height")) svg.setAttribute("height", img.getAttribute("height"));
 
             img.replaceWith(svg);
-        } catch {
-            /* silently fail */
+        } catch (err) {
+            console.warn("inlineSvgs failed:", src, err);
         }
     }
 }
