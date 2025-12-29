@@ -83,6 +83,10 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         const toName = esc(to ? getText(to, "name") : "");
         const toAddr = esc(to ? getText(to, "addr") : "");
 
+        /* 🔐 Joke authentication hook */
+        const toIp = getText(email, "toIp");
+        window.emailRecipientIP = toIp || null;
+
         const timestamp = esc(getText(email, "timestamp"));
         const subject = esc(getText(email, "subject"));
 
@@ -130,3 +134,32 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         `;
     });
 }
+
+function bindEmailActions() {
+    document.addEventListener("click", (e) => {
+        const button = e.target.closest(".email-action");
+        if (!button) return;
+
+        const currentIP = window.ipAdress;
+        const expectedIP = window.emailRecipientIP;
+
+        if (!currentIP || !expectedIP || currentIP !== expectedIP) {
+            const emailCard = button.closest(".email-card");
+
+            const toName =
+                emailCard?.querySelector(".email-row:nth-child(2) .email-value")?.childNodes[0]?.textContent?.trim() || "Unknown";
+
+            const toAddr =
+                emailCard?.querySelector(".email-row:nth-child(2) .email-address")?.textContent?.replace(/[()]/g, "") || "unknown";
+
+            alert(`Authentication error: Invalid credentials for ${toName} (${toAddr})`);
+            return;
+        }
+
+        // Joke passes authentication
+        const action = button.dataset.emailAction;
+        console.log(`WTH! Who are you?! You performed the email action: ${action}`);
+    });
+}
+
+bindEmailActions();

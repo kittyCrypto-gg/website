@@ -177,6 +177,7 @@ export async function fetchUserIP() {
 
     const data = await response.json();
     console.log(`🌍 User IP: ${data.ip}`);
+    window.ipAddress = data.ip;
     return data.ip;
   } catch (error) {
     console.error("❌ Error fetching IP:", error);

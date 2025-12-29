@@ -37,6 +37,7 @@ async function fetchUserIP() {
     if (!response.ok) throw new Error(`Failed to fetch IP: ${response.status}`);
     const data = await response.json();
     console.log(`🌍 User IP: ${data.ip}`);
+    window.ipAddress = data.ip;
     return data.ip;
   } catch (error) {
     console.error("❌ Error fetching IP:", error);
