@@ -27,6 +27,7 @@
     color: #111827;
     font-size: 0.9em;
     line-height: 1.45;
+    container-type: inline-size;
 }
 
 /* Header */
@@ -66,12 +67,17 @@
     word-break: normal;
     overflow-wrap: break-word;
     line-break: strict;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0 6px;
 }
 
 /* Email address: smaller + greyscale like timestamp */
 .email-value .email-address {
     display: inline-block;
-    margin-left: 6px;
+    margin-left: 0px;
     font-size: 0.78em;
     color: #6b7280;
     white-space: nowrap;
@@ -80,6 +86,7 @@
 .email-subject-row {
     display: grid;
     grid-template-columns: 90px 1fr auto;
+    grid-template-areas: "label subject timestamp";
     column-gap: 10px;
     align-items: baseline;
     padding: 8px 10px;
@@ -92,6 +99,7 @@
     text-transform: uppercase;
     font-size: 0.75em;
     letter-spacing: 0.04em;
+    grid-area: subject;
 }
 
 .email-subject-text {
@@ -101,6 +109,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    grid-area: subject;
 }
 
 .email-timestamp {
@@ -123,4 +132,40 @@
 
 .email-content p:last-child {
     margin-bottom: 0;
+}
+
+@container emailcard (max-width: 420px) {
+  .email-value {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+  }
+
+  .email-value .email-address {
+    display: block;
+    white-space: normal; /* optional: allow breaking if extremely long */
+    text-align: center;
+  }
+
+     .email-subject-row {
+    grid-template-areas:
+      "label timestamp timestamp"
+      "label subject subject";
+    align-items: start;
+  }
+
+  .email-subject-text {
+    justify-self: center;
+    text-align: center;
+
+    /* stop ellipsis behaviour on narrow */
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .email-timestamp {
+    justify-self: end;
+  }
 }
