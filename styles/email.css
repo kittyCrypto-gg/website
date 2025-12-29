@@ -380,3 +380,427 @@
 
     --email-action-focus: rgba(120, 235, 225, 0.85);
 }
+
+/* Kagamine Rin (yellow, mustard dark) */
+.rin {
+    --email-bg-colour: #fffdf2;
+    --email-border-colour: #f2df9b;
+
+    --email-header-bg-colour: #fff3c9;
+    --email-header-border-colour: #f2df9b;
+
+    --email-row-odd-bg-colour: #fff8dd;
+    --email-row-even-bg-colour: #ffeebd;
+
+    --email-text-colour: #2a240e;
+    --email-meta-text-colour: #7b6a22;
+    --email-content-text-colour: #3a3215;
+    --email-value-text-colour: #2a240e;
+
+    --email-action-bg: rgba(255, 220, 120, 0.38);
+    --email-action-bg-hover: rgba(255, 200, 70, 0.55);
+    --email-action-border: rgba(175, 135, 25, 0.40);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.66);
+    --email-action-shadow: rgba(120, 90, 0, 0.18);
+    --email-action-drop-shadow: rgba(85, 60, 0, 0.12);
+
+    --email-action-focus: rgba(245, 190, 35, 0.85);
+}
+
+.dark-mode .rin {
+    --email-bg-colour: #221b07;
+    --email-border-colour: #5a4a15;
+
+    --email-header-bg-colour: #2c230a;
+    --email-header-border-colour: #5a4a15;
+
+    --email-row-odd-bg-colour: #261e08;
+    --email-row-even-bg-colour: #31270c;
+
+    --email-text-colour: #fff2c4;
+    --email-meta-text-colour: #e4c86a;
+    --email-content-text-colour: #ffe9a8;
+    --email-value-text-colour: #fff2c4;
+
+    --email-action-bg: rgba(200, 150, 35, 0.30);
+    --email-action-bg-hover: rgba(235, 175, 45, 0.48);
+    --email-action-border: rgba(255, 205, 85, 0.28);
+
+    --email-action-highlight: rgba(255, 245, 210, 0.20);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(255, 215, 90, 0.82);
+}
+
+/* Kagamine Len (mustard, ochre dark) */
+.len {
+    --email-bg-colour: #fff9ee;
+    --email-border-colour: #e9c184;
+
+    --email-header-bg-colour: #ffe8bf;
+    --email-header-border-colour: #e9c184;
+
+    --email-row-odd-bg-colour: #fff1d8;
+    --email-row-even-bg-colour: #ffe1b0;
+
+    --email-text-colour: #2a1e0d;
+    --email-meta-text-colour: #7a4f1f;
+    --email-content-text-colour: #3b2a14;
+    --email-value-text-colour: #2a1e0d;
+
+    --email-action-bg: rgba(255, 185, 85, 0.34);
+    --email-action-bg-hover: rgba(255, 160, 40, 0.52);
+    --email-action-border: rgba(155, 95, 20, 0.40);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.62);
+    --email-action-shadow: rgba(110, 60, 0, 0.18);
+    --email-action-drop-shadow: rgba(80, 45, 0, 0.12);
+
+    --email-action-focus: rgba(255, 175, 55, 0.82);
+}
+
+.dark-mode .len {
+    --email-bg-colour: #1f160b;
+    --email-border-colour: #4a2e12;
+
+    --email-header-bg-colour: #281c0d;
+    --email-header-border-colour: #4a2e12;
+
+    --email-row-odd-bg-colour: #23180c;
+    --email-row-even-bg-colour: #2e200f;
+
+    --email-text-colour: #ffe4bb;
+    --email-meta-text-colour: #f0b06a;
+    --email-content-text-colour: #ffd7a0;
+    --email-value-text-colour: #ffe4bb;
+
+    --email-action-bg: rgba(175, 95, 25, 0.32);
+    --email-action-bg-hover: rgba(205, 115, 30, 0.52);
+    --email-action-border: rgba(245, 170, 95, 0.26);
+
+    --email-action-highlight: rgba(255, 230, 200, 0.18);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(255, 195, 120, 0.80);
+}
+
+/* Kasane Teto (red, burgundy dark) */
+.teto {
+    --email-bg-colour: #fff6f7;
+    --email-border-colour: #f1b0b8;
+
+    --email-header-bg-colour: #ffe3e6;
+    --email-header-border-colour: #f1b0b8;
+
+    --email-row-odd-bg-colour: #ffedf0;
+    --email-row-even-bg-colour: #ffd8de;
+
+    --email-text-colour: #2b0d12;
+    --email-meta-text-colour: #8a3b45;
+    --email-content-text-colour: #3b131a;
+    --email-value-text-colour: #2b0d12;
+
+    --email-action-bg: rgba(255, 140, 155, 0.30);
+    --email-action-bg-hover: rgba(245, 95, 115, 0.46);
+    --email-action-border: rgba(160, 40, 55, 0.34);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.62);
+    --email-action-shadow: rgba(105, 0, 10, 0.18);
+    --email-action-drop-shadow: rgba(80, 0, 8, 0.12);
+
+    --email-action-focus: rgba(250, 85, 105, 0.78);
+}
+
+.dark-mode .teto {
+    --email-bg-colour: #23090f;
+    --email-border-colour: #5b1d27;
+
+    --email-header-bg-colour: #2d0c13;
+    --email-header-border-colour: #5b1d27;
+
+    --email-row-odd-bg-colour: #270a10;
+    --email-row-even-bg-colour: #341016;
+
+    --email-text-colour: #ffd2d8;
+    --email-meta-text-colour: #f09aa6;
+    --email-content-text-colour: #ffc0c9;
+    --email-value-text-colour: #ffd2d8;
+
+    --email-action-bg: rgba(160, 45, 65, 0.34);
+    --email-action-bg-hover: rgba(195, 60, 80, 0.54);
+    --email-action-border: rgba(255, 165, 175, 0.22);
+
+    --email-action-highlight: rgba(255, 220, 225, 0.18);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(255, 155, 170, 0.80);
+}
+
+/* Akita Neru (gold, bronze dark) */
+.neru {
+    --email-bg-colour: #fffaf0;
+    --email-border-colour: #e6cf8a;
+
+    --email-header-bg-colour: #ffefc2;
+    --email-header-border-colour: #e6cf8a;
+
+    --email-row-odd-bg-colour: #fff5d8;
+    --email-row-even-bg-colour: #ffe7ae;
+
+    --email-text-colour: #2a1f0b;
+    --email-meta-text-colour: #7a5b1a;
+    --email-content-text-colour: #3a2b10;
+    --email-value-text-colour: #2a1f0b;
+
+    --email-action-bg: rgba(255, 205, 90, 0.34);
+    --email-action-bg-hover: rgba(255, 185, 55, 0.54);
+    --email-action-border: rgba(150, 105, 20, 0.40);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.64);
+    --email-action-shadow: rgba(115, 70, 0, 0.18);
+    --email-action-drop-shadow: rgba(85, 50, 0, 0.12);
+
+    --email-action-focus: rgba(255, 195, 55, 0.82);
+}
+
+.dark-mode .neru {
+    --email-bg-colour: #1f1408;
+    --email-border-colour: #4a2f12;
+
+    --email-header-bg-colour: #281a0a;
+    --email-header-border-colour: #4a2f12;
+
+    --email-row-odd-bg-colour: #23170a;
+    --email-row-even-bg-colour: #2e1e0d;
+
+    --email-text-colour: #ffe6b5;
+    --email-meta-text-colour: #e2b86a;
+    --email-content-text-colour: #ffd89c;
+    --email-value-text-colour: #ffe6b5;
+
+    --email-action-bg: rgba(140, 85, 25, 0.36);
+    --email-action-bg-hover: rgba(170, 105, 30, 0.56);
+    --email-action-border: rgba(235, 190, 120, 0.24);
+
+    --email-action-highlight: rgba(255, 230, 200, 0.18);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(255, 210, 130, 0.80);
+}
+
+/* Megurine Luka (pink, cherry dark) */
+.luka {
+    --email-bg-colour: #fff6fb;
+    --email-border-colour: #efb1d4;
+
+    --email-header-bg-colour: #ffe3f2;
+    --email-header-border-colour: #efb1d4;
+
+    --email-row-odd-bg-colour: #ffedf7;
+    --email-row-even-bg-colour: #ffd7ee;
+
+    --email-text-colour: #2b0d1f;
+    --email-meta-text-colour: #8a3b6a;
+    --email-content-text-colour: #3b132b;
+    --email-value-text-colour: #2b0d1f;
+
+    --email-action-bg: rgba(255, 150, 210, 0.28);
+    --email-action-bg-hover: rgba(255, 110, 190, 0.44);
+    --email-action-border: rgba(170, 55, 125, 0.32);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.62);
+    --email-action-shadow: rgba(110, 0, 70, 0.18);
+    --email-action-drop-shadow: rgba(85, 0, 55, 0.12);
+
+    --email-action-focus: rgba(255, 105, 190, 0.78);
+}
+
+.dark-mode .luka {
+    --email-bg-colour: #220a18;
+    --email-border-colour: #55203f;
+
+    --email-header-bg-colour: #2b0d20;
+    --email-header-border-colour: #55203f;
+
+    --email-row-odd-bg-colour: #260b1b;
+    --email-row-even-bg-colour: #321022;
+
+    --email-text-colour: #ffd2eb;
+    --email-meta-text-colour: #f0a1d7;
+    --email-content-text-colour: #ffc0e2;
+    --email-value-text-colour: #ffd2eb;
+
+    --email-action-bg: rgba(165, 60, 120, 0.34);
+    --email-action-bg-hover: rgba(200, 75, 145, 0.54);
+    --email-action-border: rgba(255, 175, 225, 0.22);
+
+    --email-action-highlight: rgba(255, 220, 240, 0.18);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(255, 170, 230, 0.82);
+}
+
+/* KAITO (blue, marine dark) */
+.kaito {
+    --email-bg-colour: #f4f9ff;
+    --email-border-colour: #b7d6f5;
+
+    --email-header-bg-colour: #e1f0ff;
+    --email-header-border-colour: #b7d6f5;
+
+    --email-row-odd-bg-colour: #edf6ff;
+    --email-row-even-bg-colour: #d6ebff;
+
+    --email-text-colour: #0d2030;
+    --email-meta-text-colour: #2d6a92;
+    --email-content-text-colour: #123049;
+    --email-value-text-colour: #0d2030;
+
+    --email-action-bg: rgba(145, 200, 255, 0.26);
+    --email-action-bg-hover: rgba(95, 175, 255, 0.42);
+    --email-action-border: rgba(40, 105, 165, 0.30);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.62);
+    --email-action-shadow: rgba(0, 60, 110, 0.18);
+    --email-action-drop-shadow: rgba(0, 45, 85, 0.12);
+
+    --email-action-focus: rgba(90, 170, 255, 0.80);
+}
+
+.dark-mode .kaito {
+    --email-bg-colour: #071726;
+    --email-border-colour: #1c3f62;
+
+    --email-header-bg-colour: #0a1f33;
+    --email-header-border-colour: #1c3f62;
+
+    --email-row-odd-bg-colour: #081a2b;
+    --email-row-even-bg-colour: #0d2438;
+
+    --email-text-colour: #d1ecff;
+    --email-meta-text-colour: #84c7ff;
+    --email-content-text-colour: #bfe3ff;
+    --email-value-text-colour: #d1ecff;
+
+    --email-action-bg: rgba(50, 120, 190, 0.30);
+    --email-action-bg-hover: rgba(65, 145, 225, 0.50);
+    --email-action-border: rgba(165, 215, 255, 0.20);
+
+    --email-action-highlight: rgba(215, 245, 255, 0.18);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(150, 220, 255, 0.82);
+}
+
+/* MEIKO (peach, orange dark) */
+.meiko {
+    --email-bg-colour: #fff7f2;
+    --email-border-colour: #f2c3a4;
+
+    --email-header-bg-colour: #ffe6d6;
+    --email-header-border-colour: #f2c3a4;
+
+    --email-row-odd-bg-colour: #fff0e7;
+    --email-row-even-bg-colour: #ffdeca;
+
+    --email-text-colour: #2b160c;
+    --email-meta-text-colour: #8a4a2b;
+    --email-content-text-colour: #3b1f12;
+    --email-value-text-colour: #2b160c;
+
+    --email-action-bg: rgba(255, 175, 130, 0.28);
+    --email-action-bg-hover: rgba(255, 140, 90, 0.44);
+    --email-action-border: rgba(175, 85, 45, 0.30);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.62);
+    --email-action-shadow: rgba(115, 45, 0, 0.18);
+    --email-action-drop-shadow: rgba(85, 35, 0, 0.12);
+
+    --email-action-focus: rgba(255, 145, 95, 0.80);
+}
+
+.dark-mode .meiko {
+    --email-bg-colour: #1f0f09;
+    --email-border-colour: #4d2414;
+
+    --email-header-bg-colour: #27130b;
+    --email-header-border-colour: #4d2414;
+
+    --email-row-odd-bg-colour: #231109;
+    --email-row-even-bg-colour: #2f160c;
+
+    --email-text-colour: #ffe0cf;
+    --email-meta-text-colour: #f0b08f;
+    --email-content-text-colour: #ffd0b8;
+    --email-value-text-colour: #ffe0cf;
+
+    --email-action-bg: rgba(170, 80, 40, 0.34);
+    --email-action-bg-hover: rgba(205, 95, 45, 0.54);
+    --email-action-border: rgba(255, 195, 160, 0.22);
+
+    --email-action-highlight: rgba(255, 225, 210, 0.18);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(255, 200, 170, 0.82);
+}
+
+/* GUMI (green + orange, dark green + brown dark) */
+.gumi {
+    --email-bg-colour: #f7fff6;
+    --email-border-colour: #bfe3a5;
+
+    --email-header-bg-colour: #e9f8de;
+    --email-header-border-colour: #bfe3a5;
+
+    --email-row-odd-bg-colour: #f1fce9;
+    --email-row-even-bg-colour: #ddf4cf;
+
+    --email-text-colour: #14230f;
+    --email-meta-text-colour: #3f6b2e;
+    --email-content-text-colour: #1b3314;
+    --email-value-text-colour: #14230f;
+
+    --email-action-bg: rgba(140, 210, 90, 0.26);
+    --email-action-bg-hover: rgba(255, 170, 70, 0.36);
+    --email-action-border: rgba(115, 150, 45, 0.30);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.62);
+    --email-action-shadow: rgba(55, 80, 0, 0.18);
+    --email-action-drop-shadow: rgba(45, 60, 0, 0.12);
+
+    --email-action-focus: rgba(255, 165, 60, 0.78);
+}
+
+.dark-mode .gumi {
+    --email-bg-colour: #101b10;
+    --email-border-colour: #2d3a20;
+
+    --email-header-bg-colour: #142214;
+    --email-header-border-colour: #2d3a20;
+
+    --email-row-odd-bg-colour: #121f12;
+    --email-row-even-bg-colour: #182818;
+
+    --email-text-colour: #d8f1cf;
+    --email-meta-text-colour: #99c88b;
+    --email-content-text-colour: #c9e8bf;
+    --email-value-text-colour: #d8f1cf;
+
+    --email-action-bg: rgba(75, 110, 55, 0.34);
+    --email-action-bg-hover: rgba(120, 85, 50, 0.52);
+    --email-action-border: rgba(210, 195, 150, 0.18);
+
+    --email-action-highlight: rgba(235, 245, 220, 0.16);
+    --email-action-shadow: rgba(0, 0, 0, 0.56);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.46);
+
+    --email-action-focus: rgba(245, 200, 120, 0.80);
+    }
