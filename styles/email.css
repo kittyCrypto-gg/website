@@ -20,21 +20,16 @@
 
     --email-action-focus: rgba(59, 130, 246, 0.65);
 
-    /* Actions sizing */
     --email-action-gap: 6px;
 
-    /* Tight by default */
     --email-action-pad-y: 3px;
     --email-action-pad-x: 5px;
 
-    /* Upper bound for “nice” growth */
     --email-action-pad-y-max: 6px;
     --email-action-pad-x-max: 10px;
 
-    /* Don’t let buttons get huge */
     --email-action-max-width: 52px;
 
-    /* Hover motion */
     --email-action-hover-scale: 1.06;
     --email-action-hover-lift: -1px;
     --email-action-transition: 140ms;
@@ -70,7 +65,6 @@
         container-name: emailcard;
     }
 
-    /* Header */
     .email-header {
         background: var(--email-header-bg-colour);
         padding: 12px 14px 10px;
@@ -118,7 +112,6 @@
         gap: 0 6px;
     }
 
-    /* Email address: smaller + greyscale like timestamp */
     .email-value .email-address {
         display: inline-block;
         margin-left: 0px;
@@ -137,7 +130,6 @@
         background: var(--email-row-odd-bg-colour);
     }
 
-    /* Note: your markup uses .email-label, not .email-subject-label */
     .email-subject-row .email-label {
         grid-area: label;
     }
@@ -159,7 +151,6 @@
         grid-area: timestamp;
     }
 
-    /* Body */
     .email-content {
         background: var(--email-bg-colour);
         padding: 14px;
@@ -180,7 +171,6 @@
         margin-bottom: 0;
     }
 
-    /* Actions row layout */
     .email-actions-row {
         display: grid;
         grid-template-columns: 90px 1fr;
@@ -188,7 +178,6 @@
         align-items: start;
         padding: 8px 10px;
 
-        /* Patch: match email header background */
         background: var(--email-header-bg-colour);
     }
 
@@ -196,7 +185,6 @@
         align-self: center;
     }
 
-    /* Actions: left aligned, wraps; wrapping pattern controlled via flex-basis */
     .email-actions {
         display: flex;
         flex-wrap: wrap;
@@ -205,7 +193,12 @@
         gap: var(--email-action-gap);
     }
 
-    /* Buttons: tight around emoji, small capped growth */
+    .email-actions-bar {
+    background: var(--email-header-bg-colour);
+    padding: 8px 10px 10px;
+    border-top: 1px solid var(--email-header-border-colour);
+    }
+
     .email-action {
         appearance: none;
         -webkit-appearance: none;
@@ -238,7 +231,6 @@
         user-select: none;
         -webkit-tap-highlight-color: transparent;
 
-        /* Default: aim for 6 per line, but do not force huge tiles */
         flex: 0 1 calc((100% - (var(--email-action-gap) * 5)) / 6);
 
         transition:
@@ -299,14 +291,12 @@
         justify-self: end;
         }
 
-        /* 3 per line */
         .email-action {
         flex-basis: calc((100% - (var(--email-action-gap) * 2)) / 3);
         }
     }
 
     @container emailcard (max-width: 360px) {
-        /* 2 per line */
         .email-action {
         flex-basis: calc((100% - (var(--email-action-gap) * 1)) / 2);
         }

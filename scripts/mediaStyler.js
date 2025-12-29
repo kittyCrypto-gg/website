@@ -109,18 +109,17 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
                         <span class="email-subject-text">${subject}</span>
                         <span class="email-timestamp">${timestamp}</span>
                     </div>
+                    </div>
 
-                    <div class="email-row email-actions-row" role="toolbar" aria-label="Email actions">
-                        <span class="email-label"></span>
-
-                        <div class="email-actions" aria-label="Action buttons">
+                    <!-- Actions: header section, not a “meta row” -->
+                    <div class="email-actions-bar" role="toolbar" aria-label="Email actions">
+                    <div class="email-actions" aria-label="Action buttons">
                         <button class="email-action" type="button" data-email-action="reply" aria-label="Reply" title="Reply">↩️</button>
                         <button class="email-action" type="button" data-email-action="forward" aria-label="Forward" title="Forward">➡️</button>
                         <button class="email-action" type="button" data-email-action="flag" aria-label="Flag" title="Flag">🚩</button>
                         <button class="email-action" type="button" data-email-action="mark-unread" aria-label="Mark unread" title="Mark unread">✉️</button>
                         <button class="email-action" type="button" data-email-action="archive" aria-label="Archive" title="Archive">🗄️</button>
                         <button class="email-action" type="button" data-email-action="delete" aria-label="Delete" title="Delete">🗑️</button>
-                        </div>
                     </div>
                     </div>
                 </div>
