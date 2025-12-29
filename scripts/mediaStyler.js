@@ -72,8 +72,8 @@ function renderSignatureFromXml(sig, esc) {
         positions.length ||
         company ||
         address ||
-        telephone || sdf
-    email ||
+        telephone ||
+        email ||
         logo ||
         disclaimers.length;
 
