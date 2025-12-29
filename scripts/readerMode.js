@@ -102,40 +102,54 @@ class ReaderToggle {
 		Reader.activateImageNavigation(root);
 	}
 
-	parseEmails(root = document) {
-		const cards = Array.from(root.querySelectorAll(".email-card"));
+	sanitiseEmailsForReadability(doc) {
+		if (!doc || !(doc instanceof Document)) return;
+
+		const cards = Array.from(doc.querySelectorAll(".email-card"));
 		if (cards.length === 0) return;
 
+		const getRowValue = (card, label) => {
+			const rows = Array.from(card.querySelectorAll(".email-row"));
+			const row = rows.find(r => {
+				const t = (r.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
+				return t === label;
+			});
+
+			if (!row) return "";
+
+			const name = (row.querySelector(".email-value")?.childNodes?.[0]?.textContent || "").trim();
+			const addr = (row.querySelector(".email-address")?.textContent || "").trim().replace(/^\(|\)$/g, "");
+			if (!name && !addr) return "";
+
+			return addr ? `${name} (${addr})`.trim() : name;
+		};
+
 		for (const card of cards) {
-			// Remove subject + timestamp (whole row)
-			card.querySelectorAll(".email-row.email-subject-row").forEach(el => el.remove());
+			const fromText = getRowValue(card, "from");
+			const toText = getRowValue(card, "to");
 
-			// Remove actions bar
-			card.querySelectorAll(".email-actions-bar").forEach(el => el.remove());
+			const contentEl = card.querySelector(".email-content");
+			const bodyHtml = contentEl ? contentEl.innerHTML : "";
 
-			// Remove signature + separator if they exist anywhere inside card
-			card.querySelectorAll(".email-signature-sep, .email-signature").forEach(el => el.remove());
+			// Remove signature that may have been appended inside email-content for any reason
+			const tmp = doc.createElement("div");
+			tmp.innerHTML = bodyHtml;
+			tmp.querySelectorAll(".email-signature, .email-signature-sep").forEach(n => n.remove());
 
-			// Remove any stray timestamp nodes if your template changes later
-			card.querySelectorAll(".email-timestamp").forEach(el => el.remove());
-
-			// Keep only From + To rows inside header
-			const meta = card.querySelector(".email-meta");
-			if (meta) {
-				const rows = Array.from(meta.querySelectorAll(".email-row"));
-				for (const row of rows) {
-					const label = (row.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
-					const keep = label === "from" || label === "to";
-					if (!keep) row.remove();
-				}
-			}
-
-			const content = card.querySelector(".email-content");
-			if (content) {
-				content.querySelectorAll(".email-signature-sep, .email-signature").forEach(el => el.remove());
-			}
+			// Replace the entire card content with only from/to/body in a simple structure
+			card.innerHTML = `
+				<div class="email-reader-min">
+					${fromText ? `<div class="email-reader-field"><strong>From</strong> ${fromText}</div>` : ""}
+					${toText ? `<div class="email-reader-field"><strong>To</strong> ${toText}</div>` : ""}
+					<div class="email-reader-body">${tmp.innerHTML}</div>
+				</div>
+			`;
 		}
+
+		// Remove toolbars or wrappers if Readability might latch onto them
+		doc.querySelectorAll(".email-actions-bar, .email-header, .email-meta").forEach(n => n.remove());
 	}
+
 
 	async enableReaderMode() {
 		const imgArray = this.storeChapterImages(document);
@@ -154,6 +168,7 @@ class ReaderToggle {
 			this.originalNodeClone = articleElem.cloneNode(true);
 
 		const docClone = document.cloneNode(true);
+		this.sanitiseEmailsForReadability(docClone);
 		const reader = new window.Readability(docClone);
 		const parsed = reader.parse();
 
@@ -165,8 +180,6 @@ class ReaderToggle {
 		let htmlContent = Reader.injectBookmarksIntoHTML(parsedDoc.body.innerHTML, storyPath, chapter);
 
 		articleElem.innerHTML = htmlContent;
-
-		this.parseEmails(articleElem);
 
 		this.restoreChapterImages(imgArray, articleElem);
 

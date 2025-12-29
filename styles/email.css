@@ -308,7 +308,7 @@
     }
 
     /* === Email Signature === */
-    --email-signature-sep-colour: rgba(17, 24, 39, 0.20);
+    --email-signature-sep-colour: rgba(17, 24, 39, 0.2);
     --email-signature-text-colour: var(--email-text-colour);
     --email-signature-muted-colour: var(--email-meta-text-colour);
 
@@ -341,7 +341,6 @@
         margin-inline: clamp(8px, 4cqi, 16px);
         margin-block-end: clamp(8px, 3cqi, 14px);
     }
-
 
     .email-signature-logo {
         flex: 0 0 auto;
@@ -392,6 +391,20 @@
         .email-signature-logo-img {
             width: clamp(120px, 45cqi, 220px);
         }
+    }
+
+    .email-reader-min {
+        margin: 0.6rem 0;
+    }
+
+    .email-reader-field {
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-bottom: 0.2rem;
+    }
+
+    .email-reader-body {
+        margin-top: 0.45rem;
     }
 }
 
