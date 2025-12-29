@@ -41,7 +41,7 @@ class ReaderToggle {
 		instance.syncButtonState();
 
 		if (!readerToggle.__readerListener) {
-			readerToggle.addEventListener("click", await instance.handleToggleClick);
+			readerToggle.addEventListener("click", instance.handleToggleClick);
 			readerToggle.__readerListener = true;
 		}
 
@@ -102,6 +102,41 @@ class ReaderToggle {
 		Reader.activateImageNavigation(root);
 	}
 
+	parseEmails(root = document) {
+		const cards = Array.from(root.querySelectorAll(".email-card"));
+		if (cards.length === 0) return;
+
+		for (const card of cards) {
+			// Remove subject + timestamp (whole row)
+			card.querySelectorAll(".email-row.email-subject-row").forEach(el => el.remove());
+
+			// Remove actions bar
+			card.querySelectorAll(".email-actions-bar").forEach(el => el.remove());
+
+			// Remove signature + separator if they exist anywhere inside card
+			card.querySelectorAll(".email-signature-sep, .email-signature").forEach(el => el.remove());
+
+			// Remove any stray timestamp nodes if your template changes later
+			card.querySelectorAll(".email-timestamp").forEach(el => el.remove());
+
+			// Keep only From + To rows inside header
+			const meta = card.querySelector(".email-meta");
+			if (meta) {
+				const rows = Array.from(meta.querySelectorAll(".email-row"));
+				for (const row of rows) {
+					const label = (row.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
+					const keep = label === "from" || label === "to";
+					if (!keep) row.remove();
+				}
+			}
+
+			const content = card.querySelector(".email-content");
+			if (content) {
+				content.querySelectorAll(".email-signature-sep, .email-signature").forEach(el => el.remove());
+			}
+		}
+	}
+
 	async enableReaderMode() {
 		const imgArray = this.storeChapterImages(document);
 
@@ -124,14 +159,14 @@ class ReaderToggle {
 
 		if (!(parsed && parsed.content)) return;
 
-		// Insert the parsed content but preserve the reader-bookmark div structure
 		const parser = new DOMParser();
 		const parsedDoc = parser.parseFromString(parsed.content, "text/html");
 
 		let htmlContent = Reader.injectBookmarksIntoHTML(parsedDoc.body.innerHTML, storyPath, chapter);
 
-		// Now, reinsert the content into the article, making sure to keep the bookmark divs
 		articleElem.innerHTML = htmlContent;
+
+		this.parseEmails(articleElem);
 
 		this.restoreChapterImages(imgArray, articleElem);
 
@@ -139,7 +174,6 @@ class ReaderToggle {
 		const articleObj = document.getElementById("reader");
 		if (articleObj) articleObj.classList.add("reader-container");
 
-		// Update the URL to include ?reader=true (or &reader=true if there are other query parameters)
 		const url = new URL(window.location);
 		if (!url.searchParams.has("reader")) {
 			url.searchParams.set("reader", "true");
@@ -157,7 +191,6 @@ class ReaderToggle {
 		if (articleElem && this.originalNodeClone) {
 			const restored = this.originalNodeClone.cloneNode(true);
 			articleElem.replaceWith(restored);
-			const newRoot = restored.ownerDocument || document;
 			Reader.setupReader(restored);
 		}
 
