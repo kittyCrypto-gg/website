@@ -354,7 +354,7 @@
 }
 
 
-.miku.dark-mode {
+.dark-mode .miku {
     --email-bg-colour: #0e1f1f;
     --email-border-colour: #244544;
 
