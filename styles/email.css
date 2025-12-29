@@ -338,7 +338,10 @@
         align-items: flex-start;
         gap: var(--email-signature-gap);
         padding-top: var(--email-signature-pad-top);
+        margin-inline: clamp(8px, 4cqi, 16px);
+        margin-block-end: clamp(8px, 3cqi, 14px);
     }
+
 
     .email-signature-logo {
         flex: 0 0 auto;
