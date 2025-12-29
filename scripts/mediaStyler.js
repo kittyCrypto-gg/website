@@ -111,7 +111,7 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
                     </div>
 
                     <div class="email-row email-actions-row" role="toolbar" aria-label="Email actions">
-                        <span class="email-label">Actions</span>
+                        <span class="email-label"></span>
 
                         <div class="email-actions" aria-label="Action buttons">
                         <button class="email-action" type="button" data-email-action="reply" aria-label="Reply" title="Reply">↩️</button>
