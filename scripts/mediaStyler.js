@@ -49,6 +49,83 @@ const themes = {
     "negi_miku39@yahoo.co.jp": "miku",
 };
 
+function renderSignatureFromXml(sig, esc) {
+    const t = (q) => (sig.querySelector(q)?.textContent || "").trim();
+
+    const name = esc(t("name"));
+    const company = esc(t("company"));
+    const address = esc(t("address"));
+    const telephone = esc(t("telephone"));
+    const email = esc(t("email"));
+    const logo = esc(t("logo"));
+
+    const positions = Array.from(sig.querySelectorAll("position"))
+        .map(p => esc(p.textContent || "").trim())
+        .filter(Boolean);
+
+    const disclaimers = Array.from(sig.querySelectorAll("disclaimer"))
+        .map(d => esc(d.textContent || "").trim())
+        .filter(Boolean);
+
+    const hasAny =
+        name ||
+        positions.length ||
+        company ||
+        address ||
+        telephone || sdf
+    email ||
+        logo ||
+        disclaimers.length;
+
+    if (!hasAny) return "";
+
+    const logoHtml = logo
+        ? `
+            <div class="email-signature-logo">
+                <img
+                src="${logo}"
+                alt="${company || "Company logo"}"
+                class="email-signature-logo-img"
+                style="width:clamp(110px, 28cqi, 180px); height:auto;"
+                />
+            </div>
+        `
+        : "";
+
+    const lines = [
+        name && `<strong>${name}</strong>`,
+        ...positions.map(p => `<span>${p}</span>`),
+        company,
+        address,
+        telephone && `Tel: ${telephone}`,
+        email && `Email: ${email}`,
+    ].filter(Boolean);
+
+    const disclaimerHtml = disclaimers.length
+        ? `
+            <div class="email-signature-disclaimer"
+                style="margin-top:10px; font-size:0.75em; opacity:0.75;">
+                ${disclaimers.join("<br/>")}
+            </div>
+        `
+        : "";
+
+    return `
+        <hr class="email-signature-sep"
+            style="margin:16px 0; border:none; border-top:1px solid rgba(0,0,0,0.20);" />
+        <div class="email-signature"
+            style="display:flex; align-items:flex-start; gap:14px;">
+        ${logoHtml}
+            <div class="email-signature-text"
+                style="font-size:0.9em; line-height:1.5; text-align:left;">
+                ${lines.join("<br/>")}
+                ${disclaimerHtml}
+            </div>
+        </div>
+    `;
+}
+
+
 export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
     const hasCss =
         Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
@@ -71,6 +148,25 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
 
     const getText = (node, tag) => (node.querySelector(tag)?.textContent || "").trim();
 
+    const buildContentHtml = (emailNode) => {
+        const contentEl = emailNode.querySelector("content");
+        if (!contentEl) return "";
+
+        const serialise = (n) => new XMLSerializer().serializeToString(n);
+
+        return Array.from(contentEl.childNodes)
+            .map((n) => {
+                if (n.nodeType === 1) {
+                    const tag = n.tagName.toLowerCase();
+                    if (tag === "signature") return renderSignatureFromXml(n, esc);
+                    return serialise(n);
+                }
+                if (n.nodeType === 3) return esc(n.textContent || "");
+                return "";
+            })
+            .join("");
+    };
+
     const re = /<email\b[^>]*>[\s\S]*?<\/email>/gi;
 
     return htmlContent.replace(re, (block) => {
@@ -87,59 +183,54 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         const toAddr = esc(to ? getText(to, "addr") : "");
 
         const themeClass = themes[toAddr.toLowerCase()] ?? "";
-
-        /* 🔐 Joke authentication hook */
         const recipientIp = getText(email, "toIp") || "";
-
         const timestamp = esc(getText(email, "timestamp"));
         const subject = esc(getText(email, "subject"));
 
-        const getInnerXml = (node, tag) => {
-            const el = node.querySelector(tag);
-            if (!el) return "";
-            return Array.from(el.childNodes).map(n => new XMLSerializer().serializeToString(n)).join("");
-        };
-
-        const contentHtml = getInnerXml(email, "content");
+        const contentHtml = buildContentHtml(email);
 
         return `
-            <div class="email-wrapper show">
-                <div class="email-card${themeClass ? ` ${themeClass}` : ""}" data-recipient-ip="${esc(recipientIp)}">
-                <div class="email-header">
-                    <div class="email-meta">
-                    <div class="email-row">
-                        <span class="email-label">From</span>
-                        <span class="email-value">${fromName}<span class="email-address">(${fromAddr})</span></span>
-                    </div>
-
-                    <div class="email-row">
-                        <span class="email-label">To</span>
-                        <span class="email-value">${toName}<span class="email-address">(${toAddr})</span></span>
-                    </div>
-
-                    <div class="email-row email-subject-row">
-                        <span class="email-label">Subject</span>
-                        <span class="email-subject-text">${subject}</span>
-                        <span class="email-timestamp">${timestamp}</span>
-                    </div>
-                    </div>
-
-                    <!-- Actions: header section, not a “meta row” -->
-                    <div class="email-actions-bar" role="toolbar" aria-label="Email actions">
-                    <div class="email-actions" aria-label="Action buttons">
-                        <button class="email-action" type="button" data-email-action="reply" aria-label="Reply" title="Reply">↩️</button>
-                        <button class="email-action" type="button" data-email-action="forward" aria-label="Forward" title="Forward">➡️</button>
-                        <button class="email-action" type="button" data-email-action="flag" aria-label="Flag" title="Flag">🚩</button>
-                        <button class="email-action" type="button" data-email-action="mark-unread" aria-label="Mark unread" title="Mark unread">✉️</button>
-                        <button class="email-action" type="button" data-email-action="archive" aria-label="Archive" title="Archive">🗄️</button>
-                        <button class="email-action" type="button" data-email-action="delete" aria-label="Delete" title="Delete">🗑️</button>
-                    </div>
-                    </div>
+        <div class="email-wrapper show">
+            <div class="email-card${themeClass ? ` ${themeClass}` : ""}"
+                data-recipient-ip="${esc(recipientIp)}">
+            <div class="email-header">
+                <div class="email-meta">
+                <div class="email-row">
+                    <span class="email-label">From</span>
+                    <span class="email-value">${fromName}
+                    <span class="email-address">(${fromAddr})</span>
+                    </span>
                 </div>
 
-                <div class="email-content">${contentHtml}</div>
+                <div class="email-row">
+                    <span class="email-label">To</span>
+                    <span class="email-value">${toName}
+                    <span class="email-address">(${toAddr})</span>
+                    </span>
+                </div>
+
+                <div class="email-row email-subject-row">
+                    <span class="email-label">Subject</span>
+                    <span class="email-subject-text">${subject}</span>
+                    <span class="email-timestamp">${timestamp}</span>
+                </div>
+                </div>
+
+                <div class="email-actions-bar" role="toolbar">
+                <div class="email-actions">
+                    <button class="email-action" data-email-action="reply">↩️</button>
+                    <button class="email-action" data-email-action="forward">➡️</button>
+                    <button class="email-action" data-email-action="flag">🚩</button>
+                    <button class="email-action" data-email-action="mark-unread">✉️</button>
+                    <button class="email-action" data-email-action="archive">🗄️</button>
+                    <button class="email-action" data-email-action="delete">🗑️</button>
+                </div>
                 </div>
             </div>
+
+            <div class="email-content">${contentHtml}</div>
+            </div>
+        </div>
         `;
     });
 }
