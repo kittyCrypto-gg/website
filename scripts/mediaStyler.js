@@ -98,14 +98,29 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
                         <span class="email-label">From</span>
                         <span class="email-value">${fromName}<span class="email-address">(${fromAddr})</span></span>
                     </div>
+
                     <div class="email-row">
                         <span class="email-label">To</span>
                         <span class="email-value">${toName}<span class="email-address">(${toAddr})</span></span>
                     </div>
+
                     <div class="email-row email-subject-row">
                         <span class="email-label">Subject</span>
                         <span class="email-subject-text">${subject}</span>
                         <span class="email-timestamp">${timestamp}</span>
+                    </div>
+
+                    <div class="email-row email-actions-row" role="toolbar" aria-label="Email actions">
+                        <span class="email-label">Actions</span>
+
+                        <div class="email-actions" aria-label="Action buttons">
+                        <button class="email-action" type="button" data-email-action="reply" aria-label="Reply" title="Reply">↩️</button>
+                        <button class="email-action" type="button" data-email-action="forward" aria-label="Forward" title="Forward">➡️</button>
+                        <button class="email-action" type="button" data-email-action="flag" aria-label="Flag" title="Flag">🚩</button>
+                        <button class="email-action" type="button" data-email-action="mark-unread" aria-label="Mark unread" title="Mark unread">✉️</button>
+                        <button class="email-action" type="button" data-email-action="archive" aria-label="Archive" title="Archive">🗄️</button>
+                        <button class="email-action" type="button" data-email-action="delete" aria-label="Delete" title="Delete">🗑️</button>
+                        </div>
                     </div>
                     </div>
                 </div>
