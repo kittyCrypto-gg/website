@@ -10,6 +10,15 @@
     --email-meta-text-colour: #6b7280;
     --email-content-text-colour: #1f2937;
 
+    --email-action-bg: rgba(255, 255, 255, 0.18);
+    --email-action-border: rgba(17, 24, 39, 0.18);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.55);
+    --email-action-shadow: rgba(0, 0, 0, 0.10);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.06);
+
+    --email-action-focus: rgba(59, 130, 246, 0.65);
+
     .email-wrapper {
         display: flex;
         justify-content: center;
@@ -38,6 +47,7 @@
         font-size: 0.9em;
         line-height: 1.45;
         container-type: inline-size;
+        container-name: emailcard;
     }
 
     /* Header */
@@ -182,6 +192,86 @@
         .email-timestamp {
         justify-self: end;
         }
+
+        .email-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @container emailcard (max-width: 360px) {
+        .email-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+/* Actions row layout */
+    .email-actions-row {
+    /* same label + content structure as other rows */
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    column-gap: 10px;
+    align-items: start;
+    padding: 8px 10px;
+    }
+
+    /* Keep the label aligned similarly to other rows */
+    .email-actions-row .email-label {
+    align-self: center;
+    }
+
+    /* Button grid: 6 in a row when possible, then 3x2, then 2x3 */
+    .email-actions {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    align-items: stretch;
+    }
+
+    /* Buttons */
+    .email-action {
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 8px;
+    border: 1px solid var(--email-action-border);
+    background: var(--email-action-bg);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+
+    /* subtle bevelled (raised) look */
+    box-shadow:
+        inset 1px 1px 0 var(--email-action-highlight),
+        inset -1px -1px 0 var(--email-action-shadow),
+        0 1px 2px var(--email-action-drop-shadow);
+
+    width: 100%;
+    aspect-ratio: 1 / 1;
+
+    display: grid;
+    place-items: center;
+
+    padding: 0;
+    margin: 0;
+
+    font-size: 1.15em;
+    line-height: 1;
+
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    }
+
+    .email-action:focus-visible {
+    outline: 2px solid var(--email-action-focus);
+    outline-offset: 2px;
+    }
+
+    .email-action:active {
+    /* press inwards */
+    transform: translateY(1px);
+    box-shadow:
+        inset 1px 1px 0 var(--email-action-highlight),
+        inset -1px -1px 0 var(--email-action-shadow),
+        0 0px 0 rgba(0, 0, 0, 0.00);
     }
 }
 
@@ -196,4 +286,13 @@
     --email-meta-text-colour: #9ca3af;
     --email-content-text-colour: #e5e7eb;
     --email-value-text-colour: #d4d4d4;
+
+    --email-action-bg: rgba(255, 255, 255, 0.06);
+    --email-action-border: rgba(229, 231, 235, 0.16);
+
+    --email-action-highlight: rgba(255, 255, 255, 0.18);
+    --email-action-shadow: rgba(0, 0, 0, 0.35);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.35);
+
+    --email-action-focus: rgba(147, 197, 253, 0.70);
 }
