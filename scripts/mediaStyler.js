@@ -172,8 +172,15 @@ export async function inlineSvgs(root = document) {
             const svg = doc.querySelector("svg");
             if (!svg) continue;
 
-            // Preserve sizing / classes
+            // Preserve classes
             if (img.className) svg.classList.add(...img.classList);
+
+            // Preserve inline styles
+            if (img.getAttribute("style")) {
+                svg.setAttribute("style", img.getAttribute("style"));
+            }
+
+            // Preserve width/height attrs if present
             if (img.getAttribute("width")) svg.setAttribute("width", img.getAttribute("width"));
             if (img.getAttribute("height")) svg.setAttribute("height", img.getAttribute("height"));
 
