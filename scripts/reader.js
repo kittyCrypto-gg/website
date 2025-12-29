@@ -1,5 +1,5 @@
 import { replaceTategaki } from './tategaki.js';
-import { replaceSmsMessages, replaceEmails } from "./mediaStyler.js";
+import { replaceSmsMessages, replaceEmails, inlineSvgs } from "./mediaStyler.js";
 
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
@@ -304,6 +304,7 @@ async function loadChapter(n) {
     }).join("\n");
     // Process Special Tags
     htmlContent = replaceEmails(htmlContent);
+    htmlContent = await inlineSvgs(htmlContent);
     htmlContent = replaceSmsMessages(htmlContent);
     htmlContent = replaceTategaki(htmlContent);
     htmlContent = replaceImageTags(htmlContent);

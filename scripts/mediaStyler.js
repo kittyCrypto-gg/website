@@ -144,6 +144,37 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
     });
 }
 
+export async function inlineSvgs(root = document) {
+    const images = Array.from(root.querySelectorAll("img"));
+
+    for (const img of images) {
+        const src = img.getAttribute("src");
+        if (!src || !src.endsWith(".svg")) continue;
+
+        try {
+        const res = await fetch(src);
+        if (!res.ok) continue;
+
+        const svgText = await res.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgText, "image/svg+xml");
+        const svg = doc.querySelector("svg");
+        if (!svg) continue;
+
+        // Preserve sizing / classes if needed
+        if (img.className) svg.classList.add(...img.classList);
+        if (img.width) svg.setAttribute("width", String(img.width));
+        if (img.height) svg.setAttribute("height", String(img.height));
+
+        img.replaceWith(svg);
+        } catch {
+        /* silently fail */
+        }
+    }
+}
+
+
 function bindEmailActions() {
     document.addEventListener("click", (e) => {
         const button = e.target.closest(".email-action");

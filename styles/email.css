@@ -20,6 +20,11 @@
 
     --email-action-focus: rgba(59, 130, 246, 0.65);
 
+
+    --yamaka-ink: #111827;
+    --yamaka-text: #111827;
+    --yamaka-muted: #111827;
+
     --email-action-gap: 6px;
 
     --email-action-pad-y: 3px;
@@ -324,6 +329,10 @@
     --email-action-drop-shadow: rgba(0, 0, 0, 0.35);
 
     --email-action-focus: rgba(147, 197, 253, 0.70);
+
+    --yamaka-ink: #e5e7eb;
+    --yamaka-text: #e5e7eb;
+    --yamaka-muted: #cbd5e1;
 }
 
 .miku {
