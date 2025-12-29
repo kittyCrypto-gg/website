@@ -94,8 +94,13 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         const timestamp = esc(getText(email, "timestamp"));
         const subject = esc(getText(email, "subject"));
 
-        // content is plain text for now (safe). If you later want <br> etc, we can preserve markup.
-        const content = esc(getText(email, "content"));
+        const getInnerXml = (node, tag) => {
+            const el = node.querySelector(tag);
+            if (!el) return "";
+            return Array.from(el.childNodes).map(n => new XMLSerializer().serializeToString(n)).join("");
+        };
+
+        const contentHtml = getInnerXml(email, "content");
 
         return `
             <div class="email-wrapper show">
@@ -132,7 +137,7 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
                     </div>
                 </div>
 
-                <div class="email-content">${content}</div>
+                <div class="email-content">${contentHtml}</div>
                 </div>
             </div>
         `;
