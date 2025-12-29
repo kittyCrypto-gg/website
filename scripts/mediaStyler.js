@@ -45,6 +45,9 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
         `;
     });
 }
+const themes = {
+    "negi_miku39@yahoo.co.jp": "miku",
+};
 
 export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
     const hasCss =
@@ -83,9 +86,10 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         const toName = esc(to ? getText(to, "name") : "");
         const toAddr = esc(to ? getText(to, "addr") : "");
 
+        const themeClass = themes[toAddr.toLowerCase()] ?? "";
+
         /* 🔐 Joke authentication hook */
-        const toIp = getText(email, "toIp");
-        window.emailRecipientIP = toIp || null;
+        const recipientIp = getText(email, "toIp") || "";
 
         const timestamp = esc(getText(email, "timestamp"));
         const subject = esc(getText(email, "subject"));
@@ -95,7 +99,7 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
 
         return `
             <div class="email-wrapper show">
-                <div class="email-card">
+                <div class="email-card${themeClass ? ` ${themeClass}` : ""}" data-recipient-ip="${esc(recipientIp)}">
                 <div class="email-header">
                     <div class="email-meta">
                     <div class="email-row">
@@ -141,11 +145,10 @@ function bindEmailActions() {
         if (!button) return;
 
         const currentIP = window.ipAdress;
-        const expectedIP = window.emailRecipientIP;
+        const emailCard = button.closest(".email-card");
+        const expectedIP = emailCard?.dataset.recipientIp || "";
 
         if (!currentIP || !expectedIP || currentIP !== expectedIP) {
-            const emailCard = button.closest(".email-card");
-
             const toName =
                 emailCard?.querySelector(".email-row:nth-child(2) .email-value")?.childNodes[0]?.textContent?.trim() || "Unknown";
 
