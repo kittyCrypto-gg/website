@@ -56,7 +56,7 @@ function renderSignatureFromXml(sig, esc) {
     const company = esc(t("company"));
     const address = esc(t("address"));
     const telephone = esc(t("telephone"));
-    const email = esc(t("email"));
+    const emailAddress = esc(t("emailAddress"));
 
     // Do not text-escape URLs
     const logo = (t("logo") || "").trim();
@@ -75,7 +75,7 @@ function renderSignatureFromXml(sig, esc) {
         company ||
         address ||
         telephone ||
-        email ||
+        emailAddress ||
         logo ||
         disclaimers.length > 0;
 
@@ -99,7 +99,7 @@ function renderSignatureFromXml(sig, esc) {
         company && `<span class="email-signature-company">${company}</span>`,
         address && `<span class="email-signature-address">${address}</span>`,
         telephone && `<span class="email-signature-telephone">Tel: ${telephone}</span>`,
-        email && `<span class="email-signature-email">Email: ${email}</span>`,
+        emailAddress && `<span class="email-signature-email">Email: ${emailAddress}</span>`,
     ].filter(Boolean);
 
     const disclaimerHtml = disclaimers.length
