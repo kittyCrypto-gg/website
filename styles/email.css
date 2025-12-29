@@ -312,17 +312,17 @@
     --email-signature-text-colour: var(--email-text-colour);
     --email-signature-muted-colour: var(--email-meta-text-colour);
 
-    --email-signature-gap: 14px;
+    --email-signature-gap: 10px;
     --email-signature-pad-top: 10px;
 
     --email-signature-logo-min: 110px;
     --email-signature-logo-max: 180px;
     --email-signature-logo-ideal: 28cqi;
 
-    --email-signature-font-size: 0.92em;
-    --email-signature-line-height: 1.5;
+    --email-signature-font-size: 0.74em;
+    --email-signature-line-height: 1.4;
 
-    --email-signature-disclaimer-font-size: 0.78em;
+    --email-signature-disclaimer-font-size: 0.72em;
     --email-signature-disclaimer-opacity: 0.75;
     --email-signature-disclaimer-gap: 8px;
 
@@ -334,17 +334,10 @@
 
     .email-signature {
         display: flex;
+        flex-direction: column;
         align-items: flex-start;
         gap: var(--email-signature-gap);
         padding-top: var(--email-signature-pad-top);
-    }
-
-    .email-signature-text {
-        font-size: var(--email-signature-font-size);
-        line-height: var(--email-signature-line-height);
-        text-align: left;
-        color: var(--email-signature-text-colour);
-        min-width: 0;
     }
 
     .email-signature-logo {
@@ -359,6 +352,14 @@
                 var(--email-signature-logo-max));
         height: auto;
         display: block;
+    }
+
+    .email-signature-text {
+        font-size: var(--email-signature-font-size);
+        line-height: var(--email-signature-line-height);
+        text-align: left;
+        color: var(--email-signature-text-colour);
+        min-width: 0;
     }
 
     .email-signature-name {
@@ -385,11 +386,6 @@
     }
 
     @container emailcard (max-width: 420px) {
-        .email-signature {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
         .email-signature-logo-img {
             width: clamp(120px, 45cqi, 220px);
         }
