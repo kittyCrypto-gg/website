@@ -46,7 +46,7 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
     });
 }
 const themes = {
-    "negi_miku39@yahoo.co.jp": "miku",
+    "negi39@yahoo.co.jp": "miku",
 };
 
 function renderSignatureFromXml(sig, esc) {
