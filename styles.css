@@ -272,6 +272,8 @@ header {
 
 .tooltip-trigger {
   cursor: help;
+  display: inline-block;
+  position: relative;
 }
 
 .tooltip-content {
@@ -1507,6 +1509,7 @@ body.dark-mode .tategaki-container svg text {
   /* To prevent left cropping */
   margin-bottom: 5px;
   /* To prevent bottom cropping */
+  pointer-events: none;
 }
 
 /* =========================================

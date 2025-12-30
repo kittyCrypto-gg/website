@@ -1,4 +1,4 @@
-import { serialiseMixedContent } from "./mediaStyler";
+import { serialiseMixedContent } from "./mediaStyler.js";
 
 function tokeniseRichLine(html) {
   const container = document.createElement("div");
