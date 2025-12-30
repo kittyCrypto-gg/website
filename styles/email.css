@@ -419,6 +419,7 @@
     --email-meta-text-colour: #9ca3af;
     --email-content-text-colour: #e5e7eb;
     --email-value-text-colour: #d4d4d4;
+    --email-signature-sep-colour: rgba(229, 231, 235, 0.2);
 
     --email-action-bg: rgba(255, 255, 255, 0.06);
     --email-action-bg-hover: rgba(255, 255, 255, 0.12);
@@ -449,6 +450,7 @@
     --email-meta-text-colour: #3b7f7a;
     --email-content-text-colour: #123f3c;
     --email-value-text-colour: #0f2f2d;
+    --email-signature-sep-colour: rgba(15, 47, 45, 0.2);
 
     /* Actions */
     --email-action-bg: rgba(170, 230, 225, 0.45);
@@ -476,6 +478,7 @@
     --email-meta-text-colour: #8fd4cf;
     --email-content-text-colour: #c6efec;
     --email-value-text-colour: #d8f4f2;
+    --email-signature-sep-colour: rgba(216, 244, 242, 0.2);
 
     /* Actions */
     --email-action-bg: rgba(40, 140, 135, 0.35);
@@ -504,6 +507,7 @@
     --email-meta-text-colour: #7b6a22;
     --email-content-text-colour: #3a3215;
     --email-value-text-colour: #2a240e;
+    --email-signature-sep-colour: rgba(42, 36, 14, 0.2);
 
     --email-action-bg: rgba(255, 220, 120, 0.38);
     --email-action-bg-hover: rgba(255, 200, 70, 0.55);
@@ -530,6 +534,7 @@
     --email-meta-text-colour: #e4c86a;
     --email-content-text-colour: #ffe9a8;
     --email-value-text-colour: #fff2c4;
+    --email-signature-sep-colour: rgba(255, 242, 196, 0.2);
 
     --email-action-bg: rgba(200, 150, 35, 0.3);
     --email-action-bg-hover: rgba(235, 175, 45, 0.48);
@@ -557,6 +562,7 @@
     --email-meta-text-colour: #7a4f1f;
     --email-content-text-colour: #3b2a14;
     --email-value-text-colour: #2a1e0d;
+    --email-signature-sep-colour: rgba(42, 30, 13, 0.2);
 
     --email-action-bg: rgba(255, 185, 85, 0.34);
     --email-action-bg-hover: rgba(255, 160, 40, 0.52);
@@ -583,6 +589,7 @@
     --email-meta-text-colour: #f0b06a;
     --email-content-text-colour: #ffd7a0;
     --email-value-text-colour: #ffe4bb;
+    --email-signature-sep-colour: rgba(255, 228, 187, 0.2);
 
     --email-action-bg: rgba(175, 95, 25, 0.32);
     --email-action-bg-hover: rgba(205, 115, 30, 0.52);
@@ -610,6 +617,7 @@
     --email-meta-text-colour: #8a3b45;
     --email-content-text-colour: #3b131a;
     --email-value-text-colour: #2b0d12;
+    --email-signature-sep-colour: rgba(43, 13, 18, 0.2);
 
     --email-action-bg: rgba(255, 140, 155, 0.3);
     --email-action-bg-hover: rgba(245, 95, 115, 0.46);
@@ -636,6 +644,7 @@
     --email-meta-text-colour: #f09aa6;
     --email-content-text-colour: #ffc0c9;
     --email-value-text-colour: #ffd2d8;
+    --email-signature-sep-colour: rgba(255, 210, 216, 0.2);
 
     --email-action-bg: rgba(160, 45, 65, 0.34);
     --email-action-bg-hover: rgba(195, 60, 80, 0.54);
@@ -663,6 +672,7 @@
     --email-meta-text-colour: #7a5b1a;
     --email-content-text-colour: #3a2b10;
     --email-value-text-colour: #2a1f0b;
+    --email-signature-sep-colour: rgba(42, 31, 11, 0.2);
 
     --email-action-bg: rgba(255, 205, 90, 0.34);
     --email-action-bg-hover: rgba(255, 185, 55, 0.54);
@@ -689,6 +699,7 @@
     --email-meta-text-colour: #e2b86a;
     --email-content-text-colour: #ffd89c;
     --email-value-text-colour: #ffe6b5;
+    --email-signature-sep-colour: rgba(255, 230, 181, 0.2);
 
     --email-action-bg: rgba(140, 85, 25, 0.36);
     --email-action-bg-hover: rgba(170, 105, 30, 0.56);
@@ -716,6 +727,7 @@
     --email-meta-text-colour: #8a3b6a;
     --email-content-text-colour: #3b132b;
     --email-value-text-colour: #2b0d1f;
+    --email-signature-sep-colour: rgba(43, 13, 31, 0.2);
 
     --email-action-bg: rgba(255, 150, 210, 0.28);
     --email-action-bg-hover: rgba(255, 110, 190, 0.44);
@@ -742,6 +754,7 @@
     --email-meta-text-colour: #f0a1d7;
     --email-content-text-colour: #ffc0e2;
     --email-value-text-colour: #ffd2eb;
+    --email-signature-sep-colour: rgba(255, 210, 235, 0.2);
 
     --email-action-bg: rgba(165, 60, 120, 0.34);
     --email-action-bg-hover: rgba(200, 75, 145, 0.54);
@@ -769,6 +782,7 @@
     --email-meta-text-colour: #2d6a92;
     --email-content-text-colour: #123049;
     --email-value-text-colour: #0d2030;
+    --email-signature-sep-colour: rgba(13, 32, 48, 0.2);
 
     --email-action-bg: rgba(145, 200, 255, 0.26);
     --email-action-bg-hover: rgba(95, 175, 255, 0.42);
@@ -795,6 +809,7 @@
     --email-meta-text-colour: #84c7ff;
     --email-content-text-colour: #bfe3ff;
     --email-value-text-colour: #d1ecff;
+    --email-signature-sep-colour: rgba(209, 236, 255, 0.2);
 
     --email-action-bg: rgba(50, 120, 190, 0.3);
     --email-action-bg-hover: rgba(65, 145, 225, 0.5);
@@ -822,6 +837,7 @@
     --email-meta-text-colour: #8a4a2b;
     --email-content-text-colour: #3b1f12;
     --email-value-text-colour: #2b160c;
+    --email-signature-sep-colour: rgba(43, 22, 12, 0.2);
 
     --email-action-bg: rgba(255, 175, 130, 0.28);
     --email-action-bg-hover: rgba(255, 140, 90, 0.44);
@@ -848,6 +864,7 @@
     --email-meta-text-colour: #f0b08f;
     --email-content-text-colour: #ffd0b8;
     --email-value-text-colour: #ffe0cf;
+    --email-signature-sep-colour: rgba(255, 224, 207, 0.2);
 
     --email-action-bg: rgba(170, 80, 40, 0.34);
     --email-action-bg-hover: rgba(205, 95, 45, 0.54);
@@ -875,6 +892,7 @@
     --email-meta-text-colour: #3f6b2e;
     --email-content-text-colour: #1b3314;
     --email-value-text-colour: #14230f;
+    --email-signature-sep-colour: rgba(20, 35, 15, 0.2);
 
     --email-action-bg: rgba(140, 210, 90, 0.26);
     --email-action-bg-hover: rgba(255, 170, 70, 0.36);
@@ -901,6 +919,7 @@
     --email-meta-text-colour: #99c88b;
     --email-content-text-colour: #c9e8bf;
     --email-value-text-colour: #d8f1cf;
+    --email-signature-sep-colour: rgba(216, 241, 207, 0.2);
 
     --email-action-bg: rgba(75, 110, 55, 0.34);
     --email-action-bg-hover: rgba(120, 85, 50, 0.52);
