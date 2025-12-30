@@ -245,7 +245,6 @@ export async function replaceEmails(htmlContent, cssHref = "../styles/email.css"
                     <button class="email-action" data-email-action="reply">↩️</button>
                     <button class="email-action" data-email-action="forward">➡️</button>
                     <button class="email-action" data-email-action="flag">🚩</button>
-                    <button class="email-action" data-email-action="mark-unread">✉️</button>
                     <button class="email-action" data-email-action="archive">🗄️</button>
                     <button class="email-action" data-email-action="delete">🗑️</button>
                 </div>
