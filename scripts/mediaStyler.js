@@ -20,7 +20,7 @@ function getTheme(addr) {
     return "";
 }
 
-function esc(s) {
+export function esc(s) {
     return (s || "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -29,7 +29,7 @@ function esc(s) {
         .replaceAll("'", "&#39;");
 }
 
-function serialiseMixedContent(node, esc) {
+export function serialiseMixedContent(node, esc) {
     return Array.from(node.childNodes)
         .map(n => {
             if (n.nodeType === 3) return esc(n.textContent || "");
