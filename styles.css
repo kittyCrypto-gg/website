@@ -100,7 +100,7 @@
   --edit-modal-btn-cancel-hover-colour: #b71c1c;
 
   /* Tooltips */
-  --tooltip-bg-colour: var(--frame-bg-colour);
+  --tooltip-bg-colour: rgba(var(--frame-bg-colour-rgb), 1);
   --tooltip-text-colour: var(--body-text-colour);
   --tooltip-border-colour: var(--nav-border-colour);
   --tooltip-shadow: var(--frame-box-shadow);
@@ -293,7 +293,7 @@ header {
   font-size: 0.95em;
   line-height: 1.4;
 
-  opacity: 0;
+  transform: translateX(-50%) translateY(6px) scale(0.98);
   pointer-events: none;
   visibility: hidden;
 
@@ -308,7 +308,7 @@ header {
 /* Show tooltip */
 .tooltip.show .tooltip-content,
 .tooltip:hover .tooltip-content {
-  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
   visibility: visible;
   transform: translateX(-50%) translateY(0);
   pointer-events: auto;
