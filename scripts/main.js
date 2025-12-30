@@ -10,8 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
     await setupTerminalWindow();
     await scaleBannerToFit();
     await new Promise(resolve => {
-      document.getElementById('terminal-loading')?.style.setProperty('display', 'none');
-      window.addEventListener('resize', () => scaleBannerToFit());
+      document.getElementById("terminal-loading")?.style.setProperty("display", "none");
+      window.addEventListener("resize", () => scaleBannerToFit());
       console.log("Banner loaded successfully");
       resolve();
     });
@@ -19,39 +19,33 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 let currentTheme = null;
-// Function to get a cookie value
+
 const getCookie = (name) => {
   const cookies = document.cookie.split("; ");
   const cookie = cookies.find(row => row.startsWith(`${name}=`));
   return cookie ? cookie.split("=")[1] : null;
 };
 
-// Function to set a cookie
 const setCookie = (name, value, days = 365) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${value}; expires=${expires}; path=/`;
 };
 
-// Function to delete a cookie
 const deleteCookie = (name) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
 };
 
-// Force page reflow to ensure theme change is immediately reflected
 const repaint = () => {
   void document.body.offsetHeight;
 };
 
-// Load JSON file for UI elements
 async function initialiseUI() {
   try {
-    // Load JSON file for UI elements
-    const response = await fetch('scripts/main.json');
+    const response = await fetch("scripts/main.json");
     if (!response.ok)
       throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    // Inject any scripts defined in main.json into <head>
     if (data.headScripts) {
       data.headScripts.forEach(scriptSrc => {
         const script = document.createElement("script");
@@ -61,107 +55,102 @@ async function initialiseUI() {
       });
     }
 
-    // Populate the menu
-    const menu = document.getElementById('main-menu');
-    if (!menu) throw new Error('Element #main-menu not found!');
+    const menu = document.getElementById("main-menu");
+    if (!menu) throw new Error("Element #main-menu not found!");
     for (const [text, link] of Object.entries(data.mainMenu)) {
-      const button = document.createElement('a');
+      const button = document.createElement("a");
       button.href = link;
       button.textContent = text;
-      button.classList.add('menu-button');
+      button.classList.add("menu-button");
       menu.appendChild(button);
     }
 
-    // Populate the header
-    const header = document.getElementById('main-header');
-    if (!header) throw new Error('Element #main-header not found!');
+    const header = document.getElementById("main-header");
+    if (!header) throw new Error("Element #main-header not found!");
     if (!header.textContent.trim())
       header.textContent = data.header;
 
-    // Populate the footer
-    const footer = document.getElementById('main-footer');
-    if (!footer) throw new Error('Element #main-footer not found!');
+    const footer = document.getElementById("main-footer");
+    if (!footer) throw new Error("Element #main-footer not found!");
     const currentYear = new Date().getFullYear();
-    footer.textContent = data.footer.replace('${year}', currentYear);
+    footer.textContent = data.footer.replace("${year}", currentYear);
 
-    // Theme Toggle Button
     const themeToggle = document.createElement("button");
     themeToggle.id = "theme-toggle";
     themeToggle.classList.add("theme-toggle-button");
     document.body.appendChild(themeToggle);
 
-    // Theme application helpers
-    const applyLightTheme = () => {
-      document.documentElement.classList.remove("dark-mode");
-      document.documentElement.classList.add("light-mode");
-      themeToggle.textContent = data.themeToggle.light;
-      setCookie("darkMode", "false");
+    const applyTheme = (theme, persist = false) => {
+      document.documentElement.classList.toggle("dark-mode", theme === "dark");
+      document.documentElement.classList.toggle("light-mode", theme === "light");
+      themeToggle.textContent =
+        theme === "dark" ? data.themeToggle.dark : data.themeToggle.light;
+      currentTheme = theme;
+      if (persist)
+        setCookie("darkMode", theme === "dark" ? "true" : "false");
       repaint();
-      currentTheme = 'light';
-      console.log("Applied light theme");
-    };
-    const applyDarkTheme = () => {
-      document.documentElement.classList.remove("light-mode");
-      document.documentElement.classList.add("dark-mode");
-      themeToggle.textContent = data.themeToggle.dark;
-      setCookie("darkMode", "true");
-      repaint();
-      currentTheme = 'dark';
-      console.log("Applied dark theme");
     };
 
-    // Set initial theme
-    getCookie("darkMode") === "true" ? applyDarkTheme() : applyLightTheme();
+    const cookieDark = getCookie("darkMode");
+    const osDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 
-    // Theme toggle event (concise & robust)
+    if (cookieDark !== null)
+      applyTheme(cookieDark === "true" ? "dark" : "light");
+    else
+      applyTheme(osDark ? "dark" : "light");
+
     themeToggle.addEventListener("click", () => {
-      const isDark = currentTheme
-        ? currentTheme === 'dark'
-        : document.documentElement.classList.contains("dark-mode");
-      isDark ? applyLightTheme() : applyDarkTheme();
+      applyTheme(currentTheme === "dark" ? "light" : "dark", true);
     });
 
     themeToggle.title = data.themeToggle.title || "Theme";
 
-    if (!document.location.pathname.includes("reader.html")) return; // Only run if on reader page
+    if (window.matchMedia) {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      mq.addEventListener("change", e => {
+        const osTheme = e.matches ? "dark" : "light";
+        if (currentTheme !== osTheme)
+          applyTheme(osTheme, false);
+      });
+    }
+
+    if (!document.location.pathname.includes("reader.html")) return;
 
     const readerToggle = document.createElement("button");
     readerToggle.id = "reader-toggle";
     readerToggle.classList.add("theme-toggle-button");
-    readerToggle.style.bottom = `80px`;
+    readerToggle.style.bottom = "80px";
     readerToggle.textContent = data.readerModeToggle.enable;
-    readerToggle.setAttribute('data-enable', data.readerModeToggle.enable);
-    readerToggle.setAttribute('data-disable', data.readerModeToggle.disable);
+    readerToggle.setAttribute("data-enable", data.readerModeToggle.enable);
+    readerToggle.setAttribute("data-disable", data.readerModeToggle.disable);
     readerToggle.title = data.readerModeToggle.title || "Reader Mode";
     document.body.appendChild(readerToggle);
 
     await setupReaderToggle();
 
-    // Read aloud toggle button
     const readAloudToggle = document.createElement("button");
     readAloudToggle.id = "read-aloud-toggle";
     readAloudToggle.classList.add("theme-toggle-button");
-    readAloudToggle.style.bottom = `140px`;
+    readAloudToggle.style.bottom = "140px";
     readAloudToggle.textContent = data.readAloudToggle.enable;
-    readAloudToggle.setAttribute('data-enable', data.readAloudToggle.enable);
-    readAloudToggle.setAttribute('data-disable', data.readAloudToggle.disable);
+    readAloudToggle.setAttribute("data-enable", data.readAloudToggle.enable);
+    readAloudToggle.setAttribute("data-disable", data.readAloudToggle.disable);
     readAloudToggle.title = data.readAloudToggle.title || "Read Aloud";
     document.body.appendChild(readAloudToggle);
 
-    if (readAloudToggle) readAloudToggle.addEventListener('click', showReadAloudMenu);
+    if (readAloudToggle)
+      readAloudToggle.addEventListener("click", showReadAloudMenu);
 
     const params = new URLSearchParams(window.location.search);
 
-    if (params.has("darkmode") && params.get("darkmode").toLowerCase() === "true")
-      applyDarkTheme();
-    else if (params.has("darkmode") && params.get("darkmode").toLowerCase() === "false")
-      applyLightTheme();
-    else
-      getCookie("darkMode") === "true" ? applyDarkTheme() : applyLightTheme();
-
+    if (params.has("darkmode")) {
+      const v = params.get("darkmode").toLowerCase();
+      if (v === "true") applyTheme("dark", true);
+      if (v === "false") applyTheme("light", true);
+    }
 
   } catch (error) {
-    console.error('Error loading JSON or updating DOM:', error);
+    console.error("Error loading JSON or updating DOM:", error);
   }
 }
 
