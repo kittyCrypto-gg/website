@@ -11,7 +11,7 @@
   /* Frame */
   --frame-bg-colour: #ffffff;
   --frame-bg-colour-rgb: 255, 255, 255;
-  
+
 
   --frame-width: 95%;
   --frame-border-light: transparent;
@@ -98,7 +98,22 @@
   --edit-modal-btn-cancel-bg-colour: #d32f2f;
   /* Light theme red */
   --edit-modal-btn-cancel-hover-colour: #b71c1c;
+
+  /* Tooltips */
+  --tooltip-bg-colour: var(--frame-bg-colour);
+  --tooltip-text-colour: var(--body-text-colour);
+  --tooltip-border-colour: var(--nav-border-colour);
+  --tooltip-shadow: var(--frame-box-shadow);
+
+  --tooltip-padding: 10px 14px;
+  --tooltip-radius: 8px;
+  --tooltip-max-width: 280px;
+
+  --tooltip-z-index: 3000;
+  --tooltip-fade-duration: 0.18s;
 }
+
+
 
 .kitty-intro,
 .comments-container,
@@ -248,13 +263,106 @@ header {
 }
 
 /* =========================================
+  Tooltip Styles
+========================================= */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-trigger {
+  cursor: help;
+}
+
+.tooltip-content {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px);
+
+  background-color: var(--tooltip-bg-colour);
+  color: var(--tooltip-text-colour);
+  border: 1px solid var(--tooltip-border-colour);
+  border-radius: var(--tooltip-radius);
+  box-shadow: var(--tooltip-shadow);
+
+  padding: var(--tooltip-padding);
+  max-width: var(--tooltip-max-width);
+  width: max-content;
+
+  font-size: 0.95em;
+  line-height: 1.4;
+
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+
+  z-index: var(--tooltip-z-index);
+
+  transition:
+    opacity var(--tooltip-fade-duration) ease,
+    transform var(--tooltip-fade-duration) ease,
+    visibility var(--tooltip-fade-duration) ease;
+}
+
+/* Show tooltip */
+.tooltip.show .tooltip-content,
+.tooltip:hover .tooltip-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  border-width: 6px;
+  border-style: solid;
+  border-color:
+    var(--tooltip-bg-colour) transparent transparent transparent;
+}
+
+.tooltip-content b {
+  font-weight: 600;
+}
+
+.tooltip-content i {
+  font-style: italic;
+}
+
+.tooltip-content a {
+  color: var(--menu-button-text-colour);
+  text-decoration: underline;
+}
+
+.tooltip-content a:hover {
+  color: var(--banner-blue);
+}
+
+.tooltip-trigger:focus {
+  outline: none;
+}
+
+.tooltip-trigger:focus-visible {
+  outline: 2px solid var(--menu-button-hover-bg-colour);
+  outline-offset: 2px;
+}
+
+
+/* =========================================
   Banner
 ========================================= */
 
 #banner {
   font-family: "Courier New", Courier, "Lucida Console", monospace;
   font-size: 11px;
-  line-height: 10px; /* Tighter than font-size */
+  line-height: 10px;
+  /* Tighter than font-size */
   white-space: pre;
   background: var(--banner-background);
   color: var(--banner-text-main);
@@ -270,10 +378,12 @@ header {
 }
 
 @keyframes blink {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }
@@ -380,13 +490,11 @@ header {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 255, 255, 0.02),
-    rgba(0, 255, 255, 0.02) 1px,
-    transparent 1px,
-    transparent 2px
-  );
+  background: repeating-linear-gradient(to bottom,
+      rgba(0, 255, 255, 0.02),
+      rgba(0, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 2px);
 }
 
 .banner-scaler {
@@ -431,11 +539,13 @@ header {
   border: 1px solid rgba(0, 0, 0, 0.3);
   display: inline-block;
   position: relative;
-  overflow: hidden; /* no scroll here */
+  overflow: hidden;
+  /* no scroll here */
 }
 
 #terminal-scroll {
-  max-height: 600px; /* or any max you prefer */
+  max-height: 600px;
+  /* or any max you prefer */
   overflow-y: auto;
   overflow-x: auto;
   padding: 0.5rem;
@@ -455,6 +565,7 @@ header {
   z-index: 1;
   user-select: none;
 }
+
 #terminal-wrapper {
   padding: 0.5rem;
 }
@@ -516,17 +627,20 @@ header {
 /* Specific hover symbols and colours */
 .window-controls .btn.close::after {
   content: "×";
-  color: #8b0000; /* Dark red */
+  color: #8b0000;
+  /* Dark red */
 }
 
 .window-controls .btn.toggle-view::after {
   content: "–";
-  color: #b8860b; /* Mustard / dark goldenrod */
+  color: #b8860b;
+  /* Mustard / dark goldenrod */
 }
 
 .window-controls .btn.float::after {
   content: "+";
-  color: #006400; /* Dark green */
+  color: #006400;
+  /* Dark green */
 }
 
 .hidden {
@@ -711,7 +825,7 @@ footer {
   flex-direction: column;
 }
 
-.frame-chat > .frame-content {
+.frame-chat>.frame-content {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1435,7 +1549,7 @@ body.dark-mode .tategaki-container svg text {
 }
 
 /* Show the overlay when the image is zoomed */
-.chapter-image.active + .image-nav {
+.chapter-image.active+.image-nav {
   display: flex;
   opacity: 1;
 }
@@ -1890,7 +2004,7 @@ body.dark-mode .tategaki-container svg text {
   text-align: left;
 }
 
-.commits-wrapper > .comments-header {
+.commits-wrapper>.comments-header {
   width: 100%;
   display: block;
   text-align: left;
@@ -2150,10 +2264,12 @@ body.dark-mode .tategaki-container svg text {
 }
 
 @keyframes blinkOpen {
+
   0%,
   83.33% {
     opacity: 1;
   }
+
   83.34%,
   100% {
     opacity: 0;
@@ -2161,10 +2277,12 @@ body.dark-mode .tategaki-container svg text {
 }
 
 @keyframes blinkClosed {
+
   0%,
   83.33% {
     opacity: 0;
   }
+
   83.34%,
   100% {
     opacity: 1;
@@ -2200,7 +2318,8 @@ body.dark-mode .tategaki-container svg text {
   max-height: none;
   scroll-behavior: smooth;
 }
-.rss-scroll-2 > .blog-container {
+
+.rss-scroll-2>.blog-container {
   display: flex;
   flex-direction: column;
   gap: 0px;
@@ -2263,6 +2382,7 @@ body.dark-mode .tategaki-container svg text {
   max-height: 0 !important;
   overflow: hidden;
 }
+
 .rss-post-content.content-expanded {
   overflow: visible;
 }
@@ -2306,6 +2426,7 @@ body.dark-mode .tategaki-container svg text {
 .rss-post-block:nth-child(even) {
   background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
 }
+
 .dark-mode .rss-post-block:nth-child(even) {
   background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
 }
@@ -2449,7 +2570,7 @@ body.reader-mode article#reader .chapter-image {
   border: none !important;
 }
 
-body.reader-mode .chapter-image.active + .image-nav {
+body.reader-mode .chapter-image.active+.image-nav {
   position: absolute;
   bottom: 15px;
   right: 15px;
@@ -2459,7 +2580,7 @@ body.reader-mode .chapter-image.active + .image-nav {
   opacity: 1;
 }
 
-body.reader-mode .chapter-image.active + .image-nav button {
+body.reader-mode .chapter-image.active+.image-nav button {
   font-size: 2.5rem;
   min-width: 40px;
   min-height: 40px;
@@ -2497,11 +2618,13 @@ body.reader-mode {
   cursor: grab;
   transition: box-shadow 0.25s, background 0.25s, color 0.25s, opacity 0.2s, left 0.2s, top 0.2s;
 }
+
 #read-aloud-menu.dragging {
   opacity: 0.92;
   cursor: grabbing;
-  box-shadow: 0 6px 22px rgba(0,0,0,0.25), var(--frame-box-shadow);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.25), var(--frame-box-shadow);
 }
+
 .read-aloud-close-button {
   position: absolute;
   top: 12px;
@@ -2513,7 +2636,11 @@ body.reader-mode {
   transition: transform 0.2s ease;
   z-index: 3000;
 }
-.read-aloud-close-button:hover { transform: scale(1.2); }
+
+.read-aloud-close-button:hover {
+  transform: scale(1.2);
+}
+
 #read-aloud-menu .read-aloud-header {
   display: flex;
   align-items: center;
@@ -2526,6 +2653,7 @@ body.reader-mode {
   cursor: grab;
   user-select: none;
 }
+
 /* Controls group */
 #read-aloud-menu .read-aloud-controls {
   display: inline-flex;
@@ -2534,6 +2662,7 @@ body.reader-mode {
   width: auto;
   gap: 0;
 }
+
 #read-aloud-menu .read-aloud-fields,
 #read-aloud-menu .read-aloud-buttons {
   display: flex;
@@ -2543,7 +2672,11 @@ body.reader-mode {
   align-items: center;
   justify-content: center;
 }
-#read-aloud-menu .read-aloud-fields { margin-bottom: 10px; }
+
+#read-aloud-menu .read-aloud-fields {
+  margin-bottom: 10px;
+}
+
 #read-aloud-menu input,
 #read-aloud-menu select {
   flex: 1 1 0;
@@ -2558,10 +2691,12 @@ body.reader-mode {
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
+
 #read-aloud-menu input[type="text"]:focus,
 #read-aloud-menu select:focus {
   border-color: var(--menu-button-hover-bg-colour);
 }
+
 /* Buttons shared rules */
 #read-aloud-menu .read-aloud-controls button,
 #read-aloud-menu .read-aloud-buttons button,
@@ -2585,8 +2720,9 @@ body.reader-mode {
   user-select: none;
   transition: background 0.2s, transform 0.18s;
   outline: none !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
+
 #read-aloud-menu .read-aloud-controls button:active,
 #read-aloud-menu .read-aloud-controls button:focus,
 #read-aloud-menu .read-aloud-buttons button:active,
@@ -2597,10 +2733,12 @@ body.reader-mode {
   border: none !important;
   outline: none !important;
 }
+
 #read-aloud-menu button:hover {
   background: var(--menu-button-hover-bg-colour);
   transform: scale(1.08);
 }
+
 #read-aloud-menu #read-aloud-status {
   flex: 1;
   font-size: 0.98em;
@@ -2608,37 +2746,44 @@ body.reader-mode {
   color: var(--header-text-colour);
   min-width: 50px;
 }
+
 #read-aloud-menu .read-aloud-actions {
   display: flex;
   align-items: center;
   gap: 7px;
   margin-top: 6px;
 }
+
 /* highlighted text */
 .reader-bookmark.read-aloud-active {
   background: #b388ff !important;
-  transition: background 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s;
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
   opacity: 1 !important;
 }
+
 .reader-bookmark.read-aloud-fadeout {
   opacity: 0 !important;
   transition: opacity 0.6s;
 }
+
 /* Dark mode */
 body.dark .reader-bookmark.read-aloud-active,
 .dark .reader-bookmark.read-aloud-active {
   background: #e1bfff !important;
 }
+
 body.dark .reader-bookmark.read-aloud-fadeout,
 .dark .reader-bookmark.read-aloud-fadeout {
   opacity: 0 !important;
 }
+
 #read-aloud-menu a,
 .dark-mode #read-aloud-menu a {
   color: var(--menu-button-text-colour);
   text-decoration: underline;
   transition: color 0.2s;
 }
+
 #read-aloud-menu a:hover,
 #read-aloud-menu a:focus {
   color: var(--banner-blue);
@@ -2684,6 +2829,7 @@ body.dark .reader-bookmark.read-aloud-fadeout,
   box-shadow: 0 -4px 14px 0 rgba(0, 0, 0, 0.6);
   transition: opacity 0.2s;
 }
+
 .debug.visible {
   visibility: visible;
   pointer-events: auto;

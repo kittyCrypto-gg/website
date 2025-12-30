@@ -1,5 +1,5 @@
 import { replaceTategaki } from './tategaki.js';
-import { replaceSmsMessages, replaceEmails, inlineSvgs } from "./mediaStyler.js";
+import { replaceSmsMessages, replaceEmails, replaceSVGs, replaceTooltips, bindEmailActions } from "./mediaStyler.js";
 
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
@@ -309,11 +309,12 @@ async function loadChapter(n) {
     htmlContent = await replaceSmsMessages(htmlContent);
     htmlContent = await replaceTategaki(htmlContent);
     htmlContent = await replaceImageTags(htmlContent);
+    htmlContent = await replaceTooltips(htmlContent);
     htmlContent = await injectBookmarksIntoHTML(htmlContent, base, window.chapter);
 
     // Render the HTML
     window.readerRoot.innerHTML = htmlContent;
-    await inlineSvgs(window.readerRoot);
+    await replaceSVGs(window.readerRoot);
 
     // Start tracking scroll progress
     observeAndSaveBookmarkProgress(document);
@@ -768,6 +769,7 @@ function initiateReader() {
     restoreLastStoryRead();
     initReader();
     activateImageNavigation(document);
+    bindEmailActions();
   });
 
   document.addEventListener("click", (e) => {
@@ -908,7 +910,7 @@ async function renderXmlDoc(xmlDoc, opts) {
   }
 
   window.readerRoot.innerHTML = htmlContent;
-  await inlineSvgs(window.readerRoot);
+  await replaceSVGs(window.readerRoot);
 
   observeAndSaveBookmarkProgress(document);
   activateImageNavigation(document);

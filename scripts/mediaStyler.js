@@ -1,51 +1,3 @@
-export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
-    const hasCss =
-        Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
-        document.querySelector(`link[rel="stylesheet"][href="${cssHref}"]`);
-
-    if (!hasCss) {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = cssHref;
-        document.head.appendChild(link);
-    }
-
-    const esc = (s) =>
-        (s || "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#39;");
-
-    const get = (doc, tag) => (doc.querySelector(tag)?.textContent || "").trim();
-
-    const re = /<message\b[^>]*\btype=["'](in|out)["'][^>]*>[\s\S]*?<\/message>/gi;
-
-    return htmlContent.replace(re, (block, typeRaw) => {
-        const type = (typeRaw || "").trim().toLowerCase();
-        if (type !== "in" && type !== "out") return block;
-
-        const doc = new DOMParser().parseFromString(`<root>${block}</root>`, "application/xml");
-        const msg = doc.querySelector("message");
-        if (!msg) return block;
-
-        const nickname = esc(get(msg, "nickname"));
-        const content = esc(get(msg, "content"));
-        const timestamp = esc(get(msg, "timestamp"));
-
-        return `
-            <div class="message-wrapper ${type} show">
-                <div class="message ${type}">
-                    <div class="nickname-strip">${nickname}</div>
-                    <div class="message-text">${content}</div>
-                    <div class="timestamp ${type}">${timestamp}</div>
-                </div>
-            </div>
-        `;
-    });
-}
-
 const themes = {};
 
 async function loadThemes(url = "../styles/themes.json") {
@@ -58,7 +10,37 @@ async function loadThemes(url = "../styles/themes.json") {
     for (const [key, value] of Object.entries(data)) themes[key] = value;
 }
 
-function renderSignatureFromXml(sig, esc) {
+function getTheme(addr) {
+    const a = addr.toLowerCase();
+    for (const [theme, addrs] of Object.entries(themes)) {
+        if (addrs.some(x => x.toLowerCase() === a)) {
+            return theme;
+        }
+    }
+    return "";
+}
+
+function esc(s) {
+    return (s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function hassCss(cssHref) {
+    return (
+        Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
+        document.querySelector(`link[rel="stylesheet"][href="${cssHref}"]`)
+    );
+}
+
+function getText(node, tag) {
+    return (node.querySelector(tag)?.textContent || "").trim();
+}
+
+function parseSignature(sig, esc) {
     const t = (q) => (sig.querySelector(q)?.textContent || "").trim();
 
     const name = esc(t("name"));
@@ -131,22 +113,45 @@ function renderSignatureFromXml(sig, esc) {
     `;
 }
 
-function getThemeForEmail(addr) {
-    const a = addr.toLowerCase();
-    for (const [theme, addrs] of Object.entries(themes)) {
-        if (addrs.some(x => x.toLowerCase() === a)) {
-            return theme;
-        }
+export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
+
+    if (!hassCss(cssHref)) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = cssHref;
+        document.head.appendChild(link);
     }
-    return "";
+
+    const raw = (doc, tag) => getText(doc, tag);
+
+    const re = /<message\b[^>]*\btype=["'](in|out)["'][^>]*>[\s\S]*?<\/message>/gi;
+
+    return htmlContent.replace(re, (block, typeRaw) => {
+        const type = (typeRaw || "").trim().toLowerCase();
+        if (type !== "in" && type !== "out") return block;
+
+        const doc = new DOMParser().parseFromString(`<root>${block}</root>`, "application/xml");
+        const msg = doc.querySelector("message");
+        if (!msg) return block;
+
+        const nickname = esc(raw(msg, "nickname"));
+        const content = esc(raw(msg, "content"));
+        const timestamp = esc(raw(msg, "timestamp"));
+
+        return `
+            <div class="message-wrapper ${type} show">
+                <div class="message ${type}">
+                    <div class="nickname-strip">${nickname}</div>
+                    <div class="message-text">${content}</div>
+                    <div class="timestamp ${type}">${timestamp}</div>
+                </div>
+            </div>
+        `;
+    });
 }
 
 export async function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
-    const hasCss =
-        Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
-        document.querySelector(`link[rel="stylesheet"][href="${cssHref}"]`);
-
-    if (!hasCss) {
+    if (!hassCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = cssHref;
@@ -161,15 +166,7 @@ export async function replaceEmails(htmlContent, cssHref = "../styles/email.css"
         }
     }
 
-    const esc = (s) =>
-        (s || "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#39;");
-
-    const getText = (node, tag) => (node.querySelector(tag)?.textContent || "").trim();
+    const raw = (doc, tag) => getText(doc, tag);
 
     const buildContentHtml = (emailNode) => {
         const contentEl = emailNode.querySelector("content");
@@ -181,7 +178,7 @@ export async function replaceEmails(htmlContent, cssHref = "../styles/email.css"
             .map((n) => {
                 if (n.nodeType === 1) {
                     const tag = n.tagName.toLowerCase();
-                    if (tag === "signature") return renderSignatureFromXml(n, esc);
+                    if (tag === "signature") return parseSignature(n, esc);
                     return serialise(n);
                 }
                 if (n.nodeType === 3) return esc(n.textContent || "");
@@ -200,16 +197,16 @@ export async function replaceEmails(htmlContent, cssHref = "../styles/email.css"
         const from = email.querySelector("from");
         const to = email.querySelector("to");
 
-        const fromName = esc(from ? getText(from, "name") : "");
-        const fromAddr = esc(from ? getText(from, "addr") : "");
-        const toName = esc(to ? getText(to, "name") : "");
-        const toAddr = esc(to ? getText(to, "addr") : "");
+        const fromName = esc(from ? raw(from, "name") : "");
+        const fromAddr = esc(from ? raw(from, "addr") : "");
+        const toName = esc(to ? raw(to, "name") : "");
+        const toAddr = esc(to ? raw(to, "addr") : "");
 
-        const themeClass = getThemeForEmail(toAddr);
+        const themeClass = getTheme(toAddr);
 
-        const recipientIp = getText(email, "toIp") || "";
-        const timestamp = esc(getText(email, "timestamp"));
-        const subject = esc(getText(email, "subject"));
+        const recipientIp = raw(email, "toIp") || "";
+        const timestamp = esc(raw(email, "timestamp"));
+        const subject = esc(raw(email, "subject"));
 
         const contentHtml = buildContentHtml(email);
 
@@ -258,7 +255,7 @@ export async function replaceEmails(htmlContent, cssHref = "../styles/email.css"
     });
 }
 
-export async function inlineSvgs(root = document) {
+export async function replaceSVGs(root = document) {
     if (typeof root === "string") {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = root;
@@ -305,7 +302,55 @@ export async function inlineSvgs(root = document) {
     }
 }
 
-function bindEmailActions() {
+export async function replaceTooltips(htmlContent) {
+    const re = /<tooltip\b[^>]*>[\s\S]*?<\/tooltip>/gi;
+
+    const serialise = (n) =>
+        n.nodeType === 3
+            ? esc(n.textContent || "")
+            : n.nodeType === 1
+                ? new XMLSerializer().serializeToString(n)
+                : "";
+
+    return htmlContent.replace(re, (block) => {
+        const doc = new DOMParser().parseFromString(
+            `<root>${block}</root>`,
+            "application/xml"
+        );
+
+        const tooltip = doc.querySelector("tooltip");
+        if (!tooltip) return block;
+
+        const contentEl = Array.from(tooltip.children)
+            .find(n => n.tagName.toLowerCase() === "content");
+        if (!contentEl) return block;
+
+        const isHtml = contentEl.hasAttribute("html");
+
+        const triggerHtml = Array.from(tooltip.childNodes)
+            .filter(n => n !== contentEl)
+            .map(serialise)
+            .join("")
+            .trim();
+
+        if (!triggerHtml) return block;
+
+        const contentHtml = isHtml
+            ? Array.from(contentEl.childNodes)
+                .map(n => new XMLSerializer().serializeToString(n))
+                .join("")
+            : esc(contentEl.textContent || "");
+
+        return `
+            <span class="tooltip">
+                <span class="tooltip-trigger">${triggerHtml}</span>
+                <span class="tooltip-content">${contentHtml}</span>
+            </span>
+        `;
+    });
+}
+
+export function bindEmailActions() {
     document.addEventListener("click", (e) => {
         const button = e.target.closest(".email-action");
         if (!button) return;
@@ -330,5 +375,3 @@ function bindEmailActions() {
         console.log(`WTH! Who are you?! You performed the email action: ${action}`);
     });
 }
-
-bindEmailActions();
