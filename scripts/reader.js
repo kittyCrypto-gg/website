@@ -305,11 +305,12 @@ async function loadChapter(n) {
     }).join("\n");
 
     // Process Special Tags
+    htmlContent = await replaceTooltips(htmlContent);
     htmlContent = await replaceEmails(htmlContent);
     htmlContent = await replaceSmsMessages(htmlContent);
     htmlContent = await replaceTategaki(htmlContent);
     htmlContent = await replaceImageTags(htmlContent);
-    htmlContent = await replaceTooltips(htmlContent);
+    
     htmlContent = await injectBookmarksIntoHTML(htmlContent, base, window.chapter);
 
     // Render the HTML
