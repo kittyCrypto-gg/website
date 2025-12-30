@@ -177,7 +177,7 @@ class ReaderToggle {
 		const parser = new DOMParser();
 		const parsedDoc = parser.parseFromString(parsed.content, "text/html");
 
-		let htmlContent = Reader.injectBookmarksIntoHTML(parsedDoc.body.innerHTML, storyPath, chapter);
+		let htmlContent = await Reader.injectBookmarksIntoHTML(parsedDoc.body.innerHTML, storyPath, chapter);
 
 		articleElem.innerHTML = htmlContent;
 
