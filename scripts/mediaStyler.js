@@ -29,7 +29,7 @@ function esc(s) {
         .replaceAll("'", "&#39;");
 }
 
-export function serialiseMixedContent(node, esc) {
+function serialiseMixedContent(node, esc = (x) => x) {
     return Array.from(node.childNodes)
         .map(n => {
             if (n.nodeType === 3) return esc(n.textContent || "");
