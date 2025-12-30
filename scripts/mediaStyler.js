@@ -20,7 +20,7 @@ function getTheme(addr) {
     return "";
 }
 
-export function esc(s) {
+function esc(s) {
     return (s || "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
