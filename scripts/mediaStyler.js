@@ -29,7 +29,7 @@ function esc(s) {
         .replaceAll("'", "&#39;");
 }
 
-function serialiseMixedContent(node, esc = esc) {
+function serialiseMixedContent(node) {
     return Array.from(node.childNodes)
         .map(n => {
             if (n.nodeType === 3) return esc(n.textContent || "");
@@ -53,7 +53,7 @@ function getText(node, tag) {
 
 function mapRichContent(root, selector, esc) {
     return Array.from(root.querySelectorAll(selector))
-        .map(n => serialiseMixedContent(n, esc))
+        .map(n => serialiseMixedContent(n))
         .filter(Boolean);
 }
 
@@ -147,7 +147,7 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
 
         const contentNode = msg.querySelector("content");
         const content = contentNode
-            ? serialiseMixedContent(contentNode, esc)
+            ? serialiseMixedContent(contentNode)
             : "";
 
         const timestamp = esc(raw(msg, "timestamp"));
