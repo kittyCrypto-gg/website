@@ -29,6 +29,17 @@ function esc(s) {
         .replaceAll("'", "&#39;");
 }
 
+function serialiseMixedContent(node, esc) {
+    return Array.from(node.childNodes)
+        .map(n => {
+            if (n.nodeType === 3) return esc(n.textContent || "");
+            if (n.nodeType === 1) return n.outerHTML;
+            return "";
+        })
+        .join("")
+        .trim();
+}
+
 function hassCss(cssHref) {
     return (
         Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
@@ -40,6 +51,12 @@ function getText(node, tag) {
     return (node.querySelector(tag)?.textContent || "").trim();
 }
 
+function mapRichContent(root, selector, esc) {
+    return Array.from(root.querySelectorAll(selector))
+        .map(n => serialiseMixedContent(n, esc))
+        .filter(Boolean);
+}
+
 function parseSignature(sig, esc) {
     const t = (q) => (sig.querySelector(q)?.textContent || "").trim();
 
@@ -48,27 +65,20 @@ function parseSignature(sig, esc) {
     const address = esc(t("address"));
     const telephone = esc(t("telephone"));
     const emailAddress = esc(t("emailAddress"));
-
-    // Do not text-escape URLs
     const logo = (t("logo") || "").trim();
 
-    const positions = Array.from(sig.querySelectorAll("position"))
-        .map(p => esc((p.textContent || "").trim()))
-        .filter(Boolean);
-
-    const disclaimers = Array.from(sig.querySelectorAll("disclaimer"))
-        .map(d => esc((d.textContent || "").trim()))
-        .filter(Boolean);
+    const positions = mapRichContent(sig, "position", esc);
+    const disclaimers = mapRichContent(sig, "disclaimer", esc);
 
     const hasAny =
         name ||
-        positions.length > 0 ||
+        positions.length ||
         company ||
         address ||
         telephone ||
         emailAddress ||
         logo ||
-        disclaimers.length > 0;
+        disclaimers.length;
 
     if (!hasAny) return "";
 
@@ -76,9 +86,9 @@ function parseSignature(sig, esc) {
         ? `
             <div class="email-signature-logo">
                 <img
-                src="${logo}"
-                alt="${company || "Company logo"}"
-                class="email-signature-logo-img"
+                    src="${logo}"
+                    alt="${company || "Company logo"}"
+                    class="email-signature-logo-img"
                 />
             </div>
         `
@@ -90,7 +100,7 @@ function parseSignature(sig, esc) {
         company && `<span class="email-signature-company">${company}</span>`,
         address && `<span class="email-signature-address">${address}</span>`,
         telephone && `<span class="email-signature-telephone">Tel: ${telephone}</span>`,
-        emailAddress && `<span class="email-signature-email">Email: ${emailAddress}</span>`,
+        emailAddress && `<span class="email-signature-email">Email: ${emailAddress}</span>`
     ].filter(Boolean);
 
     const disclaimerHtml = disclaimers.length
@@ -114,7 +124,6 @@ function parseSignature(sig, esc) {
 }
 
 export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
-
     if (!hassCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -135,7 +144,12 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
         if (!msg) return block;
 
         const nickname = esc(raw(msg, "nickname"));
-        const content = esc(raw(msg, "content"));
+
+        const contentNode = msg.querySelector("content");
+        const content = contentNode
+            ? serialiseMixedContent(contentNode, esc)
+            : "";
+
         const timestamp = esc(raw(msg, "timestamp"));
 
         return `
@@ -172,16 +186,17 @@ export async function replaceEmails(htmlContent, cssHref = "../styles/email.css"
         const contentEl = emailNode.querySelector("content");
         if (!contentEl) return "";
 
-        const serialise = (n) => new XMLSerializer().serializeToString(n);
-
         return Array.from(contentEl.childNodes)
-            .map((n) => {
+            .map(n => {
                 if (n.nodeType === 1) {
-                    const tag = n.tagName.toLowerCase();
-                    if (tag === "signature") return parseSignature(n, esc);
-                    return serialise(n);
+                    if (n.tagName.toLowerCase() === "signature") {
+                        return parseSignature(n, esc);
+                    }
+                    return n.outerHTML;
                 }
-                if (n.nodeType === 3) return esc(n.textContent || "");
+                if (n.nodeType === 3) {
+                    return esc(n.textContent || "");
+                }
                 return "";
             })
             .join("");
@@ -262,9 +277,7 @@ export async function replaceSVGs(root = document) {
         root = wrapper;
     }
 
-    if (!(root instanceof Document || root instanceof Element)) {
-        return;
-    }
+    if (!(root instanceof Document || root instanceof Element)) return;
 
     const images = Array.from(root.querySelectorAll("img"));
 
@@ -277,21 +290,12 @@ export async function replaceSVGs(root = document) {
             if (!res.ok) continue;
 
             const svgText = await res.text();
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(svgText, "image/svg+xml");
+            const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
             const svg = doc.querySelector("svg");
             if (!svg) continue;
 
-            // Preserve classes
             if (img.className) svg.classList.add(...img.classList);
-
-            // Preserve inline styles
-            if (img.getAttribute("style")) {
-                svg.setAttribute("style", img.getAttribute("style"));
-            }
-
-            // Preserve width/height attrs if present
+            if (img.getAttribute("style")) svg.setAttribute("style", img.getAttribute("style"));
             if (img.getAttribute("width")) svg.setAttribute("width", img.getAttribute("width"));
             if (img.getAttribute("height")) svg.setAttribute("height", img.getAttribute("height"));
 
@@ -313,11 +317,7 @@ export async function replaceTooltips(htmlContent) {
                 : "";
 
     return htmlContent.replace(re, (block) => {
-        const doc = new DOMParser().parseFromString(
-            `<root>${block}</root>`,
-            "application/xml"
-        );
-
+        const doc = new DOMParser().parseFromString(`<root>${block}</root>`, "application/xml");
         const tooltip = doc.querySelector("tooltip");
         if (!tooltip) return block;
 
@@ -370,8 +370,6 @@ export function bindEmailActions() {
             return;
         }
 
-        // Joke passes authentication
-        const action = button.dataset.emailAction;
-        console.log(`WTH! Who are you?! You performed the email action: ${action}`);
+        console.log(`WTH! Who are you?! You performed the email action: ${button.dataset.emailAction}`);
     });
 }
