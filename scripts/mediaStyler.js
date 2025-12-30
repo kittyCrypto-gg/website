@@ -45,9 +45,18 @@ export function replaceSmsMessages(htmlContent, cssHref = "../styles/sms.css") {
         `;
     });
 }
-const themes = {
-    "negi39@yahoo.co.jp": "miku",
-};
+
+const themes = {};
+
+async function loadThemes(url = "../styles/themes.json") {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to load themes from ${url}`);
+
+    const data = await res.json();
+
+    for (const key of Object.keys(themes)) delete themes[key];
+    for (const [key, value] of Object.entries(data)) themes[key] = value;
+}
 
 function renderSignatureFromXml(sig, esc) {
     const t = (q) => (sig.querySelector(q)?.textContent || "").trim();
@@ -122,7 +131,17 @@ function renderSignatureFromXml(sig, esc) {
     `;
 }
 
-export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
+function getThemeForEmail(addr) {
+    const a = addr.toLowerCase();
+    for (const [theme, addrs] of Object.entries(themes)) {
+        if (addrs.some(x => x.toLowerCase() === a)) {
+            return theme;
+        }
+    }
+    return "";
+}
+
+export async function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
     const hasCss =
         Array.from(document.styleSheets).some(s => (s.href || "").includes(cssHref)) ||
         document.querySelector(`link[rel="stylesheet"][href="${cssHref}"]`);
@@ -132,6 +151,14 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         link.rel = "stylesheet";
         link.href = cssHref;
         document.head.appendChild(link);
+    }
+
+    if (Object.keys(themes).length === 0) {
+        try {
+            await loadThemes();
+        } catch (err) {
+            console.error("Failed to load themes:", err);
+        }
     }
 
     const esc = (s) =>
@@ -178,7 +205,8 @@ export function replaceEmails(htmlContent, cssHref = "../styles/email.css") {
         const toName = esc(to ? getText(to, "name") : "");
         const toAddr = esc(to ? getText(to, "addr") : "");
 
-        const themeClass = themes[toAddr.toLowerCase()] ?? "";
+        const themeClass = getThemeForEmail(toAddr);
+
         const recipientIp = getText(email, "toIp") || "";
         const timestamp = esc(getText(email, "timestamp"));
         const subject = esc(getText(email, "subject"));

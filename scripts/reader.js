@@ -246,6 +246,7 @@ function getStoryBaseUrl(storyName = null) {
 }
 
 async function loadChapter(n) {
+  window.chapter = n;
   try {
     const base = getStoryBaseUrl();
     if (!base) throw new Error("No story selected.");
@@ -302,13 +303,13 @@ async function loadChapter(n) {
 
       return `<${tag} class="${className}">${runs}</${tag}>`;
     }).join("\n");
+
     // Process Special Tags
-    htmlContent = replaceEmails(htmlContent);
-    htmlContent = replaceSmsMessages(htmlContent);
-    htmlContent = replaceTategaki(htmlContent);
-    htmlContent = replaceImageTags(htmlContent);
-    window.chapter = n;
-    htmlContent = injectBookmarksIntoHTML(htmlContent, base, window.chapter);
+    htmlContent = await replaceEmails(htmlContent);
+    htmlContent = await replaceSmsMessages(htmlContent);
+    htmlContent = await replaceTategaki(htmlContent);
+    htmlContent = await replaceImageTags(htmlContent);
+    htmlContent = await injectBookmarksIntoHTML(htmlContent, base, window.chapter);
 
     // Render the HTML
     window.readerRoot.innerHTML = htmlContent;
@@ -661,7 +662,7 @@ function makeStoryKey(storyBase) {
   return encodeURIComponent(storyBase).replace(/\W/g, "_");
 }
 
-export function injectBookmarksIntoHTML(htmlContent, storyBase, chapter) {
+export async function injectBookmarksIntoHTML(htmlContent, storyBase, chapter) {
   const storyKey = makeStoryKey(storyBase);
   const bookmarkId = localStorage.getItem(`bookmark_${storyKey}_ch${chapter}`);
   let counter = 0;
@@ -677,6 +678,7 @@ export function injectBookmarksIntoHTML(htmlContent, storyBase, chapter) {
     }
   );
 }
+
 function observeAndSaveBookmarkProgress(root = document) {
   const bookmarks = Array.from(root.querySelectorAll(".reader-bookmark"));
   const observer = new IntersectionObserver((entries) => {
