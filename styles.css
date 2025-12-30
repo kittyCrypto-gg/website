@@ -1512,6 +1512,10 @@ body.dark-mode .tategaki-container svg text {
   pointer-events: none;
 }
 
+.tategaki-container foreignObject {
+  overflow: visible;
+}
+
 /* =========================================
   In-Chapter Images
 ========================================= */
