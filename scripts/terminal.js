@@ -1,3 +1,26 @@
+function cssVar(name) {
+    return getComputedStyle(document.documentElement)
+        .getPropertyValue(name)
+        .trim();
+}
+
+function buildXtermTheme() {
+    return {
+        foreground: cssVar("--banner-green"),
+        background: cssVar("--term-bg"),
+        cursor: cssVar("--banner-green"),
+    };
+};
+
+const themeObserver = new MutationObserver(() => {
+    term.setOption("theme", buildXtermTheme());
+});
+
+themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"]
+});
+
 function injectScript(src) {
     return new Promise((resolve, reject) => {
         const existing = document.querySelector(`script[src="${src}"]`);
@@ -385,7 +408,8 @@ export async function setupTerminalWindow() {
     // Create terminal
     const term = new window.Terminal({
         cursorBlink: true,
-        convertEol: true
+        convertEol: true,
+        theme: buildXtermTheme()
     });
 
     const fitAddon = new window.FitAddon.FitAddon();
