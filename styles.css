@@ -19,10 +19,11 @@
   --frame-box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 
   /* Banner */
-  --banner-green: #007733;
-  --banner-blue: #004488;
-  --banner-teal: #006666;
-  --banner-teal-bright: #007777;
+  --banner-green: #66ff66;
+  --banner-blue: #33d6ff;
+  --banner-teal: #33dede;
+  --banner-teal-bright: #33f2f2;
+
   --banner-text-main: var(--banner-teal);
   --banner-text-header: var(--banner-teal-bright);
   --banner-text-footer: var(--banner-teal);
@@ -33,7 +34,9 @@
   --header-text-colour: #004d40;
 
   /* Terminal Window */
-  --term-bg: linear-gradient(to bottom, #cccccc, #d0d0d0);
+  --term-bg: linear-gradient(to bottom, #303030, #202020);
+
+
   --term-header-bg: linear-gradient(to bottom, #cccccc, #b0b0b0);
   --term-header-fg: #222222;
   --term-title: #333333;
@@ -551,6 +554,7 @@ header {
   overflow-y: auto;
   overflow-x: auto;
   padding: 0.5rem;
+  background: var(--term-bg);
 }
 
 #terminal-header {
