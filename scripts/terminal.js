@@ -343,7 +343,7 @@ function wireBasicInput(term, followState, scrollCtl) {
 function attachWebSocketTransport(term, scrollCtl) {
     //const protocol = location.protocol === "https:" ? "wss" : "ws";
     //const wsUrl = `${protocol}://bash.kittycrypto.gg`;
-    const wsUrl = `ws://bash.kittycrypto.gg`;
+    const wsUrl = `wss://bash.kittycrypto.gg`;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
