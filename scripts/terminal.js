@@ -168,21 +168,21 @@ function makeTermDragWPrnt(el, fitNow) {
     });
 }
 
-function attachResizeFitting(windowWrapper, fitNow) {
-    const ro = new ResizeObserver(() => raf2(fitNow));
-    ro.observe(windowWrapper);
+// function attachResizeFitting(windowWrapper, fitNow) {
+//     const ro = new ResizeObserver(() => raf2(fitNow));
+//     ro.observe(windowWrapper);
 
-    const onWinResize = () => raf2(fitNow);
-    window.addEventListener("resize", onWinResize);
+//     const onWinResize = () => raf2(fitNow);
+//     window.addEventListener("resize", onWinResize);
 
-    return () => {
-        ro.disconnect();
-        window.removeEventListener("resize", onWinResize);
-    };
-}
+//     return () => {
+//         ro.disconnect();
+//         window.removeEventListener("resize", onWinResize);
+//     };
+// }
 
 /* ============================
-   Auto-follow scroll handling
+    Auto-follow scroll handling
 ============================ */
 
 function attachScrollTracking(term, followState) {
@@ -333,7 +333,7 @@ export async function setupTerminalWindow() {
         if (followState.value) scrollCtl.scrollToBottom();
     });
 
-    const detachResizeHandlers = attachResizeFitting(windowWrapper, fitNow);
+    // const detachResizeHandlers = attachResizeFitting(windowWrapper, fitNow);
 
     makeIconDraggable();
 
