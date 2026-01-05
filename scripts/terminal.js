@@ -22,30 +22,6 @@ function injectCssLink(href) {
     document.head.appendChild(link);
 }
 
-function injectTerminalStyles() {
-    if (document.getElementById("terminal-inline-styles")) return;
-
-    const style = document.createElement("style");
-    style.id = "terminal-inline-styles";
-    style.textContent = `
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background: black;
-        }
-
-        #term {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
 async function ensureXtermLoaded() {
     const hasTerminal = typeof window.Terminal !== "undefined";
     const hasFit = typeof window.FitAddon !== "undefined";
@@ -69,16 +45,29 @@ function safeGetEl(id) {
     return document.getElementById(id);
 }
 
+function firstExistingEl(ids) {
+    for (const id of ids) {
+        const el = safeGetEl(id);
+        if (el) return el;
+    }
+    return null;
+}
+
 function applyFloatingStyles(windowWrapper) {
+    const w = localStorage.getItem("terminal-width") || "50%";
+    const h = localStorage.getItem("terminal-height") || "";
+    const left = localStorage.getItem("terminal-x") || localStorage.getItem("term-icon-x") || "10px";
+    const top = localStorage.getItem("terminal-y") || localStorage.getItem("term-icon-y") || "10px";
+
     Object.assign(windowWrapper.style, {
         position: "absolute",
         zIndex: "9999",
-        width: localStorage.getItem("terminal-width") || "50%",
-        height: localStorage.getItem("terminal-height") || "",
+        width: w,
+        height: h,
         resize: "both",
         overflow: "hidden",
-        left: localStorage.getItem("terminal-x") || "10px",
-        top: localStorage.getItem("terminal-y") || "10px"
+        left,
+        top
     });
 }
 
@@ -104,26 +93,35 @@ function makeIconDraggable() {
     const icon = safeGetEl("term-icon");
     if (!icon) return;
 
+    if (icon.dataset.dragWired === "true") return;
+    icon.dataset.dragWired = "true";
+
     let isDragging = false;
     let offsetX = 0;
     let offsetY = 0;
 
-    icon.addEventListener("mousedown", e => {
+    icon.addEventListener("mousedown", (e) => {
         isDragging = true;
         offsetX = e.clientX - icon.offsetLeft;
         offsetY = e.clientY - icon.offsetTop;
         icon.style.cursor = "grabbing";
     });
 
-    document.addEventListener("mousemove", e => {
+    document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        icon.style.left = `${e.clientX - offsetX}px`;
-        icon.style.top = `${e.clientY - offsetY}px`;
+
+        const x = e.clientX - offsetX;
+        const y = e.clientY - offsetY;
+
+        icon.style.left = `${x}px`;
+        icon.style.top = `${y}px`;
+
         localStorage.setItem("term-icon-x", icon.style.left);
         localStorage.setItem("term-icon-y", icon.style.top);
     });
 
     document.addEventListener("mouseup", () => {
+        if (!isDragging) return;
         isDragging = false;
         icon.style.cursor = "grab";
     });
@@ -134,82 +132,137 @@ function makeIconDraggable() {
     if (savedY) icon.style.top = savedY;
 }
 
-function makeTermDragWPrnt(el, fitNow) {
-    const header = el.querySelector("#terminal-header");
+function makeTermDragWPrnt(windowWrapper, fitNowRef) {
+    const header = windowWrapper.querySelector("#terminal-header");
     if (!header) return;
+
+    header._fitNowRef = fitNowRef;
+
+    if (header.dataset.dragWired === "true") return;
+    header.dataset.dragWired = "true";
 
     let isDragging = false;
     let startX = 0;
     let startY = 0;
 
-    header.addEventListener("mousedown", e => {
-        if (!el.classList.contains("floating")) return;
+    header.addEventListener("mousedown", (e) => {
+        if (!windowWrapper.classList.contains("floating")) return;
         isDragging = true;
-        startX = e.clientX - el.offsetLeft;
-        startY = e.clientY - el.offsetTop;
-        el.style.cursor = "grabbing";
+        startX = e.clientX - windowWrapper.offsetLeft;
+        startY = e.clientY - windowWrapper.offsetTop;
+        windowWrapper.style.cursor = "grabbing";
         e.preventDefault();
     });
 
-    document.addEventListener("mousemove", e => {
+    document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-        el.style.left = `${e.clientX - startX}px`;
-        el.style.top = `${e.clientY - startY}px`;
-        localStorage.setItem("terminal-x", el.style.left);
-        localStorage.setItem("terminal-y", el.style.top);
+
+        const x = e.clientX - startX;
+        const y = e.clientY - startY;
+
+        windowWrapper.style.left = `${x}px`;
+        windowWrapper.style.top = `${y}px`;
+        windowWrapper.style.transform = "none";
+
+        localStorage.setItem("terminal-x", windowWrapper.style.left);
+        localStorage.setItem("terminal-y", windowWrapper.style.top);
+
+        localStorage.setItem("term-icon-x", windowWrapper.style.left);
+        localStorage.setItem("term-icon-y", windowWrapper.style.top);
     });
 
     document.addEventListener("mouseup", () => {
         if (!isDragging) return;
+
         isDragging = false;
-        el.style.cursor = "default";
-        saveWindowSize(el);
-        raf2(fitNow);
+        windowWrapper.style.cursor = "default";
+        saveWindowSize(windowWrapper);
+
+        const ref = header._fitNowRef;
+        if (ref && typeof ref.fitNow === "function") raf2(ref.fitNow);
     });
 }
 
-// function attachResizeFitting(windowWrapper, fitNow) {
-//     const ro = new ResizeObserver(() => raf2(fitNow));
-//     ro.observe(windowWrapper);
+function attachSafeResizeFitting(fitNow) {
+    const onResize = () => raf2(fitNow);
+    window.addEventListener("resize", onResize);
 
-//     const onWinResize = () => raf2(fitNow);
-//     window.addEventListener("resize", onWinResize);
+    let vv = null;
+    let onVVResize = null;
+    if (window.visualViewport) {
+        vv = window.visualViewport;
+        onVVResize = () => raf2(fitNow);
+        vv.addEventListener("resize", onVVResize);
+    }
 
-//     return () => {
-//         ro.disconnect();
-//         window.removeEventListener("resize", onWinResize);
-//     };
-// }
+    return () => {
+        window.removeEventListener("resize", onResize);
+        if (vv && onVVResize) vv.removeEventListener("resize", onVVResize);
+    };
+}
 
 /* ============================
     Auto-follow scroll handling
 ============================ */
 
 function attachScrollTracking(term, followState) {
-    const viewport = term.element.querySelector(".xterm-viewport");
-    if (!viewport) return null;
+    const ctl = {
+        _viewport: null,
+        _programmatic: false,
 
-    let programmatic = false;
+        _resolveViewport() {
+            if (!term.element) return null;
+            const vp = term.element.querySelector(".xterm-viewport");
+            if (vp) this._viewport = vp;
+            return this._viewport;
+        },
 
-    viewport.addEventListener("scroll", () => {
-        if (programmatic) return;
+        _atBottom(vp) {
+            return vp.scrollTop + vp.clientHeight >= vp.scrollHeight - 2;
+        },
 
-        const atBottom =
-            viewport.scrollTop + viewport.clientHeight >=
-            viewport.scrollHeight - 2;
-
-        followState.value = atBottom;
-    });
-
-    return {
         scrollToBottom() {
-            programmatic = true;
+            this._programmatic = true;
             term.scrollToBottom();
             requestAnimationFrame(() => {
-                programmatic = false;
+                this._programmatic = false;
             });
+        },
+
+        maybeScroll() {
+            if (!followState.value) return;
+            this.scrollToBottom();
+        },
+
+        forceFollowAndScroll() {
+            followState.value = true;
+            this.scrollToBottom();
+        },
+
+        wire() {
+            const vp = this._resolveViewport();
+            if (!vp) return false;
+
+            if (vp.dataset.scrollWired === "true") return true;
+            vp.dataset.scrollWired = "true";
+
+            vp.addEventListener("scroll", () => {
+                if (this._programmatic) return;
+                followState.value = this._atBottom(vp);
+            });
+
+            return true;
         }
     };
+
+    // Try wiring now, then a couple of frames later (xterm builds DOM after open)
+    if (!ctl.wire()) {
+        raf2(() => {
+            ctl.wire();
+        });
+    }
+
+    return ctl;
 }
 
 function wireBasicInput(term, followState, scrollCtl) {
@@ -217,33 +270,38 @@ function wireBasicInput(term, followState, scrollCtl) {
 
     const prompt = () => {
         term.write("\r\nkitty@kittycrypto:~$ ");
+        scrollCtl.maybeScroll();
     };
 
     term.writeln("YuriGreen Terminal Emulator");
     term.writeln("Type commands locally (no backend attached).");
     term.write("kitty@kittycrypto:~$ ");
+    scrollCtl.maybeScroll();
 
-    term.onData(data => {
+    term.onData((data) => {
         const code = data.charCodeAt(0);
 
+        // Enter
         if (data === "\r") {
-            followState.value = true;
-            scrollCtl.scrollToBottom();
+            // On enter, always go back to the bottom.
+            scrollCtl.forceFollowAndScroll();
 
             term.writeln("");
-            if (line.trim()) term.writeln(`command not found: ${line.trim()}`);
+            if (line.trim().length > 0) term.writeln(`command not found: ${line.trim()}`);
             line = "";
             prompt();
             return;
         }
 
+        // Backspace (DEL)
         if (code === 127) {
-            if (!line.length) return;
+            if (line.length === 0) return;
             line = line.slice(0, -1);
             term.write("\b \b");
             return;
         }
 
+        // Ctrl+C
         if (data === "\u0003") {
             term.write("^C");
             line = "";
@@ -251,6 +309,7 @@ function wireBasicInput(term, followState, scrollCtl) {
             return;
         }
 
+        // Printable chars
         if (code >= 32) {
             line += data;
             term.write(data);
@@ -259,19 +318,20 @@ function wireBasicInput(term, followState, scrollCtl) {
 }
 
 export async function setupTerminalWindow() {
-    injectTerminalStyles();
     await ensureXtermLoaded();
 
     const terminalWrapper = safeGetEl("terminal-wrapper");
-    const shellWrapper = safeGetEl("shell-wrapper");
+    const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
     const icon = safeGetEl("term-icon");
 
-    if (!terminalWrapper || !shellWrapper || !icon) {
-        throw new Error("Missing required terminal elements");
-    }
+    if (!terminalWrapper) throw new Error("Missing element: #terminal-wrapper");
+    if (!shellWrapper) throw new Error("Missing element: #shell-wrapper or #banner-wrapper");
+    if (!icon) throw new Error("Missing element: #term-icon");
 
+    // Build the window shell
     const windowWrapper = document.createElement("div");
     windowWrapper.id = "terminal-window";
+    windowWrapper.style.position = "relative";
 
     const header = document.createElement("div");
     header.id = "terminal-header";
@@ -293,63 +353,221 @@ export async function setupTerminalWindow() {
 
     const title = document.createElement("span");
     title.classList.add("window-title");
-    title.textContent = "YuriGreen Terminal Emulator — /home/kitty/";
+    title.textContent = "YuriGreen Terminal Emulator - /home/kitty/";
 
-    controls.append(closeBtn, toggleViewBtn, floatBtn);
-    header.append(controls, title);
+    controls.appendChild(closeBtn);
+    controls.appendChild(toggleViewBtn);
+    controls.appendChild(floatBtn);
+    header.appendChild(controls);
+    header.appendChild(title);
 
     const scrollArea = document.createElement("div");
     scrollArea.id = "terminal-scroll";
-    scrollArea.style.overflow = "hidden";
 
+    // Ensure an xterm container exists and is the only content inside terminalWrapper
     terminalWrapper.innerHTML = "";
     const termDiv = document.createElement("div");
     termDiv.id = "term";
     terminalWrapper.appendChild(termDiv);
 
     scrollArea.appendChild(terminalWrapper);
-    windowWrapper.append(header, scrollArea);
+    windowWrapper.appendChild(header);
+    windowWrapper.appendChild(scrollArea);
+
+    // Insert window into shell wrapper
     shellWrapper.insertBefore(windowWrapper, shellWrapper.firstChild);
 
-    const term = new window.Terminal({ cursorBlink: true, convertEol: true });
+    // Icon setup
+    icon.src = "/images/terminal.svg";
+    icon.alt = "Terminal icon";
+    icon.title = "Double-click to open terminal";
+
+    // Create terminal
+    const term = new window.Terminal({
+        cursorBlink: true,
+        convertEol: true
+    });
+
     const fitAddon = new window.FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     term.open(termDiv);
 
+    // Follow state + scroll controller
     const followState = { value: true };
     const scrollCtl = attachScrollTracking(term, followState);
 
+    // Fit scheduling (prevents spam fits from multiple events)
+    let fitScheduled = false;
+
     const fitNow = () => {
+        // Do not fit when hidden
+        if (windowWrapper.style.display === "none") return;
+        if (terminalWrapper.style.display === "none") return;
+
         const rect = termDiv.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) return;
+
         fitAddon.fit();
-        if (followState.value) scrollCtl.scrollToBottom();
+        scrollCtl.maybeScroll();
     };
 
-    raf2(fitNow);
+    const scheduleFit = () => {
+        if (fitScheduled) return;
+        fitScheduled = true;
+        raf2(() => {
+            fitScheduled = false;
+            fitNow();
+        });
+    };
+
+    // Provide fit ref for drag wiring without duplicating listeners
+    const fitNowRef = { fitNow };
+
+    // Wire input demo (local)
     wireBasicInput(term, followState, scrollCtl);
 
-    term.onRender(() => {
-        if (followState.value) scrollCtl.scrollToBottom();
-    });
+    // Auto-scroll on render, but only if user is at bottom
+    if (typeof term.onRender === "function") {
+        term.onRender(() => {
+            scrollCtl.maybeScroll();
+        });
+    } else {
+        // Fallback: if onRender is not available, still keep scroll sane after writes
+        const origWrite = term.write.bind(term);
+        term.write = (data, cb) => {
+            origWrite(data, cb);
+            raf2(() => scrollCtl.maybeScroll());
+        };
 
-    // const detachResizeHandlers = attachResizeFitting(windowWrapper, fitNow);
+        const origWriteln = term.writeln.bind(term);
+        term.writeln = (data, cb) => {
+            origWriteln(data, cb);
+            raf2(() => scrollCtl.maybeScroll());
+        };
+    }
 
+    // Fit on real viewport resizes only, no ResizeObserver to avoid loops
+    const detachResizeHandlers = attachSafeResizeFitting(scheduleFit);
+
+    // Drag wiring
+    makeTermDragWPrnt(windowWrapper, fitNowRef);
     makeIconDraggable();
 
-    document.addEventListener("mouseup", () => {
-        if (windowWrapper.classList.contains("floating")) {
-            saveWindowSize(windowWrapper);
-            raf2(fitNow);
-        }
+    // Restore window state (floating or docked)
+    if (localStorage.getItem("terminal-floating") === "true") {
+        windowWrapper.classList.add("floating");
+        applyFloatingStyles(windowWrapper);
+    } else {
+        applyDockedStyles(windowWrapper);
+    }
+
+    // Restore closed state
+    if (localStorage.getItem("terminal-closed") === "true") {
+        windowWrapper.style.display = "none";
+        icon.style.display = "inline-block";
+    } else {
+        icon.style.display = "none";
+    }
+
+    // Restore minimised state
+    if (localStorage.getItem("terminal-minimised") === "true") {
+        terminalWrapper.style.display = "none";
+        floatBtn.classList.add("hidden");
+    } else {
+        terminalWrapper.style.display = "block";
+        floatBtn.classList.remove("hidden");
+    }
+
+    // Initial fit (only if visible)
+    scheduleFit();
+
+    /* ============================
+        Button behaviours
+    ============================ */
+
+    closeBtn.addEventListener("click", () => {
+        windowWrapper.style.display = "none";
+        terminalWrapper.style.display = "block";
+
+        localStorage.setItem("terminal-closed", "true");
+        localStorage.removeItem("terminal-minimised");
+
+        icon.style.display = "inline-block";
     });
+
+    toggleViewBtn.addEventListener("click", () => {
+        const isMinimised = terminalWrapper.style.display === "none";
+
+        if (isMinimised) {
+            terminalWrapper.style.display = "block";
+            floatBtn.classList.remove("hidden");
+            localStorage.removeItem("terminal-minimised");
+            scheduleFit();
+            return;
+        }
+
+        // Minimising forces docked mode, same as your old script
+        windowWrapper.classList.remove("floating");
+        applyDockedStyles(windowWrapper);
+        localStorage.removeItem("terminal-floating");
+
+        terminalWrapper.style.display = "none";
+        floatBtn.classList.add("hidden");
+        localStorage.setItem("terminal-minimised", "true");
+    });
+
+    floatBtn.addEventListener("click", () => {
+        const isFloating = windowWrapper.classList.toggle("floating");
+
+        if (isFloating) {
+            applyFloatingStyles(windowWrapper);
+            localStorage.setItem("terminal-floating", "true");
+            scheduleFit();
+            return;
+        }
+
+        applyDockedStyles(windowWrapper);
+        localStorage.removeItem("terminal-floating");
+        scheduleFit();
+    });
+
+    // Icon double-click opens terminal window
+    icon.addEventListener("dblclick", () => {
+        windowWrapper.style.display = "block";
+        terminalWrapper.style.display = "block";
+        icon.style.display = "none";
+
+        localStorage.removeItem("terminal-closed");
+        localStorage.removeItem("terminal-minimised");
+
+        floatBtn.classList.remove("hidden");
+
+        if (localStorage.getItem("terminal-floating") === "true") {
+            windowWrapper.classList.add("floating");
+            applyFloatingStyles(windowWrapper);
+        } else {
+            windowWrapper.classList.remove("floating");
+            applyDockedStyles(windowWrapper);
+        }
+
+        scheduleFit();
+    });
+
+    // Persist size when user finishes resizing (native resize handle) or after mouse interactions
+    const onMouseUp = () => {
+        if (!windowWrapper.classList.contains("floating")) return;
+        saveWindowSize(windowWrapper);
+        scheduleFit();
+    };
+    document.addEventListener("mouseup", onMouseUp);
 
     return {
         term,
         fitAddon,
-        dispose() {
+        dispose: () => {
             detachResizeHandlers();
+            document.removeEventListener("mouseup", onMouseUp);
             term.dispose();
         }
     };
-}  
+} 
