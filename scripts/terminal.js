@@ -340,6 +340,47 @@ function wireBasicInput(term, followState, scrollCtl) {
     });
 }
 
+function attachWebSocketTransport(term, scrollCtl) {
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const wsUrl = `${protocol}://bash.kittycrypto.gg`;
+
+    const ws = new WebSocket(wsUrl);
+    ws.binaryType = "arraybuffer";
+
+    ws.addEventListener("open", () => {
+        scrollCtl.forceFollowAndScroll();
+    });
+
+    ws.addEventListener("message", (ev) => {
+        if (typeof ev.data === "string") {
+            term.write(ev.data);
+        } else {
+            const text = new TextDecoder().decode(ev.data);
+            term.write(text);
+        }
+        scrollCtl.maybeScroll();
+    });
+
+    ws.addEventListener("close", () => {
+        term.writeln("\r\n[disconnected]");
+        scrollCtl.forceFollowAndScroll();
+    });
+
+    ws.addEventListener("error", () => {
+        term.writeln("\r\n[connection error]");
+        scrollCtl.forceFollowAndScroll();
+    });
+
+    // Forward keyboard input to backend
+    term.onData(data => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data);
+        }
+    });
+
+    return ws;
+}
+
 export async function setupTerminalWindow() {
     await ensureXtermLoaded();
 
@@ -447,9 +488,10 @@ export async function setupTerminalWindow() {
     // Provide fit ref for drag wiring without duplicating listeners
     const fitNowRef = { fitNow };
 
-    // Wire input demo (local)
-    wireBasicInput(term, followState, scrollCtl);
-
+    // Wire input demo
+    //wireBasicInput(term, followState, scrollCtl);
+    const ws = attachWebSocketTransport(term, scrollCtl);
+    
     // Auto-scroll on render, but only if user is at bottom
     if (typeof term.onRender === "function") {
         term.onRender(() => {
