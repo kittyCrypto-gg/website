@@ -412,7 +412,7 @@ function attachWebSocketTransport(term, scrollCtl) {
     return ws;
 }
 
-export async function setupTerminalWindow() {
+export async function setupTerminalModule() {
     await ensureXtermLoaded();
 
     const terminalWrapper = safeGetEl("terminal-wrapper");

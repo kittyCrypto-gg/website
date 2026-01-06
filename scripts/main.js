@@ -1,5 +1,5 @@
 import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
-import { setupTerminalWindow } from "./terminal.js";
+import { setupTerminalModule } from "./terminal.js";
 import { setupReaderToggle } from "./readerMode.js";
 import { showReadAloudMenu } from "./readAloud.js";
 
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
 
-    setupTerminalWindow()
+    setupTerminalModule()
       .then(() => {
         document
           .getElementById("terminal-loading")
