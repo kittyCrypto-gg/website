@@ -389,6 +389,20 @@ function attachWebSocketTransport(term, scrollCtl) {
     return ws;
 }
 
+async function initialFitAfterFonts(fitAddon, scrollCtl) {
+    if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+    }
+
+    raf2(() => {
+        fitAddon.fit();
+        raf2(() => {
+            fitAddon.fit();
+            scrollCtl.forceFollowAndScroll();
+        });
+    });
+}
+
 export async function setupTerminalWindow() {
     await ensureXtermLoaded();
 
@@ -553,7 +567,8 @@ export async function setupTerminalWindow() {
     }
 
     // Initial fit (only if visible)
-    scheduleFit();
+    // Delay first fit until fonts are ready to avoid wrong glyph metrics on first maximised render
+    initialFitAfterFonts(fitAddon, scrollCtl);
 
     /* ============================
         Button behaviours
