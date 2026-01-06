@@ -482,7 +482,7 @@ export async function setupTerminalWindow() {
     const term = new window.Terminal({
         cursorBlink: true,
         convertEol: true,
-        fontSize: isMobile ? 12 : 14,
+        fontSize: isMobile ? 8 : 14,
         theme: buildXtermTheme()
     });
 
