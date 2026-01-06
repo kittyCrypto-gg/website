@@ -1,4 +1,5 @@
-import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
+//import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
+import { setupTerminalWindow } from "./terminal.js";
 import { setupReaderToggle } from "./readerMode.js";
 import { showReadAloudMenu } from "./readAloud.js";
 
@@ -6,15 +7,26 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.style.visibility = "visible";
   document.body.style.opacity = "1";
 
-  loadBanner().then(async () => {
-    await setupTerminalWindow();
-    await scaleBannerToFit();
+  // loadBanner().then(async () => {
+  //   await setupTerminalWindow();
+  //   await scaleBannerToFit();
+  //   await new Promise(resolve => {
+  //     document.getElementById("terminal-loading")?.style.setProperty("display", "none");
+  //     window.addEventListener("resize", () => scaleBannerToFit());
+  //     console.log("Banner loaded successfully");
+  //     resolve();
+  //   });
+  // });
+
+  setupTerminalWindow().then(async () => {
     await new Promise(resolve => {
       document.getElementById("terminal-loading")?.style.setProperty("display", "none");
-      window.addEventListener("resize", () => scaleBannerToFit());
+      //window.addEventListener("resize", () => scaleBannerToFit());
       console.log("Banner loaded successfully");
       resolve();
     });
+  }).catch(err => {
+    console.error("Terminal initialisation failed:", err);
   });
 });
 
