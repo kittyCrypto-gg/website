@@ -5,71 +5,71 @@ import { showReadAloudMenu } from "./readAloud.js";
 
 async function checkMobile() {
   while (document.readyState === "loading") {
-    await new Promise(resolve => requestAnimationFrame(resolve))
+    await new Promise(resolve => requestAnimationFrame(resolve));
   }
 
   if (typeof window.MobileDetect === "undefined") {
-    const script = document.createElement("script")
-    script.src = "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.min.js"
-    script.async = true
-    document.body.appendChild(script)
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.min.js";
+    script.async = true;
+    document.body.appendChild(script);
 
     await new Promise(resolve => {
-      script.onload = resolve
-      script.onerror = resolve
-    })
+      script.onload = resolve;
+      script.onerror = resolve;
+    });
   }
 
-  const md = new window.MobileDetect(window.navigator.userAgent)
-  return !!md.mobile()
+  const md = new window.MobileDetect(window.navigator.userAgent);
+  return !!md.mobile();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.body.style.visibility = "visible"
-  document.body.style.opacity = "1"
+  document.body.style.visibility = "visible";
+  document.body.style.opacity = "1";
 
   const init = async () => {
     const isMobile = await checkMobile();
 
-    // if (isMobile) {      
-      
-    //   const makeBanner = async () => {
-    //       const aside = document.getElementById("shell-wrapper");
-    //       if (!aside) return;
-    //       aside.id = "banner-wrapper";
-    //   }
-      
-    //   await makeBanner();
-    //   loadBanner().then(async () => {
-    //     await setupTerminalWindow()
-    //     await scaleBannerToFit()
+    if (isMobile) {
 
-    //     document
-    //       .getElementById("terminal-loading")
-    //       ?.style.setProperty("display", "none")
+      const makeBanner = async () => {
+        const aside = document.getElementById("shell-wrapper");
+        if (!aside) return;
+        aside.id = "banner-wrapper";
+      };
 
-    //     window.addEventListener("resize", () => scaleBannerToFit())
-    //     console.log("Banner loaded successfully")
-    //   })
+      await makeBanner();
+      loadBanner().then(async () => {
+        await setupTerminalWindow();
+        await scaleBannerToFit();
 
-    //   return
-    // }
+        document
+          .getElementById("terminal-loading")
+          ?.style.setProperty("display", "none");
+
+        window.addEventListener("resize", () => scaleBannerToFit());
+        console.log("Banner loaded successfully");
+      });
+
+      return;
+    }
 
     setupTerminalModule()
       .then(() => {
         document
           .getElementById("terminal-loading")
-          ?.style.setProperty("display", "none")
+          ?.style.setProperty("display", "none");
 
-        console.log("Banner loaded successfully")
+        console.log("Banner loaded successfully");
       })
       .catch(err => {
-        console.error("Terminal initialisation failed:", err)
-      })
-  }
+        console.error("Terminal initialisation failed:", err);
+      });
+  };
 
-  init()
-})
+  init();
+});
 
 let currentTheme = null;
 
