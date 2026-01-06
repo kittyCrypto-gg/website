@@ -31,29 +31,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const init = async () => {
     const isMobile = await checkMobile();
 
-    if (isMobile) {      
+    // if (isMobile) {      
       
-      const makeBanner = async () => {
-          const aside = document.getElementById("shell-wrapper");
-          if (!aside) return;
-          aside.id = "banner-wrapper";
-      }
+    //   const makeBanner = async () => {
+    //       const aside = document.getElementById("shell-wrapper");
+    //       if (!aside) return;
+    //       aside.id = "banner-wrapper";
+    //   }
       
-      await makeBanner();
-      loadBanner().then(async () => {
-        await setupTerminalWindow()
-        await scaleBannerToFit()
+    //   await makeBanner();
+    //   loadBanner().then(async () => {
+    //     await setupTerminalWindow()
+    //     await scaleBannerToFit()
 
-        document
-          .getElementById("terminal-loading")
-          ?.style.setProperty("display", "none")
+    //     document
+    //       .getElementById("terminal-loading")
+    //       ?.style.setProperty("display", "none")
 
-        window.addEventListener("resize", () => scaleBannerToFit())
-        console.log("Banner loaded successfully")
-      })
+    //     window.addEventListener("resize", () => scaleBannerToFit())
+    //     console.log("Banner loaded successfully")
+    //   })
 
-      return
-    }
+    //   return
+    // }
 
     setupTerminalModule()
       .then(() => {

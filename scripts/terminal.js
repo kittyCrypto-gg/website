@@ -1,24 +1,24 @@
 async function checkMobile() {
-  while (document.readyState === "loading") {
-    await new Promise(resolve => requestAnimationFrame(resolve))
-  }
+    while (document.readyState === "loading") {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+    }
 
-  if (typeof window.MobileDetect === "undefined") {
-    const script = document.createElement("script")
-    script.src = "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.min.js"
-    script.async = true
-    document.body.appendChild(script)
+    if (typeof window.MobileDetect === "undefined") {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.min.js";
+        script.async = true;
+        document.body.appendChild(script);
 
-    await new Promise(resolve => {
-      script.onload = resolve
-      script.onerror = resolve
-    })
-  }
+        await new Promise(resolve => {
+            script.onload = resolve;
+            script.onerror = resolve;
+        });
+    }
 
-  const md = new window.MobileDetect(window.navigator.userAgent)
-  const isMobile = !!md.mobile()
+    const md = new window.MobileDetect(window.navigator.userAgent);
+    const isMobile = !!md.mobile();
 
-  return isMobile
+    return isMobile;
 }
 
 function cssVar(name) {
@@ -482,7 +482,7 @@ export async function setupTerminalModule() {
     const term = new window.Terminal({
         cursorBlink: true,
         convertEol: true,
-        fontSize: isMobile ? 4 : 14,
+        fontSize: isMobile ? 8 : 14,
         theme: buildXtermTheme()
     });
 
