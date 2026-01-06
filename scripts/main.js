@@ -3,32 +3,66 @@ import { setupTerminalWindow } from "./terminal.js";
 import { setupReaderToggle } from "./readerMode.js";
 import { showReadAloudMenu } from "./readAloud.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.body.style.visibility = "visible";
-  document.body.style.opacity = "1";
 
-  // loadBanner().then(async () => {
-  //   await setupTerminalWindow();
-  //   await scaleBannerToFit();
-  //   await new Promise(resolve => {
-  //     document.getElementById("terminal-loading")?.style.setProperty("display", "none");
-  //     window.addEventListener("resize", () => scaleBannerToFit());
-  //     console.log("Banner loaded successfully");
-  //     resolve();
-  //   });
-  // });
+async function checkMobile() {
+  while (document.readyState === "loading") {
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
 
-  setupTerminalWindow().then(async () => {
+  if (typeof window.MobileDetect === "undefined") {
+    const script = document.createElement("script")
+    script.src = "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.min.js"
+    script.async = true
+    document.body.appendChild(script)
+
     await new Promise(resolve => {
-      document.getElementById("terminal-loading")?.style.setProperty("display", "none");
-      //window.addEventListener("resize", () => scaleBannerToFit());
-      console.log("Banner loaded successfully");
-      resolve();
-    });
-  }).catch(err => {
-    console.error("Terminal initialisation failed:", err);
-  });
-});
+      script.onload = resolve
+      script.onerror = resolve
+    })
+  }
+
+  const md = new window.MobileDetect(window.navigator.userAgent)
+  return !!md.mobile()
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.body.style.visibility = "visible"
+  document.body.style.opacity = "1"
+
+  const init = async () => {
+    const isMobile = await checkMobile()
+
+    if (isMobile) {
+      loadBanner().then(async () => {
+        await setupTerminalWindow()
+        await scaleBannerToFit()
+
+        document
+          .getElementById("terminal-loading")
+          ?.style.setProperty("display", "none")
+
+        window.addEventListener("resize", () => scaleBannerToFit())
+        console.log("Banner loaded successfully")
+      })
+
+      return
+    }
+
+    setupTerminalWindow()
+      .then(() => {
+        document
+          .getElementById("terminal-loading")
+          ?.style.setProperty("display", "none")
+
+        console.log("Banner loaded successfully")
+      })
+      .catch(err => {
+        console.error("Terminal initialisation failed:", err)
+      })
+  }
+
+  init()
+})
 
 let currentTheme = null;
 
