@@ -566,6 +566,42 @@ export async function setupTerminalWindow() {
         floatBtn.classList.remove("hidden");
     }
 
+    // Force a layout toggle once to fix first-launch glyph sizing
+    forceInitialLayoutToggle({
+        windowWrapper,
+        terminalWrapper,
+        floatBtn,
+        scheduleFit
+    });
+
+    function forceInitialLayoutToggle({
+        windowWrapper,
+        terminalWrapper,
+        floatBtn,
+        scheduleFit
+    }) {
+        raf2(() => {
+            const wasMinimised = terminalWrapper.style.display === "none";
+            const wasFloating = windowWrapper.classList.contains("floating");
+
+            terminalWrapper.style.display = "none";
+            floatBtn.classList.add("hidden");
+
+            raf2(() => {
+                terminalWrapper.style.display = wasMinimised ? "none" : "block";
+                floatBtn.classList.toggle("hidden", wasMinimised);
+
+                if (wasFloating) {
+                    windowWrapper.classList.add("floating");
+                } else {
+                    windowWrapper.classList.remove("floating");
+                }
+
+                scheduleFit();
+            });
+        });
+    }
+
     // Initial fit (only if visible)
     // Delay first fit until fonts are ready to avoid wrong glyph metrics on first maximised render
     initialFitAfterFonts(fitAddon, scrollCtl);
