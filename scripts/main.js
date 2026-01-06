@@ -29,9 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.style.opacity = "1"
 
   const init = async () => {
-    const isMobile = await checkMobile()
+    const isMobile = await checkMobile();
 
-    if (isMobile) {
+    if (isMobile) {      
+      
+      const makeBanner = async () => {
+          const aside = document.getElementById("shell-wrapper");
+          if (!aside) return;
+          aside.id = "banner-wrapper";
+      }
+      
+      await makeBanner();
       loadBanner().then(async () => {
         await setupTerminalWindow()
         await scaleBannerToFit()
