@@ -1,5 +1,25 @@
-const md = new MobileDetect(window.navigator.userAgent)
-const isMobile = !!md.mobile()
+async function checkMobile() {
+  while (document.readyState === "loading") {
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+
+  if (typeof window.MobileDetect === "undefined") {
+    const script = document.createElement("script")
+    script.src = "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.min.js"
+    script.async = true
+    document.body.appendChild(script)
+
+    await new Promise(resolve => {
+      script.onload = resolve
+      script.onerror = resolve
+    })
+  }
+
+  const md = new window.MobileDetect(window.navigator.userAgent)
+  const isMobile = !!md.mobile()
+
+  return isMobile
+}
 
 function cssVar(name) {
     return getComputedStyle(document.documentElement)
@@ -457,6 +477,7 @@ export async function setupTerminalWindow() {
     icon.alt = "Terminal icon";
     icon.title = "Double-click to open terminal";
 
+    const isMobile = await checkMobile();
     // Create terminal
     const term = new window.Terminal({
         cursorBlink: true,
