@@ -350,6 +350,13 @@ function attachWebSocketTransport(term, scrollCtl) {
 
     ws.addEventListener("open", () => {
         scrollCtl.forceFollowAndScroll();
+
+        // Run nekofetch once, as if typed by the user
+        setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send("nekofetch\r");
+            }
+        }, 50);
     });
 
     ws.addEventListener("message", (ev) => {
@@ -492,7 +499,7 @@ export async function setupTerminalWindow() {
     // Wire input demo
     //wireBasicInput(term, followState, scrollCtl);
     const ws = attachWebSocketTransport(term, scrollCtl);
-    
+
     // Auto-scroll on render, but only if user is at bottom
     if (typeof term.onRender === "function") {
         term.onRender(() => {
