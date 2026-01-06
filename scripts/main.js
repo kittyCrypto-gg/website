@@ -1,8 +1,7 @@
-//import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
+import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
 import { setupTerminalWindow } from "./terminal.js";
 import { setupReaderToggle } from "./readerMode.js";
 import { showReadAloudMenu } from "./readAloud.js";
-
 
 async function checkMobile() {
   while (document.readyState === "loading") {
