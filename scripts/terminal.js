@@ -1,3 +1,6 @@
+const md = new MobileDetect(window.navigator.userAgent)
+const isMobile = !!md.mobile()
+
 function cssVar(name) {
     return getComputedStyle(document.documentElement)
         .getPropertyValue(name)
@@ -458,6 +461,7 @@ export async function setupTerminalWindow() {
     const term = new window.Terminal({
         cursorBlink: true,
         convertEol: true,
+        fontSize: isMobile ? 12 : 14
         theme: buildXtermTheme()
     });
 
