@@ -1,5 +1,3 @@
-let term = null;
-
 async function checkMobile() {
     while (document.readyState === "loading") {
         await new Promise(resolve => requestAnimationFrame(resolve));
@@ -18,7 +16,9 @@ async function checkMobile() {
     }
 
     const md = new window.MobileDetect(window.navigator.userAgent);
-    return !!md.mobile();
+    const isMobile = !!md.mobile();
+
+    return isMobile;
 }
 
 function cssVar(name) {
@@ -31,12 +31,11 @@ function buildXtermTheme() {
     return {
         foreground: cssVar("--banner-green"),
         background: cssVar("--term-bg"),
-        cursor: cssVar("--banner-green")
+        cursor: cssVar("--banner-green"),
     };
-}
+};
 
 const themeObserver = new MutationObserver(() => {
-    if (!term) return;
     term.setOption("theme", buildXtermTheme());
 });
 
@@ -249,17 +248,17 @@ function attachSafeResizeFitting(fitNow) {
 }
 
 /* ============================
-   Auto-follow scroll handling
+    Auto-follow scroll handling
 ============================ */
 
-function attachScrollTracking(termInstance, followState) {
+function attachScrollTracking(term, followState) {
     const ctl = {
         _viewport: null,
         _programmatic: false,
 
         _resolveViewport() {
-            if (!termInstance.element) return null;
-            const vp = termInstance.element.querySelector(".xterm-viewport");
+            if (!term.element) return null;
+            const vp = term.element.querySelector(".xterm-viewport");
             if (vp) this._viewport = vp;
             return this._viewport;
         },
@@ -270,7 +269,7 @@ function attachScrollTracking(termInstance, followState) {
 
         scrollToBottom() {
             this._programmatic = true;
-            termInstance.scrollToBottom();
+            term.scrollToBottom();
             requestAnimationFrame(() => {
                 this._programmatic = false;
             });
@@ -302,6 +301,7 @@ function attachScrollTracking(termInstance, followState) {
         }
     };
 
+    // Try wiring now, then a couple of frames later (xterm builds DOM after open)
     if (!ctl.wire()) {
         raf2(() => {
             ctl.wire();
@@ -311,54 +311,61 @@ function attachScrollTracking(termInstance, followState) {
     return ctl;
 }
 
-function wireBasicInput(termInstance, followState, scrollCtl) {
+function wireBasicInput(term, followState, scrollCtl) {
     let line = "";
 
     const prompt = () => {
-        termInstance.write("\r\nkitty@kittycrypto:~$ ");
+        term.write("\r\nkitty@kittycrypto:~$ ");
         scrollCtl.maybeScroll();
     };
 
-    termInstance.writeln("YuriGreen Terminal Emulator");
-    termInstance.writeln("Type commands locally (no backend attached).");
-    termInstance.write("kitty@kittycrypto:~$ ");
+    term.writeln("YuriGreen Terminal Emulator");
+    term.writeln("Type commands locally (no backend attached).");
+    term.write("kitty@kittycrypto:~$ ");
     scrollCtl.maybeScroll();
 
-    termInstance.onData((data) => {
+    term.onData((data) => {
         const code = data.charCodeAt(0);
 
+        // Enter
         if (data === "\r") {
+            // On enter, always go back to the bottom.
             scrollCtl.forceFollowAndScroll();
 
-            termInstance.writeln("");
-            if (line.trim().length > 0) termInstance.writeln(`command not found: ${line.trim()}`);
+            term.writeln("");
+            if (line.trim().length > 0) term.writeln(`command not found: ${line.trim()}`);
             line = "";
             prompt();
             return;
         }
 
+        // Backspace (DEL)
         if (code === 127) {
             if (line.length === 0) return;
             line = line.slice(0, -1);
-            termInstance.write("\b \b");
+            term.write("\b \b");
             return;
         }
 
+        // Ctrl+C
         if (data === "\u0003") {
-            termInstance.write("^C");
+            term.write("^C");
             line = "";
             prompt();
             return;
         }
 
+        // Printable chars
         if (code >= 32) {
             line += data;
-            termInstance.write(data);
+            term.write(data);
         }
     });
 }
 
-function attachWebSocketTransport(termInstance, scrollCtl) {
+function attachWebSocketTransport(term, scrollCtl) {
+    //const protocol = location.protocol === "https:" ? "wss" : "ws";
+    //const wsUrl = `${protocol}://bash.kittycrypto.gg`;
     const wsUrl = `wss://bash.kittycrypto.gg`;
 
     const ws = new WebSocket(wsUrl);
@@ -367,6 +374,7 @@ function attachWebSocketTransport(termInstance, scrollCtl) {
     ws.addEventListener("open", () => {
         scrollCtl.forceFollowAndScroll();
 
+        // Run nekofetch once, as if typed by the user
         setTimeout(() => {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send("nekofetch\r");
@@ -376,25 +384,26 @@ function attachWebSocketTransport(termInstance, scrollCtl) {
 
     ws.addEventListener("message", (ev) => {
         if (typeof ev.data === "string") {
-            termInstance.write(ev.data);
+            term.write(ev.data);
         } else {
             const text = new TextDecoder().decode(ev.data);
-            termInstance.write(text);
+            term.write(text);
         }
         scrollCtl.maybeScroll();
     });
 
     ws.addEventListener("close", () => {
-        termInstance.writeln("\r\n[disconnected]");
+        term.writeln("\r\n[disconnected]");
         scrollCtl.forceFollowAndScroll();
     });
 
     ws.addEventListener("error", () => {
-        termInstance.writeln("\r\n[connection error]");
+        term.writeln("\r\n[connection error]");
         scrollCtl.forceFollowAndScroll();
     });
 
-    termInstance.onData(data => {
+    // Forward keyboard input to backend
+    term.onData(data => {
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(data);
         }
@@ -414,6 +423,7 @@ export async function setupTerminalModule() {
     if (!shellWrapper) throw new Error("Missing element: #shell-wrapper or #banner-wrapper");
     if (!icon) throw new Error("Missing element: #term-icon");
 
+    // Build the window shell
     const windowWrapper = document.createElement("div");
     windowWrapper.id = "terminal-window";
     windowWrapper.style.position = "relative";
@@ -449,6 +459,7 @@ export async function setupTerminalModule() {
     const scrollArea = document.createElement("div");
     scrollArea.id = "terminal-scroll";
 
+    // Ensure an xterm container exists and is the only content inside terminalWrapper
     terminalWrapper.innerHTML = "";
     const termDiv = document.createElement("div");
     termDiv.id = "term";
@@ -458,15 +469,17 @@ export async function setupTerminalModule() {
     windowWrapper.appendChild(header);
     windowWrapper.appendChild(scrollArea);
 
+    // Insert window into shell wrapper
     shellWrapper.insertBefore(windowWrapper, shellWrapper.firstChild);
 
+    // Icon setup
     icon.src = "/images/terminal.svg";
     icon.alt = "Terminal icon";
     icon.title = "Double-click to open terminal";
 
     const isMobile = await checkMobile();
-
-    term = new window.Terminal({
+    // Create terminal
+    const term = new window.Terminal({
         cursorBlink: true,
         convertEol: true,
         fontSize: isMobile ? 8 : 14,
@@ -477,24 +490,15 @@ export async function setupTerminalModule() {
     term.loadAddon(fitAddon);
     term.open(termDiv);
 
+    // Follow state + scroll controller
     const followState = { value: true };
     const scrollCtl = attachScrollTracking(term, followState);
-
-    // Wire backend transport early so fitNow can safely reference it
-    //wireBasicInput(term, followState, scrollCtl);
-    const ws = attachWebSocketTransport(term, scrollCtl);
-
-    // Forward xterm resize events to backend PTY
-    term.onResize(({ cols, rows }) => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "resize", cols, rows }));
-        }
-    });
 
     // Fit scheduling (prevents spam fits from multiple events)
     let fitScheduled = false;
 
     const fitNow = () => {
+        // Do not fit when hidden
         if (windowWrapper.style.display === "none") return;
         if (terminalWrapper.style.display === "none") return;
 
@@ -502,16 +506,6 @@ export async function setupTerminalModule() {
         if (rect.width <= 0 || rect.height <= 0) return;
 
         fitAddon.fit();
-
-        // After fitting, push the authoritative cols/rows to the backend PTY
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-                type: "resize",
-                cols: term.cols,
-                rows: term.rows
-            }));
-        }
-
         scrollCtl.maybeScroll();
     };
 
@@ -524,13 +518,20 @@ export async function setupTerminalModule() {
         });
     };
 
+    // Provide fit ref for drag wiring without duplicating listeners
     const fitNowRef = { fitNow };
 
+    // Wire input demo
+    //wireBasicInput(term, followState, scrollCtl);
+    const ws = attachWebSocketTransport(term, scrollCtl);
+
+    // Auto-scroll on render, but only if user is at bottom
     if (typeof term.onRender === "function") {
         term.onRender(() => {
             scrollCtl.maybeScroll();
         });
     } else {
+        // Fallback: if onRender is not available, still keep scroll sane after writes
         const origWrite = term.write.bind(term);
         term.write = (data, cb) => {
             origWrite(data, cb);
@@ -544,11 +545,14 @@ export async function setupTerminalModule() {
         };
     }
 
+    // Fit on real viewport resizes only, no ResizeObserver to avoid loops
     const detachResizeHandlers = attachSafeResizeFitting(scheduleFit);
 
+    // Drag wiring
     makeTermDragWPrnt(windowWrapper, fitNowRef);
     makeIconDraggable();
 
+    // Restore window state (floating or docked)
     if (localStorage.getItem("terminal-floating") === "true") {
         windowWrapper.classList.add("floating");
         applyFloatingStyles(windowWrapper);
@@ -556,6 +560,7 @@ export async function setupTerminalModule() {
         applyDockedStyles(windowWrapper);
     }
 
+    // Restore closed state
     if (localStorage.getItem("terminal-closed") === "true") {
         windowWrapper.style.display = "none";
         icon.style.display = "inline-block";
@@ -563,6 +568,7 @@ export async function setupTerminalModule() {
         icon.style.display = "none";
     }
 
+    // Restore minimised state
     if (localStorage.getItem("terminal-minimised") === "true") {
         terminalWrapper.style.display = "none";
         floatBtn.classList.add("hidden");
@@ -571,7 +577,7 @@ export async function setupTerminalModule() {
         floatBtn.classList.remove("hidden");
     }
 
-    // Initial fit (and PTY resize) once visible
+    // Initial fit (only if visible)
     scheduleFit();
 
     /* ============================
@@ -599,6 +605,7 @@ export async function setupTerminalModule() {
             return;
         }
 
+        // Minimising forces docked mode, same as your old script
         windowWrapper.classList.remove("floating");
         applyDockedStyles(windowWrapper);
         localStorage.removeItem("terminal-floating");
@@ -623,6 +630,7 @@ export async function setupTerminalModule() {
         scheduleFit();
     });
 
+    // Icon double-click opens terminal window
     icon.addEventListener("dblclick", () => {
         windowWrapper.style.display = "block";
         terminalWrapper.style.display = "block";
@@ -644,6 +652,7 @@ export async function setupTerminalModule() {
         scheduleFit();
     });
 
+    // Persist size when user finishes resizing (native resize handle) or after mouse interactions
     const onMouseUp = () => {
         if (!windowWrapper.classList.contains("floating")) return;
         saveWindowSize(windowWrapper);
@@ -660,4 +669,4 @@ export async function setupTerminalModule() {
             term.dispose();
         }
     };
-}
+} 
