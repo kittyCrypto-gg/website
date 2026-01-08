@@ -483,7 +483,7 @@ export async function setupTerminalModule() {
         cursorBlink: true,
         convertEol: true,
         fontSize: isMobile ? 8 : 14,
-        theme: buildXtermTheme()
+        //theme: buildXtermTheme()
     });
 
     const fitAddon = new window.FitAddon.FitAddon();
