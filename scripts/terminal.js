@@ -523,7 +523,46 @@ export async function setupTerminalModule() {
 
     // Wire input demo
     //wireBasicInput(term, followState, scrollCtl);
-    const ws = attachWebSocketTransport(term, scrollCtl);
+    let ws = attachWebSocketTransport(term, scrollCtl);
+
+    let pendingResize = null;
+    let lastCols = 0;
+    let lastRows = 0;
+
+    function sendResize(cols, rows) {
+        if (!Number.isFinite(cols) || !Number.isFinite(rows)) return;
+        if (cols <= 0 || rows <= 0) return;
+
+        // De-dupe
+        if (cols === lastCols && rows === lastRows) return;
+        lastCols = cols;
+        lastRows = rows;
+
+        const payload = JSON.stringify({ type: "resize", cols, rows });
+
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            pendingResize = payload;
+            return;
+        }
+
+        ws.send(payload);
+    }
+
+    // Send resize whenever xterm's grid changes
+    term.onResize(({ cols, rows }) => {
+        sendResize(cols, rows);
+    });
+
+    // Flush the first resize once the socket opens
+    ws.addEventListener("open", () => {
+        if (pendingResize) {
+            ws.send(pendingResize);
+            pendingResize = null;
+        } else {
+            // Push current size once connected
+            sendResize(term.cols, term.rows);
+        }
+    });
 
     // Auto-scroll on render, but only if user is at bottom
     if (typeof term.onRender === "function") {
