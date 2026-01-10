@@ -29,9 +29,7 @@ function cssVar(name) {
 
 function buildXtermTheme() {
     return {
-        foreground: cssVar("--banner-green"),
-        background: cssVar("--term-bg"),
-        cursor: cssVar("--banner-green"),
+        cursor: cssVar("--banner-teal"),
     };
 };
 
@@ -483,7 +481,7 @@ export async function setupTerminalModule() {
         cursorBlink: true,
         convertEol: true,
         fontSize: isMobile ? 12 : 14,
-        //theme: buildXtermTheme()
+        theme: buildXtermTheme()
     });
 
     const fitAddon = new window.FitAddon.FitAddon();
