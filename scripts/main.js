@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.style.opacity = "1";
 
   const init = async () => {
-    const isMobile = true;//await checkMobile(); <-- DEBUGGNG
+    const isMobile = await checkMobile();
 
     // if (isMobile) {
 
