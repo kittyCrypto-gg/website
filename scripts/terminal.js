@@ -702,10 +702,15 @@ export async function setupTerminalModule() {
     return {
         term,
         fitAddon,
+        sendSeq: (seq) => {
+            if (ws && ws.readyState === WebSocket.OPEN) ws.send(seq);
+        },
         dispose: () => {
+            themeObserver.disconnect();
             detachResizeHandlers();
             document.removeEventListener("mouseup", onMouseUp);
             term.dispose();
         }
     };
+
 } 

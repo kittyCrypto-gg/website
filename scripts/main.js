@@ -1,7 +1,8 @@
-import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
+//import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
 import { setupTerminalModule } from "./terminal.js";
 import { setupReaderToggle } from "./readerMode.js";
 import { showReadAloudMenu } from "./readAloud.js";
+import { keyboardEmu } from "./keyboard.js";
 
 async function checkMobile() {
   while (document.readyState === "loading") {
@@ -55,17 +56,45 @@ document.addEventListener("DOMContentLoaded", () => {
     //   return;
     // }
 
-    setupTerminalModule()
-      .then(() => {
+    const terminal = await setupTerminalModule()
+      .then((mod) => {
         document
           .getElementById("terminal-loading")
           ?.style.setProperty("display", "none");
 
         console.log("Banner loaded successfully");
+        return mod;
       })
       .catch(err => {
         console.error("Terminal initialisation failed:", err);
+        throw err;
       });
+
+    await new Promise(r => requestAnimationFrame(r));
+
+    const xtermTextarea =
+      terminal.term.element?.querySelector("textarea.xterm-helper-textarea")
+      || terminal.term.element?.querySelector("textarea");
+
+    const keyboard = (isMobile && xtermTextarea)
+      ? await new keyboardEmu(
+        true,
+        "/keyboard.html",
+        "/styles/keyboard.css"
+      ).install(
+        {
+          send: ({ seq }) => terminal.sendSeq(seq)
+        },
+        xtermTextarea
+      )
+      : null;
+
+    const dispose = terminal.dispose;
+    terminal.dispose = () => {
+      if (keyboard) keyboard.destroy();
+      dispose();
+    };
+
   };
 
   init();
