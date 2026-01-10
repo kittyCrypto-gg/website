@@ -372,7 +372,8 @@ export class keyboardEmu {
         this.bar.style.opacity = visible ? "1" : "0";
         this.bar.style.pointerEvents = visible ? "auto" : "none";
         this.bar.style.setProperty("--toolbar-z", visible ? String(this.zIndex) : String(keyboardEmu.HIDDEN_Z));
-        this.bar.setAttribute("aria-hidden", visible ? "false" : "true");
+        //this.bar.setAttribute("aria-hidden", visible ? "false" : "true");
+        this.bar.inert = !visible;
     }
 
     __showToolbar() {
