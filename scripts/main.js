@@ -4,6 +4,8 @@ import { setupReaderToggle } from "./readerMode.js";
 import { showReadAloudMenu } from "./readAloud.js";
 import { keyboardEmu } from "./keyboard.js";
 
+const params = new URLSearchParams(window.location.search);
+
 async function checkMobile() {
   while (document.readyState === "loading") {
     await new Promise(resolve => requestAnimationFrame(resolve));
@@ -30,7 +32,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.style.opacity = "1";
 
   const init = async () => {
-    const isMobile = await checkMobile();
+
+    const isMobile = params.get("isMobile") !== null
+    ? params.get("isMobile") === "true" 
+    : await checkMobile();
 
     // if (isMobile) {
 
@@ -222,8 +227,6 @@ async function initialiseUI() {
 
     if (readAloudToggle)
       readAloudToggle.addEventListener("click", showReadAloudMenu);
-
-    const params = new URLSearchParams(window.location.search);
 
     if (params.has("darkmode")) {
       const v = params.get("darkmode").toLowerCase();
