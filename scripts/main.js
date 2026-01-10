@@ -5,6 +5,8 @@ import { showReadAloudMenu } from "./readAloud.js";
 import { keyboardEmu } from "./keyboard.js";
 
 const params = new URLSearchParams(window.location.search);
+let terminalMod = null;
+let pendingWebUiTheme = null;
 
 async function checkMobile() {
   while (document.readyState === "loading") {
@@ -34,8 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const init = async () => {
 
     const isMobile = params.get("isMobile") !== null
-    ? params.get("isMobile") === "true" 
-    : await checkMobile();
+      ? params.get("isMobile") === "true"
+      : await checkMobile();
 
     // if (isMobile) {
 
@@ -99,6 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (keyboard) keyboard.destroy();
       dispose();
     };
+
+    terminalMod = terminal; // Make terminal module globally accessible
 
   };
 
@@ -176,6 +180,12 @@ async function initialiseUI() {
       if (persist)
         setCookie("darkMode", theme === "dark" ? "true" : "false");
       repaint();
+
+      if (terminalMod && typeof terminalMod.setWebUiTheme === "function") {
+        terminalMod.setWebUiTheme(theme);
+      } else {
+        pendingWebUiTheme = theme;
+      }
     };
 
     const cookieDark = getCookie("darkMode");

@@ -21,6 +21,8 @@ async function checkMobile() {
     return isMobile;
 }
 
+let webUiThemePending = null;
+
 // function cssVar(name) {
 //     return getComputedStyle(document.documentElement)
 //         .getPropertyValue(name)
@@ -361,16 +363,32 @@ function wireBasicInput(term, followState, scrollCtl) {
     });
 }
 
-function attachWebSocketTransport(term, scrollCtl) {
-    //const protocol = location.protocol === "https:" ? "wss" : "ws";
-    //const wsUrl = `${protocol}://bash.kittycrypto.gg`;
+function sendPendingWebUiTheme() {
+    if (!webUiThemePending) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(JSON.stringify({
+        type: "setEnv",
+        key: "WEB_UI_THEME",
+        value: webUiThemePending
+    }));
+
+    webUiThemePending = null;
+};
+
+function attachWebSocketTransport(term, scrollCtl, opts = {}) {
     const wsUrl = `wss://bash.kittycrypto.gg`;
+
+    const onOpen = opts && typeof opts.onOpen === "function" ? opts.onOpen : null;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
 
     ws.addEventListener("open", () => {
         scrollCtl.forceFollowAndScroll();
+
+        // Let the caller push any control messages first (theme, etc)
+        if (onOpen) onOpen(ws);
 
         // Run nekofetch once, as if typed by the user
         setTimeout(() => {
@@ -521,7 +539,11 @@ export async function setupTerminalModule() {
 
     // Wire input demo
     //wireBasicInput(term, followState, scrollCtl);
-    let ws = attachWebSocketTransport(term, scrollCtl);
+    let ws = attachWebSocketTransport(term, scrollCtl, {
+        onOpen: () => {
+            sendPendingWebUiTheme();
+        }
+    });
 
     let pendingResize = null;
     let lastCols = 0;
@@ -703,8 +725,13 @@ export async function setupTerminalModule() {
         sendSeq: (seq) => {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(seq);
         },
+        setWebUiTheme: (theme) => {
+            const t = (theme === "dark" || theme === "light") ? theme : null;
+            if (!t) return;
+            webUiThemePending = t;
+            sendPendingWebUiTheme();
+        },
         dispose: () => {
-            //themeObserver.disconnect();
             detachResizeHandlers();
             document.removeEventListener("mouseup", onMouseUp);
             term.dispose();
