@@ -21,26 +21,26 @@ async function checkMobile() {
     return isMobile;
 }
 
-function cssVar(name) {
-    return getComputedStyle(document.documentElement)
-        .getPropertyValue(name)
-        .trim();
-}
+// function cssVar(name) {
+//     return getComputedStyle(document.documentElement)
+//         .getPropertyValue(name)
+//         .trim();
+// }
 
-function buildXtermTheme() {
-    return {
-        cursor: cssVar("--banner-teal"),
-    };
-};
+// function buildXtermTheme() {
+//     return {
+//         cursor: cssVar("--banner-teal"),
+//     };
+// };
 
-const themeObserver = new MutationObserver(() => {
-    term.setOption("theme", buildXtermTheme());
-});
+// const themeObserver = new MutationObserver(() => {
+//     term.setOption("theme", buildXtermTheme());
+// });
 
-themeObserver.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"]
-});
+// themeObserver.observe(document.documentElement, {
+//     attributes: true,
+//     attributeFilter: ["class"]
+// });
 
 function injectScript(src) {
     return new Promise((resolve, reject) => {
@@ -481,7 +481,7 @@ export async function setupTerminalModule() {
         cursorBlink: true,
         convertEol: true,
         fontSize: isMobile ? 12 : 14,
-        theme: buildXtermTheme()
+        //theme: buildXtermTheme()
     });
 
     const fitAddon = new window.FitAddon.FitAddon();
@@ -704,7 +704,7 @@ export async function setupTerminalModule() {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(seq);
         },
         dispose: () => {
-            themeObserver.disconnect();
+            //themeObserver.disconnect();
             detachResizeHandlers();
             document.removeEventListener("mouseup", onMouseUp);
             term.dispose();
