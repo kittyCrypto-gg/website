@@ -45,8 +45,14 @@ export class keyboardEmu {
 
     constructor(isMobile, htmlUrl, cssUrl) {
         this.isMobile = !!isMobile;
-        this.htmlUrl = typeof htmlUrl === "string" && htmlUrl !== "" ? htmlUrl : keyboardEmu.__resolveURL("./keyboard_interface.html");
-        this.cssUrl = typeof cssUrl === "string" && cssUrl !== "" ? cssUrl : keyboardEmu.__resolveURL("./keyboard.css");
+
+        this.htmlUrl = typeof htmlUrl === "string" && htmlUrl !== ""
+            ? keyboardEmu.__resolveURL(htmlUrl)
+            : keyboardEmu.__resolveURL("../keyboard.html");
+
+        this.cssUrl = typeof cssUrl === "string" && cssUrl !== ""
+            ? keyboardEmu.__resolveURL(cssUrl)
+            : keyboardEmu.__resolveURL("../styles/keyboard.css");
 
         this.opts = null;
         this.zIndex = keyboardEmu.DEFAULT_Z_INDEX;

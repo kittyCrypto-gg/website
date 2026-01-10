@@ -79,8 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const keyboard = (isMobile && xtermTextarea)
       ? await new keyboardEmu(
         true,
-        "/keyboard.html",
-        "/styles/keyboard.css"
+        "../keyboard.html",
+        "../styles/keyboard.css"
       ).install(
         {
           send: ({ seq }) => terminal.sendSeq(seq)
