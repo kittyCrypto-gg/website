@@ -21,8 +21,6 @@ async function checkMobile() {
     return isMobile;
 }
 
-let webUiThemePending = null;
-
 // function cssVar(name) {
 //     return getComputedStyle(document.documentElement)
 //         .getPropertyValue(name)
@@ -363,19 +361,6 @@ function wireBasicInput(term, followState, scrollCtl) {
     });
 }
 
-function sendPendingWebUiTheme() {
-    if (!webUiThemePending) return;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-    ws.send(JSON.stringify({
-        type: "setEnv",
-        key: "WEB_UI_THEME",
-        value: webUiThemePending
-    }));
-
-    webUiThemePending = null;
-};
-
 function attachWebSocketTransport(term, scrollCtl, opts = {}) {
     const wsUrl = `wss://bash.kittycrypto.gg`;
 
@@ -430,6 +415,32 @@ function attachWebSocketTransport(term, scrollCtl, opts = {}) {
 
 export async function setupTerminalModule() {
     await ensureXtermLoaded();
+
+    let ws = null;
+    let webUiThemePending = null;
+
+    const sendPendingWebUiTheme = (socket) => {
+        const s = socket || ws;
+        if (!webUiThemePending) return;
+        if (!s || s.readyState !== WebSocket.OPEN) return;
+
+        s.send(JSON.stringify({
+            type: "setEnv",
+            key: "WEB_UI_THEME",
+            value: webUiThemePending
+        }));
+
+        webUiThemePending = null;
+    };
+
+    const setWebUiTheme = (theme) => {
+        const t = (theme === "dark" || theme === "light") ? theme : null;
+        if (!t) return;
+
+        webUiThemePending = t;
+        sendPendingWebUiTheme();
+    };
+
 
     const terminalWrapper = safeGetEl("terminal-wrapper");
     const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
@@ -539,7 +550,7 @@ export async function setupTerminalModule() {
 
     // Wire input demo
     //wireBasicInput(term, followState, scrollCtl);
-    let ws = attachWebSocketTransport(term, scrollCtl, {
+    ws = attachWebSocketTransport(term, scrollCtl, {
         onOpen: () => {
             sendPendingWebUiTheme();
         }
@@ -725,12 +736,7 @@ export async function setupTerminalModule() {
         sendSeq: (seq) => {
             if (ws && ws.readyState === WebSocket.OPEN) ws.send(seq);
         },
-        setWebUiTheme: (theme) => {
-            const t = (theme === "dark" || theme === "light") ? theme : null;
-            if (!t) return;
-            webUiThemePending = t;
-            sendPendingWebUiTheme();
-        },
+        setWebUiTheme,
         dispose: () => {
             detachResizeHandlers();
             document.removeEventListener("mouseup", onMouseUp);
