@@ -1,0 +1,46 @@
+<!-- keyboard_interface.html
+    Markup injected into #keyboard-emu by keyboard.js
+    The hidden marker element below is used by JS to detect that the HTML has
+    been injected and is present in the DOM.
+-->
+<span id="keyboard-emu-html-loaded" hidden></span>
+
+<div class="key-grid" aria-label="Terminal toolbar grid">
+    <!-- Row 1 -->
+    <button type="button" class="esc-key plain" data-key="Escape" aria-label="Escape">Esc</button>
+
+    <button type="button" class="ctrl-key" data-mod="ctrl" aria-pressed="false">
+        <span class="key-icon">⌃</span><span class="key-text">Ctrl</span>
+    </button>
+
+    <button type="button" class="alt-key" data-mod="alt" aria-pressed="false">
+        <span class="key-icon">⌥</span>
+        <span class="key-text" data-mobile-text="Opt" data-desktop-text="Option">Option</span>
+    </button>
+
+    <button type="button" class="meta-key" data-mod="meta" aria-pressed="false">
+        <span class="key-icon">⌘</span>
+        <span class="key-text" data-mobile-text="Cmd" data-desktop-text="Command">Command</span>
+    </button>
+
+    <button type="button" class="up-key arrow" data-key="ArrowUp" aria-label="Up">↑</button>
+
+    <button type="button" class="return-key" data-key="Enter" aria-label="Return">
+        <span class="key-icon">⏎</span><span class="key-text">Return</span>
+    </button>
+
+    <!-- Row 2 -->
+    <button type="button" class="shift-key" data-mod="shift" aria-pressed="false">
+        <span class="key-icon">⇧</span><span class="key-text">Shift</span>
+    </button>
+
+    <button type="button" class="tab-key" data-key="Tab" aria-label="Tab">
+        <span class="key-icon">⇥</span><span class="key-text">Tab</span>
+    </button>
+
+    <button type="button" class="left-key arrow" data-key="ArrowLeft" aria-label="Left">←</button>
+    <button type="button" class="down-key arrow" data-key="ArrowDown" aria-label="Down">↓</button>
+    <button type="button" class="right-key arrow" data-key="ArrowRight" aria-label="Right">→</button>
+
+    <button type="button" class="fn-key plain" data-mod="fn" aria-pressed="false" aria-label="Function">Fn</button>
+</div>

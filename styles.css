@@ -1,0 +1,2883 @@
+/* =========================================
+  1) Default (Light) Theme Variables
+========================================= */
+:root {
+  /* Body */
+  --body-bg-colour: #e8f8f5;
+  --body-text-colour: #333;
+  --body-height: auto;
+  /* Fix "hv" to "vh" */
+
+  /* Frame */
+  --frame-bg-colour: #ffffff;
+  --frame-bg-colour-rgb: 255, 255, 255;
+
+
+  --frame-width: 95%;
+  --frame-border-light: transparent;
+  --frame-padding: 20px;
+  --frame-box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+
+  /* Banner */
+  --banner-green: #66ff66;
+  --banner-blue: #33d6ff;
+  --banner-teal: #33dede;
+  --banner-teal-bright: #33f2f2;
+
+  --banner-text-main: var(--banner-teal);
+  --banner-text-header: var(--banner-teal-bright);
+  --banner-text-footer: var(--banner-teal);
+  --banner-background: transparent;
+
+  /* Header */
+  --header-bg-colour: #b2ebf2;
+  --header-text-colour: #004d40;
+
+  /* Terminal Window */
+  --term-bg: linear-gradient(to bottom, #303030, #202020);
+
+
+  --term-header-bg: linear-gradient(to bottom, #cccccc, #b0b0b0);
+  --term-header-fg: #222222;
+  --term-title: #333333;
+  --term-shadow: rgba(0, 0, 0, 0.25);
+
+  /* Navigation / Menu */
+  --nav-bg-colour: #a7ffeb;
+  --nav-border-colour: #004d40;
+  --menu-button-bg-colour: #80deea;
+  --menu-button-text-colour: #004d40;
+  --menu-button-hover-bg-colour: #4dd0e1;
+
+  /* Footer */
+  --footer-bg-colour: #b3e5fc;
+  --footer-text-colour: #01579b;
+  --footer-border-colour: #01579b;
+
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Chatroom */
+  --chatroom-border-colour: #ccc;
+  --chatroom-bg-colour: #f9f9f9;
+  --chatroom-text-colour: #333;
+  /* For monospace text if needed */
+
+  /* Timestamps, etc. */
+  --timestamp-colour: grey;
+  --chat-timestamp-colour: #999;
+
+  /* Inputs */
+  --chat-input-border-colour: #ccc;
+  --chat-input-bg-colour: #fff;
+  --chat-input-text-colour: #333;
+
+  /* Buttons */
+  --chat-send-btn-bg-colour: #4caf50;
+  --chat-send-btn-text-colour: #fff;
+
+  /* Theme Toggle Button */
+  --toggle-btn-bg-colour: #fff;
+  --toggle-btn-text-colour: black;
+
+  /* Pending Indicator */
+  --pending-indicator-colour: orange;
+
+  /* Modal Overlay & Edit Modal */
+  --modal-overlay-bg-colour: rgba(0, 0, 0, 0.3);
+  --edit-modal-bg-colour: #ffffff;
+  --edit-modal-text-colour: #004d40;
+  --edit-modal-shadow-colour: rgba(0, 0, 0, 0.2);
+  --edit-modal-userinfo-bg-colour: #e0f2f1;
+  --edit-modal-userinfo-text-colour: #004d40;
+  --edit-modal-userinfo-border-colour: #80cbc4;
+  --edit-modal-input-bg-colour: #fafafa;
+  --edit-modal-input-text-colour: #333;
+  --edit-modal-input-border-colour: #ccc;
+
+  /* Modal Buttons (edit / cancel) */
+  --edit-modal-btn-save-bg-colour: #4caf50;
+  /* Light theme green */
+  --edit-modal-btn-save-hover-colour: #388e3c;
+  --edit-modal-btn-cancel-bg-colour: #d32f2f;
+  /* Light theme red */
+  --edit-modal-btn-cancel-hover-colour: #b71c1c;
+
+  /* Tooltips */
+  --tooltip-bg-colour: rgba(var(--frame-bg-colour-rgb), 1);
+  --tooltip-text-colour: var(--body-text-colour);
+  --tooltip-border-colour: var(--nav-border-colour);
+  --tooltip-shadow: var(--frame-box-shadow);
+
+  --tooltip-padding: 10px 14px;
+  --tooltip-radius: 8px;
+  --tooltip-max-width: 280px;
+
+  --tooltip-z-index: 3000;
+  --tooltip-fade-duration: 0.18s;
+}
+
+
+
+.kitty-intro,
+.comments-container,
+.commits-outer-container,
+.blog-wrapper,
+.rss-post-block {
+  border: 1.5px solid var(--frame-border-light);
+}
+
+/* =========================================
+  2) Dark Mode Overrides
+========================================= */
+.dark-mode {
+  /* Body */
+  --body-bg-colour: #121212;
+  --body-text-colour: #e0e0e0;
+
+  /* Frame */
+  --frame-bg-colour: #1e1e1e;
+  --frame-bg-colour-rgb: 30, 30, 30;
+  --frame-border-light: #294149;
+  --frame-box-shadow: 0 4px 24px 4px rgba(0, 255, 255, 0.1);
+
+  /* Banner */
+  --banner-green: #44ff44;
+  --banner-blue: #00c0ff;
+  --banner-teal: #00c8c8;
+  --banner-teal-bright: #00e0e0;
+
+  --banner-text-main: var(--banner-teal);
+  --banner-text-header: var(--banner-teal-bright);
+  --banner-text-footer: var(--banner-teal);
+
+  /* Terminal Window */
+  --term-bg: linear-gradient(to bottom, #1b1b1b, #0e0e0e);
+  --term-header-bg: linear-gradient(to bottom, #252525, #111111);
+  --term-header-fg: #cccccc;
+  --term-title: #dddddd;
+  --term-shadow: rgba(0, 255, 255, 0.1);
+
+  /* Header */
+  --header-bg-colour: #004d40;
+  --header-text-colour: #b2ebf2;
+
+  /* Navigation / Menu */
+  --nav-bg-colour: #00352c;
+  --nav-border-colour: #b2ebf2;
+  --menu-button-bg-colour: #005f50;
+  --menu-button-text-colour: #b2ebf2;
+  --menu-button-hover-bg-colour: #008577;
+
+  /* Footer */
+  --footer-bg-colour: #002f6c;
+  --footer-text-colour: #b3e5fc;
+  --footer-border-colour: #b3e5fc;
+
+  /* Chatroom */
+  --chatroom-border-colour: #444;
+  --chatroom-bg-colour: #222;
+  --chatroom-text-colour: #e0e0e0;
+
+  /* Timestamps, etc. */
+  --timestamp-colour: #aaaaaa;
+  --chat-timestamp-colour: #999;
+
+  /* Inputs */
+  --chat-input-border-colour: #555;
+  --chat-input-bg-colour: #333;
+  --chat-input-text-colour: #fff;
+
+  /* Buttons */
+  --chat-send-btn-bg-colour: #388e3c;
+  --chat-send-btn-text-colour: #fff;
+
+  /* Theme Toggle Button */
+  --toggle-btn-bg-colour: #222;
+  --toggle-btn-text-colour: #fff;
+
+  /* Modal Overlay & Edit Modal */
+  --edit-modal-bg-colour: #1e1e1e;
+  --edit-modal-text-colour: #b2ebf2;
+  --edit-modal-shadow-colour: rgba(0, 0, 0, 0.5);
+  --edit-modal-userinfo-bg-colour: #333;
+  --edit-modal-userinfo-text-colour: #b2ebf2;
+  --edit-modal-userinfo-border-colour: #444;
+  --edit-modal-input-bg-colour: #222;
+  --edit-modal-input-text-colour: #e0e0e0;
+  --edit-modal-input-border-colour: #555;
+
+  /* Modal Buttons (edit / cancel) */
+  --edit-modal-btn-save-bg-colour: #388e3c;
+  --edit-modal-btn-save-hover-colour: #2e7d32;
+  --edit-modal-btn-cancel-bg-colour: #d32f2f;
+  --edit-modal-btn-cancel-hover-colour: #b71c1c;
+}
+
+/* =========================================
+  3) Shared Styles (Referencing Variables)
+========================================= */
+
+/* General styles */
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--body-bg-colour);
+  color: var(--body-text-colour);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: var(--body-height);
+  /*visibility: hidden;
+  opacity: 0;*/
+
+  .xterm .xterm-viewport {
+    background: var(--term-bg);
+  }
+
+  .xterm .composition-view {
+    background: var(--term-bg);
+  }
+
+  .xterm {
+    background: var(--term-bg);
+    height: 100%;
+  }
+
+}
+
+/* Frame styles */
+.frame {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* Pushes content and footer apart */
+  min-height: 100vh;
+  height: fit-content;
+
+  padding: var(--frame-padding);
+  box-sizing: border-box;
+  position: relative;
+
+  background-color: var(--frame-bg-colour);
+  border-radius: 15px;
+  box-shadow: var(--frame-box-shadow);
+  width: var(--frame-width);
+  max-width: 1200px;
+  margin: 20px auto;
+  overflow: auto;
+}
+
+/* Header styles */
+header {
+  background-color: var(--header-bg-colour);
+  color: var(--header-text-colour);
+  padding: 20px;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  box-shadow: var(--frame-box-shadow);
+}
+
+/* =========================================
+  Tooltip Styles
+========================================= */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip-trigger {
+  cursor: help;
+  display: inline-block;
+  position: relative;
+}
+
+.tooltip-content {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px);
+
+  background-color: var(--tooltip-bg-colour);
+  color: var(--tooltip-text-colour);
+  border: 1px solid var(--tooltip-border-colour);
+  border-radius: var(--tooltip-radius);
+  box-shadow: var(--tooltip-shadow);
+
+  padding: var(--tooltip-padding);
+  max-width: var(--tooltip-max-width);
+  width: max-content;
+
+  font-size: 0.95em;
+  line-height: 1.4;
+
+  transform: translateX(-50%) translateY(6px) scale(0.98);
+  pointer-events: none;
+  visibility: hidden;
+
+  z-index: var(--tooltip-z-index);
+
+  transition:
+    opacity var(--tooltip-fade-duration) ease,
+    transform var(--tooltip-fade-duration) ease,
+    visibility var(--tooltip-fade-duration) ease;
+}
+
+/* Show tooltip */
+.tooltip.show .tooltip-content,
+.tooltip:hover .tooltip-content {
+  transform: translateX(-50%) translateY(0) scale(1);
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.tooltip-content::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  border-width: 6px;
+  border-style: solid;
+  border-color:
+    var(--tooltip-bg-colour) transparent transparent transparent;
+}
+
+.tooltip-content b {
+  font-weight: 600;
+}
+
+.tooltip-content i {
+  font-style: italic;
+}
+
+.tooltip-content a {
+  color: var(--menu-button-text-colour);
+  text-decoration: underline;
+}
+
+.tooltip-content a:hover {
+  color: var(--banner-blue);
+}
+
+.tooltip-trigger:focus {
+  outline: none;
+}
+
+.tooltip-trigger:focus-visible {
+  outline: 2px solid var(--menu-button-hover-bg-colour);
+  outline-offset: 2px;
+}
+
+
+/* =========================================
+  Banner
+========================================= */
+
+#banner {
+  font-family: "Courier New", Courier, "Lucida Console", monospace;
+  font-size: 11px;
+  line-height: 10px;
+  /* Tighter than font-size */
+  white-space: pre;
+  background: var(--banner-background);
+  color: var(--banner-text-main);
+  user-select: none;
+  display: inline-block;
+  transform-origin: top left;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+}
+
+.cursor {
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Row styles */
+
+.row {
+  display: block;
+  width: 100%;
+}
+
+.row.content {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+/* Command Line Block */
+
+.command-line {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.command-line span.green {
+  color: var(--banner-green);
+}
+
+.command-line span.blue {
+  color: var(--banner-blue);
+}
+
+.command-line span.teal {
+  color: var(--banner-teal);
+}
+
+/* ASCII Art Block */
+
+.ascii-block {
+  display: block;
+  line-height: 10px;
+}
+
+.ascii-line {
+  color: var(--banner-text-main);
+  display: block;
+  font-family: inherit;
+  line-height: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Info Block */
+
+.info-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 30px;
+  height: auto;
+}
+
+.info-line {
+  color: var(--banner-text-main);
+  display: block;
+  font-family: inherit;
+  font-weight: normal;
+}
+
+.info-header {
+  color: var(--banner-text-header);
+}
+
+.info-footer {
+  color: var(--banner-text-footer);
+}
+
+/* Smooth transitions for colour changes */
+.command-line span.green,
+.command-line span.blue,
+.command-line span.teal,
+.ascii-line,
+.info-line,
+.info-header,
+.info-footer {
+  transition: color 0.3s ease;
+}
+
+/* Banner Wrapper */
+
+#banner-wrapper {
+  height: auto;
+  width: 100%;
+  overflow: visible;
+}
+
+#banner-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom,
+      rgba(0, 255, 255, 0.02),
+      rgba(0, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 2px);
+}
+
+.banner-scaler {
+  width: fit-content;
+  height: auto;
+  overflow: visible;
+  display: inline-block;
+}
+
+/* Terminal Icon */
+#term-icon {
+  display: none;
+  cursor: grab;
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  margin: 1rem;
+  user-select: none;
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  box-shadow: var(--frame-box-shadow);
+  border: 1px solid var(--frame-bg-colour);
+  border-radius: 4px;
+}
+
+#term-icon:hover {
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+
+/* ====================================
+  Terminal Window Frame & Header
+==================================== */
+#terminal-window {
+  border-radius: 8px;
+  width: 100%;
+  max-width: 100%;
+  font-family: "Courier New", Courier, "Lucida Console", monospace;
+  background: var(--term-bg);
+  box-shadow: var(--frame-box-shadow);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  /* no scroll here */
+}
+
+#term {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#terminal-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0.5rem;
+  background: var(--term-bg);
+
+}
+
+#terminal-header {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--term-header-bg);
+  color: var(--term-header-fg);
+  padding: 0 8px;
+  font-size: 11px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  user-select: none;
+}
+
+#terminal-wrapper {
+  padding: 0.5rem;
+  background: var(--term-bg);
+  overflow: hidden;
+}
+
+#terminal-header {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--term-header-bg);
+  color: var(--term-header-fg);
+  padding: 0 8px;
+  font-size: 11px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.window-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  user-select: none;
+  transition: transform 0.2s ease;
+}
+
+.btn:hover {
+  transform: scale(1.2);
+}
+
+.window-controls .btn {
+  position: relative;
+}
+
+/* Pseudo-element for hover symbol */
+.window-controls .btn::after {
+  content: "";
+  position: absolute;
+  font-size: 10px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Show on hover */
+.window-controls .btn:hover::after {
+  opacity: 1;
+}
+
+/* Specific hover symbols and colours */
+.window-controls .btn.close::after {
+  content: "×";
+  color: #8b0000;
+  /* Dark red */
+}
+
+.window-controls .btn.toggle-view::after {
+  content: "–";
+  color: #b8860b;
+  /* Mustard / dark goldenrod */
+}
+
+.window-controls .btn.float::after {
+  content: "+";
+  color: #006400;
+  /* Dark green */
+}
+
+.hidden {
+  display: none !important;
+}
+
+.window-title {
+  font-weight: bold;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  flex: 1;
+  font-family: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--term-title);
+}
+
+#terminal-content {
+  padding: 0.5rem;
+}
+
+/* =========================================
+  Menu
+========================================= */
+
+/* Menu styles */
+nav {
+  background-color: var(--nav-bg-colour);
+  padding: 15px;
+  display: flex;
+  gap: 15px;
+  border-bottom: 2px solid var(--nav-border-colour);
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scrolling on mobile */
+}
+
+/* Hide scrollbar on some browsers */
+nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Menu buttons */
+.menu-button {
+  flex: 1 1 0;
+  text-decoration: none;
+  color: var(--menu-button-text-colour);
+  background-color: var(--menu-button-bg-colour);
+  padding: 10px 15px;
+  border-radius: 8px;
+  transition: background-color 0.3s, transform 0.2s;
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+button.menu-crossed {
+  position: relative;
+}
+
+button.menu-crossed::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: red;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+button.menu-eye::before {
+  content: "👁️";
+  opacity: 0.5;
+  /*margin-right: 0.25em;*/
+}
+
+.menu-button:hover {
+  background-color: var(--menu-button-hover-bg-colour);
+  transform: scale(1.1);
+}
+
+/* =========================================
+  Kitty Intro Block
+========================================= */
+.kitty-intro {
+  /*max-width: 800px;*/
+  width: 90%;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--body-text-colour);
+  background-color: var(--frame-bg-colour);
+  border-radius: 12px;
+  box-shadow: var(--frame-box-shadow);
+  text-align: justify;
+  text-align-last: left;
+  box-sizing: border-box;
+}
+
+.kitty-intro a {
+  color: var(--menu-button-text-colour);
+}
+
+.kitty-intro code {
+  font-family: monospace;
+  background: var(--chat-input-bg-colour);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+/* =========================================
+  Kitty Intro – Dark Mode Support
+========================================= */
+.dark-mode .kitty-intro {
+  background-color: var(--frame-bg-colour);
+  color: var(--body-text-colour);
+}
+
+.dark-mode .kitty-intro a {
+  color: var(--menu-button-text-colour);
+}
+
+.dark-mode .kitty-intro code {
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+}
+
+/* Body content styles */
+#main-content {
+  padding: 20px;
+  text-align: center;
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+/* Footer styles */
+footer {
+  background-color: var(--footer-bg-colour);
+  color: var(--footer-text-colour);
+  text-align: center;
+  padding: 10px var(--frame-padding);
+  font-size: 0.9rem;
+  border-top: 2px solid var(--footer-border-colour);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Chatroom styles */
+.frame-chat {
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.frame-chat .clusterise-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100hv;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.frame-chat .clusterise-content {
+  flex: 1 1 auto;
+  /*min-height: 0;*/
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.frame-chat>.frame-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.frame-chat #banner-wrapper,
+.frame-chat #main-menu,
+.frame-chat #main-header,
+.frame-chat #main-footer,
+.frame-chat .chat-inputs {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.frame-chat #main-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.frame-chat #chatroom {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 1100px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#chatroom {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--chatroom-border-colour);
+  background: var(--chatroom-bg-colour);
+  font-family: monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  text-align: left;
+  flex-direction: column;
+  justify-content: flex-start;
+  color: var(--chatroom-text-colour);
+  min-height: 500px !important;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.chat-message:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
+}
+
+.dark-mode .chat-message:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+}
+
+/* Chat message container */
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 0;
+}
+
+/* Nickname + ID */
+.chat-nick {
+  font-weight: bold;
+  display: inline-block;
+  color: inherit;
+}
+
+/* Timestamp styling */
+.chat-timestamp {
+  color: var(--timestamp-colour);
+  font-size: 0.85em;
+  margin-left: 8px;
+}
+
+.chat-timestamp {
+  color: var(--chat-timestamp-colour);
+}
+
+/* Message text */
+.chat-text {
+  margin-left: 15px;
+  padding-top: 2px;
+  display: block;
+  color: inherit;
+  margin-top: 5px;
+}
+
+/* Chat input box */
+.chat-inputs {
+  display: flex;
+  gap: 2%;
+  margin-top: 10px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Chat input fields */
+.chat-inputs input {
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid var(--chat-input-border-colour);
+  border-radius: 5px;
+  flex-grow: 1;
+  width: 40%;
+  min-width: 100px;
+  box-sizing: border-box;
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+}
+
+/* Send button */
+.chat-inputs button {
+  padding: 10px;
+  font-size: 14px;
+  background: var(--chat-send-btn-bg-colour);
+  color: var(--chat-send-btn-text-colour);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 15%;
+  min-width: 80px;
+  box-sizing: border-box;
+}
+
+.chat-inputs button:hover {
+  background: var(--menu-button-hover-bg-colour, #388e3c);
+}
+
+.chat-inputs input,
+.chat-inputs button {
+  max-width: 100%;
+}
+
+/* Theme toggle button */
+.theme-toggle-button {
+  position: fixed;
+  bottom: 20px;
+  right: calc((100% - var(--frame-width)) / 2 + 25px);
+  width: 50px;
+  height: 50px;
+  font-size: 1.5rem;
+  background: var(--toggle-btn-bg-colour);
+  color: var(--toggle-btn-text-colour);
+  border: none;
+  border-radius: 50%;
+  box-shadow: var(--frame-box-shadow);
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-button:hover {
+  transform: scale(1.1);
+}
+
+/* Pending messages */
+.chat-message.pending {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.pending-indicator {
+  color: var(--pending-indicator-colour);
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+/* Chat header with actions */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Show buttons on hover or when active */
+.chat-header:hover .chat-actions,
+.chat-message.active .chat-actions {
+  display: inline-flex;
+}
+
+.chat-actions span {
+  display: inline-block;
+  padding: 4px 6px;
+  border-radius: 5px;
+  font-size: 50%;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.chat-actions span:hover {
+  background-color: var(--chat-actions-hover-bg-colour, rgba(0, 0, 0, 0.15));
+  cursor: pointer;
+}
+
+.edited-flag {
+  font-size: 1em;
+  margin-right: 4px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.chat-msg-id {
+  display: none;
+}
+
+body.dark-mode .theme-toggle-button {
+  background: var(--toggle-btn-bg-colour);
+  color: var(--toggle-btn-text-colour);
+}
+
+/* =========================================
+  Modal (Edit Message)
+========================================= */
+/* Modal Overlay */
+#modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--modal-overlay-bg-colour);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Container */
+#edit-message-modal {
+  background-color: var(--edit-modal-bg-colour);
+  color: var(--edit-modal-text-colour);
+  border-radius: 10px;
+  box-shadow: var(--frame-box-shadow);
+  padding: 20px;
+  width: 400px;
+  max-width: 90%;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Modal Title */
+#edit-message-id {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+/* User Info Display */
+#edit-user-info {
+  background-color: var(--edit-modal-userinfo-bg-colour);
+  color: var(--edit-modal-userinfo-text-colour);
+  border: 1px solid var(--edit-modal-userinfo-border-colour);
+  padding: 8px;
+  border-radius: 5px;
+  width: 100%;
+  font-size: 1rem;
+}
+
+/* Editable Message Input */
+#edit-message-input {
+  width: 100%;
+  min-height: 100px;
+  background-color: var(--edit-modal-input-bg-colour);
+  color: var(--edit-modal-input-text-colour);
+  border: 1px solid var(--edit-modal-input-border-colour);
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+/* Modal Buttons */
+#edit-message-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+#edit-message-buttons button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 0 5px;
+  border: none;
+}
+
+/* Edit Button */
+#edit-message-btn {
+  background-color: var(--edit-modal-btn-save-bg-colour);
+  color: #fff;
+}
+
+#edit-message-btn:hover {
+  background-color: var(--edit-modal-btn-save-hover-colour);
+}
+
+/* Cancel Button */
+#cancel-edit-btn {
+  background-color: var(--edit-modal-btn-cancel-bg-colour);
+  color: #fff;
+}
+
+#cancel-edit-btn:hover {
+  background-color: var(--edit-modal-btn-cancel-hover-colour);
+}
+
+/* Disable scrolling on page when modal is open */
+body.no-scroll {
+  overflow: hidden;
+}
+
+/*==========================================
+  General Modal
+==========================================*/
+#modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--modal-overlay-bg-colour, rgba(0, 0, 0, 0.3));
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* General Modal Box */
+.modal {
+  background: var(--edit-modal-bg-colour, #fff);
+  color: var(--edit-modal-text-colour, #004d40);
+  border-radius: 12px;
+  box-shadow: var(--frame-box-shadow, 0 4px 10px rgba(0, 0, 0, 0.2));
+  padding: 22px 28px;
+  min-width: 320px;
+  max-width: 95vw;
+  width: fit-content;
+  max-height: 80vh;
+  overflow-y: auto;
+  font-size: 1.05em;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  left: 50%;
+}
+
+/* =========================================
+  Chapter Navigation Buttons
+========================================= */
+
+.chapter-navigation button {
+  all: unset;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  color: var(--body-text-colour);
+  display: inline-block;
+  padding: 0 4px;
+}
+
+.chapter-navigation button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Dark mode */
+.dark-mode .chapter-navigation button {
+  color: var(--body-text-colour);
+}
+
+.font-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+  margin-top: 0.5em;
+}
+
+.font-controls button {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 5px;
+  color: var(--body-text-colour);
+}
+
+.font-controls button:hover {
+  transform: scale(1.2);
+}
+
+.dark-mode .font-controls button {
+  color: var(--body-text-colour);
+}
+
+/* =========================================
+  Chapter Navigation Inputs
+========================================= */
+
+/* Shared styles */
+.chapter-display,
+.chapter-input {
+  width: 2ch;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 2px 4px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  appearance: textfield;
+  /* for Firefox */
+}
+
+/* Remove spinners in Chrome/Safari */
+.chapter-input::-webkit-outer-spin-button,
+.chapter-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove spinners in Firefox */
+/* .chapter-input[type=number] {
+  -moz-appearance: textfield;
+} */
+
+/* Readonly display input */
+.chapter-display[readonly] {
+  background: transparent;
+  pointer-events: none;
+  color: var(--body-text-colour);
+}
+
+/* END button */
+.chapter-end {
+  width: 2ch;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--body-text-colour);
+}
+
+/* Dark mode */
+.dark-mode .chapter-display,
+.dark-mode .chapter-input,
+.dark-mode .chapter-end {
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+}
+
+/* Dark mode adjustments */
+.dark-mode .chapter-input,
+.dark-mode .chapter-display {
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+}
+
+.dark-mode .chapter-end {
+  color: var(--body-text-colour);
+}
+
+/* =========================================
+  Story Selector Dropdown
+========================================= */
+
+#story-picker {
+  margin: 15px auto;
+  text-align: center;
+}
+
+.story-selector {
+  background-color: var(--menu-button-bg-colour);
+  color: var(--menu-button-text-colour);
+  border: 1px solid var(--nav-border-colour);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.story-selector:hover {
+  background-color: var(--menu-button-hover-bg-colour);
+}
+
+.dark-mode .story-selector {
+  background-color: var(--menu-button-bg-colour);
+  color: var(--menu-button-text-colour);
+  border-color: var(--nav-border-colour);
+}
+
+/* =========================================
+  Chapter Reader Container
+========================================= */
+
+.reader-container {
+  background-color: var(--frame-bg-colour);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: var(--frame-box-shadow);
+  margin: 20px auto;
+  width: 90%;
+  max-width: 800px;
+  color: var(--body-text-colour);
+  font-size: 1.2rem;
+  line-height: 1.8;
+}
+
+.dark-mode .reader-container {
+  background-color: var(--frame-bg-colour);
+  color: var(--body-text-colour);
+}
+
+/* =========================================
+  Reader: Block-Level Styling
+========================================= */
+
+.reader-title {
+  font-size: 2.2em;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+.reader-subtitle {
+  font-size: 1.6em;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 1.5em;
+  margin-bottom: 1em;
+  color: var(--header-text-colour);
+}
+
+.reader-paragraph {
+  font-size: 1em;
+  line-height: 1.75;
+  margin: 1.2em auto;
+  max-width: 65ch;
+  text-align: justify;
+  color: var(--body-text-colour);
+}
+
+.reader-quote {
+  font-size: 1em;
+  font-style: italic;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-left: 4px solid var(--nav-border-colour);
+  margin: 1.5em auto;
+  padding: 1em 1.5em;
+  max-width: 60ch;
+  color: var(--body-text-colour);
+}
+
+.reader-intense {
+  background-color: rgba(255, 213, 79, 0.1);
+  /* subtle yellow glow */
+  border-left-color: gold;
+}
+
+/* =========================================
+  Reader: Inline Text Styles
+========================================= */
+
+.reader-bold {
+  font-weight: bold;
+}
+
+.reader-italic {
+  font-style: italic;
+}
+
+.reader-underline {
+  text-decoration: underline;
+}
+
+.reader-strike {
+  text-decoration: line-through;
+}
+
+.reader-smallcaps {
+  font-variant: small-caps;
+}
+
+.reader-highlight {
+  background-color: #f9e79f;
+  /* soft pale gold */
+  transition: background-color 2s ease-in-out, color 2s ease-in-out;
+}
+
+.reader-bookmark.reader-highlight {
+  background-color: #f9e79f;
+  transition: background-color 2s ease-in-out;
+}
+
+.reader-bookmark.reader-highlight .reader-paragraph {
+  color: #222;
+  transition: color 2s ease-in-out;
+}
+
+.reader-bookmark.fade-out {
+  background-color: transparent;
+}
+
+.reader-bookmark.fade-out .reader-paragraph {
+  color: var(--chatroom-text-colour);
+  /* or your theme's default text colour */
+}
+
+.bookmark-emoji {
+  margin-right: 0.4em;
+  font-size: 1em;
+  vertical-align: middle;
+}
+
+/* =========================================
+  Tategaki Vertical Text
+========================================= */
+.tategaki-container {
+  display: inline-block;
+  margin: 0 10px;
+  overflow: visible;
+  vertical-align: top;
+  border-left: 2px solid transparent;
+  padding-left: 5px;
+  position: relative;
+}
+
+.tategaki-container svg {
+  overflow: visible;
+}
+
+.tategaki-container svg text {
+  fill: var(--body-text-colour);
+}
+
+/* Ensure full visibility in dark mode */
+body.dark-mode .tategaki-container svg text {
+  fill: var(--body-text-colour);
+}
+
+.tg-token {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  line-height: 1;
+  font: inherit;
+  color: inherit;
+
+  width: 100%;
+  height: 100%;
+}
+
+/* Padding compensation */
+.tategaki-container svg {
+  margin-left: 5px;
+  /* To prevent left cropping */
+  margin-bottom: 5px;
+  /* To prevent bottom cropping */
+  pointer-events: none;
+}
+
+.tategaki-container foreignObject {
+  overflow: visible;
+}
+
+/* =========================================
+  In-Chapter Images
+========================================= */
+.chapter-image-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  overflow: hidden;
+  border-radius: 8px;
+  max-width: 100%;
+  position: relative;
+}
+
+.chapter-image {
+  max-width: 100%;
+  /*height: 100%;*/
+  border: 2px solid var(--body-text-colour);
+  border-radius: 8px;
+  box-shadow: var(--frame-box-shadow);
+  cursor: zoom-in;
+  object-fit: cover;
+  transition: transform 0.3s ease, transform-origin 0.3s ease;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* Zoom effect */
+.chapter-image.active {
+  transform: scale(2);
+  /* 2x zoom */
+  cursor: move;
+  touch-action: none;
+  /* disable scroll and gestures while zoomed */
+}
+
+/* =========================================
+   Image-nav overlay
+========================================= */
+.image-nav {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Show the overlay when the image is zoomed */
+.chapter-image.active+.image-nav {
+  display: flex;
+  opacity: 1;
+}
+
+/* transparent buttons with padding for usability */
+.image-nav button {
+  all: unset;
+  font-size: 2.5rem;
+  cursor: pointer;
+  padding: 0px;
+  background: none;
+  border: none;
+  box-shadow: var(--frame-box-shadow);
+  color: inherit;
+  transition: transform 0.1s;
+
+  /* Prevent long-press select/callout on mobile */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.image-nav button:hover {
+  transform: scale(1.1);
+}
+
+.image-nav button:active {
+  transform: scale(0.95);
+}
+
+/* ensure transparency in dark mode too */
+.dark-mode .image-nav button,
+.dark-mode .image-nav button:hover {
+  background: none;
+  color: inherit;
+}
+
+/* =========================================
+  Dark Mode Adjustments
+========================================= */
+
+.dark-mode .reader-quote {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-left-color: var(--nav-border-colour);
+}
+
+.dark-mode .reader-intense {
+  background-color: rgba(255, 230, 128, 0.1);
+  border-left-color: #ffcc00;
+}
+
+.dark-mode .reader-subtitle,
+.dark-mode .reader-title,
+.dark-mode .reader-paragraph {
+  color: var(--body-text-colour);
+}
+
+/* =========================================
+  Chapter 404 Message
+========================================= */
+
+.chapter-404 {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2rem;
+  color: var(--body-text-colour);
+}
+
+.dark-mode .chapter-404 {
+  color: var(--body-text-colour);
+}
+
+/* =========================================
+  About Page Styling
+========================================= */
+.about-frame {
+  background-color: var(--frame-bg-colour);
+  border-radius: 15px;
+  box-shadow: var(--frame-box-shadow);
+  width: 80%;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: auto;
+  height: fit-content;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.about-text {
+  flex-grow: 1;
+  text-align: justify;
+  line-height: 1.6;
+  font-size: 1.1rem;
+  color: var(--body-text-colour);
+}
+
+.jp-about {
+  display: flex;
+  justify-content: flex-end;
+  /* align items to the right */
+  flex-direction: row-reverse;
+  /* ensures right-to-left layout */
+  direction: rtl;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  border-top: 1px solid var(--nav-border-colour);
+  padding: 20px 0 10px 0;
+  margin-top: 30px;
+  font-family: "Noto Serif JP", "Yu Mincho", serif;
+
+  /* Custom Scrollbar Styles */
+  scrollbar-width: thin;
+  scrollbar-color: var(--nav-border-colour) var(--frame-bg-colour);
+}
+
+.jp-about::-webkit-scrollbar {
+  height: 8px;
+  /* height of the horizontal scrollbar */
+}
+
+.jp-about::-webkit-scrollbar-thumb {
+  background-color: var(--nav-border-colour);
+  /* colour of the scrollbar handle */
+  border-radius: 4px;
+}
+
+.jp-about::-webkit-scrollbar-track {
+  background-color: var(--frame-bg-colour);
+  /* colour of the scrollbar track */
+  border-radius: 4px;
+}
+
+.tategaki-container {
+  display: inline-block;
+  margin-left: 0;
+  margin-right: 10px;
+  /* spacing between columns */
+}
+
+.tategaki-container svg {
+  margin-left: 10px;
+  /* gives columns space */
+}
+
+/* =========================================
+  Floating PFP
+========================================= */
+.pfp {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: var(--frame-box-shadow);
+  border: 2px solid var(--nav-border-colour);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.pfp img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* =========================================
+  Profile Row Layout
+========================================= */
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 2rem;
+  box-sizing: border-box;
+  margin-bottom: 2rem;
+  margin-top: 2rem;
+}
+
+/* =========================================
+  IRL Anime-Styled Image
+========================================= */
+.irl-pic {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: var(--frame-box-shadow);
+  border: 2px solid var(--nav-border-colour);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.irl-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* =========================================
+  Comment Section Styling
+========================================= */
+
+.comments-header {
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--nav-border-colour);
+  color: var(--header-text-colour);
+  text-align: left;
+}
+
+.dark-mode .comments-header {
+  color: var(--header-text-colour);
+  border-bottom-color: var(--nav-border-colour);
+}
+
+.comments-container {
+  bottom: 10px;
+  background-color: var(--frame-bg-colour);
+  border-radius: 12px;
+  box-shadow: var(--frame-box-shadow);
+  margin: 40px auto;
+  padding: 20px;
+  width: 90%;
+  /*max-width: 800px;*/
+  color: var(--body-text-colour);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comments-box {
+  background-color: var(--chatroom-bg-colour);
+  border: 1px solid var(--chatroom-border-colour);
+  border-radius: 8px;
+  padding: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  color: var(--chatroom-text-colour);
+}
+
+/* Individual comment message */
+.comment-message {
+  text-align: left;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Alternate comment backgrounds */
+.comment-message:nth-child(odd) {
+  background-color: var(--chatroom-bg-colour);
+}
+
+.comment-message:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
+}
+
+.dark-mode .comment-message:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+}
+
+/* Input Section */
+.comment-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#new-comment {
+  width: 100%;
+  min-height: 100px;
+  max-height: 300px;
+  resize: vertical;
+  font-size: 1rem;
+  padding: 10px;
+  border: 1px solid var(--chat-input-border-colour);
+  border-radius: 6px;
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  box-sizing: border-box;
+}
+
+#post-comment-button {
+  align-self: flex-end;
+  background-color: var(--chat-send-btn-bg-colour);
+  color: var(--chat-send-btn-text-colour);
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+#post-comment-button:hover {
+  background-color: var(--menu-button-hover-bg-colour);
+}
+
+/* Dark mode support */
+.dark-mode .comments-box {
+  background-color: var(--chatroom-bg-colour);
+  border-color: var(--chatroom-border-colour);
+  color: var(--chatroom-text-colour);
+}
+
+.dark-mode #new-comment {
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  border-color: var(--chat-input-border-colour);
+}
+
+.dark-mode #post-comment-button {
+  background-color: var(--chat-send-btn-bg-colour);
+  color: var(--chat-send-btn-text-colour);
+}
+
+/* =========================================
+  Avatar / Identicon Styling
+========================================= */
+
+.avatar-container {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-container svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.dark-mode .avatar-container {
+  filter: contrast(1.2) brightness(0.85);
+}
+
+/* Updated chat header layout */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.chat-nick {
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--chat-nick-colour, inherit);
+}
+
+.chat-timestamp {
+  font-size: 0.85rem;
+  color: var(--chat-timestamp-colour, #888);
+  margin-left: auto;
+}
+
+/* =========================================
+  Comment Nickname Input
+========================================= */
+
+#comment-nick {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid var(--chat-input-border-colour);
+  border-radius: 6px;
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  box-sizing: border-box;
+}
+
+.dark-mode #comment-nick {
+  background-color: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  border-color: var(--chat-input-border-colour);
+}
+
+.temporary-notice {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background-color: var(--chatroom-bg-colour);
+  color: var(--chatroom-text-colour);
+  border: 2px solid var(--nav-border-colour);
+  border-radius: 8px;
+  box-shadow: var(--frame-box-shadow);
+  font-weight: bold;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
+}
+
+/* Create a brightened background overlay in dark mode */
+.dark-mode .temporary-notice::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--chatroom-bg-colour);
+  filter: brightness(1.2);
+  z-index: -1;
+}
+
+/* =========================================
+  GitHub Commit Feed Styling
+========================================= */
+
+.commits-outer-container {
+  /*max-width: 800px;*/
+  width: 90%;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--body-text-colour);
+  background-color: var(--frame-bg-colour);
+  border-radius: 12px;
+  box-shadow: var(--frame-box-shadow);
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.commits-wrapper {
+  margin: 0 auto;
+  width: 90%;
+  /*max-width: 1200px;*/
+  padding: 0 20px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.commits-wrapper>.comments-header {
+  width: 100%;
+  display: block;
+  text-align: left;
+}
+
+.github-output-frame {
+  background-color: var(--chatroom-bg-colour);
+  border: 1px solid var(--chatroom-border-colour);
+  border-radius: 8px;
+  padding: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  color: var(--chatroom-text-colour);
+}
+
+/* =========================================
+  Side-by-side Commit Panel Layout
+========================================= */
+.commits-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* =========================================
+  Individual Commit Block Styling
+========================================= */
+
+.commit-block {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 6px;
+  background-color: var(--chatroom-bg-colour);
+  text-align: left;
+}
+
+/* Alternate Backgrounds for Commits */
+.commit-block:nth-child(odd) {
+  background-color: var(--chatroom-bg-colour);
+}
+
+.commit-block:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
+}
+
+.dark-mode .commit-block:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+}
+
+/* =========================================
+  Commit Identicon Styling
+========================================= */
+
+.commit-identicon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--chatroom-bg-colour);
+  box-shadow: var(--frame-box-shadow);
+}
+
+.commit-identicon svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  display: block;
+}
+
+.commit-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.dark-mode .commit-identicon {
+  filter: contrast(1.2) brightness(0.85);
+}
+
+/* =========================================
+  Commit Section Container
+========================================= */
+
+.commits-container {
+  flex: 1;
+  min-width: 360px;
+  max-width: 600px;
+  background-color: var(--frame-bg-colour);
+  border-radius: 12px;
+  box-shadow: var(--frame-box-shadow);
+  padding: 20px;
+  color: var(--body-text-colour);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+/* Optional: distinct commit header link style, if needed */
+.commit-header-link {
+  display: block;
+  text-align: left;
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--nav-border-colour);
+  color: var(--header-text-colour);
+  text-decoration: none;
+}
+
+.commit-header-link:hover {
+  text-decoration: underline;
+}
+
+.dark-mode .commit-header-link {
+  color: var(--header-text-colour);
+  border-bottom-color: var(--nav-border-colour);
+}
+
+.dark-mode .commits-container {
+  background-color: var(--frame-bg-colour);
+  color: var(--body-text-colour);
+}
+
+/* =========================================
+  Commit Content Formatting
+========================================= */
+
+/* Match .comments-header while remaining a link */
+.commit-header-link {
+  display: block;
+  text-align: left;
+  font-size: 1.4rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--nav-border-colour);
+  color: var(--header-text-colour);
+  text-decoration: none;
+}
+
+.commit-header-link:hover {
+  text-decoration: underline;
+}
+
+.dark-mode .commit-header-link {
+  color: var(--header-text-colour);
+  border-bottom-color: var(--nav-border-colour);
+}
+
+.commit-block .commit-message {
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: var(--header-text-colour);
+}
+
+.commit-block .commit-meta {
+  font-size: 0.9em;
+  color: var(--timestamp-colour);
+  margin-left: 4px;
+}
+
+.commit-meta code {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  font-size: 0.97em;
+  background: var(--chat-input-bg-colour);
+  border-radius: 4px;
+  padding: 2px 4px;
+  display: inline-block;
+}
+
+.twitter-link {
+  border-top: 1px solid var(--nav-border-colour);
+  text-align: center;
+}
+
+.twitter-link svg,
+.twitter-link img.miku-icon {
+  vertical-align: middle;
+  margin-right: 0.5em;
+}
+
+.twitter-link a {
+  color: var(--menu-button-text-colour);
+  text-decoration: underline;
+}
+
+/* Commit Link Styling */
+.commit-block a {
+  color: var(--menu-button-text-colour);
+  font-size: 0.85em;
+  text-decoration: underline;
+}
+
+.commit-block a:hover {
+  text-decoration: none;
+}
+
+.emoticons {
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: middle;
+  position: relative;
+}
+
+.emoticon {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Blinking emoticons behave like a single inline word */
+.emoticons .emoticon-blink {
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: baseline;
+  position: relative;
+  line-height: 1;
+}
+
+/* Both visible and blink frames stay aligned */
+.emoticons .blink-open,
+.emoticons .blink-closed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+}
+
+.blink-open {
+  animation: blinkOpen 6s infinite;
+}
+
+.blink-closed {
+  animation: blinkClosed 6s infinite;
+}
+
+@keyframes blinkOpen {
+
+  0%,
+  83.33% {
+    opacity: 1;
+  }
+
+  83.34%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes blinkClosed {
+
+  0%,
+  83.33% {
+    opacity: 0;
+  }
+
+  83.34%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/* =========================================
+  RSS Blog Post Feed Styling
+========================================= */
+
+.blog-wrapper {
+  margin: 40px auto;
+  width: 90%;
+  /*max-width: 720px;*/
+  background-color: var(--frame-bg-colour);
+  border-radius: 15px;
+  box-shadow: var(--frame-box-shadow);
+  padding: 30px 32px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.blog-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.rss-scroll-2 {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: none;
+  scroll-behavior: smooth;
+}
+
+.rss-scroll-2>.blog-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.rss-post-title {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--header-text-colour);
+  margin: 0;
+  flex: 0 1 auto;
+  text-align: left;
+  line-height: 1.12;
+}
+
+.rss-post-date {
+  font-size: 0.99em;
+  font-weight: 400;
+  color: var(--timestamp-colour);
+  margin-left: 18px;
+  opacity: 0.65;
+}
+
+.rss-post-meta {
+  font-size: 0.98em;
+  font-weight: 500;
+  color: var(--timestamp-colour);
+  margin: 4px 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rss-post-content {
+  text-align: justify;
+  color: var(--body-text-colour);
+  font-size: 1.08em;
+  line-height: 1.74;
+  margin-bottom: 0;
+  transition: max-height 0.38s cubic-bezier(0.36, 1.63, 0.41, 0.88);
+}
+
+.rss-post-content a {
+  color: var(--menu-button-text-colour);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.rss-post-content a:hover {
+  color: var(--banner-blue);
+  text-decoration: underline;
+}
+
+/* For dark mode: */
+.dark-mode .rss-post-content a {
+  color: var(--menu-button-text-colour);
+}
+
+.rss-post-content.content-collapsed {
+  max-height: 0 !important;
+  overflow: hidden;
+}
+
+.rss-post-content.content-expanded {
+  overflow: visible;
+}
+
+.rss-post-summary {
+  font-size: 1em;
+  font-style: italic;
+  color: var(--timestamp-colour);
+  margin-bottom: 8px;
+  text-align: left;
+  cursor: pointer;
+  padding-left: 2px;
+  border-radius: 4px;
+  transition: background 0.17s, color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rss-posts-wrapper {
+  margin: 40px auto;
+  width: 100%;
+  max-width: 900px;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.rss-post-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px 18px 20px;
+  border-radius: 10px;
+  background-color: var(--chatroom-bg-colour);
+  margin-bottom: 22px;
+  box-shadow: var(--frame-box-shadow);
+  transition: background 0.3s;
+}
+
+/* Alternate backgrounds for each post, similar to commits */
+.rss-post-block:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
+}
+
+.dark-mode .rss-post-block:nth-child(even) {
+  background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+}
+
+/* Title */
+.rss-post-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--header-text-colour);
+  margin-bottom: 2px;
+}
+
+/* Metadata (date, author, tags) */
+.rss-post-meta {
+  font-size: 0.95em;
+  color: var(--timestamp-colour);
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.rss-post-meta .rss-post-author {
+  font-weight: 500;
+  color: var(--menu-button-text-colour);
+}
+
+.rss-post-meta .rss-post-date {
+  font-style: italic;
+  color: var(--chat-timestamp-colour);
+}
+
+.rss-post-meta .rss-post-tags {
+  font-size: 0.92em;
+  color: var(--banner-blue);
+}
+
+.rss-post-meta .rss-post-tag {
+  background: var(--menu-button-bg-colour);
+  color: var(--menu-button-text-colour);
+  border-radius: 5px;
+  padding: 2px 8px;
+  margin-right: 2px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.dark-mode .rss-post-meta .rss-post-tag {
+  background: var(--menu-button-bg-colour);
+  color: var(--menu-button-text-colour);
+}
+
+/* Summary */
+.rss-post-summary {
+  font-size: 1.05em;
+  color: var(--body-text-colour);
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+/* Main Content */
+.rss-post-content {
+  font-size: 0.97em !important;
+  color: #2e4242 !important;
+  opacity: 0.86;
+  transition: max-height 0.38s cubic-bezier(0.36, 1.63, 0.41, 0.88);
+}
+
+.dark-mode .rss-post-content {
+  color: #e0f7fa !important;
+  opacity: 0.91;
+}
+
+.rss-post-image {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 8px;
+  margin: 1rem auto;
+  display: block;
+  box-shadow: var(--frame-box-shadow);
+}
+
+/* Link to full post (if needed) */
+.rss-post-link {
+  margin-top: 6px;
+  color: var(--banner-teal-bright);
+  font-size: 1em;
+  font-weight: 600;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.rss-post-link:hover {
+  color: var(--banner-blue);
+}
+
+.rss-post-block:hover,
+.rss-post-block:focus,
+.dark-mode .rss-post-block:hover,
+.dark-mode .rss-post-block:focus {
+  background-color: var(--menu-button-hover-bg-colour) !important;
+  color: var(--banner-blue);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* =========================================
+  Reader Mode Styles
+=========================================*/
+body.reader-mode {
+  background: var(--frame-bg-colour);
+  --frame-box-shadow: none !important;
+}
+
+body.reader-mode #banner-wrapper,
+body.reader-mode #main-menu,
+body.reader-mode #main-header,
+body.reader-mode #story-picker,
+body.reader-mode #comments,
+body.reader-mode #main-footer {
+  display: none !important;
+}
+
+body.reader-mode article#reader {
+  display: block !important;
+  max-width: 70ch;
+  margin: 4rem auto;
+  font-size: 1.2rem;
+  line-height: 1.8;
+  /*font-family: Georgia, serif;*/
+  background: none;
+  box-shadow: var(--frame-box-shadow);
+  padding: 0;
+  color: var(--body-text-colour);
+  text-align: justify;
+}
+
+body.reader-mode article#reader .chapter-image {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+body.reader-mode .chapter-image.active+.image-nav {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 10;
+  opacity: 1;
+}
+
+body.reader-mode .chapter-image.active+.image-nav button {
+  font-size: 2.5rem;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+
+body.reader-mode {
+  background: var(--frame-bg-colour);
+}
+
+/* =========================================
+  Read Aloud Menu
+========================================= */
+#read-aloud-menu {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: 100vw;
+  overflow-x: auto;
+  max-height: 100vh;
+  z-index: 2000;
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  background: rgba(var(--frame-bg-colour-rgb), 0.8);
+  color: var(--body-text-colour);
+  border-radius: 15px;
+  box-shadow: var(--frame-box-shadow);
+  border: 1.5px solid var(--frame-border-light);
+  padding: 18px 22px 14px 22px;
+  box-sizing: border-box;
+  user-select: none;
+  cursor: grab;
+  transition: box-shadow 0.25s, background 0.25s, color 0.25s, opacity 0.2s, left 0.2s, top 0.2s;
+}
+
+#read-aloud-menu.dragging {
+  opacity: 0.92;
+  cursor: grabbing;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.25), var(--frame-box-shadow);
+}
+
+.read-aloud-close-button {
+  position: absolute;
+  top: 12px;
+  right: 30px;
+  align-self: flex-end;
+  font-size: 1.1em;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease;
+  z-index: 3000;
+}
+
+.read-aloud-close-button:hover {
+  transform: scale(1.2);
+}
+
+#read-aloud-menu .read-aloud-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 1.07em;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--nav-border-colour);
+  cursor: grab;
+  user-select: none;
+}
+
+/* Controls group */
+#read-aloud-menu .read-aloud-controls {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: auto;
+  gap: 0;
+}
+
+#read-aloud-menu .read-aloud-fields,
+#read-aloud-menu .read-aloud-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+#read-aloud-menu .read-aloud-fields {
+  margin-bottom: 10px;
+}
+
+#read-aloud-menu input,
+#read-aloud-menu select {
+  flex: 1 1 0;
+  width: 0;
+  background: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  border: 1px solid var(--chat-input-border-colour);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 1em;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+#read-aloud-menu input[type="text"]:focus,
+#read-aloud-menu select:focus {
+  border-color: var(--menu-button-hover-bg-colour);
+}
+
+/* Buttons shared rules */
+#read-aloud-menu .read-aloud-controls button,
+#read-aloud-menu .read-aloud-buttons button,
+#read-aloud-menu button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 28px;
+  max-width: 48px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  margin: 0 2px;
+  /*invisivle */
+  background: none !important;
+  color: var(--menu-button-text-colour);
+  border: none !important;
+  border-radius: 7px;
+  font-size: clamp(1em, 4vw, 1.5em);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s, transform 0.18s;
+  outline: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+#read-aloud-menu .read-aloud-controls button:active,
+#read-aloud-menu .read-aloud-controls button:focus,
+#read-aloud-menu .read-aloud-buttons button:active,
+#read-aloud-menu .read-aloud-buttons button:focus,
+#read-aloud-menu button:active,
+#read-aloud-menu button:focus {
+  background: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+#read-aloud-menu button:hover {
+  background: var(--menu-button-hover-bg-colour);
+  transform: scale(1.08);
+}
+
+#read-aloud-menu #read-aloud-status {
+  flex: 1;
+  font-size: 0.98em;
+  margin-left: 12px;
+  color: var(--header-text-colour);
+  min-width: 50px;
+}
+
+#read-aloud-menu .read-aloud-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+/* highlighted text */
+.reader-bookmark.read-aloud-active {
+  background: #b388ff !important;
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
+  opacity: 1 !important;
+}
+
+.reader-bookmark.read-aloud-fadeout {
+  opacity: 0 !important;
+  transition: opacity 0.6s;
+}
+
+/* Dark mode */
+body.dark .reader-bookmark.read-aloud-active,
+.dark .reader-bookmark.read-aloud-active {
+  background: #e1bfff !important;
+}
+
+body.dark .reader-bookmark.read-aloud-fadeout,
+.dark .reader-bookmark.read-aloud-fadeout {
+  opacity: 0 !important;
+}
+
+#read-aloud-menu a,
+.dark-mode #read-aloud-menu a {
+  color: var(--menu-button-text-colour);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+#read-aloud-menu a:hover,
+#read-aloud-menu a:focus {
+  color: var(--banner-blue);
+  text-decoration: underline;
+}
+
+/* =========================================
+  Modal Styles
+========================================= */
+.modal-content a {
+  color: var(--menu-button-text-colour);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.modal-content a:hover,
+.modal-content a:focus {
+  color: var(--banner-blue);
+}
+
+
+/* =========================================
+  Debug Console
+  ========================================= */
+
+.debug {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  font-size: 12px;
+  font-family: monospace, monospace;
+  background: rgba(0, 0, 0, 0.85);
+  color: #0f0;
+  padding: 8px 10px;
+  z-index: 9999;
+  visibility: hidden;
+  max-width: 95vw;
+  max-height: 40vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  border-radius: 7px 7px 0 0;
+  pointer-events: none;
+  box-shadow: 0 -4px 14px 0 rgba(0, 0, 0, 0.6);
+  transition: opacity 0.2s;
+}
+
+.debug.visible {
+  visibility: visible;
+  pointer-events: auto;
+  opacity: 1;
+}

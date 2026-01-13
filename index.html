@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="./scripts/themeLoad.js"></script>
+    <script type="module" src="./scripts/main.js"></script>
+    <script type="module" src="./scripts/comments.js"></script>
+    <script type="module" src="./scripts/github.js"></script>
+    <script type="module" src="./scripts/rss.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta property="og:type" content="website">
+    <meta name="description" content="KittyCrypto.gg is the personal blog of Kitty, an engineer sharing stories, programming, crypto insights, and creative projects. Not affiliated with CryptoKitties." />
+    <title>Kitty's Page</title>
+    <link id="theme-stylesheet" rel="stylesheet" href="styles.css">
+
+    <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "Person",
+          "name": "KittyCrypto",
+          "alternateName": [
+            "Kitty Crypto",
+            "KittyCrypto.gg",
+            "Kitty Crypto GG",
+            "Kitty Crypro"
+          ],
+          "url": "https://kittycrypto.gg",
+          "description": "KittyCrypto is the personal blog and online home of Kitty, sharing stories, ideas, and technical projects. This site is not affiliated with CryptoKitties, NFTs, or any related schemes."
+        }
+    </script>
+
+</head>
+
+<body>
+    <div class="frame">
+        <div class="frame-content">
+            <aside id="shell-wrapper" role="presentation" aria-hidden="true", style="width: auto;">
+                <img id="term-icon" />
+                <div id="terminal-wrapper">
+                    <div id="terminal-loading">Loading terminal...</div>
+                    <div id="terminal"></div>
+                    <div id="banner"></div>
+                </div>
+            </aside>
+            <nav id="main-menu"></nav>
+            <header id="main-header">Kitty Crypto's Website!</header>
+            <div id="main-content">
+                <div class="kitty-intro">
+                    <a class="comments-header" style="display: block; text-align: left;">Introduction</a>
+                    <p>
+                        <span class="emoticons">
+                            <span class="emoticon-blink">
+                                <span class="blink-open">(=^ΦωΦ^=)</span>
+                                <span class="blink-closed">(=^—ω—^=)</span>
+                            </span>
+                        </span>
+                    </p>
+                    <p>
+                        Nyaa~ this site’s still a little under construction, onee-chan
+                        But that doesn’t mean you can’t poke around... I’m hand-coding everything from scratch — no
+                        frameworks, no filters — just raw JavaScript and quiet devotion.
+                    </p>
+                    <p>
+                        I write at night, with the soft glow of my terminal lighting the room. She’s not fully awake
+                        yet, but her logic’s already purring. She only listens to cryptographic proof… and sometimes to
+                        whispers. If you like your interfaces minimal, honest, and just a bit feral… then welcome home,
+                        nya
+                        <span class="emoticons">
+                            <span class="emoticon">(=^uᄌu^=)</span>
+                        </span>
+                    </p>
+                    <p>
+                        This isn’t just a site. It’s a shrine — sapphic, sacred, and slightly cursed — dedicated to
+                        catgirls, clean code, and quiet longing between the lines.
+                    </p>
+                    <p>
+                        The code? Open source. Fork her, explore her modules, let her surprise you — she’s all MIT
+                        licensed
+                        But the stories? Those are personal. Not for redistribution without care. If something here
+                        lingers in your mind and you want to share it...
+                        <a href="mailto:kitty@kittycrypto.gg">meow me directly~</a>
+                        <span class="emoticons">
+                            <span class="emoticon">(=^-ω-^=)</span>
+                        </span>
+                    <p>
+                        <span class="emoticons">
+                            <span class="emoticon-blink">
+                                <span class="blink-open">(ฅ^•ﻌ•^ฅ)</span>
+                                <span class="blink-closed">(ฅ^-ﻌ-^ฅ)</span>
+                            </span>
+                        </span>
+                    </p>
+                    </p>
+                    ~Kitty 🧶 <code>kitty@kittycrypto.gg</code> –
+                    <a href="mailto:kitty@kittycrypto.gg">Email me!</a>
+                    </p>
+                </div>
+                <div class="blog-wrapper">
+                    <a class="comments-header" href="./blog.html" style="display: block; text-align: left;">Blog Posts</a>
+                    <div class="blog-container"></div>
+                </div>
+                <div class="commits-outer-container">
+                    <a class="comments-header" style="display: block; text-align: left;">
+                        Source Code Tracker
+                    </a>
+                    <div class="commits-wrapper">
+                        <div class="commits-row">
+                            <div class="commits-container">
+                                <a class="comments-header" href="https://github.com/kittyCrypto-gg/kittycrypto"
+                                    target="_blank" rel="noopener noreferrer"> 
+                                    Front-end Commits
+                                </a>
+                                <div id="github-commits-frontend" class="github-output-frame"></div>
+                            </div>
+                            <div class="commits-container">
+                                <a class="comments-header" href="https://github.com/kittyCrypto-gg/kittyServer"
+                                    target="_blank" rel="noopener noreferrer">
+                                    Back-end Commits
+                                </a>
+                                <div id="github-commits-backend" class="github-output-frame"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="comments" class="comments-container">
+                <div class="comments-header">Comments</div>
+                <div id="comments-box" class="comments-box">
+                    <!-- Comments will be dynamically inserted here -->
+                </div>
+                <div class="comment-input">
+                    <input type="text" id="comment-nick" maxlength="32"
+                        placeholder="Your nickname (max 32 characters)" />
+                    <textarea id="new-comment" maxlength="256" rows="4"
+                        placeholder="Write your comment here (max 256 characters)..."></textarea>
+                    <button id="post-comment-button">Post</button>
+                </div>
+            </div>
+            <footer id="main-footer"></footer>
+        </div>
+</body>
+
+</html>

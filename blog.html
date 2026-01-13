@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="./scripts/themeLoad.js"></script>
+    <script type="module" src="./scripts/main.js"></script>
+    <script type="module" src="./scripts/rss.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta property="og:type" content="website">
+    <title>Kitty Crypto Blog</title>
+    <link id="theme-stylesheet" rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="frame">
+      <div class="frame-content">
+        <aside id="banner-wrapper" role="presentation" aria-hidden="true">
+          <img id="term-icon" />
+          <div id="terminal-wrapper">
+            <div id="terminal-loading">Loading terminal...</div>
+            <div id="terminal"></div>
+            <div id="banner"></div>
+          </div>
+        </aside>
+        <nav id="main-menu"></nav>
+        <header id="main-header">Kitty's Blog</header>
+        <div id="main-content">
+          <div id="main-content">
+            <div class="blog-wrapper">
+              <a class="comments-header" style="display: block; text-align: left;">Blog Posts</a>
+              <div class="blog-container"></div>
+            </div>
+          </div>
+          <footer id="main-footer"></footer>
+        </div>
+      </div>
+  </body>
+</html>
