@@ -1,6 +1,10 @@
 import { replaceTategaki } from './tategaki.js';
 import { replaceSmsMessages, replaceEmails, replaceSVGs, replaceTooltips, bindEmailActions } from "./mediaStyler.js";
 
+const READER_PARA_NUMS_COOKIE = "showParagraphNumbers";
+const READER_PARA_NUMS_CLASS = "reader-show-paragraph-numbers";
+const PNUM_TOGGLE_SELECTOR = ".btn-toggle-paragraph-numbers";
+
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
 window.storyName = window.storyPath ? window.storyPath.split("/").pop() : null;
@@ -17,6 +21,7 @@ window.readerRoot = document.getElementById("reader");
 window.storyPickerRoot = document.getElementById("story-picker");
 
 window.buttons = {
+  toggleParagraphNumbers: { icon: "🔢", action: "Toggle paragraph numbers" },
   clearBookmark: { icon: "↩️", action: "Clear bookmark for this chapter" },
   prevChapter: { icon: "⏪", action: "Previous chapter" },
   jumpToChapter: { icon: "🆗", action: "Jump to chapter" },
@@ -39,6 +44,121 @@ function getReaderCookie(name, root = document) {
   const cookies = root.cookie.split("; ");
   const cookie = cookies.find(row => row.startsWith(`reader_${name}=`));
   return cookie ? cookie.split("=")[1] : null;
+}
+
+function renderPNum(root = document) {
+  const reader = window.readerRoot;
+  if (!reader) return;
+
+  const isNonEmptyBookmark = (bookmarkEl) => {
+    const contentEl = bookmarkEl.firstElementChild;
+    if (!contentEl) return false;
+
+    const clone = contentEl.cloneNode(true);
+
+    // Ignore UI artefacts when deciding emptiness
+    clone.querySelectorAll(".reader-paragraph-num, .bookmark-emoji").forEach(n => n.remove());
+
+    // Treat media as content even if text is empty
+    if (clone.querySelector("img, svg, video, audio, iframe")) return true;
+
+    const text = (clone.textContent || "").replace(/\s+/g, "").trim();
+    return text.length > 0;
+  };
+
+  const getDigits = (total) => {
+    const maxIndex = Math.max(0, total - 1);
+    return String(maxIndex).length;
+  };
+
+  const allBookmarks = Array.from(reader.querySelectorAll(".reader-bookmark"));
+
+  // Build list of bookmarks that should receive numbers
+  const numberedBookmarks = [];
+  for (const el of allBookmarks) {
+    if (isNonEmptyBookmark(el)) {
+      numberedBookmarks.push(el);
+      continue;
+    }
+
+    // Ensure empties never keep an old number
+    const existing = el.querySelector(":scope > .reader-paragraph-num");
+    if (existing) existing.remove();
+  }
+
+  const total = numberedBookmarks.length;
+  if (total === 0) return;
+
+  const digits = getDigits(total);
+
+  reader.style.setProperty("--reader-para-num-col-width", `${digits}ch`);
+  reader.style.setProperty("--reader-para-num-gap", "0.9em");
+
+  for (let ordinal = 0; ordinal < numberedBookmarks.length; ordinal += 1) {
+    const el = numberedBookmarks[ordinal];
+    const label = String(ordinal).padStart(digits, "0");
+
+    let num = el.querySelector(":scope > .reader-paragraph-num");
+    if (!num) {
+      num = document.createElement("span");
+      num.className = "reader-paragraph-num";
+      num.setAttribute("aria-hidden", "true");
+      el.insertAdjacentElement("afterbegin", num);
+    }
+
+    if (num.textContent !== label) num.textContent = label;
+  }
+}
+
+function enablePNum(enabled) {
+  const reader = window.readerRoot;
+  if (!reader) return;
+
+  const syncPNumToggleButtons = (isEnabled, root = document) => {
+    root.querySelectorAll(PNUM_TOGGLE_SELECTOR).forEach(btn => {
+      // "crossed" typically indicates OFF
+      btn.classList.toggle("menu-crossed", isEnabled);
+    });
+  };
+
+  const removeInjectedPNums = () => {
+    reader.querySelectorAll(".reader-paragraph-num").forEach(n => n.remove());
+    reader.style.removeProperty("--reader-para-num-col-width");
+    reader.style.removeProperty("--reader-para-num-gap");
+  };
+
+  reader.classList.toggle(READER_PARA_NUMS_CLASS, enabled);
+  setReaderCookie(READER_PARA_NUMS_COOKIE, enabled ? "true" : "false");
+
+  syncPNumToggleButtons(enabled, document);
+
+  if (!enabled) {
+    removeInjectedPNums();
+    return;
+  }
+
+  renderPNum(document);
+}
+
+function refreshPNum(root = document) {
+  const reader = window.readerRoot;
+  if (!reader) return;
+  if (!reader.classList.contains(READER_PARA_NUMS_CLASS)) return;
+
+  renderPNum(root);
+}
+
+function togglePNum() {
+  const reader = window.readerRoot;
+  if (!reader) return;
+
+  const next = !reader.classList.contains(READER_PARA_NUMS_CLASS);
+  enablePNum(next);
+}
+
+function initPNumCookie() {
+  const v = getReaderCookie(READER_PARA_NUMS_COOKIE);
+  enablePNum(v === "true");
 }
 
 // Helper to check for aliases of tags in the cleaned or bloated XML
@@ -101,6 +221,7 @@ function injectNav() {
   // if page is not "reader.html" return
   const navHTML = `
   <div class="chapter-navigation">
+    <button class="btn-toggle-paragraph-numbers">${window.buttons.toggleParagraphNumbers.icon}</button>
     <button class="btn-clear-bookmark">${window.buttons.clearBookmark.icon}</button>
     <button class="btn-prev">${window.buttons.prevChapter.icon}</button>
     <input class="chapter-display" type="text" value="1" readonly style="width: 2ch; text-align: center; border: none; background: transparent; font-weight: bold;" />
@@ -145,7 +266,7 @@ function updateFontSize(delta = 0) {
 
 function showNavigationInfo() {
   alert(`Navigation Button Guide:
-
+  ${window.buttons.toggleParagraphNumbers.icon}  – ${window.buttons.toggleParagraphNumbers.action}
   ${window.buttons.clearBookmark.icon}  – ${window.buttons.clearBookmark.action}
   ${window.buttons.prevChapter.icon}  – ${window.buttons.prevChapter.action}
   ${window.buttons.jumpToChapter.icon}  – ${window.buttons.jumpToChapter.action}
@@ -161,6 +282,11 @@ Font Controls:
 
 function bindNavigationEvents(root = document) {
   const chapters = JSON.parse(localStorage.getItem(window.chapterCacheKey) || "[]");
+
+  root.querySelectorAll(".btn-toggle-paragraph-numbers").forEach(btn => {
+    btn.onclick = () => togglePNum();
+  });
+
   root.querySelectorAll(".btn-prev").forEach(btn => btn.onclick = () => {
     if (!prevBtnEn(window.chapter, chapters)) {
       btn.disabled = true;
@@ -305,7 +431,7 @@ async function loadChapter(n) {
     }).join("\n");
 
     // Process Special Tags
-    
+
     htmlContent = await replaceEmails(htmlContent);
     htmlContent = await replaceSmsMessages(htmlContent);
     htmlContent = await replaceTategaki(htmlContent);
@@ -316,6 +442,8 @@ async function loadChapter(n) {
     // Render the HTML
     window.readerRoot.innerHTML = htmlContent;
     await replaceSVGs(window.readerRoot);
+
+    refreshPNum(document);
 
     // Start tracking scroll progress
     observeAndSaveBookmarkProgress(document);
@@ -464,6 +592,7 @@ async function initReader() {
   if (!window.storyPath) return;
 
   injectNav();
+  initPNumCookie();
 
   const chapters = await discoverChapters();
 
@@ -669,13 +798,33 @@ export async function injectBookmarksIntoHTML(htmlContent, storyBase, chapter) {
   const bookmarkId = localStorage.getItem(`bookmark_${storyKey}_ch${chapter}`);
   let counter = 0;
 
+  const isMeaningfulInnerHtml = (innerHtml) => {
+    // Media counts as meaningful even without text
+    if (/<(img|svg|video|audio|iframe)\b/i.test(innerHtml)) return true;
+
+    // Remove tags and whitespace and common non-breaking spaces
+    const text = innerHtml
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;|&#160;/gi, "")
+      .replace(/\s+/g, "")
+      .trim();
+
+    return text.length > 0;
+  };
+
   return htmlContent.replace(
     /<(p|h1|h2|blockquote)(.*?)>([\s\S]*?)<\/\1>/g,
     (match, tag, attrs, inner) => {
-      const id = `bm-${storyKey}-ch${chapter}-${counter++}`;
+      // Keep empty paragraphs as-is: no bookmark wrapper, no id, no counting
+      if (!isMeaningfulInnerHtml(inner)) return match;
+
+      const id = `bm-${storyKey}-ch${chapter}-${counter}`;
+      counter += 1;
+
       const emojiSpan = id === bookmarkId
         ? `<span class="bookmark-emoji" aria-label="bookmark">🔖</span> `
         : "";
+
       return `<div class="reader-bookmark" id="${id}"><${tag}${attrs}>${emojiSpan}${inner}</${tag}></div>`;
     }
   );
@@ -912,6 +1061,8 @@ async function renderXmlDoc(xmlDoc, opts) {
 
   window.readerRoot.innerHTML = htmlContent;
   await replaceSVGs(window.readerRoot);
+
+  refreshPNum(document);
 
   observeAndSaveBookmarkProgress(document);
   activateImageNavigation(document);

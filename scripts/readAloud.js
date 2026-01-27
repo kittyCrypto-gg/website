@@ -8,6 +8,7 @@ class ReadAloudModule {
     #REGIONS;
     #MENU_HTML;
     #HELP_MODAL;
+    #JUMP_VIS_KEY = 'readAloudJumpVisible';
 
     #boundShowMenu;
     #boundReload;
@@ -28,6 +29,7 @@ class ReadAloudModule {
             config: { icon: '⚙️', action: 'Configure Read Aloud' },
             hide: { icon: '👁️', action: 'Hides Read Aloud menu' },
             info: { icon: 'ℹ️', action: 'Show Info' },
+            jump: { icon: '🧭', action: 'Show or hide jump to paragraph' },
             help: { icon: '❓', action: 'Help' }
         };
 
@@ -71,15 +73,30 @@ class ReadAloudModule {
                     </select>
                 </div>
                 <div class="read-aloud-buttons">
-                    <button id="read-aloud-toggle-playpause" title = ${this.#buttons.play.action}>${this.#buttons.play.icon}</button>
-                    <button id="read-aloud-prev" title = ${this.#buttons.prev.action}>${this.#buttons.prev.icon}</button>
-                    <button id="read-aloud-next" title = ${this.#buttons.next.action}>${this.#buttons.next.icon}</button>
-                    <button id="read-aloud-stop" title = ${this.#buttons.stop.action}>${this.#buttons.stop.icon}</button>
-                    <button id="read-aloud-restart" title = ${this.#buttons.restart.action}>${this.#buttons.restart.icon}</button>
-                    <button id="read-aloud-info" title = ${this.#buttons.info.action}>${this.#buttons.info.icon}</button>
-                    <button id="read-aloud-hide" class = "menu-crossed" title = ${this.#buttons.hide.action}>${this.#buttons.hide.icon}</button>
-                    <button id="read-aloud-config" class = "menu-crossed" title = ${this.#buttons.config.action}>${this.#buttons.config.icon}</button>
-                    <button id="read-aloud-help" title = ${this.#buttons.help.action}>${this.#buttons.help.icon}</button>
+                    <button id="read-aloud-toggle-playpause" title="${this.#buttons.play.action}">${this.#buttons.play.icon}</button>
+                    <button id="read-aloud-prev" title="${this.#buttons.prev.action}">${this.#buttons.prev.icon}</button>
+                    <button id="read-aloud-next" title="${this.#buttons.next.action}">${this.#buttons.next.icon}</button>
+                    <button id="read-aloud-stop" title="${this.#buttons.stop.action}">${this.#buttons.stop.icon}</button>
+                    <button id="read-aloud-restart" title="${this.#buttons.restart.action}">${this.#buttons.restart.icon}</button>
+                    <button id="read-aloud-info" title="${this.#buttons.info.action}">${this.#buttons.info.icon}</button>
+                    <button id="read-aloud-hide" class = "menu-crossed" title="${this.#buttons.hide.action}">${this.#buttons.hide.icon}</button>
+                    <button id="read-aloud-config" class = "menu-crossed" title="${this.#buttons.config.action}">${this.#buttons.config.icon}</button>
+                    <button id="read-aloud-jump-toggle" class="menu-crossed" title="${this.#buttons.jump.action}">${this.#buttons.jump.icon}</button>
+                    <button id="read-aloud-help" title="${this.#buttons.help.action}">${this.#buttons.help.icon}</button>
+                    <div class="read-aloud-jump">
+                        <input
+                            id="read-aloud-jump-input"
+                            class="read-aloud-jump-input"
+                            type="number"
+                            inputmode="numeric"
+                            pattern="[0-9]*"
+                            min="1"
+                            step="1"
+                            placeholder="¶ #"
+                            title="Paragraph number"
+                        />
+                        <button id="read-aloud-jump-go" title="Jump to paragraph">✅</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -131,7 +148,9 @@ class ReadAloudModule {
             speechRate: 1.0,
             configVisible: false,
             menuVisible: true,
-            buffer: null
+            jumpVisible: true,
+            buffer: null,
+            currentAudioUrl: null,
         };
     }
 
@@ -172,6 +191,20 @@ class ReadAloudModule {
             '"': '&quot;'
         }[c]));
     }
+
+    __getParagraphPlainText(paragraph) {
+        if (!paragraph) return '';
+
+        // Clone so we do not mutate the DOM
+        const clone = paragraph.cloneNode(true);
+
+        // Strip reader UI artefacts
+        clone.querySelectorAll('.reader-paragraph-num, .bookmark-emoji').forEach(n => n.remove());
+
+        // Prefer textContent so we do not accidentally pull in layout-only text
+        return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+
 
     __buildSSML(text, voiceName, rate) {
         const rateMap = {
@@ -218,6 +251,7 @@ class ReadAloudModule {
         if (menu.style.display === 'flex') return;
 
         menu.innerHTML = this.#MENU_HTML;
+
         menu.style.display = 'flex';
 
         const menuElements = {
@@ -233,7 +267,11 @@ class ReadAloudModule {
             configBtn: document.getElementById('read-aloud-config'),
             hideBtn: document.getElementById('read-aloud-hide'),
             infoBtn: document.getElementById('read-aloud-info'),
-            helpBtn: document.getElementById('read-aloud-help')
+            helpBtn: document.getElementById('read-aloud-help'),
+            jumpToggleBtn: document.getElementById('read-aloud-jump-toggle'),
+            jumpWrap: document.querySelector('.read-aloud-jump'),
+            jumpInput: document.getElementById('read-aloud-jump-input'),
+            jumpGoBtn: document.getElementById('read-aloud-jump-go')
         };
 
         const missing = Object.entries(menuElements)
@@ -244,6 +282,10 @@ class ReadAloudModule {
             console.error('Read Aloud menu elements not found:', missing);
             return;
         }
+
+        const savedJumpVis = localStorage.getItem(this.#JUMP_VIS_KEY);
+        const jumpVisible = savedJumpVis == null ? true : savedJumpVis === 'true';
+        this.__toggleJump(jumpVisible);
 
         menuElements.apikeyInput.value = localStorage.getItem('readAloudSpeechApiKey') || '';
 
@@ -317,6 +359,30 @@ class ReadAloudModule {
 
         menuElements.hideBtn.addEventListener('click', () => {
             this.__toggleVis();
+        });
+
+        menuElements.jumpToggleBtn.addEventListener('click', () => {
+            this.__toggleJump();
+        });
+
+        const doJump = async () => {
+            const raw = menuElements.jumpInput.value.trim();
+            if (!raw) return;
+
+            const paragraphNumber = Number.parseInt(raw, 10);
+            if (!Number.isFinite(paragraphNumber) || paragraphNumber <= 0) return;
+
+            await this.__jumpToParagraphNumber(paragraphNumber);
+        };
+
+        menuElements.jumpGoBtn.addEventListener('click', async () => {
+            await doJump();
+        });
+
+        menuElements.jumpInput.addEventListener('keydown', async (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            await doJump();
         });
 
         menuElements.rateDropdown.addEventListener('change', async (e) => {
@@ -394,6 +460,25 @@ class ReadAloudModule {
         window.readAloudState.configVisible = newValue;
         localStorage.setItem('readAloudConfigVisible', String(newValue));
         localStorage.setItem('readAloudConfigMenuHidden', !newValue);
+
+        return newValue;
+    }
+
+    __toggleJump(forceValue = null) {
+        const jumpWrap = document.querySelector('.read-aloud-jump');
+        const btn = document.getElementById('read-aloud-jump-toggle');
+        if (!jumpWrap || !btn) return;
+
+        const current = window.readAloudState.jumpVisible;
+        const newValue = forceValue !== null ? !!forceValue : !current;
+
+        jumpWrap.style.display = newValue ? 'flex' : 'none';
+
+        // Your convention: "menu-crossed" means ON/visible
+        btn.classList.toggle('menu-crossed', newValue);
+
+        window.readAloudState.jumpVisible = newValue;
+        localStorage.setItem(this.#JUMP_VIS_KEY, String(newValue));
 
         return newValue;
     }
@@ -564,7 +649,7 @@ class ReadAloudModule {
         this.__highlightP(paragraph);
         this.__scrollToP(paragraph);
 
-        const plainText = paragraph.innerText.replace(/\s+/g, ' ').trim();
+        const plainText = this.__getParagraphPlainText(paragraph);
         if (!plainText) {
             await this.__speakP(idx + 1);
             return;
@@ -639,7 +724,7 @@ class ReadAloudModule {
         if (idx >= state.paragraphs.length) return null;
 
         const paragraph = state.paragraphs[idx];
-        const plainText = paragraph.innerText.replace(/\s+/g, ' ').trim();
+        const plainText = this.__getParagraphPlainText(paragraph);
         if (!plainText) return null;
 
         const ssml = this.__buildSSML(plainText, state.voiceName, state.speechRate);
@@ -680,28 +765,53 @@ class ReadAloudModule {
 
     async __playAudioBlob(audioData) {
         return new Promise((resolve, reject) => {
+            const state = window.readAloudState;
+
             const audioBlob = new Blob([audioData], { type: 'audio/mp3' });
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
 
-            window.readAloudState.currentAudio = audio;
+            state.currentAudio = audio;
+            state.currentAudioUrl = audioUrl;
+
+            let settled = false;
+
+            const cleanup = () => {
+                if (state.currentAudio === audio) state.currentAudio = null;
+
+                if (state.currentAudioUrl === audioUrl) {
+                    URL.revokeObjectURL(audioUrl);
+                    state.currentAudioUrl = null;
+                } else {
+                    URL.revokeObjectURL(audioUrl);
+                }
+            };
 
             audio.onpause = () => {
-                const wasInterrupted = !audio.ended && !window.readAloudState.paused;
+                const wasInterrupted = !audio.ended && !state.paused;
                 if (wasInterrupted) this.__pause();
             };
 
             audio.onended = () => {
-                window.readAloudState.currentAudio = null;
+                if (settled) return;
+                settled = true;
+                cleanup();
                 resolve();
             };
 
-            audio.onerror = e => {
-                window.readAloudState.currentAudio = null;
+            audio.onerror = (e) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
                 reject(e);
             };
 
-            audio.play();
+            audio.play().catch(err => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                reject(err);
+            });
         });
     }
 
@@ -761,6 +871,11 @@ class ReadAloudModule {
             state.currentAudio.pause();
             state.currentAudio.currentTime = 0;
             state.currentAudio = null;
+        }
+
+        if (state.currentAudioUrl) {
+            URL.revokeObjectURL(state.currentAudioUrl);
+            state.currentAudioUrl = null;
         }
 
         if (state.synthesizer && typeof state.synthesizer.stopSpeakingAsync === 'function') {
@@ -868,7 +983,51 @@ class ReadAloudModule {
         await this.__clearBuffer(state, idx);
     }
 
-    async __clearBuffer(state, idx = null) {
+    async __jumpToParagraphNumber(paragraphNumber) {
+        const state = window.readAloudState;
+        if (!state.paragraphs || state.paragraphs.length === 0) return;
+
+        const idx = paragraphNumber - 1;
+        if (idx < 0 || idx >= state.paragraphs.length) return;
+
+        const shouldResume = !state.paused;
+
+        this.__FOHighlight(state.paragraphs[state.currentParagraphIndex]);
+
+        if (state.currentAudio) {
+            state.currentAudio.pause();
+            state.currentAudio.currentTime = 0;
+            state.currentAudio = null;
+        }
+
+        await this.__stopAsync();
+        state.buffer = null;
+
+        state.currentParagraphIndex = idx;
+        state.currentParagraphId = state.paragraphs[idx].id;
+
+        this.__highlightP(state.paragraphs[idx]);
+        this.__scrollToP(state.paragraphs[idx]);
+
+        localStorage.setItem('readAloudAudioPosition', JSON.stringify({
+            paragraphId: state.currentParagraphId,
+            paragraphIndex: state.currentParagraphIndex
+        }));
+
+        forceBookmark(state.currentParagraphId);
+
+        if (!shouldResume) {
+            state.paused = true;
+            const playPauseBtn = document.getElementById('read-aloud-toggle-playpause');
+            if (playPauseBtn) playPauseBtn.textContent = this.#buttons.play.icon;
+            return;
+        }
+
+        state.paused = false;
+        await this.__clearBuffer(state, idx);
+    }
+
+    async __clearBuffer(state, idx) {
         const pausedState = state.paused;
         state.buffer = null;
         await this.__stopAsync();
@@ -876,7 +1035,7 @@ class ReadAloudModule {
 
         if (state.paused) return;
 
-        const nextIdx = idx !== undefined ? idx : (state.currentParagraphIndex ?? 0);
+        const nextIdx = idx == null ? (state.currentParagraphIndex ?? 0) : idx;
         await this.__speakP(nextIdx);
     }
 
