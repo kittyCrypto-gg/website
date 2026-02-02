@@ -12,7 +12,6 @@
   --frame-bg-colour: #ffffff;
   --frame-bg-colour-rgb: 255, 255, 255;
 
-
   --frame-width: 95%;
   --frame-border-light: transparent;
   --frame-padding: 20px;
@@ -35,7 +34,6 @@
 
   /* Terminal Window */
   --term-bg: linear-gradient(to bottom, #303030, #202020);
-
 
   --term-header-bg: linear-gradient(to bottom, #cccccc, #b0b0b0);
   --term-header-fg: #222222;
@@ -115,8 +113,6 @@
   --tooltip-z-index: 3000;
   --tooltip-fade-duration: 0.18s;
 }
-
-
 
 .kitty-intro,
 .comments-container,
@@ -243,7 +239,6 @@ body {
     background: var(--term-bg);
     height: 100%;
   }
-
 }
 
 /* Frame styles */
@@ -342,8 +337,7 @@ header {
 
   border-width: 6px;
   border-style: solid;
-  border-color:
-    var(--tooltip-bg-colour) transparent transparent transparent;
+  border-color: var(--tooltip-bg-colour) transparent transparent transparent;
 }
 
 .tooltip-content b {
@@ -371,7 +365,6 @@ header {
   outline: 2px solid var(--menu-button-hover-bg-colour);
   outline-offset: 2px;
 }
-
 
 /* =========================================
   Banner
@@ -574,7 +567,6 @@ header {
   overflow: hidden;
   padding: 0.5rem;
   background: var(--term-bg);
-
 }
 
 #terminal-header {
@@ -723,7 +715,9 @@ nav::-webkit-scrollbar {
   background-color: var(--menu-button-bg-colour);
   padding: 10px 15px;
   border-radius: 8px;
-  transition: background-color 0.3s, transform 0.2s;
+  transition:
+    background-color 0.3s,
+    transform 0.2s;
   font-size: 1rem;
   font-weight: bold;
   text-align: center;
@@ -734,7 +728,7 @@ button.menu-crossed {
 }
 
 button.menu-crossed::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 0;
@@ -1006,7 +1000,9 @@ footer {
   border-radius: 50%;
   box-shadow: var(--frame-box-shadow);
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.2s ease-in-out;
+  transition:
+    background 0.3s ease,
+    transform 0.2s ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1218,6 +1214,42 @@ body.no-scroll {
 }
 
 /* =========================================
+  Reader Controls Top Floating Behaviour
+========================================= */
+
+.reader-controls-top {
+  background: var(--frame-bg-colour);
+  box-shadow: none;
+  z-index: auto;
+
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Detached state: floating, translucent, hard top */
+.reader-controls-top.is-detached {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: var(--frame-width);
+  max-width: 1200px;
+
+  z-index: 2000;
+
+  background: rgba(var(--frame-bg-colour-rgb), 0.88);
+  opacity: 0.92;
+
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.25),
+    var(--frame-box-shadow);
+}
+
+/* =========================================
   Chapter Navigation Buttons
 ========================================= */
 
@@ -1263,6 +1295,28 @@ body.no-scroll {
 
 .dark-mode .font-controls button {
   color: var(--body-text-colour);
+}
+
+/* Only the crossed state gets a positioning context */
+.chapter-navigation button.menu-crossed {
+  position: relative;
+}
+
+/* Draw the slash without changing the button box model */
+.chapter-navigation button.menu-crossed::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: 100%;
+  height: 2px;
+
+  background: red;
+  transform: translate(-50%, -50%) rotate(45deg);
+  transform-origin: center;
+
+  pointer-events: none;
 }
 
 /* =========================================
@@ -1462,7 +1516,9 @@ body.no-scroll {
 .reader-highlight {
   background-color: #f9e79f;
   /* soft pale gold */
-  transition: background-color 2s ease-in-out, color 2s ease-in-out;
+  transition:
+    background-color 2s ease-in-out,
+    color 2s ease-in-out;
 }
 
 .reader-bookmark.reader-highlight {
@@ -1488,6 +1544,62 @@ body.no-scroll {
   margin-right: 0.4em;
   font-size: 1em;
   vertical-align: middle;
+}
+
+/* =========================================
+  Reader: Paragraph Numbers
+========================================= */
+
+#reader.reader-show-paragraph-numbers .reader-bookmark {
+  --reader-para-num-col-width: 3ch;
+  --reader-para-num-gap: 0.9em;
+
+  display: grid;
+  grid-template-columns: var(--reader-para-num-col-width) 1fr;
+  column-gap: var(--reader-para-num-gap);
+  align-items: start;
+
+  box-sizing: border-box;
+  max-width: calc(65ch + var(--reader-para-num-col-width) + var(--reader-para-num-gap));
+  margin-left: auto;
+  margin-right: auto;
+
+  /* ⬇⬇ moved from odd-only to all rows */
+  border-radius: 10px;
+  padding: 0 0.6em;
+
+  /* make sure grid items don't "centre themselves" */
+  justify-items: stretch;
+}
+
+/* The number column */
+#reader.reader-show-paragraph-numbers .reader-paragraph-num {
+  font-family: monospace;
+  font-size: 0.9em;
+  line-height: 1.75;
+  text-align: right;
+  opacity: 0.55;
+  user-select: none;
+
+  /* Best-effort alignment with your usual paragraph top spacing */
+  margin-top: 1.2em;
+}
+
+/* Subtle alternating background while numbering is enabled */
+#reader.reader-show-paragraph-numbers .reader-bookmark:nth-child(odd) {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.dark-mode #reader.reader-show-paragraph-numbers .reader-bookmark:nth-child(odd) {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* When numbered, let the wrapper control width; keep normal alignment */
+#reader.reader-show-paragraph-numbers .reader-bookmark> :is(.reader-paragraph, .reader-title, .reader-subtitle, .reader-quote) {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  justify-self: stretch;
 }
 
 /* =========================================
@@ -1563,7 +1675,9 @@ body.dark-mode .tategaki-container svg text {
   box-shadow: var(--frame-box-shadow);
   cursor: zoom-in;
   object-fit: cover;
-  transition: transform 0.3s ease, transform-origin 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    transform-origin 0.3s ease;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   user-select: none;
@@ -2442,7 +2556,9 @@ body.dark-mode .tategaki-container svg text {
   cursor: pointer;
   padding-left: 2px;
   border-radius: 4px;
-  transition: background 0.17s, color 0.2s;
+  transition:
+    background 0.17s,
+    color 0.2s;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2662,13 +2778,50 @@ body.reader-mode {
   box-sizing: border-box;
   user-select: none;
   cursor: grab;
-  transition: box-shadow 0.25s, background 0.25s, color 0.25s, opacity 0.2s, left 0.2s, top 0.2s;
+  transition:
+    box-shadow 0.25s,
+    background 0.25s,
+    color 0.25s,
+    opacity 0.2s,
+    left 0.2s,
+    top 0.2s;
+}
+
+#read-aloud-menu .read-aloud-jump {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 10px;
+}
+
+#read-aloud-menu .read-aloud-jump-input {
+  flex: 0 0 auto;
+  width: 6ch;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  border: 1px solid var(--chat-input-border-colour);
+  box-sizing: border-box;
+  appearance: textfield;
+}
+
+#read-aloud-menu .read-aloud-jump-input::-webkit-outer-spin-button,
+#read-aloud-menu .read-aloud-jump-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 #read-aloud-menu.dragging {
   opacity: 0.92;
   cursor: grabbing;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.25), var(--frame-box-shadow);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.25),
+    var(--frame-box-shadow);
 }
 
 .read-aloud-close-button {
@@ -2712,7 +2865,7 @@ body.reader-mode {
 #read-aloud-menu .read-aloud-fields,
 #read-aloud-menu .read-aloud-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: wrap;
   width: 100%;
   align-items: center;
@@ -2764,7 +2917,9 @@ body.reader-mode {
   line-height: 1;
   cursor: pointer;
   user-select: none;
-  transition: background 0.2s, transform 0.18s;
+  transition:
+    background 0.2s,
+    transform 0.18s;
   outline: none !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
@@ -2803,7 +2958,9 @@ body.reader-mode {
 /* highlighted text */
 .reader-bookmark.read-aloud-active {
   background: #b388ff !important;
-  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
+  transition:
+    background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.4s;
   opacity: 1 !important;
 }
 
@@ -2849,7 +3006,6 @@ body.dark .reader-bookmark.read-aloud-fadeout,
 .modal-content a:focus {
   color: var(--banner-blue);
 }
-
 
 /* =========================================
   Debug Console

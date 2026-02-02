@@ -199,24 +199,22 @@ class ReaderToggle {
 		this.readerActive = true;
 	}
 
+	async __hardSoftReload() {
+		const url = new URL(window.location.href);
+		url.searchParams.set("_", Date.now().toString());
+		window.location.replace(url.toString());
+	}
+
 	async disableReaderMode() {
-		const articleElem = document.querySelector("article#reader, main, article");
-		if (articleElem && this.originalNodeClone) {
-			const restored = this.originalNodeClone.cloneNode(true);
-			articleElem.replaceWith(restored);
-			Reader.setupReader(restored);
-		}
-
 		document.body.classList.remove("reader-mode");
-		this.readerToggle.textContent = this.enableText;
-		this.readerToggle.classList.remove("active");
-		this.readerActive = false;
 
-		// Remove ?reader=true from the URL when disabling reader mode
 		const url = new URL(window.location);
 		url.searchParams.delete("reader");
-		window.history.pushState({}, "", url);
+		window.history.replaceState({}, "", url);
+
+		await this.__hardSoftReload();
 	}
+
 
 	async handleToggleClick() {
 		this.readerActive ? await this.disableReaderMode() : await this.enableReaderMode();

@@ -1,6 +1,10 @@
 import { replaceTategaki } from './tategaki.js';
 import { replaceSmsMessages, replaceEmails, replaceSVGs, replaceTooltips, bindEmailActions } from "./mediaStyler.js";
 
+const READER_PARA_NUMS_COOKIE = "showParagraphNumbers";
+const READER_PARA_NUMS_CLASS = "reader-show-paragraph-numbers";
+const PNUM_TOGGLE_SELECTOR = ".btn-toggle-paragraph-numbers";
+
 window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");;
 window.storyName = window.storyPath ? window.storyPath.split("/").pop() : null;
@@ -17,6 +21,7 @@ window.readerRoot = document.getElementById("reader");
 window.storyPickerRoot = document.getElementById("story-picker");
 
 window.buttons = {
+  toggleParagraphNumbers: { icon: "🔢", action: "Toggle paragraph numbers" },
   clearBookmark: { icon: "↩️", action: "Clear bookmark for this chapter" },
   prevChapter: { icon: "⏪", action: "Previous chapter" },
   jumpToChapter: { icon: "🆗", action: "Jump to chapter" },
@@ -39,6 +44,132 @@ function getReaderCookie(name, root = document) {
   const cookies = root.cookie.split("; ");
   const cookie = cookies.find(row => row.startsWith(`reader_${name}=`));
   return cookie ? cookie.split("=")[1] : null;
+}
+
+function renderPNum(root = document) {
+  const reader = window.readerRoot;
+  if (!reader) return;
+
+  const shouldRenderNumber = (bookmarkEl) => {
+    const contentEl = bookmarkEl.firstElementChild;
+    if (!contentEl) return false;
+
+    const clone = contentEl.cloneNode(true);
+
+    clone.querySelectorAll(".reader-paragraph-num, .bookmark-emoji").forEach(n => n.remove());
+
+    if (clone.querySelector("email, sms, tooltip, signature, content, logo")) {
+      return false;
+    }
+
+    if (clone.querySelector("img, svg, video, audio, iframe")) {
+      return false;
+    }
+
+    const text = (clone.textContent || "")
+      .replace(/\s+/g, "")
+      .trim();
+
+    return text.length > 0;
+  };
+
+  const allBookmarks = Array.from(reader.querySelectorAll(".reader-bookmark"));
+
+  const numberedBookmarks = allBookmarks.filter(el =>
+    typeof el.id === "string" && /-ch\d+-\d+$/.test(el.id)
+  );
+
+  if (numberedBookmarks.length === 0) return;
+
+  // Padding width from highest ordinal
+  const maxOrdinal = Math.max(...numberedBookmarks.map(el => {
+    const m = el.id.match(/-(\d+)$/);
+    return m ? Number(m[1]) : 0;
+  }));
+
+  const digits = String(maxOrdinal).length;
+
+  reader.style.setProperty("--reader-para-num-col-width", `${digits}ch`);
+  reader.style.setProperty("--reader-para-num-gap", "0.9em");
+
+  for (const el of numberedBookmarks) {
+    const match = el.id.match(/-(\d+)$/);
+    if (!match) continue;
+
+    const ordinal = Number(match[1]);
+    const label = String(ordinal).padStart(digits, "0");
+
+    const shouldRender = shouldRenderNumber(el);
+
+    let num = el.querySelector(":scope > .reader-paragraph-num");
+
+    if (!shouldRender) {
+      if (num) num.remove();
+      continue;
+    }
+
+    if (!num) {
+      num = document.createElement("span");
+      num.className = "reader-paragraph-num";
+      num.setAttribute("aria-hidden", "true");
+      el.insertAdjacentElement("afterbegin", num);
+    }
+
+    if (num.textContent !== label) {
+      num.textContent = label;
+    }
+  }
+}
+
+function enablePNum(enabled) {
+  const reader = window.readerRoot;
+  if (!reader) return;
+
+  const syncPNumToggleButtons = (isEnabled, root = document) => {
+    root.querySelectorAll(PNUM_TOGGLE_SELECTOR).forEach(btn => {
+      // "crossed" typically indicates OFF
+      btn.classList.toggle("menu-crossed", isEnabled);
+    });
+  };
+
+  const removeInjectedPNums = () => {
+    reader.querySelectorAll(".reader-paragraph-num").forEach(n => n.remove());
+    reader.style.removeProperty("--reader-para-num-col-width");
+    reader.style.removeProperty("--reader-para-num-gap");
+  };
+
+  reader.classList.toggle(READER_PARA_NUMS_CLASS, enabled);
+  setReaderCookie(READER_PARA_NUMS_COOKIE, enabled ? "true" : "false");
+
+  syncPNumToggleButtons(enabled, document);
+
+  if (!enabled) {
+    removeInjectedPNums();
+    return;
+  }
+
+  renderPNum(document);
+}
+
+function refreshPNum(root = document) {
+  const reader = window.readerRoot;
+  if (!reader) return;
+  if (!reader.classList.contains(READER_PARA_NUMS_CLASS)) return;
+
+  renderPNum(root);
+}
+
+function togglePNum() {
+  const reader = window.readerRoot;
+  if (!reader) return;
+
+  const next = !reader.classList.contains(READER_PARA_NUMS_CLASS);
+  enablePNum(next);
+}
+
+function initPNumCookie() {
+  const v = getReaderCookie(READER_PARA_NUMS_COOKIE);
+  enablePNum(v === "true");
 }
 
 // Helper to check for aliases of tags in the cleaned or bloated XML
@@ -96,11 +227,41 @@ function showTemporaryNotice(message, timeout = 1000) {
   }, timeout);
 }
 
+function ctrlDetach() {
+  const controls = document.querySelector(".reader-controls-top");
+  if (!controls) return;
+
+  const sentinel = document.createElement("div");
+  sentinel.style.position = "absolute";
+  sentinel.style.top = "0";
+  sentinel.style.left = "0";
+  sentinel.style.width = "1px";
+  sentinel.style.height = "1px";
+
+  controls.parentNode.insertBefore(sentinel, controls);
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      const detached = !entry.isIntersecting;
+      controls.classList.toggle("is-detached", detached);
+      window.dispatchEvent(
+        new CustomEvent("reader:controls-detached", {
+          detail: { detached }
+        })
+      );
+    },
+    { threshold: 0 }
+  );
+
+  observer.observe(sentinel);
+  window.readerTopAnchor = sentinel;
+}
+
 // Inject navigation bars at top and bottom
 function injectNav() {
-  // if page is not "reader.html" return
   const navHTML = `
   <div class="chapter-navigation">
+    <button class="btn-toggle-paragraph-numbers">${window.buttons.toggleParagraphNumbers.icon}</button>
     <button class="btn-clear-bookmark">${window.buttons.clearBookmark.icon}</button>
     <button class="btn-prev">${window.buttons.prevChapter.icon}</button>
     <input class="chapter-display" type="text" value="1" readonly style="width: 2ch; text-align: center; border: none; background: transparent; font-weight: bold;" />
@@ -121,6 +282,8 @@ function injectNav() {
   const navTop = document.createElement("div");
   navTop.innerHTML = navHTML;
   const navBottom = navTop.cloneNode(true);
+  navTop.classList.add("reader-controls-top");
+  navBottom.classList.add("reader-controls-bottom");
 
   // Replace ⏬ with ⏫ in the bottom nav
   const scrollDownBtn = navBottom.querySelector(".btn-scroll-down");
@@ -145,7 +308,7 @@ function updateFontSize(delta = 0) {
 
 function showNavigationInfo() {
   alert(`Navigation Button Guide:
-
+  ${window.buttons.toggleParagraphNumbers.icon}  – ${window.buttons.toggleParagraphNumbers.action}
   ${window.buttons.clearBookmark.icon}  – ${window.buttons.clearBookmark.action}
   ${window.buttons.prevChapter.icon}  – ${window.buttons.prevChapter.action}
   ${window.buttons.jumpToChapter.icon}  – ${window.buttons.jumpToChapter.action}
@@ -161,6 +324,11 @@ Font Controls:
 
 function bindNavigationEvents(root = document) {
   const chapters = JSON.parse(localStorage.getItem(window.chapterCacheKey) || "[]");
+
+  root.querySelectorAll(".btn-toggle-paragraph-numbers").forEach(btn => {
+    btn.onclick = () => togglePNum();
+  });
+
   root.querySelectorAll(".btn-prev").forEach(btn => btn.onclick = () => {
     if (!prevBtnEn(window.chapter, chapters)) {
       btn.disabled = true;
@@ -305,7 +473,7 @@ async function loadChapter(n) {
     }).join("\n");
 
     // Process Special Tags
-    
+
     htmlContent = await replaceEmails(htmlContent);
     htmlContent = await replaceSmsMessages(htmlContent);
     htmlContent = await replaceTategaki(htmlContent);
@@ -316,6 +484,10 @@ async function loadChapter(n) {
     // Render the HTML
     window.readerRoot.innerHTML = htmlContent;
     await replaceSVGs(window.readerRoot);
+
+    requestAnimationFrame(() => {
+      refreshPNum(document);
+    });
 
     // Start tracking scroll progress
     observeAndSaveBookmarkProgress(document);
@@ -464,6 +636,8 @@ async function initReader() {
   if (!window.storyPath) return;
 
   injectNav();
+  ctrlDetach();
+  initPNumCookie();
 
   const chapters = await discoverChapters();
 
@@ -669,13 +843,33 @@ export async function injectBookmarksIntoHTML(htmlContent, storyBase, chapter) {
   const bookmarkId = localStorage.getItem(`bookmark_${storyKey}_ch${chapter}`);
   let counter = 0;
 
+  const isMeaningfulInnerHtml = (innerHtml) => {
+    // Media counts as meaningful even without text
+    if (/<(img|svg|video|audio|iframe)\b/i.test(innerHtml)) return true;
+
+    // Remove tags and whitespace and common non-breaking spaces
+    const text = innerHtml
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;|&#160;/gi, "")
+      .replace(/\s+/g, "")
+      .trim();
+
+    return text.length > 0;
+  };
+
   return htmlContent.replace(
     /<(p|h1|h2|blockquote)(.*?)>([\s\S]*?)<\/\1>/g,
     (match, tag, attrs, inner) => {
-      const id = `bm-${storyKey}-ch${chapter}-${counter++}`;
+      // Keep empty paragraphs as-is: no bookmark wrapper, no id, no counting
+      if (!isMeaningfulInnerHtml(inner)) return match;
+
+      const id = `bm-${storyKey}-ch${chapter}-${counter}`;
+      counter += 1;
+
       const emojiSpan = id === bookmarkId
         ? `<span class="bookmark-emoji" aria-label="bookmark">🔖</span> `
         : "";
+
       return `<div class="reader-bookmark" id="${id}"><${tag}${attrs}>${emojiSpan}${inner}</${tag}></div>`;
     }
   );
@@ -786,9 +980,14 @@ function initiateReader() {
     }
 
     if (target.classList.contains("btn-scroll-up")) {
-      const downBtn = document.querySelector(".btn-scroll-down");
-      if (!downBtn) return;
-      downBtn.scrollIntoView({ behavior: "smooth" });
+      const anchor = window.readerTopAnchor ||
+        document.body.firstElementChild ||
+        document.body;
+
+      anchor.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
       return;
     }
   });
@@ -912,6 +1111,10 @@ async function renderXmlDoc(xmlDoc, opts) {
 
   window.readerRoot.innerHTML = htmlContent;
   await replaceSVGs(window.readerRoot);
+
+  requestAnimationFrame(() => {
+    refreshPNum(document);
+  });
 
   observeAndSaveBookmarkProgress(document);
   activateImageNavigation(document);
