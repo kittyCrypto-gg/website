@@ -1,4 +1,5 @@
 import { replaceTategaki } from './tategaki.js';
+import { removeExistingById, recreateSingleton } from "./main.js";
 import { replaceSmsMessages, replaceEmails, replaceSVGs, replaceTooltips, bindEmailActions } from "./mediaStyler.js";
 
 const READER_PARA_NUMS_COOKIE = "showParagraphNumbers";
@@ -119,19 +120,6 @@ function renderPNum(root = document) {
       num.textContent = label;
     }
   }
-}
-
-function removeExistingById(id, root = document) {
-  if (!id) return;
-  // querySelectorAll catches duplicates even though they are invalid HTML
-  root.querySelectorAll(`#${CSS.escape(id)}`).forEach(el => el.remove());
-}
-
-function recreateSingleton(id, createEl) {
-  removeExistingById(id);
-  const el = createEl();
-  el.id = id;
-  return el;
 }
 
 function enablePNum(enabled) {

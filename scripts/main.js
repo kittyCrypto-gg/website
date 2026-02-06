@@ -9,22 +9,24 @@ const params = new URLSearchParams(window.location.search);
 let terminalMod = null;
 let pendingWebUiTheme = null;
 
+function toSafeIdPart(v) {
+  return String(v || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function makeStableId(prefix, value) {
+  const part = toSafeIdPart(value);
+  return part ? `${prefix}${part}` : `${prefix}x`;
+}
+
 async function checkMobile() {
   const MOBILE_DETECT_CDN =
     "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
 
-  // while (document.readyState === 'loading') {
-  //   await new Promise(r => requestAnimationFrame(r));
-  // }
-
   if (!window.MobileDetect) {
-    // await new Promise(r => {
-    //   const s = document.createElement('script');
-    //   s.src = 'https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.min.js';
-    //   s.onload = r;
-    //   s.onerror = r;
-    //   document.body.appendChild(s);
-    // });
     await loader.loadScript(MOBILE_DETECT_CDN, { asModule: false });
   }
 
@@ -50,30 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const isMobile = params.get("isMobile") !== null
       ? params.get("isMobile") === "true"
       : await checkMobile();
-
-    // if (isMobile) {
-
-    //   const makeBanner = async () => {
-    //     const aside = document.getElementById("shell-wrapper");
-    //     if (!aside) return;
-    //     aside.id = "banner-wrapper";
-    //   };
-
-    //   await makeBanner();
-    //   loadBanner().then(async () => {
-    //     await setupTerminalWindow();
-    //     await scaleBannerToFit();
-
-    //     document
-    //       .getElementById("terminal-loading")
-    //       ?.style.setProperty("display", "none");
-
-    //     window.addEventListener("resize", () => scaleBannerToFit());
-    //     console.log("Banner loaded successfully");
-    //   });
-
-    //   return;
-    // }
 
     const terminal = await setupTerminalModule()
       .then((mod) => {
@@ -114,8 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dispose();
     };
 
-    terminalMod = terminal; // Make terminal module globally accessible
-
+    terminalMod = terminal;
   };
 
   init();
@@ -149,19 +126,32 @@ async function initialiseUI() {
       throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
+    // Inject head scripts (guarded by id derived from src)
     if (data.headScripts) {
       data.headScripts.forEach(scriptSrc => {
+        const scriptId = makeStableId("kc-head-script_", scriptSrc);
+
+        removeExistingById(scriptId, document);
+
         const script = document.createElement("script");
+        script.id = scriptId;
         script.src = scriptSrc;
         script.defer = true;
         document.head.appendChild(script);
       });
     }
 
+    // Build main menu (guard each injected link by id)
     const menu = document.getElementById("main-menu");
     if (!menu) throw new Error("Element #main-menu not found!");
+
     for (const [text, link] of Object.entries(data.mainMenu)) {
+      const linkId = makeStableId("kc-main-menu_", text);
+
+      removeExistingById(linkId, document);
+
       const button = document.createElement("a");
+      button.id = linkId;
       button.href = link;
       button.textContent = text;
       button.classList.add("menu-button");
@@ -178,8 +168,8 @@ async function initialiseUI() {
     const currentYear = new Date().getFullYear();
     footer.textContent = data.footer.replace("${year}", currentYear);
 
-    const themeToggle = document.createElement("button");
-    themeToggle.id = "theme-toggle";
+    // Theme toggle (singleton)
+    const themeToggle = recreateSingleton("theme-toggle", () => document.createElement("button"), document);
     themeToggle.classList.add("theme-toggle-button");
     document.body.appendChild(themeToggle);
 
@@ -225,8 +215,8 @@ async function initialiseUI() {
 
     if (!document.location.pathname.includes("reader.html")) return;
 
-    const readerToggle = document.createElement("button");
-    readerToggle.id = "reader-toggle";
+    // Reader mode toggle (singleton)
+    const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
     readerToggle.classList.add("theme-toggle-button");
     readerToggle.style.bottom = "80px";
     readerToggle.textContent = data.readerModeToggle.enable;
@@ -237,8 +227,8 @@ async function initialiseUI() {
 
     await setupReaderToggle();
 
-    const readAloudToggle = document.createElement("button");
-    readAloudToggle.id = "read-aloud-toggle";
+    // Read aloud toggle (singleton)
+    const readAloudToggle = recreateSingleton("read-aloud-toggle", () => document.createElement("button"), document);
     readAloudToggle.classList.add("theme-toggle-button");
     readAloudToggle.style.bottom = "140px";
     readAloudToggle.textContent = data.readAloudToggle.enable;
@@ -247,8 +237,7 @@ async function initialiseUI() {
     readAloudToggle.title = data.readAloudToggle.title || "Read Aloud";
     document.body.appendChild(readAloudToggle);
 
-    if (readAloudToggle)
-      readAloudToggle.addEventListener("click", readAloud.showMenu);
+    readAloudToggle.addEventListener("click", readAloud.showMenu);
 
     if (params.has("darkmode")) {
       const v = params.get("darkmode").toLowerCase();
