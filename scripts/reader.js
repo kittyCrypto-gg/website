@@ -121,6 +121,19 @@ function renderPNum(root = document) {
   }
 }
 
+function removeExistingById(id, root = document) {
+  if (!id) return;
+  // querySelectorAll catches duplicates even though they are invalid HTML
+  root.querySelectorAll(`#${CSS.escape(id)}`).forEach(el => el.remove());
+}
+
+function recreateSingleton(id, createEl) {
+  removeExistingById(id);
+  const el = createEl();
+  el.id = id;
+  return el;
+}
+
 function enablePNum(enabled) {
   const reader = window.readerRoot;
   if (!reader) return;
@@ -231,14 +244,27 @@ function ctrlDetach() {
   const controls = document.querySelector(".reader-controls-top");
   if (!controls) return;
 
+  const SENTINEL_ID = "kc-reader-controls-sentinel";
+
+  removeExistingById(SENTINEL_ID);
+
+  if (window.__kcReaderCtrlObserver && typeof window.__kcReaderCtrlObserver.disconnect === "function") {
+    window.__kcReaderCtrlObserver.disconnect();
+    window.__kcReaderCtrlObserver = null;
+  }
+
   const sentinel = document.createElement("div");
+  sentinel.id = SENTINEL_ID;
   sentinel.style.position = "absolute";
   sentinel.style.top = "0";
   sentinel.style.left = "0";
   sentinel.style.width = "1px";
   sentinel.style.height = "1px";
 
-  controls.parentNode.insertBefore(sentinel, controls);
+  const parent = controls.parentNode;
+  if (!parent) return;
+
+  parent.insertBefore(sentinel, controls);
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -254,34 +280,47 @@ function ctrlDetach() {
   );
 
   observer.observe(sentinel);
+
+  window.__kcReaderCtrlObserver = observer;
   window.readerTopAnchor = sentinel;
 }
 
 // Inject navigation bars at top and bottom
 function injectNav() {
+  const TOP_ID = "kc-reader-controls-top";
+  const BOTTOM_ID = "kc-reader-controls-bottom";
+
+  // Remove any existing nav wrappers (including duplicates)
+  removeExistingById(TOP_ID);
+  removeExistingById(BOTTOM_ID);
+
   const navHTML = `
-  <div class="chapter-navigation">
-    <button class="btn-toggle-paragraph-numbers">${window.buttons.toggleParagraphNumbers.icon}</button>
-    <button class="btn-clear-bookmark">${window.buttons.clearBookmark.icon}</button>
-    <button class="btn-prev">${window.buttons.prevChapter.icon}</button>
-    <input class="chapter-display" type="text" value="1" readonly style="width: 2ch; text-align: center; border: none; background: transparent; font-weight: bold;" />
-    <input class="chapter-input" type="number" min="0" style="width: 2ch; text-align: center;" />
-    <button class="btn-jump">${window.buttons.jumpToChapter.icon}</button>
-    <button class="chapter-end" disabled style="width: 2ch; text-align: center; font-weight: bold;"></button>
-    <button class="btn-next">${window.buttons.nextChapter.icon}</button>
-    <button class="btn-scroll-down">${window.buttons.scrollDown.icon}</button>
-    <button class="btn-info">${window.buttons.showInfo.icon}</button>
-  </div>
-  <div class="font-controls">
-    <button class="font-decrease">${window.buttons.decreaseFont.icon}</button>
-    <button class="font-reset">${window.buttons.resetFont.icon}</button>
-    <button class="font-increase">${window.buttons.increaseFont.icon}</button>
-  </div>
-`;
+    <div class="chapter-navigation">
+      <button class="btn-toggle-paragraph-numbers">${window.buttons.toggleParagraphNumbers.icon}</button>
+      <button class="btn-clear-bookmark">${window.buttons.clearBookmark.icon}</button>
+      <button class="btn-prev">${window.buttons.prevChapter.icon}</button>
+      <input class="chapter-display" type="text" value="1" readonly style="width: 2ch; text-align: center; border: none; background: transparent; font-weight: bold;" />
+      <input class="chapter-input" type="number" min="0" style="width: 2ch; text-align: center;" />
+      <button class="btn-jump">${window.buttons.jumpToChapter.icon}</button>
+      <button class="chapter-end" disabled style="width: 2ch; text-align: center; font-weight: bold;"></button>
+      <button class="btn-next">${window.buttons.nextChapter.icon}</button>
+      <button class="btn-scroll-down">${window.buttons.scrollDown.icon}</button>
+      <button class="btn-info">${window.buttons.showInfo.icon}</button>
+    </div>
+    <div class="font-controls">
+      <button class="font-decrease">${window.buttons.decreaseFont.icon}</button>
+      <button class="font-reset">${window.buttons.resetFont.icon}</button>
+      <button class="font-increase">${window.buttons.increaseFont.icon}</button>
+    </div>
+  `;
 
   const navTop = document.createElement("div");
+  navTop.id = TOP_ID;
   navTop.innerHTML = navHTML;
+
   const navBottom = navTop.cloneNode(true);
+  navBottom.id = BOTTOM_ID;
+
   navTop.classList.add("reader-controls-top");
   navBottom.classList.add("reader-controls-bottom");
 
@@ -292,6 +331,8 @@ function injectNav() {
     scrollDownBtn.classList.remove("btn-scroll-down");
     scrollDownBtn.classList.add("btn-scroll-up");
   }
+
+  if (!window.readerRoot) return;
 
   window.readerRoot.insertAdjacentElement("beforebegin", navTop);
   window.readerRoot.insertAdjacentElement("afterend", navBottom);
