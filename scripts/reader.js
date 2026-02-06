@@ -1,5 +1,5 @@
+import { removeExistingById, recreateSingleton } from "./domSingletons.js";
 import { replaceTategaki } from './tategaki.js';
-import { removeExistingById } from "./main.js";
 import { replaceSmsMessages, replaceEmails, replaceSVGs, replaceTooltips, bindEmailActions } from "./mediaStyler.js";
 
 const READER_PARA_NUMS_COOKIE = "showParagraphNumbers";

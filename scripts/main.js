@@ -1,4 +1,4 @@
-//import { loadBanner, setupTerminalWindow, scaleBannerToFit } from "./banner.js";
+import { removeExistingById, recreateSingleton } from "./domSingletons.js";
 import { setupTerminalModule } from "./terminal.js";
 import { setupReaderToggle } from "./readerMode.js";
 import * as readAloud from "./readAloud.js";
