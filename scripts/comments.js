@@ -1,6 +1,6 @@
 import { drawSpiralIdenticon } from './avatar.js';
 
-if (window.location.pathname === '/') window.history.replaceState(null, '', '/index.html');
+//if (window.location.pathname === '/') window.history.replaceState(null, '', '/index.html');
 
 const COMMENT_POST_URL = "https://srv.kittycrypto.gg/comment";
 const COMMENT_LOAD_URL = "https://srv.kittycrypto.gg/comments/load";

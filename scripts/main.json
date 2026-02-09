@@ -1,6 +1,6 @@
 {
   "mainMenu": {
-    "🏠Main": "./index",
+    "🏠Main": "./",
     "❓About": "./about",
     "📚Stories": "./reader",
     "💬Chat": "./chat",
