@@ -344,7 +344,9 @@ async function getOrCreateSessionToken() {
     const key = "kc-session-token";
 
     const existing = sessionStorage.getItem(key);
-    if (existing && existing.length > 0) return existing;
+    if (existing && existing.length > 0) {
+        return { token: existing, isNew: false };
+    }
 
     const res = await fetch("https://srv.kittycrypto.gg/session-token", {
         method: "GET",
@@ -369,11 +371,11 @@ async function getOrCreateSessionToken() {
     }
 
     sessionStorage.setItem(key, token);
-    return token;
+    return { token, isNew: true };
 }
 
 async function attachWebSocketTransport(term, scrollCtl, opts = {}) {
-    const sessionToken = await getOrCreateSessionToken();
+    const { token: sessionToken, isNew } = await getOrCreateSessionToken();
     const wsUrl = `wss://bash.kittycrypto.gg/?sessionToken=${encodeURIComponent(sessionToken)}`;
 
     const onOpen = opts && typeof opts.onOpen === "function" ? opts.onOpen : null;
@@ -384,15 +386,16 @@ async function attachWebSocketTransport(term, scrollCtl, opts = {}) {
     ws.addEventListener("open", () => {
         scrollCtl.forceFollowAndScroll();
 
-        // Let the caller push any control messages first (theme, etc)
         if (onOpen) onOpen(ws);
 
-        // Run nekofetch once, as if typed by the user
-        setTimeout(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send("nekofetch\r");
-            }
-        }, 50);
+        // Only run nekofetch for a freshly minted token in this tab/session
+        if (isNew) {
+            setTimeout(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send("nekofetch\r");
+                }
+            }, 50);
+        }
     });
 
     ws.addEventListener("message", (ev) => {
@@ -415,7 +418,6 @@ async function attachWebSocketTransport(term, scrollCtl, opts = {}) {
         scrollCtl.forceFollowAndScroll();
     });
 
-    // Forward keyboard input to backend
     term.onData(data => {
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(data);
@@ -756,4 +758,4 @@ export async function setupTerminalModule() {
         }
     };
 
-} 
+}
