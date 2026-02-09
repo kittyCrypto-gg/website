@@ -408,8 +408,13 @@ async function attachWebSocketTransport(term, scrollCtl, opts = {}) {
         scrollCtl.maybeScroll();
     });
 
-    ws.addEventListener("close", () => {
-        term.writeln("\r\n[disconnected]");
+    ws.addEventListener("close", (ev) => {
+        if (ev && ev.code === 4001) {
+            sessionStorage.removeItem("kc-session-token");
+            term.writeln("\r\n[session ended, fetching a new token on next connect]");
+        } else {
+            term.writeln("\r\n[disconnected]");
+        }
         scrollCtl.forceFollowAndScroll();
     });
 
