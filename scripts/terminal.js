@@ -21,27 +21,6 @@ async function checkMobile() {
     return isMobile;
 }
 
-// function cssVar(name) {
-//     return getComputedStyle(document.documentElement)
-//         .getPropertyValue(name)
-//         .trim();
-// }
-
-// function buildXtermTheme() {
-//     return {
-//         cursor: cssVar("--banner-teal"),
-//     };
-// };
-
-// const themeObserver = new MutationObserver(() => {
-//     term.setOption("theme", buildXtermTheme());
-// });
-
-// themeObserver.observe(document.documentElement, {
-//     attributes: true,
-//     attributeFilter: ["class"]
-// });
-
 function injectScript(src) {
     return new Promise((resolve, reject) => {
         const existing = document.querySelector(`script[src="${src}"]`);
@@ -361,8 +340,41 @@ function wireBasicInput(term, followState, scrollCtl) {
     });
 }
 
-function attachWebSocketTransport(term, scrollCtl, opts = {}) {
-    const wsUrl = `wss://bash.kittycrypto.gg`;
+async function getOrCreateSessionToken() {
+    const key = "kc-session-token";
+
+    const existing = sessionStorage.getItem(key);
+    if (existing && existing.length > 0) return existing;
+
+    const res = await fetch("https://srv.kittycrypto.gg/session-token", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "omit"
+    });
+
+    if (!res.ok) {
+        throw new Error(`Failed to obtain session token (status=${res.status})`);
+    }
+
+    const body = await res.json();
+    const token =
+        body &&
+            typeof body.sessionToken === "string" &&
+            body.sessionToken.length > 0
+            ? body.sessionToken
+            : "";
+
+    if (!token) {
+        throw new Error("Session endpoint returned no sessionToken");
+    }
+
+    sessionStorage.setItem(key, token);
+    return token;
+}
+
+async function attachWebSocketTransport(term, scrollCtl, opts = {}) {
+    const sessionToken = await getOrCreateSessionToken();
+    const wsUrl = `wss://bash.kittycrypto.gg/?sessionToken=${encodeURIComponent(sessionToken)}`;
 
     const onOpen = opts && typeof opts.onOpen === "function" ? opts.onOpen : null;
 
@@ -550,7 +562,7 @@ export async function setupTerminalModule() {
 
     // Wire input demo
     //wireBasicInput(term, followState, scrollCtl);
-    ws = attachWebSocketTransport(term, scrollCtl, {
+    ws = await attachWebSocketTransport(term, scrollCtl, {
         onOpen: () => {
             sendPendingWebUiTheme();
         }
