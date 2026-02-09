@@ -1,10 +1,10 @@
 {
   "mainMenu": {
-    "🏠Main": "./index.html",
-    "❓About": "./about.html",
-    "📚Stories": "./reader.html",
-    "💬Chat": "./chat.html",
-    "🧶Blog": "./blog.html" 
+    "🏠Main": "./index",
+    "❓About": "./about",
+    "📚Stories": "./reader",
+    "💬Chat": "./chat",
+    "🧶Blog": "./blog" 
   },
   "header": "${pageTitle}",
   "footer": "Kitty's website is open-source. 1991 - ${year}",
