@@ -379,6 +379,7 @@ async function attachWebSocketTransport(term, scrollCtl, opts = {}) {
     const wsUrl = `wss://bash.kittycrypto.gg/?sessionToken=${encodeURIComponent(sessionToken)}`;
 
     const onOpen = opts && typeof opts.onOpen === "function" ? opts.onOpen : null;
+    const connectRef = opts && typeof opts.connectRef === "function" ? opts.connectRef : null;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
@@ -411,22 +412,26 @@ async function attachWebSocketTransport(term, scrollCtl, opts = {}) {
     ws.addEventListener("close", (ev) => {
         if (ev && ev.code === 4001) {
             sessionStorage.removeItem("kc-session-token");
-            term.writeln("\r\n[session ended, fetching a new token on next connect]");
-        } else {
-            term.writeln("\r\n[disconnected]");
+            term.writeln("\r\n[session ended, reconnecting with a new token…]");
+            scrollCtl.forceFollowAndScroll();
+
+            if (connectRef) {
+                // Avoid calling from inside the close stack
+                setTimeout(() => {
+                    connectRef();
+                }, 0);
+            }
+
+            return;
         }
+
+        term.writeln("\r\n[disconnected]");
         scrollCtl.forceFollowAndScroll();
     });
 
     ws.addEventListener("error", () => {
         term.writeln("\r\n[connection error]");
         scrollCtl.forceFollowAndScroll();
-    });
-
-    term.onData(data => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(data);
-        }
     });
 
     return ws;
@@ -436,6 +441,7 @@ export async function setupTerminalModule() {
     await ensureXtermLoaded();
 
     let ws = null;
+    let reconnecting = false;
     let webUiThemePending = null;
 
     const sendPendingWebUiTheme = (socket) => {
@@ -459,7 +465,6 @@ export async function setupTerminalModule() {
         webUiThemePending = t;
         sendPendingWebUiTheme();
     };
-
 
     const terminalWrapper = safeGetEl("terminal-wrapper");
     const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
@@ -524,11 +529,12 @@ export async function setupTerminalModule() {
     icon.title = "Double-click to open terminal";
 
     const isMobile = await checkMobile();
+
     // Create terminal
     const term = new window.Terminal({
         cursorBlink: true,
         convertEol: true,
-        fontSize: isMobile ? 12 : 14,
+        fontSize: isMobile ? 12 : 14
         //theme: buildXtermTheme()
     });
 
@@ -567,14 +573,6 @@ export async function setupTerminalModule() {
     // Provide fit ref for drag wiring without duplicating listeners
     const fitNowRef = { fitNow };
 
-    // Wire input demo
-    //wireBasicInput(term, followState, scrollCtl);
-    ws = await attachWebSocketTransport(term, scrollCtl, {
-        onOpen: () => {
-            sendPendingWebUiTheme();
-        }
-    });
-
     let pendingResize = null;
     let lastCols = 0;
     let lastRows = 0;
@@ -603,16 +601,53 @@ export async function setupTerminalModule() {
         sendResize(cols, rows);
     });
 
-    // Flush the first resize once the socket opens
-    ws.addEventListener("open", () => {
-        if (pendingResize) {
-            ws.send(pendingResize);
-            pendingResize = null;
-        } else {
-            // Push current size once connected
-            sendResize(term.cols, term.rows);
+    // IMPORTANT: wire input -> ws ONCE (prevents duplicate sends after reconnect)
+    term.onData((data) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(data);
         }
     });
+
+    const connectWs = async () => {
+        if (reconnecting) return;
+        reconnecting = true;
+
+        try {
+            const next = await attachWebSocketTransport(term, scrollCtl, {
+                onOpen: (socket) => {
+                    sendPendingWebUiTheme(socket);
+
+                    // Flush the first resize once the socket opens
+                    if (pendingResize) {
+                        socket.send(pendingResize);
+                        pendingResize = null;
+                    } else {
+                        sendResize(term.cols, term.rows);
+                    }
+                },
+                connectRef: () => {
+                    void connectWs();
+                }
+            });
+
+            ws = next;
+
+            // If we reconnect, we need to re-add the open listener for flushing resize
+            ws.addEventListener("open", () => {
+                if (pendingResize) {
+                    ws.send(pendingResize);
+                    pendingResize = null;
+                } else {
+                    sendResize(term.cols, term.rows);
+                }
+            });
+        } finally {
+            reconnecting = false;
+        }
+    };
+
+    // Initial connect
+    await connectWs();
 
     // Auto-scroll on render, but only if user is at bottom
     if (typeof term.onRender === "function") {
@@ -759,8 +794,8 @@ export async function setupTerminalModule() {
         dispose: () => {
             detachResizeHandlers();
             document.removeEventListener("mouseup", onMouseUp);
+            try { ws?.close(); } catch { /* ignore */ }
             term.dispose();
         }
     };
-
 }
