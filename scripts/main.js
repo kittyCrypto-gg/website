@@ -213,7 +213,10 @@ async function initialiseUI() {
       });
     }
 
-    if (!document.location.pathname.includes("reader.html")) return;
+    const isReaderRoute = window.location.pathname === "/reader" ||
+      window.location.pathname.startsWith("/reader/");
+
+    if (!isReaderRoute) return;
 
     // Reader mode toggle (singleton)
     const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
