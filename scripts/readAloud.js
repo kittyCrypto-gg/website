@@ -243,9 +243,6 @@ class ReadAloudModule {
         apikeyInput.type = visible ? 'text' : 'password';
         window.readAloudState.apiKeyVisible = visible;
 
-        // Button shows the action it will do next:
-        // hidden -> show open eye (press to show)
-        // shown  -> show closed eye (press to hide)
         const willShow = !visible;
 
         apikeyEye.setAttribute('aria-label', willShow ? 'Show API key' : 'Hide API key');
@@ -254,9 +251,15 @@ class ReadAloudModule {
         const src = willShow ? this.#EYE_OPEN_SVG : this.#EYE_CLOSED_SVG;
 
         try {
-            apikeyEye.innerHTML = await this.__getSvgMarkup(src);
-        } catch (err) {
-            // Fallback: still usable even if SVG fails to load
+            const raw = await this.__getSvgMarkup(src);
+
+            const doc = new DOMParser().parseFromString(raw, 'image/svg+xml');
+            const svg = doc.querySelector('svg');
+            if (!svg) throw new Error('Invalid SVG');
+            svg.querySelectorAll('foreignObject').forEach(n => n.remove());
+
+            apikeyEye.replaceChildren(document.importNode(svg, true));
+        } catch {
             apikeyEye.textContent = willShow ? '🙊' : '🙈';
         }
     }
