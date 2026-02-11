@@ -248,6 +248,8 @@ class ReadAloudModule {
         apikeyEye.setAttribute('aria-label', willShow ? 'Show API key' : 'Hide API key');
         apikeyEye.setAttribute('title', willShow ? 'Show API key' : 'Hide API key');
 
+        apikeyEye.replaceChildren();
+
         const src = willShow ? this.#EYE_OPEN_SVG : this.#EYE_CLOSED_SVG;
 
         try {
@@ -256,9 +258,10 @@ class ReadAloudModule {
             const doc = new DOMParser().parseFromString(raw, 'image/svg+xml');
             const svg = doc.querySelector('svg');
             if (!svg) throw new Error('Invalid SVG');
+
             svg.querySelectorAll('foreignObject').forEach(n => n.remove());
 
-            apikeyEye.replaceChildren(document.importNode(svg, true));
+            apikeyEye.appendChild(document.importNode(svg, true));
         } catch {
             apikeyEye.textContent = willShow ? '🙊' : '🙈';
         }
