@@ -1,5 +1,5 @@
-import { forceBookmark } from "./reader";
-import * as loader from "./loader";
+import { forceBookmark } from "./reader.ts";
+import * as loader from "./loader.ts";
 
 type ReadAloudButton = Readonly<{
     icon: string;

@@ -21,60 +21,60 @@ class Tategaki {
      */
     static getCSS(): string {
         return `
-      .tategaki {
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        line-height: 1.8;
-      }
+            .tategaki {
+                writing-mode: vertical-rl;
+                text-orientation: mixed;
+                line-height: 1.8;
+            }
 
-      ruby {
-        ruby-position: side;
-      }
+            ruby {
+                ruby-position: side;
+            }
 
-      rt {
-        font-size: 0.5em;
-        line-height: 1;
-      }
+            rt {
+                font-size: 0.5em;
+                line-height: 1;
+            }
 
-      .manual-ruby {
-        display: inline-flex;
-        flex-direction: row-reverse;
-        align-items: center;
-        justify-content: flex-start;
-        writing-mode: vertical-rl;
-        vertical-align: top;
-      }
+            .manual-ruby {
+                display: inline-flex;
+                flex-direction: row-reverse;
+                align-items: center;
+                justify-content: flex-start;
+                writing-mode: vertical-rl;
+                vertical-align: top;
+            }
 
-      .manual-base {
-        display: inline-block;
-        width: 1em;
-        height: 1em;
-        line-height: 1;
-        text-align: center;
-        position: relative;
-      }
+            .manual-base {
+                display: inline-block;
+                width: 1em;
+                height: 1em;
+                line-height: 1;
+                text-align: center;
+                position: relative;
+            }
 
-      .manual-rt-column {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        font-size: 0.5em;
-        line-height: 1;
-        margin-left: 0.1em;
-      }
+            .manual-rt-column {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                font-size: 0.5em;
+                line-height: 1;
+                margin-left: 0.1em;
+            }
 
-      .manual-rt {
-        writing-mode: horizontal-tb;
-        white-space: nowrap;
-        text-align: left;
-      }
+            .manual-rt {
+                writing-mode: horizontal-tb;
+                white-space: nowrap;
+                text-align: left;
+            }
 
-      #output {
-        display: flex;
-        flex-direction: row-reverse;
-        gap: 1em;
-      }
-    `;
+            #output {
+                display: flex;
+                flex-direction: row-reverse;
+                gap: 1em;
+            }
+        `;
     }
 }
 
@@ -200,33 +200,33 @@ class ComposedKanji {
         const part2Class = `kanji-slot kanji-${this.uid}-${isVertical ? "bottom" : "right"}`;
 
         const html = `
-      <span class="${wrapperClass}">
-        <span class="${part1Class}">${A}</span>
-        <span class="${part2Class}">${B}</span>
-      </span>
-    `;
+            <span class="${wrapperClass}">
+                <span class="${part1Class}">${A}</span>
+                <span class="${part2Class}">${B}</span>
+            </span>
+        `;
 
         const css = isVertical
             ? `
-        .kanji-${this.uid}-top {
-          transform: scaleY(0.5) translateY(${absShift}%);
-          transform-origin: top;
-        }
-        .kanji-${this.uid}-bottom {
-          transform: scaleY(0.5) translateY(-${absShift}%);
-          transform-origin: bottom;
-        }
-      `
+                .kanji-${this.uid}-top {
+                transform: scaleY(0.5) translateY(${absShift}%);
+                transform-origin: top;
+                }
+                .kanji-${this.uid}-bottom {
+                transform: scaleY(0.5) translateY(-${absShift}%);
+                transform-origin: bottom;
+                }
+            `
             : `
-        .kanji-${this.uid}-left {
-          transform: scaleX(0.5) translateX(${absShift}%);
-          transform-origin: left;
-        }
-        .kanji-${this.uid}-right {
-          transform: scaleX(0.5) translateX(-${absShift}%);
-          transform-origin: right;
-        }
-      `;
+                .kanji-${this.uid}-left {
+                transform: scaleX(0.5) translateX(${absShift}%);
+                transform-origin: left;
+                }
+                .kanji-${this.uid}-right {
+                transform: scaleX(0.5) translateX(-${absShift}%);
+                transform-origin: right;
+                }
+            `;
 
         return {
             html,
@@ -256,7 +256,7 @@ class ComposedKanji {
         height: 100%;
         text-align: center;
         white-space: nowrap;
-      }
+    }
     `;
     }
 }

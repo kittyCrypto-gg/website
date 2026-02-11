@@ -1,5 +1,5 @@
-import { drawTriangularIdenticon } from "./commitIdenticon";
-import { Clusteriser } from "./clusterise";
+import { drawTriangularIdenticon } from "./commitIdenticon.ts";
+import { Clusteriser } from "./clusterise.ts";
 
 declare global {
     interface Window {

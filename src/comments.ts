@@ -1,4 +1,4 @@
-import { drawSpiralIdenticon } from "./avatar";
+import { drawSpiralIdenticon } from "./avatar.ts";
 
 //if (window.location.pathname === '/') window.history.replaceState(null, '', '/index.html');
 

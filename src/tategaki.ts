@@ -1,4 +1,4 @@
-import { serialiseMixedContent } from "./mediaStyler";
+import { serialiseMixedContent } from "./mediaStyler.ts";
 
 /**
  * @param {Node} node

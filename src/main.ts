@@ -1,9 +1,9 @@
-import { removeExistingById, recreateSingleton } from "./domSingletons";
-import { setupTerminalModule } from "./terminal";
-import { setupReaderToggle } from "./readerMode";
-import * as readAloud from "./readAloud";
-import { keyboardEmu } from "./keyboard";
-import * as loader from "./loader";
+import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
+import { setupTerminalModule } from "./terminal.ts";
+import { setupReaderToggle } from "./readerMode.ts";
+import * as readAloud from "./readAloud.ts";
+import { keyboardEmu } from "./keyboard.ts";
+import * as loader from "./loader.ts";
 
 type TerminalModule = Readonly<{
     term: Readonly<{

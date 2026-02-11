@@ -1,4 +1,4 @@
-import { Clusteriser } from "./clusterise";
+import { Clusteriser } from "./clusterise.ts";
 
 declare global {
     interface Window {

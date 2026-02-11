@@ -1,4 +1,4 @@
-import * as ReaderImport from "./reader";
+import * as ReaderImport from "./reader.ts";
 
 type ReaderParams = Readonly<{
     storyPath: string;

@@ -1,12 +1,12 @@
-import { removeExistingById, recreateSingleton } from "./domSingletons";
-import { replaceTategaki } from "./tategaki";
+import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
+import { replaceTategaki } from "./tategaki.ts";
 import {
     replaceSmsMessages,
     replaceEmails,
     replaceSVGs,
     replaceTooltips,
     bindEmailActions
-} from "./mediaStyler";
+} from "./mediaStyler.ts";
 
 void recreateSingleton;
 
