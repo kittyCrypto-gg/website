@@ -728,6 +728,7 @@ class ReadAloudModule {
             }
 
             state.serviceRegion = resolved.region;
+            menuElements.regionInput.value = resolved.region;
 
             this.__writeSpeechResource({
                 speechKey,
