@@ -1075,7 +1075,8 @@ body.dark-mode .theme-toggle-button {
   Modal (Edit Message)
 ========================================= */
 /* Modal Overlay */
-#modal-overlay {
+#modal-overlay,
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -1086,6 +1087,11 @@ body.dark-mode .theme-toggle-button {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+}
+
+.cursor-wait,
+.cursor-wait * {
+  cursor: progress !important;
 }
 
 /* Modal Container */
@@ -2891,6 +2897,81 @@ body.reader-mode {
   transition: border-color 0.2s;
 }
 
+#read-aloud-menu .read-aloud-apikey-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  width: 0;
+  min-width: 220px;
+}
+
+#read-aloud-menu .read-aloud-apikey-wrap>input#read-aloud-apikey {
+  flex: 1 1 auto;
+  width: 100%;
+  padding-right: 44px;
+}
+
+#read-aloud-menu .read-aloud-apikey-eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 28px;
+  height: 28px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
+  color: var(--body-text-colour);
+  border-radius: 7px;
+  background: transparent;
+
+  transition:
+    background 0.2s,
+    transform 0.18s,
+    opacity 0.18s;
+
+  opacity: 0.78;
+}
+
+#read-aloud-menu input:focus,
+#read-aloud-menu select:focus {
+  border-color: var(--menu-button-hover-bg-colour);
+}
+
+#read-aloud-menu .read-aloud-apikey-eye svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  pointer-events: none;
+}
+
+#read-aloud-menu .read-aloud-apikey-eye img {
+  width: 18px;
+  height: 18px;
+  display: block;
+  pointer-events: none;
+}
+
+#read-aloud-menu .read-aloud-apikey-wrap:focus-within>input#read-aloud-apikey {
+  border-color: var(--menu-button-hover-bg-colour);
+}
+
+#read-aloud-menu .read-aloud-apikey-eye:hover {
+  background: var(--menu-button-hover-bg-colour);
+  transform: translateY(-50%) scale(1.08);
+  opacity: 1;
+}
+
 #read-aloud-menu input[type="text"]:focus,
 #read-aloud-menu select:focus {
   border-color: var(--menu-button-hover-bg-colour);
@@ -2922,6 +3003,23 @@ body.reader-mode {
     transform 0.18s;
   outline: none !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+#read-aloud-menu button.read-aloud-apikey-eye {
+  background: rgba(var(--frame-bg-colour-rgb), 0.18) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#read-aloud-menu button.read-aloud-apikey-eye:hover,
+#read-aloud-menu button.read-aloud-apikey-eye:focus-visible {
+  background: var(--menu-button-hover-bg-colour) !important;
+  transform: translateY(-50%) scale(1.08) !important;
+  opacity: 1;
+}
+
+#read-aloud-menu button.read-aloud-apikey-eye:active {
+  transform: translateY(-50%) scale(0.98) !important;
 }
 
 #read-aloud-menu .read-aloud-controls button:active,

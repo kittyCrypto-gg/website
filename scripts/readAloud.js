@@ -4,11 +4,17 @@ import * as loader from './loader.js';
 class ReadAloudModule {
     #SDK_CDN;
     #buttons;
+    #EYE_OPEN_SVG;
+    #EYE_CLOSED_SVG;
+    #svgCache;
     #VOICES;
     #REGIONS;
     #MENU_HTML;
     #HELP_MODAL;
     #JUMP_VIS_KEY = 'readAloudJumpVisible';
+    #SPEECH_RESOURCE_KEY = 'readAloudSpeechResource';
+    #regionResolvePromise = null;
+
 
     #boundShowMenu;
     #boundReload;
@@ -32,6 +38,10 @@ class ReadAloudModule {
             jump: { icon: '🧭', action: 'Show or hide jump to paragraph' },
             help: { icon: '❓', action: 'Help' }
         };
+
+        this.#EYE_OPEN_SVG = '../images/eyeopen.svg';
+        this.#EYE_CLOSED_SVG = '../images/eyeclosed.svg';
+        this.#svgCache = new Map();
 
         this.#VOICES = [
             { name: 'en-US-JennyNeural', locale: 'en-US', description: 'American English (US), Female, Jenny (default)' },
@@ -61,16 +71,38 @@ class ReadAloudModule {
             <div class="read-aloud-header"> Read Aloud </div>
             <div class="read-aloud-controls">
                 <div class="read-aloud-fields">
+                <button id="read-aloud-region-toggle" title="Set region manually">🌍</button>
+                <div class="read-aloud-apikey-wrap">
                     <input id="read-aloud-apikey" type="password" placeholder="Azure Speech API Key" class="read-aloud-control" />
-                    <select id="read-aloud-region" class="read-aloud-control">
-                        ${this.#REGIONS.map(region => `<option value="${region}">${region}</option>`).join('')}
-                    </select>
-                    <select id="read-aloud-voice" class="read-aloud-control">
-                        ${this.#VOICES.map(v => `<option value="${v.name}">${v.description}</option>`).join('')}
-                    </select>
-                    <select id="read-aloud-rate" class="read-aloud-control">
-                        ${[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(rate => `<option value="${rate}">${rate}x</option>`).join('')}
-                    </select>
+                    <div
+                    class="read-aloud-apikey-eye"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Show API key"
+                    title="Show API key"
+                    ></div>
+                </div>
+                <div id="read-aloud-region-wrap" class="read-aloud-apikey-wrap" style="display:none">
+                    <input
+                    id="read-aloud-region-input"
+                    type="text"
+                    placeholder="Region (e.g. uksouth)"
+                    class="read-aloud-control"
+                    list="read-aloud-region-list"
+                    autocomplete="off"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    />
+                </div>
+                <datalist id="read-aloud-region-list">
+                    ${this.#REGIONS.map(r => `<option value="${r}"></option>`).join('')}
+                </datalist>
+                <select id="read-aloud-voice" class="read-aloud-control">
+                    ${this.#VOICES.map(v => `<option value="${v.name}">${v.description}</option>`).join('')}
+                </select>
+                <select id="read-aloud-rate" class="read-aloud-control">
+                    ${[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(rate => `<option value="${rate}">${rate}x</option>`).join('')}
+                </select>
                 </div>
                 <div class="read-aloud-buttons">
                     <button id="read-aloud-toggle-playpause" title="${this.#buttons.play.action}">${this.#buttons.play.icon}</button>
@@ -151,6 +183,8 @@ class ReadAloudModule {
             jumpVisible: true,
             buffer: null,
             currentAudioUrl: null,
+            apiKeyVisible: false,
+            regionUiVisible: false,
         };
 
         this.__onControlsDetach = (e) => {
@@ -191,6 +225,42 @@ class ReadAloudModule {
         return window._speechSDKReadyPromise;
     }
 
+    async __getSvgMarkup(path) {
+        const cached = this.#svgCache.get(path);
+        if (cached) return cached;
+
+        const res = await fetch(path, { cache: 'force-cache' });
+        if (!res.ok) throw new Error(`Failed to load SVG: ${path}`);
+
+        const svg = await res.text();
+        this.#svgCache.set(path, svg);
+        return svg;
+    }
+
+    async __applyApiKeyVisibility(apikeyInput, apikeyEye, visible) {
+        if (!apikeyInput || !apikeyEye) return;
+
+        apikeyInput.type = visible ? 'text' : 'password';
+        window.readAloudState.apiKeyVisible = visible;
+
+        // Button shows the action it will do next:
+        // hidden -> show open eye (press to show)
+        // shown  -> show closed eye (press to hide)
+        const willShow = !visible;
+
+        apikeyEye.setAttribute('aria-label', willShow ? 'Show API key' : 'Hide API key');
+        apikeyEye.setAttribute('title', willShow ? 'Show API key' : 'Hide API key');
+
+        const src = willShow ? this.#EYE_OPEN_SVG : this.#EYE_CLOSED_SVG;
+
+        try {
+            apikeyEye.innerHTML = await this.__getSvgMarkup(src);
+        } catch (err) {
+            // Fallback: still usable even if SVG fails to load
+            apikeyEye.textContent = willShow ? '🙊' : '🙈';
+        }
+    }
+
     __escapeXml(unsafe) {
         return unsafe.replace(/[<>&'"]/g, c => ({
             '<': '&lt;',
@@ -199,6 +269,118 @@ class ReadAloudModule {
             "'": '&apos;',
             '"': '&quot;'
         }[c]));
+    }
+
+    __sleep(ms) {
+        return new Promise(resolve => window.setTimeout(resolve, ms));
+    }
+
+    __readSpeechResource() {
+        const raw = localStorage.getItem(this.#SPEECH_RESOURCE_KEY);
+        if (!raw) return null;
+
+        try {
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return null;
+
+            const speechKey = typeof parsed.speechKey === 'string' ? parsed.speechKey : '';
+            const region = typeof parsed.region === 'string' ? parsed.region : '';
+            const regionLocked = typeof parsed.regionLocked === 'boolean' ? parsed.regionLocked : false;
+
+            return { speechKey, region, regionLocked };
+        } catch {
+            return null;
+        }
+    }
+
+    __writeSpeechResource(next) {
+        const safe = {
+            speechKey: String(next?.speechKey || ''),
+            region: String(next?.region || ''),
+            regionLocked: Boolean(next?.regionLocked),
+            updatedAt: Date.now()
+        };
+
+        localStorage.setItem(this.#SPEECH_RESOURCE_KEY, JSON.stringify(safe));
+    }
+
+    __migrateResource() {
+        const already = this.__readSpeechResource();
+        if (already) return;
+
+        const legacyKey = localStorage.getItem('readAloudSpeechApiKey') || '';
+        const legacyRegion = localStorage.getItem('readAloudSpeechRegion') || '';
+
+        if (!legacyKey && !legacyRegion) return;
+
+        this.__writeSpeechResource({
+            speechKey: legacyKey,
+            region: legacyRegion,
+            regionLocked: legacyRegion !== ''
+        });
+
+        localStorage.removeItem('readAloudSpeechApiKey');
+        localStorage.removeItem('readAloudSpeechRegion');
+    }
+
+    async __probeRegionForKey(speechKey, region) {
+        if (!speechKey || !region) return { ok: false, status: 0 };
+
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 3500);
+
+        try {
+            const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`;
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: { 'Ocp-Apim-Subscription-Key': speechKey },
+                signal: controller.signal
+            });
+
+            return { ok: res.ok, status: res.status };
+        } catch {
+            return { ok: false, status: 0 };
+        } finally {
+            window.clearTimeout(timeout);
+        }
+    }
+
+    async __resolveRegionForKey(speechKey, preferredRegion) {
+        const regions = this.#REGIONS.slice();
+        const ordered = preferredRegion
+            ? [preferredRegion, ...regions.filter(r => r !== preferredRegion)]
+            : regions;
+
+        for (const region of ordered) {
+            const probe = await this.__probeRegionForKey(speechKey, region);
+
+            if (probe.status === 429) {
+                return { region: null, reason: 'rate_limited' };
+            }
+
+            if (probe.ok) {
+                return { region, reason: 'ok' };
+            }
+
+            await this.__sleep(140);
+        }
+
+        return { region: null, reason: 'not_found' };
+    }
+
+    async __ensureRegionForKey(speechKey, preferredRegion) {
+        if (!speechKey) return { region: null, reason: 'no_key' };
+
+        if (this.#regionResolvePromise) return this.#regionResolvePromise;
+
+        this.#regionResolvePromise = (async () => {
+            const result = await this.__resolveRegionForKey(speechKey, preferredRegion);
+            return result;
+        })().finally(() => {
+            this.#regionResolvePromise = null;
+        });
+
+        return this.#regionResolvePromise;
     }
 
     __getParagraphPlainText(paragraph) {
@@ -238,6 +420,60 @@ class ReadAloudModule {
             </voice>
         </speak>
     `;
+    }
+
+    __setRegionUiVisible(visible) {
+        const wrap = document.getElementById('read-aloud-region-wrap');
+        const btn = document.getElementById('read-aloud-region-toggle');
+        const fields = document.querySelector('#read-aloud-menu .read-aloud-fields');
+        const apikeyWrap = document.querySelector('#read-aloud-menu .read-aloud-apikey-wrap');
+        const regionInput = document.getElementById('read-aloud-region-input');
+
+        if (!wrap || !btn || !fields || !apikeyWrap || !regionInput) return;
+
+        if (visible) {
+            wrap.style.display = 'flex';
+            wrap.appendChild(btn);
+            btn.classList.add('read-aloud-apikey-eye');
+            btn.setAttribute('title', 'Hide region input');
+            window.readAloudState.regionUiVisible = true;
+            regionInput.focus();
+            return;
+        }
+
+        wrap.style.display = 'none';
+        btn.classList.remove('read-aloud-apikey-eye');
+        btn.setAttribute('title', 'Set region manually');
+        fields.insertBefore(btn, apikeyWrap);
+        window.readAloudState.regionUiVisible = false;
+    }
+
+    async __handleRuntimeSpeakFailure() {
+        const state = window.readAloudState;
+        if (!state.speechKey || !state.serviceRegion) return false;
+
+        const stored = this.__readSpeechResource();
+        if (!stored?.regionLocked) return false;
+
+        const probe = await this.__probeRegionForKey(state.speechKey, state.serviceRegion);
+
+        if (probe.status === 0) return false;
+
+        if (probe.status === 429) {
+            window.alert('Azure region check was rate limited. Please try again in a moment.');
+            return true;
+        }
+
+        if (probe.ok) return false;
+
+        window.alert(
+            'Your Azure Speech region does not work with this API key. Check what you entered. ' +
+            'If you clear the region and press Play, the app will try to detect it automatically.'
+        );
+
+        this.__toggleCnfg(true);
+        this.__setRegionUiVisible(true);
+        return true;
     }
 
     __positionMenu(detached) {
@@ -289,9 +525,17 @@ class ReadAloudModule {
 
         menu.style.display = 'flex';
 
+        this.__migrateResource();
+
         const menuElements = {
             apikeyInput: document.getElementById('read-aloud-apikey'),
-            regionDropdown: document.getElementById('read-aloud-region'),
+            apikeyEye: document.querySelector('#read-aloud-menu .read-aloud-apikey-eye'),
+            //regionDropdown: document.getElementById('read-aloud-region'),
+            regionToggleBtn: document.getElementById('read-aloud-region-toggle'),
+            regionWrap: document.getElementById('read-aloud-region-wrap'),
+            regionInput: document.getElementById('read-aloud-region-input'),
+            fieldsWrap: document.querySelector('#read-aloud-menu .read-aloud-fields'),
+            apikeyWrap: document.querySelector('#read-aloud-menu .read-aloud-apikey-wrap'),
             voiceDropdown: document.getElementById('read-aloud-voice'),
             rateDropdown: document.getElementById('read-aloud-rate'),
             playPauseBtn: document.getElementById('read-aloud-toggle-playpause'),
@@ -318,11 +562,39 @@ class ReadAloudModule {
             return;
         }
 
+        const stored = this.__readSpeechResource();
+        menuElements.apikeyInput.value = stored?.speechKey || '';
+        menuElements.regionInput.value = stored?.region || '';
+        menuElements.regionInput.style.paddingRight = '44px';
+
         const savedJumpVis = localStorage.getItem(this.#JUMP_VIS_KEY);
         const jumpVisible = savedJumpVis == null ? true : savedJumpVis === 'true';
         this.__toggleJump(jumpVisible);
 
-        menuElements.apikeyInput.value = localStorage.getItem('readAloudSpeechApiKey') || '';
+        //menuElements.apikeyInput.value = localStorage.getItem('readAloudSpeechApiKey') || '';
+
+        void this.__applyApiKeyVisibility(
+            menuElements.apikeyInput,
+            menuElements.apikeyEye,
+            !!window.readAloudState.apiKeyVisible
+        );
+
+        const toggleApiKeyVisibility = () => {
+            const visibleNow = menuElements.apikeyInput.type === 'text';
+            void this.__applyApiKeyVisibility(
+                menuElements.apikeyInput,
+                menuElements.apikeyEye,
+                !visibleNow
+            );
+        };
+
+        menuElements.apikeyEye?.addEventListener('click', toggleApiKeyVisibility);
+
+        menuElements.apikeyEye?.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            toggleApiKeyVisibility();
+        });
 
         this.__toggleCnfg(
             !localStorage.getItem('readAloudConfigMenuHidden') ||
@@ -331,12 +603,32 @@ class ReadAloudModule {
                 : window.readAloudState.configVisible
         );
 
-        menuElements.regionDropdown.value = localStorage.getItem('readAloudSpeechRegion') || this.#REGIONS[0];
+        this.__setRegionUiVisible(!!window.readAloudState.regionUiVisible);
+
+        menuElements.regionToggleBtn.addEventListener('click', () => {
+            const next = !window.readAloudState.regionUiVisible;
+            this.__setRegionUiVisible(next);
+        });
+
+        // menuElements.regionInput.addEventListener('input', (e) => {
+        //     const raw = String(e.target.value || '').trim().toLowerCase();
+        //     this.__saveRegion(raw);
+        // });
+
+        menuElements.regionInput.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const raw = menuElements.regionInput.value.trim().toLowerCase();
+            this.__saveRegion(raw);
+            this.__setRegionUiVisible(false);
+        });
+
+        //menuElements.regionDropdown.value = localStorage.getItem('readAloudSpeechRegion') || this.#REGIONS[0];
         menuElements.voiceDropdown.value = localStorage.getItem('readAloudPreferredVoice') || this.#VOICES[0].name;
         menuElements.rateDropdown.value = this.__getSpeechRate().toString();
 
         menuElements.apikeyInput.addEventListener('input', e => this.__saveApiKey(e.target.value.trim()));
-        menuElements.regionDropdown.addEventListener('change', e => this.__saveRegion(e.target.value));
+        //menuElements.regionDropdown.addEventListener('change', e => this.__saveRegion(e.target.value));
 
         menuElements.playPauseBtn.addEventListener('click', async () => {
             const state = window.readAloudState;
@@ -347,13 +639,106 @@ class ReadAloudModule {
                 return;
             }
 
+            const speechKey = menuElements.apikeyInput.value.trim();
+            const voiceName = menuElements.voiceDropdown.value;
+
+            state.speechKey = speechKey;
+            state.voiceName = voiceName;
+
+            if (!speechKey) {
+                menuElements.playPauseBtn.textContent = this.#buttons.play.icon;
+                window.alert('Please enter your Azure Speech API key.');
+                return;
+            }
+
+            const storedBefore = this.__readSpeechResource();
+            const storedKey = storedBefore?.speechKey || '';
+            let storedRegion = storedBefore?.region || '';
+            let storedRegionLocked = !!storedBefore?.regionLocked;
+
+            if (storedKey !== speechKey) {
+                this.__writeSpeechResource({
+                    speechKey,
+                    region: storedRegion,
+                    regionLocked: storedRegionLocked
+                });
+            }
+
+            const typedRegion = menuElements.regionInput.value.trim().toLowerCase();
+            const userEditingRegion = !!state.regionUiVisible;
+
+            if (userEditingRegion && typedRegion === '') {
+                storedRegion = '';
+                storedRegionLocked = false;
+                this.__writeSpeechResource({ speechKey, region: '', regionLocked: false });
+            }
+
+            const typedOverride = userEditingRegion && typedRegion !== '' && typedRegion !== storedRegion;
+            const hasLockedRegion = typedOverride || (storedRegionLocked && storedRegion !== '');
+            const lockedRegion = typedOverride ? typedRegion : storedRegion;
+
+            const canReuseCached = !hasLockedRegion && storedKey === speechKey && storedRegion !== '';
+
+            const regionDetectModalId = 'readaloud-region-detect-modal';
+            const regionDetectHtml = `
+                <div class="modal-header">
+                    <h2>Detecting Azure region…</h2>
+                </div>
+                <div class="modal-content">
+                    <p>Checking regions for your API key. This can take a few seconds.</p>
+                    <p class="modal-note">Press <kbd>Esc</kbd> to close this message.</p>
+                </div>
+            `;
+
+            const shouldDetect = !hasLockedRegion && !canReuseCached;
+
+            let resolved;
+
+            try {
+                if (shouldDetect) {
+                    this.__openCustomModal(regionDetectHtml, regionDetectModalId);
+                    document.documentElement.classList.add('cursor-wait');
+                }
+
+                resolved = hasLockedRegion
+                    ? { region: lockedRegion, reason: 'locked' }
+                    : canReuseCached
+                        ? { region: storedRegion, reason: 'cached' }
+                        : await this.__ensureRegionForKey(speechKey, storedRegion);
+            } finally {
+                if (shouldDetect) {
+                    this.__closeCustomModal(regionDetectModalId);
+                    document.documentElement.classList.remove('cursor-wait');
+                }
+            }
+
+
+            if (!resolved.region) {
+                menuElements.playPauseBtn.textContent = this.#buttons.play.icon;
+
+                window.alert(
+                    resolved.reason === 'rate_limited'
+                        ? 'Region check was rate limited. Please use the 🌍 button and enter your region manually, then try again.'
+                        : 'Could not find a working region for this key. Please use the 🌍 button and enter your region manually.'
+                );
+
+                this.__toggleCnfg(true);
+                this.__setRegionUiVisible(true);
+                return;
+            }
+
+            state.serviceRegion = resolved.region;
+
+            this.__writeSpeechResource({
+                speechKey,
+                region: resolved.region,
+                regionLocked: hasLockedRegion
+            });
+
             menuElements.playPauseBtn.textContent = this.#buttons.pause.icon;
-            state.speechKey = menuElements.apikeyInput.value.trim();
-            state.serviceRegion = menuElements.regionDropdown.value;
-            state.voiceName = menuElements.voiceDropdown.value;
 
             if (!state.paragraphs.length) {
-                await this.__readAloud(state.speechKey, state.serviceRegion, state.voiceName);
+                await this.__readAloud(speechKey, state.serviceRegion, voiceName);
                 return;
             }
 
@@ -500,7 +885,7 @@ class ReadAloudModule {
 
         window.readAloudState.configVisible = newValue;
         localStorage.setItem('readAloudConfigVisible', String(newValue));
-        localStorage.setItem('readAloudConfigMenuHidden', !newValue);
+        localStorage.setItem('readAloudConfigMenuHidden', String(!newValue));
 
         return newValue;
     }
@@ -715,7 +1100,7 @@ class ReadAloudModule {
         }
 
         if (!state.speechKey || !state.serviceRegion) {
-            window.alert('Please enter your Azure Speech API key and region in the Read Aloud menu.');
+            window.alert('Please enter your Azure Speech API key. The region will be detected automatically, or you can set it with 🌍.');
             return;
         }
 
@@ -755,7 +1140,10 @@ class ReadAloudModule {
                 await this.__speakP(idx + 1);
             }
         } catch (error) {
-            window.alert('Read Aloud stopped due to a connection issue.');
+            const handled = await this.__handleRuntimeSpeakFailure();
+            if (!handled) {
+                window.alert('Read Aloud stopped due to a connection issue.');
+            }
             await this.__pause();
         }
     }
@@ -1030,7 +1418,7 @@ class ReadAloudModule {
 
         if (!state.paragraphs || state.paragraphs.length === 0) return;
 
-        const idx = paragraphNumber;
+        const idx = paragraphNumber - 1;
         if (idx < 0 || idx >= state.paragraphs.length) return;
 
         const wasPlaying = !state.paused;
@@ -1089,12 +1477,18 @@ class ReadAloudModule {
     }
 
     __saveApiKey(apiKey) {
-        localStorage.setItem('readAloudSpeechApiKey', apiKey);
-        localStorage.setItem('readAloudConfigMenuHidden', apiKey !== '');
+        const stored = this.__readSpeechResource();
+        const region = stored?.region || '';
+        const regionLocked = !!stored?.regionLocked;
+        this.__writeSpeechResource({ speechKey: apiKey, region, regionLocked });
+        localStorage.setItem('readAloudConfigMenuHidden', String(apiKey !== ''));
     }
 
     __saveRegion(region) {
-        localStorage.setItem('readAloudSpeechRegion', region);
+        const stored = this.__readSpeechResource();
+        const speechKey = stored?.speechKey || '';
+        const regionLocked = region !== '';
+        this.__writeSpeechResource({ speechKey, region, regionLocked });
     }
 
     __saveSpeechRate(rate) {
@@ -1105,39 +1499,62 @@ class ReadAloudModule {
         return parseFloat(localStorage.getItem('readAloudSpeechRate')) || 1.0;
     }
 
-    __openCustomModal(html, modalId = 'readaloud-help-modal') {
+    __openCustomModal(html, modalId) {
+        const overlayId = `modal-overlay-${modalId}`;
+
         if (document.getElementById(modalId)) return;
+        if (document.getElementById(overlayId)) return;
 
         const overlay = document.createElement('div');
-        overlay.id = 'modal-overlay';
+        overlay.id = overlayId;
+        overlay.className = 'modal-overlay';
 
         const modal = document.createElement('div');
         modal.id = modalId;
         modal.className = 'modal';
 
-        document.body.classList.add('no-scroll');
-
         modal.innerHTML = html;
+
+        document.body.classList.add('no-scroll');
 
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
 
+        window.closeCustomModal = this.__closeCustomModal.bind(this);
+
         overlay.addEventListener('click', (event) => {
-            if (event.target === overlay) this.__closeCustomModal(modalId);
-            window.closeCustomModal = this.__closeCustomModal.bind(this);
+            if (event.target !== overlay) return;
+            this.__closeCustomModal(modalId);
         });
 
-        document.addEventListener('keydown', function handleEscape(event) {
-            if (event.key === 'Escape') {
-                window.closeCustomModal?.(modalId);
-                document.removeEventListener('keydown', handleEscape);
-            }
-        });
+        const handleEscape = (event) => {
+            if (event.key !== 'Escape') return;
+            this.__closeCustomModal(modalId);
+        };
+
+        // store so close can remove the listener
+        overlay.__handleEscape = handleEscape;
+        document.addEventListener('keydown', handleEscape);
     }
 
-    __closeCustomModal(modalId = 'readaloud-help-modal') {
-        const overlay = document.getElementById('modal-overlay');
-        if (overlay) overlay.remove();
+    __closeCustomModal(modalId) {
+        const overlayId = `modal-overlay-${modalId}`;
+
+        const modal = document.getElementById(modalId);
+        const overlay =
+            document.getElementById(overlayId) ||
+            (modal ? modal.closest('.modal-overlay') : null);
+
+        if (!overlay) return;
+
+        const handleEscape = overlay.__handleEscape;
+        if (handleEscape) document.removeEventListener('keydown', handleEscape);
+
+        overlay.remove();
+
+        const remaining = document.querySelectorAll('.modal-overlay, #modal-overlay').length;
+        if (remaining) return;
+
         document.body.classList.remove('no-scroll');
     }
 
