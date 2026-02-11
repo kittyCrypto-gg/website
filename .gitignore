@@ -13,6 +13,6 @@ node_modules/
 deprecated/
 
 # Generated build folders
-#dist/
+dist/
 public/
 build/

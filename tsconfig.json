@@ -5,7 +5,8 @@
         "moduleResolution": "Bundler",
         "lib": [
             "ES2022",
-            "DOM"
+            "DOM",
+            "DOM.Iterable"
         ],
         "strict": true,
         "noEmitOnError": true,
@@ -15,5 +16,7 @@
         "removeComments": false,
         "verbatimModuleSyntax": true
     },
-    "include": ["src"]
+    "include": [
+        "src"
+    ]
 }

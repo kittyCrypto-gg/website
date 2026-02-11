@@ -4,140 +4,218 @@ import { setupReaderToggle } from "./readerMode";
 import * as readAloud from "./readAloud";
 import { keyboardEmu } from "./keyboard";
 import * as loader from "./loader";
+
+type TerminalModule = Readonly<{
+    term: Readonly<{
+        element: HTMLElement | null;
+    }>;
+    sendSeq: (seq: string) => void;
+    dispose: () => void;
+    setWebUiTheme?: (theme: "dark" | "light") => void;
+}>;
+
+type KeyboardEmuInstance = Readonly<{
+    destroy: () => void;
+}>;
+
+type KeyboardEmuCtor = new (
+    isMobile: boolean,
+    htmlUrl: string,
+    cssUrl: string
+) => Readonly<{
+    install: (
+        transport: Readonly<{ send: (payload: Readonly<{ seq: string }>) => void }>,
+        inputEl: HTMLTextAreaElement
+    ) => Promise<KeyboardEmuInstance>;
+}>;
+
+type MainJson = Readonly<{
+    headScripts?: readonly string[];
+    mainMenu: Record<string, string>;
+    header: string;
+    footer: string;
+    themeToggle: Readonly<{ dark: string; light: string; title?: string }>;
+    readerModeToggle: Readonly<{ enable: string; disable: string; title?: string }>;
+    readAloudToggle: Readonly<{ enable: string; disable: string; title?: string }>;
+}>;
+
+type CookieValue = string | null;
+
 const params = new URLSearchParams(window.location.search);
-let terminalMod = null;
-let pendingWebUiTheme = null;
+
+let terminalMod: TerminalModule | null = null;
+let pendingWebUiTheme: "dark" | "light" | null = null;
+
 /**
  * @param {unknown} v - Value to convert.
  * @returns {string} Sanitised string suitable for an id fragment.
  */
-function toSafeIdPart(v) {
+function toSafeIdPart(v: unknown): string {
     return String(v || "")
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9_-]+/g, "_")
         .replace(/^_+|_+$/g, "");
 }
+
 /**
  * @param {string} prefix - Prefix for id.
  * @param {unknown} value - Value to incorporate.
  * @returns {string} Stable id.
  */
-function makeStableId(prefix, value) {
+function makeStableId(prefix: string, value: unknown): string {
     const part = toSafeIdPart(value);
     return part ? `${prefix}${part}` : `${prefix}x`;
 }
+
 /**
  * @returns {Promise<boolean>} True if considered mobile.
  */
-async function checkMobile() {
-    const MOBILE_DETECT_CDN = "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
-    if (!("MobileDetect" in window) || typeof window.MobileDetect === "undefined") {
+async function checkMobile(): Promise<boolean> {
+    const MOBILE_DETECT_CDN =
+        "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
+
+    if (!("MobileDetect" in window) || typeof (window as unknown as { MobileDetect?: unknown }).MobileDetect === "undefined") {
         await loader.loadScript(MOBILE_DETECT_CDN, { asModule: false });
     }
+
     const ua = navigator.userAgent;
-    const MD = window.MobileDetect;
+
+    const MD = (window as unknown as { MobileDetect: new (ua: string) => { mobile: () => string | null } }).MobileDetect;
     const md = new MD(ua);
+
     const mdHit = !!md.mobile();
     const touch = navigator.maxTouchPoints > 0;
-    const desktop = /\b(Windows NT|Macintosh|X11|Linux x86_64)\b/.test(ua) &&
+
+    const desktop =
+        /\b(Windows NT|Macintosh|X11|Linux x86_64)\b/.test(ua) &&
         !touch;
+
     return mdHit || !desktop;
 }
+
 document.addEventListener("DOMContentLoaded", () => {
     document.body.style.visibility = "visible";
     document.body.style.opacity = "1";
+
     /**
      * @returns {Promise<void>} Resolves after terminal initialisation.
      */
-    const init = async () => {
+    const init = async (): Promise<void> => {
         const isMobile = params.get("isMobile") !== null
             ? params.get("isMobile") === "true"
             : await checkMobile();
+
         const terminal = await setupTerminalModule()
             .then((mod) => {
-            document
-                .getElementById("terminal-loading")
-                ?.style.setProperty("display", "none");
-            console.log("Banner loaded successfully");
-            return mod;
-        })
-            .catch((err) => {
-            console.error("Terminal initialisation failed:", err);
-            throw err;
-        });
-        await new Promise((r) => requestAnimationFrame(() => r()));
-        const xtermTextarea = terminal.term.element?.querySelector("textarea.xterm-helper-textarea") ||
-            terminal.term.element?.querySelector("textarea") ||
+                document
+                    .getElementById("terminal-loading")
+                    ?.style.setProperty("display", "none");
+
+                console.log("Banner loaded successfully");
+                return mod as TerminalModule;
+            })
+            .catch((err: unknown) => {
+                console.error("Terminal initialisation failed:", err);
+                throw err;
+            });
+
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+        const xtermTextarea =
+            terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea.xterm-helper-textarea") ||
+            terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea") ||
             null;
-        const KeyboardEmu = keyboardEmu;
-        const keyboard = (isMobile && xtermTextarea)
-            ? await new KeyboardEmu(isMobile, "../keyboard.html", "../styles/keyboard.css").install({
-                send: ({ seq }) => terminal.sendSeq(seq)
-            }, xtermTextarea)
+
+        const KeyboardEmu = keyboardEmu as unknown as KeyboardEmuCtor;
+
+        const keyboard: KeyboardEmuInstance | null = (isMobile && xtermTextarea)
+            ? await new KeyboardEmu(
+                isMobile,
+                "../keyboard.html",
+                "../styles/keyboard.css"
+            ).install(
+                {
+                    send: ({ seq }) => terminal.sendSeq(seq)
+                },
+                xtermTextarea
+            )
             : null;
+
         const dispose = terminal.dispose;
-        terminal.dispose = () => {
-            if (keyboard)
-                keyboard.destroy();
+        (terminal as { dispose: () => void }).dispose = () => {
+            if (keyboard) keyboard.destroy();
             dispose();
         };
+
         terminalMod = terminal;
+
         if (pendingWebUiTheme && typeof terminalMod.setWebUiTheme === "function") {
             terminalMod.setWebUiTheme(pendingWebUiTheme);
             pendingWebUiTheme = null;
         }
     };
+
     void init();
 });
-let currentTheme = null;
+
+let currentTheme: "dark" | "light" | null = null;
+
 /**
  * @param {string} name - Cookie name.
  * @returns {CookieValue} Cookie value or null.
  */
-const getCookie = (name) => {
+const getCookie = (name: string): CookieValue => {
     const cookies = document.cookie.split("; ");
     const cookie = cookies.find((row) => row.startsWith(`${name}=`));
     return cookie ? cookie.split("=")[1] ?? null : null;
 };
+
 /**
  * @param {string} name - Cookie name.
  * @param {string} value - Cookie value.
  * @param {number} days - Expiry in days.
  * @returns {void} Nothing.
  */
-const setCookie = (name, value, days = 365) => {
+const setCookie = (name: string, value: string, days: number = 365): void => {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
     document.cookie = `${name}=${value}; expires=${expires}; path=/`;
 };
+
 /**
  * @param {string} name - Cookie name.
  * @returns {void} Nothing.
  */
-const deleteCookie = (name) => {
+const deleteCookie = (name: string): void => {
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
     void deleteCookie;
 };
+
 /**
  * @returns {void} Nothing.
  */
-const repaint = () => {
+const repaint = (): void => {
     void document.body.offsetHeight;
 };
+
 /**
  * @returns {Promise<void>} Resolves after UI initialisation.
  */
-async function initialiseUI() {
+async function initialiseUI(): Promise<void> {
     try {
         const response = await fetch("../data/main.json");
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = (await response.json());
+
+        const data = (await response.json()) as MainJson;
+
         if (data.headScripts) {
             data.headScripts.forEach((scriptSrc) => {
                 const scriptId = makeStableId("kc-head-script_", scriptSrc);
+
                 removeExistingById(scriptId, document);
+
                 const script = document.createElement("script");
                 script.id = scriptId;
                 script.src = scriptSrc;
@@ -145,12 +223,15 @@ async function initialiseUI() {
                 document.head.appendChild(script);
             });
         }
+
         const menu = document.getElementById("main-menu");
-        if (!menu)
-            throw new Error("Element #main-menu not found!");
+        if (!menu) throw new Error("Element #main-menu not found!");
+
         for (const [text, link] of Object.entries(data.mainMenu)) {
             const linkId = makeStableId("kc-main-menu_", text);
+
             removeExistingById(linkId, document);
+
             const button = document.createElement("a");
             button.id = linkId;
             button.href = link;
@@ -158,67 +239,87 @@ async function initialiseUI() {
             button.classList.add("menu-button");
             menu.appendChild(button);
         }
+
         const header = document.getElementById("main-header");
-        if (!header)
-            throw new Error("Element #main-header not found!");
-        if (!header.textContent?.trim())
-            header.textContent = data.header;
+        if (!header) throw new Error("Element #main-header not found!");
+        if (!header.textContent?.trim()) header.textContent = data.header;
+
         const footer = document.getElementById("main-footer");
-        if (!footer)
-            throw new Error("Element #main-footer not found!");
+        if (!footer) throw new Error("Element #main-footer not found!");
         const currentYear = new Date().getFullYear();
         footer.textContent = data.footer.replace("${year}", String(currentYear));
-        const themeToggle = recreateSingleton("theme-toggle", () => document.createElement("button"), document);
+
+        const themeToggle = recreateSingleton(
+            "theme-toggle",
+            () => document.createElement("button"),
+            document
+        );
         themeToggle.classList.add("theme-toggle-button");
         document.body.appendChild(themeToggle);
+
         /**
          * @param {"dark" | "light"} theme - Theme to apply.
          * @param {boolean} persist - Whether to persist to cookie.
          * @returns {void} Nothing.
          */
-        const applyTheme = (theme, persist = false) => {
+        const applyTheme = (theme: "dark" | "light", persist: boolean = false): void => {
             document.documentElement.classList.toggle("dark-mode", theme === "dark");
             document.documentElement.classList.toggle("light-mode", theme === "light");
+
             themeToggle.textContent =
                 theme === "dark" ? data.themeToggle.dark : data.themeToggle.light;
+
             currentTheme = theme;
+
             if (persist) {
                 setCookie("darkMode", theme === "dark" ? "true" : "false");
             }
+
             repaint();
+
             if (terminalMod && typeof terminalMod.setWebUiTheme === "function") {
                 terminalMod.setWebUiTheme(theme);
-            }
-            else {
+            } else {
                 pendingWebUiTheme = theme;
             }
         };
+
         const cookieDark = getCookie("darkMode");
         const osDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+
         if (cookieDark !== null) {
             applyTheme(cookieDark === "true" ? "dark" : "light");
-        }
-        else {
+        } else {
             applyTheme(osDark ? "dark" : "light");
         }
+
         themeToggle.addEventListener("click", () => {
             applyTheme(currentTheme === "dark" ? "light" : "dark", true);
         });
+
         themeToggle.title = data.themeToggle.title || "Theme";
+
         if (window.matchMedia) {
             const mq = window.matchMedia("(prefers-color-scheme: dark)");
             mq.addEventListener("change", (e) => {
-                const osTheme = e.matches ? "dark" : "light";
+                const osTheme: "dark" | "light" = e.matches ? "dark" : "light";
                 if (currentTheme !== osTheme) {
                     applyTheme(osTheme, false);
                 }
             });
         }
-        const isReaderRoute = window.location.pathname === "/reader" ||
+
+        const isReaderRoute =
+            window.location.pathname === "/reader" ||
             window.location.pathname.startsWith("/reader/");
-        if (!isReaderRoute)
-            return;
-        const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
+
+        if (!isReaderRoute) return;
+
+        const readerToggle = recreateSingleton(
+            "reader-toggle",
+            () => document.createElement("button"),
+            document
+        );
         readerToggle.classList.add("theme-toggle-button");
         readerToggle.style.bottom = "80px";
         readerToggle.textContent = data.readerModeToggle.enable;
@@ -226,8 +327,14 @@ async function initialiseUI() {
         readerToggle.setAttribute("data-disable", data.readerModeToggle.disable);
         readerToggle.title = data.readerModeToggle.title || "Reader Mode";
         document.body.appendChild(readerToggle);
+
         await setupReaderToggle();
-        const readAloudToggle = recreateSingleton("read-aloud-toggle", () => document.createElement("button"), document);
+
+        const readAloudToggle = recreateSingleton(
+            "read-aloud-toggle",
+            () => document.createElement("button"),
+            document
+        );
         readAloudToggle.classList.add("theme-toggle-button");
         readAloudToggle.style.bottom = "140px";
         readAloudToggle.textContent = data.readAloudToggle.enable;
@@ -235,20 +342,20 @@ async function initialiseUI() {
         readAloudToggle.setAttribute("data-disable", data.readAloudToggle.disable);
         readAloudToggle.title = data.readAloudToggle.title || "Read Aloud";
         document.body.appendChild(readAloudToggle);
+
         readAloudToggle.addEventListener("click", readAloud.showMenu);
+
         if (params.has("darkmode")) {
             const raw = params.get("darkmode");
             const v = (raw ? raw : "").toLowerCase();
-            if (v === "true")
-                applyTheme("dark", true);
-            if (v === "false")
-                applyTheme("light", true);
+            if (v === "true") applyTheme("dark", true);
+            if (v === "false") applyTheme("light", true);
         }
-    }
-    catch (error) {
+    } catch (error: unknown) {
         console.error("Error loading JSON or updating DOM:", error);
     }
 }
+
 document.addEventListener("DOMContentLoaded", () => {
     void initialiseUI();
 });

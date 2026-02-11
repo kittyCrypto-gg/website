@@ -1,10 +1,11 @@
 /**
- * @param _ - Unused helper to satisfy TS noUnusedParameters without changing runtime behaviour.
+ * @param {unknown} _ - Unused helper to satisfy TS noUnusedParameters without changing runtime behaviour.
+ * @returns {void}
  */
 const ignore = (_: unknown): void => { };
 
 /**
- * @returns A banner DOM fragment appended into #banner.
+ * @returns {void} A banner DOM fragment appended into #banner.
  */
 export async function loadBanner(): Promise<void> {
     const container = document.getElementById('banner') as HTMLElement;
@@ -394,8 +395,9 @@ function makeIconDraggable(): void {
 }
 
 /**
- * @param el - The terminal window wrapper element.
- * @param parent - The bounding parent (passed through unchanged, currently unused).
+ * @param {HTMLElement} el - The terminal window wrapper element.
+ * @param {Element | null} parent - The bounding parent (passed through unchanged, currently unused).
+ * @returns {void}
  */
 function makeTermDragWPrnt(el: HTMLElement, parent: Element | null): void {
     ignore(parent);
@@ -458,7 +460,7 @@ function observeThemeChange(): void {
 }
 
 /**
- * @returns Resolves after the ASCII block has been refreshed (if present).
+ * @returns {Promise<void>} Resolves after the ASCII block has been refreshed (if present).
  */
 async function updateAsciiArt(): Promise<void> {
     const isDark = document.documentElement.classList.contains('dark-mode');
@@ -482,8 +484,9 @@ async function updateAsciiArt(): Promise<void> {
 }
 
 /**
- * @param el - Element to wait on.
- * @param minHeight - Minimum height in pixels before resolving.
+ * @param {HTMLElement} el - Element to wait on.
+ * @param {number} minHeight - Minimum height in pixels before resolving.
+ * @returns {Promise<void>} Resolves once el.offsetHeight >= minHeight, checking on each animation frame.
  */
 async function waitForElementHeight(el: HTMLElement, minHeight: number = 100): Promise<void> {
     return new Promise<void>((resolve) => {
@@ -496,7 +499,7 @@ async function waitForElementHeight(el: HTMLElement, minHeight: number = 100): P
 }
 
 /**
- * @returns True if the UA suggests Mobile Safari (not Chrome on iOS).
+ * @returns {boolean} True if the UA suggests Mobile Safari (not Chrome on iOS).
  */
 function needsSafariRepaint(): boolean {
     const ua = navigator.userAgent;

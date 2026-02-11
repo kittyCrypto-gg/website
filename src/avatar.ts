@@ -10,7 +10,8 @@ export type SpiralConfig = Readonly<{
 }>;
 
 /**
- * @param str - Input string to hash.
+ * @param {string} str - Input string to hash.
+ * @returns {Promise<number[]>} - Promise resolving to an array of bytes representing the SHA-256 hash of the input string.
  */
 async function hashString(str: string): Promise<number[]> {
     const msgBuffer = new TextEncoder().encode(str);
@@ -19,17 +20,19 @@ async function hashString(str: string): Promise<number[]> {
 }
 
 /**
- * @param hue - Hue in degrees.
- * @param sat - Saturation percentage.
- * @param light - Lightness percentage.
+ * @param {number} hue - Hue in degrees.
+ * @param {number} sat - Saturation percentage.
+ * @param {number} light - Lightness percentage.
+ * @returns {string} - HSL color string.
  */
 function getHSL(hue: number, sat: number = 80, light: number = 60): string {
     return `hsl(${hue % 360}, ${sat}%, ${light}%)`;
 }
 
 /**
- * @param seed - Seed value derived from the hash.
- * @param hash - SHA-256 hash bytes.
+ * @param {number} seed - Seed value derived from the hash.
+ * @param {ReadonlyArray<number>} hash - SHA-256 hash bytes.
+ * @returns {ColourPick} - Object containing the colors for the spiral arms and background.
  */
 function pickDistinctColours(seed: number, hash: ReadonlyArray<number>): ColourPick {
     const baseHue = seed % 360;
@@ -49,7 +52,8 @@ function pickDistinctColours(seed: number, hash: ReadonlyArray<number>): ColourP
 }
 
 /**
- * @param hash - SHA-256 hash bytes.
+ * @param {ReadonlyArray<number>} hash - SHA-256 hash bytes.
+ * @returns {SpiralConfig} - Configuration parameters for the spiral generation, derived from the hash to ensure uniqueness.
  */
 function getSpiralConfig(hash: ReadonlyArray<number>): SpiralConfig {
     const angleStep = 0.15 + (hash[2] % 70) / 200; // 0.15–0.5
@@ -59,9 +63,10 @@ function getSpiralConfig(hash: ReadonlyArray<number>): SpiralConfig {
 }
 
 /**
- * @param angleOffset - Angular offset (radians) for the spiral arm.
- * @param spiralConfig - Spiral parameters.
- * @param size - SVG size (px).
+ * @param {number} angleOffset - Angular offset (radians) for the spiral arm.
+ * @param {SpiralConfig} spiralConfig - Spiral parameters.
+ * @param {number} size - SVG size (px).
+ * @returns {string} - SVG path data string representing the spiral arm.
  */
 function createSpiralPath(angleOffset: number, spiralConfig: SpiralConfig, size: number): string {
     const { angleStep, radiusStep, steps } = spiralConfig;
@@ -80,8 +85,9 @@ function createSpiralPath(angleOffset: number, spiralConfig: SpiralConfig, size:
 }
 
 /**
- * @param username - Identifier used to deterministically generate the identicon.
- * @param size - SVG size (px).
+ * @param {string} username - Identifier used to deterministically generate the identicon.
+ * @param {number} size - SVG size (px).
+ * @returns {Promise<SVGSVGElement>} - Promise resolving to the generated identicon as an SVG element.
  */
 export async function drawSpiralIdenticon(username: string, size: number = 128): Promise<SVGSVGElement> {
     const hash = await hashString(username);
