@@ -76,7 +76,7 @@ export type TerminalModule = Readonly<{
     term: XtermTerminal;
     fitAddon: XtermFitAddon;
     sendSeq: (seq: string) => void;
-    setWebUiTheme: (theme: WebUiTheme) => void;
+    setWebUiTheme?: (theme: WebUiTheme) => void;
     dispose: () => void;
 }>;
 
@@ -946,7 +946,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(seq);
         },
-        setWebUiTheme,
+        //setWebUiTheme,
         dispose: (): void => {
             detachResizeHandlers();
             document.removeEventListener("mouseup", onMouseUp);
