@@ -1,11 +1,21 @@
-export async function loadBanner() {
-    const container = document.getElementById('banner');
+/**
+ * @param _ - Unused helper to satisfy TS noUnusedParameters without changing runtime behaviour.
+ */
+const ignore = (_: unknown): void => { };
+
+/**
+ * @returns A banner DOM fragment appended into #banner.
+ */
+export async function loadBanner(): Promise<void> {
+    const container = document.getElementById('banner') as HTMLElement;
 
     const promptRow = document.createElement('div');
     promptRow.classList.add('row');
+
     const prompt = document.createElement('span');
     prompt.classList.add('command-line');
     prompt.innerHTML = '<span class="green">kitty@kittycrypto</span><span class="blue">:~</span><span class="teal">$ neofetch</span>';
+
     promptRow.appendChild(prompt);
     container.appendChild(promptRow);
 
@@ -21,7 +31,8 @@ export async function loadBanner() {
 
     const asciiBlock = document.createElement('div');
     asciiBlock.classList.add('ascii-block');
-    asciiLines.forEach(line => {
+
+    asciiLines.forEach((line) => {
         const span = document.createElement('span');
         span.classList.add('ascii-line');
         span.textContent = line;
@@ -31,6 +42,7 @@ export async function loadBanner() {
 
     const infoBlock = document.createElement('div');
     infoBlock.classList.add('info-block');
+
     const infoLines = [
         'HatsuneMikuOS V 2.01',
         '----------------------',
@@ -46,7 +58,8 @@ export async function loadBanner() {
         'GPU: NVIDIA RTX 5090 MikuCore 36.3 GiB',
         'Memory: 119.21 GiB DDR5',
         '~* this system purrs for catgirls *~'
-    ];
+    ] as const;
+
     infoLines.forEach((line, i) => {
         const span = document.createElement('span');
         span.classList.add('info-line');
@@ -63,9 +76,11 @@ export async function loadBanner() {
 
     const cursorRow = document.createElement('div');
     cursorRow.classList.add('row');
+
     const cursor = document.createElement('span');
     cursor.classList.add('command-line');
     cursor.innerHTML = '<span class="green">kitty@kittycrypto</span><span class="blue">:~</span><span class="teal">$ </span><span class="cursor">█</span>';
+
     cursorRow.appendChild(cursor);
     container.appendChild(cursorRow);
 
@@ -73,26 +88,34 @@ export async function loadBanner() {
     observeThemeChange();
 }
 
-function isMobileDevice() {
+/**
+ * @returns True if the UA string matches common mobile devices.
+ */
+function isMobileDevice(): boolean {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-export async function scaleBannerToFit() {
-    const wrapper = document.getElementById('banner-wrapper');
-    const banner = document.getElementById('banner');
+/**
+ * @returns Resolves once the banner has been measured and, if needed, scaled.
+ */
+export async function scaleBannerToFit(): Promise<void> {
+    const wrapper = document.getElementById('banner-wrapper') as HTMLElement;
+    const banner = document.getElementById('banner') as HTMLElement;
 
     wrapBannerForScaling();
 
-    const scaler = banner.parentElement;
+    const scaler = banner.parentElement as HTMLElement;
     banner.style.transform = '';
     banner.style.transformOrigin = 'top left';
     scaler.style.height = 'auto';
 
-    const waitUntilReady = async () => {
+    const waitUntilReady = async (): Promise<void> => {
         // wait for the banner to be fully rendered
         await (document.readyState === 'complete'
             ? Promise.resolve()
-            : new Promise(resolve => window.addEventListener('load', resolve)));
+            : new Promise<void>((resolve) => {
+                window.addEventListener('load', () => resolve());
+            }));
 
         if (needsSafariRepaint()) {
             banner.offsetHeight;
@@ -107,6 +130,13 @@ export async function scaleBannerToFit() {
         const fontSize = getComputedStyle(banner).fontSize;
         const lineHeight = getComputedStyle(banner).lineHeight;
 
+        // keep these reads (they can affect layout timing in some browsers)
+        ignore(wrapper);
+        ignore(rect);
+        ignore(actualWidth);
+        ignore(fontSize);
+        ignore(lineHeight);
+
         let scaleFactor = 1;
 
         if (isMobileDevice()) {
@@ -120,17 +150,19 @@ export async function scaleBannerToFit() {
             scaler.style.height = 'auto';
             scaler.style.overflow = 'visible';
         }
-
     };
 
     await waitUntilReady();
 }
 
-function wrapBannerForScaling() {
-    const banner = document.getElementById('banner');
-    const parent = banner.parentElement;
+/**
+ * Wraps #banner in a .banner-scaler div if not already wrapped.
+ */
+function wrapBannerForScaling(): void {
+    const banner = document.getElementById('banner') as HTMLElement;
+    const parent = banner.parentElement as HTMLElement;
 
-    if (!banner || banner.parentElement.classList.contains('banner-scaler')) return;
+    if ((banner.parentElement as HTMLElement).classList.contains('banner-scaler')) return;
 
     const wrapper = document.createElement('div');
     wrapper.className = 'banner-scaler';
@@ -138,8 +170,12 @@ function wrapBannerForScaling() {
     wrapper.appendChild(banner);
 }
 
-export async function setupTerminalWindow() {
-    const terminalWrapper = document.getElementById('terminal-wrapper');
+/**
+ * @returns Resolves after terminal window chrome is created and wired up.
+ */
+export async function setupTerminalWindow(): Promise<void> {
+    const terminalWrapper = document.getElementById('terminal-wrapper') as HTMLElement;
+
     const windowWrapper = document.createElement('div');
     windowWrapper.id = 'terminal-window';
     windowWrapper.style.position = 'relative';
@@ -266,10 +302,10 @@ export async function setupTerminalWindow() {
     windowWrapper.appendChild(header);
     windowWrapper.appendChild(scrollArea);
 
-    const parent = document.getElementById('banner-wrapper');
+    const parent = document.getElementById('banner-wrapper') as HTMLElement;
     parent.insertBefore(windowWrapper, parent.firstChild);
 
-    const icon = document.getElementById('term-icon');
+    const icon = document.getElementById('term-icon') as HTMLImageElement;
     icon.src = '/images/terminal.svg';
     icon.alt = 'Terminal icon';
     icon.title = 'Double-click to open terminal';
@@ -315,20 +351,23 @@ export async function setupTerminalWindow() {
     }
 }
 
-function makeIconDraggable() {
-    const icon = document.getElementById('term-icon');
+/**
+ * Makes #term-icon draggable and persists its position to localStorage.
+ */
+function makeIconDraggable(): void {
+    const icon = document.getElementById('term-icon') as HTMLImageElement;
     let isDragging = false;
     let offsetX = 0;
     let offsetY = 0;
 
-    icon.addEventListener('mousedown', (e) => {
+    icon.addEventListener('mousedown', (e: MouseEvent) => {
         isDragging = true;
         offsetX = e.clientX - icon.offsetLeft;
         offsetY = e.clientY - icon.offsetTop;
         icon.style.cursor = 'grabbing';
     });
 
-    document.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', (e: MouseEvent) => {
         if (!isDragging) return;
         const x = e.clientX - offsetX;
         const y = e.clientY - offsetY;
@@ -354,15 +393,21 @@ function makeIconDraggable() {
     }
 }
 
-function makeTermDragWPrnt(el, parent) {
-    const header = el.querySelector('#terminal-header');
+/**
+ * @param el - The terminal window wrapper element.
+ * @param parent - The bounding parent (passed through unchanged, currently unused).
+ */
+function makeTermDragWPrnt(el: HTMLElement, parent: Element | null): void {
+    ignore(parent);
+
+    const header = el.querySelector<HTMLElement>('#terminal-header');
     if (!header) return;
 
     let isDragging = false;
     let startX = 0;
     let startY = 0;
 
-    header.addEventListener('mousedown', (e) => {
+    header.addEventListener('mousedown', (e: MouseEvent) => {
         if (!el.classList.contains('floating')) return;
         isDragging = true;
         startX = e.clientX - el.offsetLeft;
@@ -371,7 +416,7 @@ function makeTermDragWPrnt(el, parent) {
         e.preventDefault();
     });
 
-    document.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', (e: MouseEvent) => {
         if (!isDragging) return;
 
         const x = e.clientX - startX;
@@ -390,18 +435,21 @@ function makeTermDragWPrnt(el, parent) {
         if (isDragging) {
             isDragging = false;
             el.style.cursor = 'default';
-            localStorage.setItem('terminal-width', el.offsetWidth + 'px');
-            localStorage.setItem('terminal-height', el.offsetHeight + 'px');
+            localStorage.setItem('terminal-width', `${el.offsetWidth}px`);
+            localStorage.setItem('terminal-height', `${el.offsetHeight}px`);
         }
     });
 }
 
-function observeThemeChange() {
+/**
+ * Observes class changes on <html> to trigger ASCII art refresh.
+ */
+function observeThemeChange(): void {
     const target = document.documentElement;
-    const observer = new MutationObserver(mutations => {
+    const observer = new MutationObserver((mutations: MutationRecord[]) => {
         for (const mutation of mutations) {
             if (mutation.attributeName === 'class') {
-                updateAsciiArt();
+                void updateAsciiArt();
                 break;
             }
         }
@@ -409,18 +457,22 @@ function observeThemeChange() {
     observer.observe(target, { attributes: true });
 }
 
-async function updateAsciiArt() {
+/**
+ * @returns Resolves after the ASCII block has been refreshed (if present).
+ */
+async function updateAsciiArt(): Promise<void> {
     const isDark = document.documentElement.classList.contains('dark-mode');
     const asciiPath = isDark ? 'images/miku-dark.txt' : 'images/miku-light.txt';
+
     const response = await fetch(asciiPath);
     const asciiText = await response.text();
     const asciiLines = asciiText.trim().split('\n');
 
-    const asciiBlock = document.querySelector('.ascii-block');
+    const asciiBlock = document.querySelector<HTMLElement>('.ascii-block');
     if (!asciiBlock) return;
 
     asciiBlock.innerHTML = ''; // clear previous lines
-    asciiLines.forEach(line => {
+    asciiLines.forEach((line) => {
         const span = document.createElement('span');
         span.classList.add('ascii-line');
         span.textContent = line;
@@ -429,9 +481,13 @@ async function updateAsciiArt() {
     });
 }
 
-async function waitForElementHeight(el, minHeight = 100) {
-    return new Promise((resolve) => {
-        const check = () => {
+/**
+ * @param el - Element to wait on.
+ * @param minHeight - Minimum height in pixels before resolving.
+ */
+async function waitForElementHeight(el: HTMLElement, minHeight: number = 100): Promise<void> {
+    return new Promise<void>((resolve) => {
+        const check = (): void => {
             if (el.offsetHeight >= minHeight) return resolve();
             requestAnimationFrame(check);
         };
@@ -439,7 +495,10 @@ async function waitForElementHeight(el, minHeight = 100) {
     });
 }
 
-function needsSafariRepaint() {
+/**
+ * @returns True if the UA suggests Mobile Safari (not Chrome on iOS).
+ */
+function needsSafariRepaint(): boolean {
     const ua = navigator.userAgent;
     return /iP(hone|od|ad)/i.test(ua) && /Safari/i.test(ua) && !/Chrome/i.test(ua);
 }

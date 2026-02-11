@@ -1,17 +1,18 @@
-# Ignore darkStyles.css (since it's now merged into styles.css)
-darkStyles.css
-
-# Ignore common OS-generated files
+# OS-generated files
 .DS_Store
 Thumbs.db
 
-# Ignore node_modules (if using Node.js)
-node_modules/
-
-# Ignore logs and temp files
+# Logs / temp
 *.log
 *.tmp
 
-# Ignore build artifacts (if applicable)
-dist/
+# Dependencies
+node_modules/
+
+# Legacy / archival
+deprecated/
+
+# Generated build folders
+#dist/
+public/
 build/
