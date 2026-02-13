@@ -324,7 +324,7 @@ class ReadAloudModule {
                 <p class="modal-note">
                 <b>Note:</b> KittyCrypto.gg will <u>NOT</u> store your API key or region server-side. It is saved only in your browser's local storage.<br>
                 See the full implementation on
-                <a href="https://github.com/kittyCrypto-gg/kittycrypto/blob/main/scripts/readAloud.js" target="_blank" rel="noopener">GitHub</a>.
+                <a href="https://github.com/kittyCrypto-gg/website/blob/main/src/readAloud.ts" target="_blank" rel="noopener">GitHub</a>.
                 </p>
                 <p class="modal-note">
                 <b>Note:</b> Click anywhere outside this modal to close it.<br>
