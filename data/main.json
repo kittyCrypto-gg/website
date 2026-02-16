@@ -24,7 +24,6 @@
     "./src/debug.js"
   ],
   "headerInjections": [
-    "<link id=\"theme-stylesheet\" rel=\"stylesheet\" href=\"/styles/styles.css\">",
     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\">",
     "<meta charset=\"UTF-8\">",
     "<meta property=\"og:type\" content=\"website\">",
