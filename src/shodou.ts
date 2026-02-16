@@ -239,7 +239,7 @@ class ComposedKanji {
      */
     static getCSS(): string {
         return `
-      .kanji-composed {
+        .kanji-composed {
         display: inline-block;
         font-size: 1em;
         width: 1em;

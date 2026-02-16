@@ -1,0 +1,118 @@
+/* =========================================
+    Core: Base Defaults
+    (html/body defaults, typography, generic element rules)
+========================================= */
+
+/* General styles */
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+
+    background-color: var(--body-bg-colour);
+    color: var(--body-text-colour);
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+
+    height: var(--body-height);
+    /*
+    visibility: hidden;
+    opacity: 0;
+    */
+}
+
+/*Twitter link footer block*/
+.twitter-link {
+    border-top: 1px solid var(--nav-border-colour);
+    text-align: center;
+}
+
+.twitter-link svg,
+.twitter-link img.miku-icon {
+    vertical-align: middle;
+    margin-right: 0.5em;
+}
+
+.twitter-link a {
+    color: var(--menu-button-text-colour);
+    text-decoration: underline;
+}
+
+/* Emoticons (including blinking variant)*/
+.emoticons {
+    display: inline-block;
+    white-space: nowrap;
+    vertical-align: middle;
+    position: relative;
+}
+
+.emoticon {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* Blinking emoticons behave like a single inline word */
+.emoticons .emoticon-blink {
+    display: inline-block;
+    white-space: nowrap;
+    vertical-align: baseline;
+    position: relative;
+    line-height: 1;
+}
+
+/* Both visible and blink frames stay aligned */
+.emoticons .blink-open,
+.emoticons .blink-closed {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+}
+
+.blink-open {
+    animation: blinkOpen 6s infinite;
+}
+
+.blink-closed {
+    animation: blinkClosed 6s infinite;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+@keyframes blinkOpen {
+
+    0%,
+    83.33% {
+        opacity: 1;
+    }
+
+    83.34%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes blinkClosed {
+
+    0%,
+    83.33% {
+        opacity: 0;
+    }
+
+    83.34%,
+    100% {
+        opacity: 1;
+    }
+}

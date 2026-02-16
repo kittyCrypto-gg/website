@@ -133,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ? await new KeyboardEmu(
                 isMobile,
                 "../keyboard.html",
-                "../styles/keyboard.css"
+                "../styles/modules/keyboard.css"
             ).install(
                 {
                     send: ({ seq }) => terminal.sendSeq(seq)

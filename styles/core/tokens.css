@@ -1,0 +1,115 @@
+/* =========================================
+    Global token names + non-theme constants.
+========================================= */
+
+:root {
+    /* Body */
+    --body-bg-colour: initial;
+    --body-text-colour: initial;
+    --body-height: auto;
+
+    /* Frame */
+    --frame-bg-colour: initial;
+    --frame-bg-colour-rgb: 0, 0, 0;
+    --frame-width: 95%;
+    --frame-border-light: initial;
+    --frame-padding: 20px;
+    --frame-box-shadow: initial;
+
+    /* Banner */
+    --banner-green: initial;
+    --banner-blue: initial;
+    --banner-teal: initial;
+    --banner-teal-bright: initial;
+    --banner-background: transparent;
+
+    /* Banner derived relationships */
+    --banner-text-main: var(--banner-teal);
+    --banner-text-header: var(--banner-teal-bright);
+    --banner-text-footer: var(--banner-teal);
+
+    /* Accent (referenced by #term-icon:hover) */
+    --accent: var(--banner-teal);
+
+    /* Header */
+    --header-bg-colour: initial;
+    --header-text-colour: initial;
+
+    /* Terminal Window */
+    --term-bg: initial;
+    --term-header-bg: initial;
+    --term-header-fg: initial;
+    --term-title: initial;
+    --term-shadow: initial;
+
+    /* Navigation / Menu */
+    --nav-bg-colour: initial;
+    --nav-border-colour: initial;
+    --menu-button-bg-colour: initial;
+    --menu-button-text-colour: initial;
+    --menu-button-hover-bg-colour: initial;
+
+    /* Footer */
+    --footer-bg-colour: initial;
+    --footer-text-colour: initial;
+    --footer-border-colour: initial;
+
+    /* Safe area */
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* Chatroom */
+    --chatroom-border-colour: initial;
+    --chatroom-bg-colour: initial;
+    --chatroom-text-colour: initial;
+
+    /* Timestamps */
+    --timestamp-colour: initial;
+    --chat-timestamp-colour: initial;
+
+    /* Inputs */
+    --chat-input-border-colour: initial;
+    --chat-input-bg-colour: initial;
+    --chat-input-text-colour: initial;
+
+    /* Buttons */
+    --chat-send-btn-bg-colour: initial;
+    --chat-send-btn-text-colour: initial;
+
+    /* Theme Toggle Button */
+    --toggle-btn-bg-colour: initial;
+    --toggle-btn-text-colour: initial;
+
+    /* Pending Indicator */
+    --pending-indicator-colour: initial;
+
+    /* Modal Overlay & Edit Modal */
+    --modal-overlay-bg-colour: rgba(0, 0, 0, 0.3);
+    --edit-modal-bg-colour: initial;
+    --edit-modal-text-colour: initial;
+    --edit-modal-shadow-colour: initial;
+    --edit-modal-userinfo-bg-colour: initial;
+    --edit-modal-userinfo-text-colour: initial;
+    --edit-modal-userinfo-border-colour: initial;
+    --edit-modal-input-bg-colour: initial;
+    --edit-modal-input-text-colour: initial;
+    --edit-modal-input-border-colour: initial;
+
+    /* Modal Buttons (edit / cancel) */
+    --edit-modal-btn-save-bg-colour: initial;
+    --edit-modal-btn-save-hover-colour: initial;
+    --edit-modal-btn-cancel-bg-colour: initial;
+    --edit-modal-btn-cancel-hover-colour: initial;
+
+    /* Tooltips (derived relationships + non-theme constants) */
+    --tooltip-bg-colour: rgba(var(--frame-bg-colour-rgb), 1);
+    --tooltip-text-colour: var(--body-text-colour);
+    --tooltip-border-colour: var(--nav-border-colour);
+    --tooltip-shadow: var(--frame-box-shadow);
+
+    --tooltip-padding: 10px 14px;
+    --tooltip-radius: 8px;
+    --tooltip-max-width: 280px;
+
+    --tooltip-z-index: 3000;
+    --tooltip-fade-duration: 0.18s;
+}

@@ -1,0 +1,303 @@
+/* =========================================
+    Module: Chat
+========================================= */
+
+/* Chat page frame behaviour */
+.frame-chat {
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.frame-chat .clusterise-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.frame-chat .clusterise-content {
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.frame-chat>.frame-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.frame-chat #banner-wrapper,
+.frame-chat #main-menu,
+.frame-chat #main-header,
+.frame-chat #main-footer,
+.frame-chat .chat-inputs {
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+.frame-chat #main-content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.frame-chat #chatroom {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 1100px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Chatroom */
+#chatroom {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--chatroom-border-colour);
+    background: var(--chatroom-bg-colour);
+
+    font-family: monospace;
+    font-size: 14px;
+
+    white-space: pre-wrap;
+    word-wrap: break-word;
+
+    text-align: left;
+    flex-direction: column;
+    justify-content: flex-start;
+    color: var(--chatroom-text-colour);
+
+    min-height: 500px !important;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* Alternating message background */
+.chat-message:nth-child(even) {
+    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
+}
+
+.dark-mode .chat-message:nth-child(even) {
+    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+}
+
+/* Message wrapper */
+.chat-message {
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+}
+
+/* Header row: avatar + nick + timestamp + actions */
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.chat-nick {
+    font-weight: bold;
+    font-size: 1rem;
+    color: var(--chat-nick-colour, inherit);
+    display: inline-block;
+}
+
+.chat-timestamp {
+    font-size: 0.85rem;
+    color: var(--chat-timestamp-colour, #888);
+    margin-left: auto;
+}
+
+/* Actions (edit, copy, etc) */
+.chat-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* Show buttons on hover or when active */
+.chat-header:hover .chat-actions,
+.chat-message.active .chat-actions {
+    display: inline-flex;
+}
+
+.chat-actions span {
+    display: inline-block;
+    padding: 4px 6px;
+    border-radius: 5px;
+    font-size: 50%;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.chat-actions span:hover {
+    background-color: var(--chat-actions-hover-bg-colour, rgba(0, 0, 0, 0.15));
+    cursor: pointer;
+}
+
+/* Edited indicator */
+.edited-flag {
+    font-size: 1em;
+    margin-right: 4px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Hidden internal id */
+.chat-msg-id {
+    display: none;
+}
+
+/* Message text */
+.chat-text {
+    margin-left: 15px;
+    padding-top: 2px;
+    display: block;
+    color: inherit;
+    margin-top: 5px;
+}
+
+/* Pending messages */
+.chat-message.pending {
+    opacity: 0.5;
+    font-style: italic;
+}
+
+.pending-indicator {
+    color: var(--pending-indicator-colour);
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+/* Chat inputs */
+.chat-inputs {
+    display: flex;
+    gap: 2%;
+    margin-top: 10px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.chat-inputs input {
+    padding: 10px;
+    font-size: 14px;
+
+    border: 1px solid var(--chat-input-border-colour);
+    border-radius: 5px;
+
+    flex-grow: 1;
+    width: 40%;
+    min-width: 100px;
+
+    box-sizing: border-box;
+
+    background-color: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+}
+
+.chat-inputs button {
+    padding: 10px;
+    font-size: 14px;
+
+    background: var(--chat-send-btn-bg-colour);
+    color: var(--chat-send-btn-text-colour);
+
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+
+    width: 15%;
+    min-width: 80px;
+
+    box-sizing: border-box;
+}
+
+.chat-inputs button:hover {
+    background: var(--menu-button-hover-bg-colour, #388e3c);
+}
+
+.chat-inputs input,
+.chat-inputs button {
+    max-width: 100%;
+}
+
+/* Theme toggle button */
+.theme-toggle-button {
+    position: fixed;
+    bottom: 20px;
+    right: calc((100% - var(--frame-width)) / 2 + 25px);
+
+    width: 50px;
+    height: 50px;
+
+    font-size: 1.5rem;
+
+    background: var(--toggle-btn-bg-colour);
+    color: var(--toggle-btn-text-colour);
+
+    border: none;
+    border-radius: 50%;
+
+    box-shadow: var(--frame-box-shadow);
+    cursor: pointer;
+
+    transition:
+        background 0.3s ease,
+        transform 0.2s ease-in-out;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle-button:hover {
+    transform: scale(1.1);
+}
+
+body.dark-mode .theme-toggle-button {
+    background: var(--toggle-btn-bg-colour);
+    color: var(--toggle-btn-text-colour);
+}
+
+/* Temporary notice (used for short-lived UI feedback) */
+.temporary-notice {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+
+    padding: 12px 24px;
+
+    background-color: var(--chatroom-bg-colour);
+    color: var(--chatroom-text-colour);
+
+    border: 2px solid var(--nav-border-colour);
+    border-radius: 8px;
+
+    box-shadow: var(--frame-box-shadow);
+    font-weight: bold;
+
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+/* Brightened background overlay in dark mode */
+.dark-mode .temporary-notice::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background-color: var(--chatroom-bg-colour);
+    filter: brightness(1.2);
+
+    z-index: -1;
+}

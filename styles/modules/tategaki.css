@@ -1,0 +1,51 @@
+/* =========================================
+    Module: Tategaki (vertical text)
+========================================= */
+
+.tategaki-container {
+    display: inline-block;
+    margin: 0 10px;
+    overflow: visible;
+    vertical-align: top;
+    border-left: 2px solid transparent;
+    padding-left: 5px;
+    position: relative;
+}
+
+.tategaki-container svg {
+    overflow: visible;
+}
+
+/* Use theme text colour inside the SVG */
+.tategaki-container svg text {
+    fill: var(--body-text-colour);
+}
+
+/* Ensure full visibility in dark mode */
+body.dark-mode .tategaki-container svg text {
+    fill: var(--body-text-colour);
+}
+
+.tg-token {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    line-height: 1;
+    font: inherit;
+    color: inherit;
+
+    width: 100%;
+    height: 100%;
+}
+
+/* Padding compensation (avoid cropping) */
+.tategaki-container svg {
+    margin-left: 5px;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+.tategaki-container foreignObject {
+    overflow: visible;
+}

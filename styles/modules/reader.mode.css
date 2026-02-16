@@ -1,0 +1,52 @@
+/* =========================================
+    Module: Reader Mode Styles
+========================================= */
+
+body.reader-mode {
+    background: var(--frame-bg-colour);
+    --frame-box-shadow: none !important;
+}
+
+body.reader-mode #banner-wrapper,
+body.reader-mode #main-menu,
+body.reader-mode #main-header,
+body.reader-mode #story-picker,
+body.reader-mode #comments,
+body.reader-mode #main-footer {
+    display: none !important;
+}
+
+body.reader-mode article#reader {
+    display: block !important;
+    max-width: 70ch;
+    margin: 4rem auto;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    background: none;
+    box-shadow: var(--frame-box-shadow);
+    padding: 0;
+    color: var(--body-text-colour);
+    text-align: justify;
+}
+
+body.reader-mode article#reader .chapter-image {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+body.reader-mode .chapter-image.active+.image-nav {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 10;
+    opacity: 1;
+}
+
+body.reader-mode .chapter-image.active+.image-nav button {
+    font-size: 2.5rem;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+}

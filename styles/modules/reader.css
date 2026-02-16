@@ -1,0 +1,393 @@
+/* =========================================
+    Module: Reader
+========================================= */
+
+/* Reader controls: top bar with chapter navigation and font controls */
+.reader-controls-top {
+    background: var(--frame-bg-colour);
+    box-shadow: none;
+    z-index: auto;
+
+    transition:
+        opacity 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+/* Detached state: floating, translucent, hard top */
+.reader-controls-top.is-detached {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: var(--frame-width);
+    max-width: 1200px;
+
+    z-index: 2000;
+
+    background: rgba(var(--frame-bg-colour-rgb), 0.88);
+    opacity: 0.92;
+
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.25),
+        var(--frame-box-shadow);
+}
+
+/* =========================================
+   Chapter Navigation Buttons
+========================================= */
+.chapter-navigation button {
+    all: unset;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    color: var(--body-text-colour);
+    display: inline-block;
+    padding: 0 4px;
+}
+
+.chapter-navigation button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Only the crossed state gets a positioning context */
+.chapter-navigation button.menu-crossed {
+    position: relative;
+}
+
+/* Draw the slash without changing the button box model */
+.chapter-navigation button.menu-crossed::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 100%;
+    height: 2px;
+
+    background: red;
+    transform: translate(-50%, -50%) rotate(45deg);
+    transform-origin: center;
+
+    pointer-events: none;
+}
+
+/* Dark mode (kept explicit for clarity) */
+.dark-mode .chapter-navigation button {
+    color: var(--body-text-colour);
+}
+
+/* =========================================
+   Font Controls
+========================================= */
+.font-controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.5em;
+    margin-top: 0.5em;
+}
+
+.font-controls button {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 5px;
+    color: var(--body-text-colour);
+}
+
+.font-controls button:hover {
+    transform: scale(1.2);
+}
+
+.dark-mode .font-controls button {
+    color: var(--body-text-colour);
+}
+
+/* =========================================
+   Chapter Navigation Inputs
+========================================= */
+.chapter-display,
+.chapter-input {
+    width: 2ch;
+    text-align: centre;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 2px 4px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+    appearance: textfield;
+}
+
+/* Remove spinners in Chrome/Safari */
+.chapter-input::-webkit-outer-spin-button,
+.chapter-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Readonly display input */
+.chapter-display[readonly] {
+    background: transparent;
+    pointer-events: none;
+    color: var(--body-text-colour);
+}
+
+/* END button */
+.chapter-end {
+    width: 2ch;
+    text-align: centre;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 2px 4px;
+    border: none;
+    background: transparent;
+    color: var(--body-text-colour);
+}
+
+.dark-mode .chapter-display,
+.dark-mode .chapter-input,
+.dark-mode .chapter-end {
+    background-color: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+}
+
+.dark-mode .chapter-end {
+    color: var(--body-text-colour);
+}
+
+/* =========================================
+   Story Selector Dropdown
+========================================= */
+#story-picker {
+    margin: 15px auto;
+    text-align: centre;
+}
+
+.story-selector {
+    background-color: var(--menu-button-bg-colour);
+    color: var(--menu-button-text-colour);
+    border: 1px solid var(--nav-border-colour);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.story-selector:hover {
+    background-color: var(--menu-button-hover-bg-colour);
+}
+
+.dark-mode .story-selector {
+    background-color: var(--menu-button-bg-colour);
+    color: var(--menu-button-text-colour);
+    border-color: var(--nav-border-colour);
+}
+
+/* =========================================
+   Chapter Reader Container
+========================================= */
+.reader-container {
+    background-color: var(--frame-bg-colour);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: var(--frame-box-shadow);
+    margin: 20px auto;
+    width: 90%;
+    max-width: 800px;
+
+    color: var(--body-text-colour);
+    font-size: 1.2rem;
+    line-height: 1.8;
+}
+
+.dark-mode .reader-container {
+    background-color: var(--frame-bg-colour);
+    color: var(--body-text-colour);
+}
+
+/* =========================================
+   Reader: Block-Level Styling
+========================================= */
+.reader-title {
+    font-size: 2.2em;
+    font-weight: bold;
+    text-align: centre;
+    margin-top: 2em;
+    margin-bottom: 1em;
+}
+
+.reader-subtitle {
+    font-size: 1.6em;
+    font-weight: 600;
+    text-align: centre;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    color: var(--header-text-colour);
+}
+
+.reader-paragraph {
+    font-size: 1em;
+    line-height: 1.75;
+    margin: 1.2em auto;
+    max-width: 65ch;
+    text-align: justify;
+    color: var(--body-text-colour);
+}
+
+.reader-quote {
+    font-size: 1em;
+    font-style: italic;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--nav-border-colour);
+    margin: 1.5em auto;
+    padding: 1em 1.5em;
+    max-width: 60ch;
+    color: var(--body-text-colour);
+}
+
+.reader-intense {
+    background-color: rgba(255, 213, 79, 0.1);
+    border-left-color: gold;
+}
+
+/* Dark mode tweaks for reader blocks */
+.dark-mode .reader-quote {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left-color: var(--nav-border-colour);
+}
+
+.dark-mode .reader-intense {
+    background-color: rgba(255, 230, 128, 0.1);
+    border-left-color: #ffcc00;
+}
+
+.dark-mode .reader-subtitle,
+.dark-mode .reader-title,
+.dark-mode .reader-paragraph {
+    color: var(--body-text-colour);
+}
+
+/* =========================================
+   Reader: Inline Text Styles
+========================================= */
+.reader-bold {
+    font-weight: bold;
+}
+
+.reader-italic {
+    font-style: italic;
+}
+
+.reader-underline {
+    text-decoration: underline;
+}
+
+.reader-strike {
+    text-decoration: line-through;
+}
+
+.reader-smallcaps {
+    font-variant: small-caps;
+}
+
+/* Highlighting used for bookmarks and read-aloud emphasis */
+.reader-highlight {
+    background-color: #f9e79f;
+    transition:
+        background-color 2s ease-in-out,
+        color 2s ease-in-out;
+}
+
+.reader-bookmark.reader-highlight {
+    background-color: #f9e79f;
+    transition: background-color 2s ease-in-out;
+}
+
+.reader-bookmark.reader-highlight .reader-paragraph {
+    color: #222;
+    transition: color 2s ease-in-out;
+}
+
+.reader-bookmark.fade-out {
+    background-color: transparent;
+}
+
+.reader-bookmark.fade-out .reader-paragraph {
+    color: var(--chatroom-text-colour);
+}
+
+.bookmark-emoji {
+    margin-right: 0.4em;
+    font-size: 1em;
+    vertical-align: middle;
+}
+
+/* =========================================
+   Reader: Paragraph Numbers
+========================================= */
+#reader.reader-show-paragraph-numbers .reader-bookmark {
+    --reader-para-num-col-width: 3ch;
+    --reader-para-num-gap: 0.9em;
+
+    display: grid;
+    grid-template-columns: var(--reader-para-num-col-width) 1fr;
+    column-gap: var(--reader-para-num-gap);
+    align-items: start;
+
+    box-sizing: border-box;
+    max-width: calc(65ch + var(--reader-para-num-col-width) + var(--reader-para-num-gap));
+    margin-left: auto;
+    margin-right: auto;
+
+    border-radius: 10px;
+    padding: 0 0.6em;
+
+    justify-items: stretch;
+}
+
+#reader.reader-show-paragraph-numbers .reader-paragraph-num {
+    font-family: monospace;
+    font-size: 0.9em;
+    line-height: 1.75;
+    text-align: right;
+    opacity: 0.55;
+    user-select: none;
+    margin-top: 1.2em;
+}
+
+#reader.reader-show-paragraph-numbers .reader-bookmark:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.dark-mode #reader.reader-show-paragraph-numbers .reader-bookmark:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+#reader.reader-show-paragraph-numbers .reader-bookmark> :is(.reader-paragraph, .reader-title, .reader-subtitle, .reader-quote) {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    justify-self: stretch;
+}
+
+/* =========================================
+   Chapter 404 Message
+========================================= */
+.chapter-404 {
+    text-align: centre;
+    padding: 40px;
+    font-size: 1.2rem;
+    color: var(--body-text-colour);
+}
+
+.dark-mode .chapter-404 {
+    color: var(--body-text-colour);
+}

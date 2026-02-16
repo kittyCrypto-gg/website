@@ -1,0 +1,223 @@
+/* =========================================
+  Module: RSS Blog Post Feed
+========================================= */
+
+.blog-wrapper,
+.rss-post-block {
+    border: 1.5px solid var(--frame-border-light);
+}
+
+.blog-wrapper {
+    margin: 40px auto;
+    width: 90%;
+    background-color: var(--frame-bg-colour);
+    border-radius: 15px;
+    box-shadow: var(--frame-box-shadow);
+    padding: 30px 32px;
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+.blog-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+}
+
+.rss-scroll-2 {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: none;
+    scroll-behavior: smooth;
+}
+
+.rss-scroll-2>.blog-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+}
+
+/* Title */
+.rss-post-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--header-text-colour);
+    margin: 0;
+    margin-bottom: 2px;
+    flex: 0 1 auto;
+    text-align: left;
+    line-height: 1.12;
+}
+
+.rss-post-date {
+    font-size: 0.99em;
+    font-weight: 400;
+    color: var(--timestamp-colour);
+    margin-left: 18px;
+    opacity: 0.65;
+}
+
+/* Metadata (date, author, tags) */
+.rss-post-meta {
+    font-size: 0.95em;
+    font-weight: 500;
+    color: var(--timestamp-colour);
+    margin: 4px 0 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.rss-post-meta .rss-post-author {
+    font-weight: 500;
+    color: var(--menu-button-text-colour);
+}
+
+.rss-post-meta .rss-post-date {
+    font-style: italic;
+    color: var(--chat-timestamp-colour);
+}
+
+.rss-post-meta .rss-post-tags {
+    font-size: 0.92em;
+    color: var(--banner-blue);
+}
+
+.rss-post-meta .rss-post-tag {
+    background: var(--menu-button-bg-colour);
+    color: var(--menu-button-text-colour);
+    border-radius: 5px;
+    padding: 2px 8px;
+    margin-right: 2px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.dark-mode .rss-post-meta .rss-post-tag {
+    background: var(--menu-button-bg-colour);
+    color: var(--menu-button-text-colour);
+}
+
+/* Summary (click-to-toggle behaviour lives in TS, but styling stays here) */
+.rss-post-summary {
+    font-size: 1.05em;
+    font-style: italic;
+    color: var(--body-text-colour);
+    margin-bottom: 8px;
+    text-align: left;
+    cursor: pointer;
+    padding-left: 2px;
+    border-radius: 4px;
+    transition:
+        background 0.17s,
+        color 0.2s;
+    display: flex;
+    align-items: centre;
+    gap: 8px;
+}
+
+/* Main Content */
+.rss-post-content {
+    text-align: justify;
+    font-size: 0.97em !important;
+    color: #2e4242 !important;
+    opacity: 0.86;
+    line-height: 1.74;
+    margin-bottom: 0;
+    transition: max-height 0.38s cubic-bezier(0.36, 1.63, 0.41, 0.88);
+}
+
+.dark-mode .rss-post-content {
+    color: #e0f7fa !important;
+    opacity: 0.91;
+}
+
+.rss-post-content a {
+    color: var(--menu-button-text-colour);
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.rss-post-content a:hover {
+    color: var(--banner-blue);
+    text-decoration: underline;
+}
+
+/* For dark mode links explicitly */
+.dark-mode .rss-post-content a {
+    color: var(--menu-button-text-colour);
+}
+
+.rss-post-content.content-collapsed {
+    max-height: 0 !important;
+    overflow: hidden;
+}
+
+.rss-post-content.content-expanded {
+    overflow: visible;
+}
+
+.rss-posts-wrapper {
+    margin: 40px auto;
+    width: 100%;
+    max-width: 900px;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.rss-post-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px 20px 18px 20px;
+    border-radius: 10px;
+    background-color: var(--chatroom-bg-colour);
+    margin-bottom: 22px;
+    box-shadow: var(--frame-box-shadow);
+    transition: background 0.3s;
+}
+
+/* Alternate backgrounds for each post, similar to commits */
+.rss-post-block:nth-child(even) {
+    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
+}
+
+.dark-mode .rss-post-block:nth-child(even) {
+    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+}
+
+.rss-post-image {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 8px;
+    margin: 1rem auto;
+    display: block;
+    box-shadow: var(--frame-box-shadow);
+}
+
+/* Link to full post (if needed) */
+.rss-post-link {
+    margin-top: 6px;
+    color: var(--banner-teal-bright);
+    font-size: 1em;
+    font-weight: 600;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.rss-post-link:hover {
+    color: var(--banner-blue);
+}
+
+/* Hover affordance on the whole post block */
+.rss-post-block:hover,
+.rss-post-block:focus,
+.dark-mode .rss-post-block:hover,
+.dark-mode .rss-post-block:focus {
+    background-color: var(--menu-button-hover-bg-colour) !important;
+    color: var(--banner-blue);
+    text-decoration: underline;
+    cursor: pointer;
+}

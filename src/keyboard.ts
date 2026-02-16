@@ -135,7 +135,7 @@ export class keyboardEmu {
 
         this.cssUrl = typeof cssUrl === "string" && cssUrl !== ""
             ? keyboardEmu.__resolveURL(cssUrl)
-            : keyboardEmu.__resolveURL("../styles/keyboard.css");
+            : keyboardEmu.__resolveURL("../styles/modules/keyboard.css");
 
         this.opts = null;
         this.zIndex = keyboardEmu.DEFAULT_Z_INDEX;

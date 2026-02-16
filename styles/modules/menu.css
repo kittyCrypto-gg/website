@@ -1,0 +1,110 @@
+/* =========================================
+    Module: Menu
+========================================= */
+
+/* Menu styles */
+nav {
+    background-color: var(--nav-bg-colour);
+    padding: 15px;
+    display: flex;
+    gap: 15px;
+    border-bottom: 2px solid var(--nav-border-colour);
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scrolling on mobile */
+}
+
+/* Hide scrollbar on some browsers */
+nav::-webkit-scrollbar {
+    display: none;
+}
+
+/* Menu buttons */
+.menu-button {
+    flex: 1 1 0;
+    text-decoration: none;
+    color: var(--menu-button-text-colour);
+    background-color: var(--menu-button-bg-colour);
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition:
+        background-color 0.3s,
+        transform 0.2s;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: centre;
+}
+
+.menu-button:hover {
+    background-color: var(--menu-button-hover-bg-colour);
+    transform: scale(1.1);
+}
+
+button.menu-crossed {
+    position: relative;
+}
+
+button.menu-crossed::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: red;
+    transform: rotate(45deg);
+    pointer-events: none;
+}
+
+button.menu-eye::before {
+    content: "👁️";
+    opacity: 0.5;
+    /* margin-right: 0.25em; */
+}
+
+/* =========================================
+    Home Intro Block (currently adjacent to menu)
+========================================= */
+
+.kitty-intro {
+    width: 90%;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--body-text-colour);
+    background-color: var(--frame-bg-colour);
+    border-radius: 12px;
+    box-shadow: var(--frame-box-shadow);
+    text-align: justify;
+    text-align-last: left;
+    box-sizing: border-box;
+}
+
+.kitty-intro a {
+    color: var(--menu-button-text-colour);
+}
+
+.kitty-intro code {
+    font-family: monospace;
+    background: var(--chat-input-bg-colour);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-size: 0.95em;
+}
+
+/* Dark mode support */
+.dark-mode .kitty-intro {
+    background-color: var(--frame-bg-colour);
+    color: var(--body-text-colour);
+}
+
+.dark-mode .kitty-intro a {
+    color: var(--menu-button-text-colour);
+}
+
+.dark-mode .kitty-intro code {
+    background-color: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+}

@@ -1,0 +1,19 @@
+/* =========================================
+    Core: Utilities
+    (tiny helpers used across modules)
+========================================= */
+
+.hidden {
+    display: none !important;
+}
+
+/* Used while awaiting async work (eg modal submit, fetch, etc) */
+.cursor-wait,
+.cursor-wait * {
+    cursor: progress !important;
+}
+
+/* Disable page scroll while overlays/modals are open */
+body.no-scroll {
+    overflow: hidden;
+}

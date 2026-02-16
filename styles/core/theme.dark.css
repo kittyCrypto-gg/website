@@ -1,0 +1,85 @@
+/* =========================================
+    Dark Theme Overrides
+    - Variable overrides only
+    - No component selectors
+========================================= */
+
+.dark-mode {
+    /* Body */
+    --body-bg-colour: #121212;
+    --body-text-colour: #e0e0e0;
+
+    /* Frame */
+    --frame-bg-colour: #1e1e1e;
+    --frame-bg-colour-rgb: 30, 30, 30;
+    --frame-border-light: #294149;
+    --frame-box-shadow: 0 4px 24px 4px rgba(0, 255, 255, 0.1);
+
+    /* Banner */
+    --banner-green: #44ff44;
+    --banner-blue: #00c0ff;
+    --banner-teal: #00c8c8;
+    --banner-teal-bright: #00e0e0;
+
+    /* Terminal Window */
+    --term-bg: linear-gradient(to bottom, #1b1b1b, #0e0e0e);
+    --term-header-bg: linear-gradient(to bottom, #252525, #111111);
+    --term-header-fg: #cccccc;
+    --term-title: #dddddd;
+    --term-shadow: rgba(0, 255, 255, 0.1);
+
+    /* Header */
+    --header-bg-colour: #004d40;
+    --header-text-colour: #b2ebf2;
+
+    /* Navigation / Menu */
+    --nav-bg-colour: #00352c;
+    --nav-border-colour: #b2ebf2;
+    --menu-button-bg-colour: #005f50;
+    --menu-button-text-colour: #b2ebf2;
+    --menu-button-hover-bg-colour: #008577;
+
+    /* Footer */
+    --footer-bg-colour: #002f6c;
+    --footer-text-colour: #b3e5fc;
+    --footer-border-colour: #b3e5fc;
+
+    /* Chatroom */
+    --chatroom-border-colour: #444;
+    --chatroom-bg-colour: #222;
+    --chatroom-text-colour: #e0e0e0;
+
+    /* Timestamps */
+    --timestamp-colour: #aaaaaa;
+    --chat-timestamp-colour: #999;
+
+    /* Inputs */
+    --chat-input-border-colour: #555;
+    --chat-input-bg-colour: #333;
+    --chat-input-text-colour: #fff;
+
+    /* Buttons */
+    --chat-send-btn-bg-colour: #388e3c;
+    --chat-send-btn-text-colour: #fff;
+
+    /* Theme Toggle Button */
+    --toggle-btn-bg-colour: #222;
+    --toggle-btn-text-colour: #fff;
+
+    /* Edit Modal */
+    --edit-modal-bg-colour: #1e1e1e;
+    --edit-modal-text-colour: #b2ebf2;
+    --edit-modal-shadow-colour: rgba(0, 0, 0, 0.5);
+    --edit-modal-userinfo-bg-colour: #333;
+    --edit-modal-userinfo-text-colour: #b2ebf2;
+    --edit-modal-userinfo-border-colour: #444;
+    --edit-modal-input-bg-colour: #222;
+    --edit-modal-input-text-colour: #e0e0e0;
+    --edit-modal-input-border-colour: #555;
+
+    /* Modal Buttons (edit / cancel) */
+    --edit-modal-btn-save-bg-colour: #388e3c;
+    --edit-modal-btn-save-hover-colour: #2e7d32;
+    --edit-modal-btn-cancel-bg-colour: #d32f2f;
+    --edit-modal-btn-cancel-hover-colour: #b71c1c;
+}

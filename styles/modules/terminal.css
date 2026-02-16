@@ -1,0 +1,169 @@
+/* =========================================
+    Module: Terminal
+========================================= */
+
+/* xterm.js background integration */
+.xterm .xterm-viewport {
+    background: var(--term-bg);
+}
+
+.xterm .composition-view {
+    background: var(--term-bg);
+}
+
+.xterm {
+    background: var(--term-bg);
+    height: 100%;
+}
+
+/* Terminal Icon */
+#term-icon {
+    display: none;
+    cursor: grab;
+    width: 48px;
+    height: 48px;
+    image-rendering: pixelated;
+    margin: 1rem;
+    user-select: none;
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    box-shadow: var(--frame-box-shadow);
+    border: 1px solid var(--frame-bg-colour);
+    border-radius: 4px;
+}
+
+#term-icon:hover {
+    filter: drop-shadow(0 0 3px var(--accent));
+}
+
+/* ====================================
+    Terminal Window Frame & Header
+==================================== */
+
+#terminal-window {
+    border-radius: 8px;
+    width: 100%;
+    max-width: 100%;
+    font-family: "Courier New", Courier, "Lucida Console", monospace;
+    background: var(--term-bg);
+    box-shadow: var(--frame-box-shadow);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    /* no scroll here */
+}
+
+#term {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#terminal-scroll {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    padding: 0.5rem;
+    background: var(--term-bg);
+}
+
+#terminal-wrapper {
+    padding: 0.5rem;
+    background: var(--term-bg);
+    overflow: hidden;
+}
+
+#terminal-header {
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--term-header-bg);
+    color: var(--term-header-fg);
+    padding: 0 8px;
+    font-size: 11px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    user-select: none;
+}
+
+.window-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.btn {
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    user-select: none;
+    transition: transform 0.2s ease;
+}
+
+.btn:hover {
+    transform: scale(1.2);
+}
+
+.window-controls .btn {
+    position: relative;
+}
+
+/* Pseudo-element for hover symbol */
+.window-controls .btn::after {
+    content: "";
+    position: absolute;
+    font-size: 10px;
+    font-weight: bold;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+/* Show on hover */
+.window-controls .btn:hover::after {
+    opacity: 1;
+}
+
+/* Specific hover symbols and colours */
+.window-controls .btn.close::after {
+    content: "×";
+    color: #8b0000;
+    /* Dark red */
+}
+
+.window-controls .btn.toggle-view::after {
+    content: "–";
+    color: #b8860b;
+    /* Mustard / dark goldenrod */
+}
+
+.window-controls .btn.float::after {
+    content: "+";
+    color: #006400;
+    /* Dark green */
+}
+
+.window-title {
+    font-weight: bold;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    flex: 1;
+    font-family: inherit;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--term-title);
+}
+
+#terminal-content {
+    padding: 0.5rem;
+}

@@ -6,7 +6,7 @@ const themes: Record<string, unknown> = {};
  * @param {string} url - URL to themes JSON.
  * @returns {Promise<void>} This function loads theme data from a specified JSON URL and populates the global `themes` object with the retrieved data. It fetches the JSON data, checks for a successful response, and then parses the JSON content. The existing keys in the `themes` object are cleared before populating it with the new data to ensure that only the latest themes are available. If the fetch operation fails or if the response is not successful, it throws an error with an appropriate message.
  */
-async function loadThemes(url: string = "../styles/themes.json"): Promise<void> {
+async function loadThemes(url: string = "../data/themes.json"): Promise<void> {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to load themes from ${url}`);
 
@@ -195,7 +195,7 @@ type MediaStylerImplOverrides = Partial<{
  * @param {string} cssHref - Stylesheet href for SMS rendering.
  * @returns {string} Transformed HTML content with SMS messages replaced by styled HTML structures. This function takes raw HTML content and a CSS stylesheet href as input, checks if the stylesheet is already present in the document, and if not, it adds it to the document head. It then uses a regular expression to find all message blocks in the HTML content that match a specific structure (with a type of "in" or "out"). For each matching block, it parses the XML structure to extract the nickname, content, and timestamp of the message. The content is processed as mixed content to preserve any rich formatting. Finally, it constructs a new HTML structure for each message, applying appropriate classes based on the message type (incoming or outgoing), and replaces the original message blocks in the input HTML with these new structures. The resulting HTML string is returned, ready for rendering with the associated styles.
  */
-function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../styles/sms.css"): string {
+function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../styles/modules/sms.css"): string {
     if (!hassCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -239,7 +239,7 @@ function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../style
  * @param {string} cssHref - Stylesheet href for email rendering.
  * @returns {Promise<string>} A promise that resolves to the transformed HTML content with email blocks replaced by styled HTML structures. This function processes the input HTML content to identify and replace custom email blocks with a structured and styled representation suitable for rendering as email messages. It first checks if the specified CSS stylesheet for email rendering is already included in the document, and if not, it adds it to the document head. The function then uses a regular expression to find all email blocks in the input HTML, parses each block as XML to extract relevant information such as sender, recipient, subject, timestamp, and content. It constructs a new HTML structure for each email, applying appropriate classes and formatting based on the extracted data. The original email blocks in the input HTML are replaced with these new structures, and the resulting HTML string is returned as a promise.
  */
-async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styles/email.css"): Promise<string> {
+async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styles/modules/email.css"): Promise<string> {
     if (!hassCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -516,9 +516,9 @@ class MediaStyler {
         durationMs: 520,
         strength: 1,
         viscosity: 0.7,
-        cssHref: "../styles/physics.css",
+        cssHref: "../styles/modules/physics.css",
     })
-    replaceSmsMessages(htmlContent: string, cssHref: string = "../styles/sms.css"): string {
+    replaceSmsMessages(htmlContent: string, cssHref: string = "../styles/modules/sms.css"): string {
         return this.impls.replaceSmsMessages(htmlContent, cssHref);
     }
 
@@ -527,7 +527,7 @@ class MediaStyler {
      * @param {string} cssHref - Stylesheet href for email rendering.
      * @returns {Promise<string>} Transformed HTML content with email blocks replaced by styled HTML structures.
      */
-    replaceEmails(htmlContent: string, cssHref: string = "../styles/email.css"): Promise<string> {
+    replaceEmails(htmlContent: string, cssHref: string = "../styles/modules/email.css"): Promise<string> {
         return this.impls.replaceEmails(htmlContent, cssHref);
     }
 

@@ -1,0 +1,85 @@
+/* =========================================
+    Core: Layout
+    (.frame, header/nav/footer, shared layout primitives)
+========================================= */
+
+.kitty-intro,
+.comments-container,
+.commits-outer-container,
+.blog-wrapper,
+.rss-post-block {
+    border: 1.5px solid var(--frame-border-light);
+}
+
+/* Frame styles */
+.frame {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* Pushes content and footer apart */
+    min-height: 100vh;
+    height: fit-content;
+
+    padding: var(--frame-padding);
+    box-sizing: border-box;
+    position: relative;
+
+    background-color: var(--frame-bg-colour);
+    border-radius: 15px;
+    box-shadow: var(--frame-box-shadow);
+    width: var(--frame-width);
+    max-width: 1200px;
+    margin: 20px auto;
+    overflow: auto;
+}
+
+/* Header styles */
+header {
+    background-color: var(--header-bg-colour);
+    color: var(--header-text-colour);
+    padding: 20px;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    box-shadow: var(--frame-box-shadow);
+}
+
+/* Menu container (nav) */
+nav {
+    background-color: var(--nav-bg-colour);
+    padding: 15px;
+    display: flex;
+    gap: 15px;
+    border-bottom: 2px solid var(--nav-border-colour);
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scrolling on mobile */
+}
+
+nav::-webkit-scrollbar {
+    display: none;
+}
+
+/* Body content styles */
+#main-content {
+    padding: 20px;
+    text-align: center;
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+/* Footer styles */
+footer {
+    background-color: var(--footer-bg-colour);
+    color: var(--footer-text-colour);
+    text-align: center;
+    padding: 10px var(--frame-padding);
+    font-size: 0.9rem;
+    border-top: 2px solid var(--footer-border-colour);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    width: 100%;
+}

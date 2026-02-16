@@ -1,0 +1,92 @@
+/* =========================================
+    Module: Tooltip
+========================================= */
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-trigger {
+    cursor: help;
+    display: inline-block;
+    position: relative;
+}
+
+.tooltip-content {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%) translateY(4px);
+
+    background-color: var(--tooltip-bg-colour);
+    color: var(--tooltip-text-colour);
+    border: 1px solid var(--tooltip-border-colour);
+    border-radius: var(--tooltip-radius);
+    box-shadow: var(--tooltip-shadow);
+
+    padding: var(--tooltip-padding);
+    max-width: var(--tooltip-max-width);
+    width: max-content;
+
+    font-size: 0.95em;
+    line-height: 1.4;
+
+    transform: translateX(-50%) translateY(6px) scale(0.98);
+    pointer-events: none;
+    visibility: hidden;
+
+    z-index: var(--tooltip-z-index);
+
+    transition:
+        opacity var(--tooltip-fade-duration) ease,
+        transform var(--tooltip-fade-duration) ease,
+        visibility var(--tooltip-fade-duration) ease;
+}
+
+/* Show tooltip */
+.tooltip.show .tooltip-content,
+.tooltip:hover .tooltip-content {
+    transform: translateX(-50%) translateY(0) scale(1);
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.tooltip-content::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--tooltip-bg-colour) transparent transparent transparent;
+}
+
+.tooltip-content b {
+    font-weight: 600;
+}
+
+.tooltip-content i {
+    font-style: italic;
+}
+
+.tooltip-content a {
+    color: var(--menu-button-text-colour);
+    text-decoration: underline;
+}
+
+.tooltip-content a:hover {
+    color: var(--banner-blue);
+}
+
+.tooltip-trigger:focus {
+    outline: none;
+}
+
+.tooltip-trigger:focus-visible {
+    outline: 2px solid var(--menu-button-hover-bg-colour);
+    outline-offset: 2px;
+}

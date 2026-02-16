@@ -1,0 +1,231 @@
+/* =========================================
+  GitHub Commits Module
+  modules/commits.css
+========================================= */
+
+/* Outer card that wraps the whole commits area */
+.commits-outer-container {
+    width: 90%;
+    margin: 2rem auto;
+    padding: 1.5rem;
+
+    font-size: 1.1rem;
+    line-height: 1.8;
+
+    color: var(--body-text-colour);
+    background-color: var(--frame-bg-colour);
+
+    border-radius: 12px;
+    box-shadow: var(--frame-box-shadow);
+    box-sizing: border-box;
+    text-align: left;
+
+    border: 1.5px solid var(--frame-border-light);
+}
+
+/* Inner wrapper for page padding */
+.commits-wrapper {
+    margin: 0 auto;
+    width: 90%;
+    padding: 0 20px;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.commits-wrapper>.comments-header {
+    width: 100%;
+    display: block;
+    text-align: left;
+}
+
+/* Generic scrollable frame used by the commit feed output */
+.github-output-frame {
+    background-color: var(--chatroom-bg-colour);
+    border: 1px solid var(--chatroom-border-colour);
+    border-radius: 8px;
+    padding: 15px;
+
+    max-height: 400px;
+    overflow-y: auto;
+
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+    color: var(--chatroom-text-colour);
+}
+
+/* =========================================
+  Side-by-side commit panel layout
+========================================= */
+.commits-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* =========================================
+  Individual commit block
+========================================= */
+.commit-block {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+
+    padding: 12px;
+    border-radius: 6px;
+
+    background-color: var(--chatroom-bg-colour);
+    text-align: left;
+}
+
+.commit-block:nth-child(odd) {
+    background-color: var(--chatroom-bg-colour);
+}
+
+.commit-block:nth-child(even) {
+    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
+}
+
+.dark-mode .commit-block:nth-child(even) {
+    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+}
+
+/* =========================================
+  Commit identicon
+========================================= */
+.commit-identicon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--chatroom-bg-colour);
+    box-shadow: var(--frame-box-shadow);
+}
+
+.commit-identicon svg {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    display: block;
+}
+
+.dark-mode .commit-identicon {
+    filter: contrast(1.2) brightness(0.85);
+}
+
+/* Text column */
+.commit-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+
+/* =========================================
+  Commit section container (panel)
+========================================= */
+.commits-container {
+    flex: 1;
+    min-width: 360px;
+    max-width: 600px;
+
+    background-color: var(--frame-bg-colour);
+    border-radius: 12px;
+    box-shadow: var(--frame-box-shadow);
+
+    padding: 20px;
+    color: var(--body-text-colour);
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    box-sizing: border-box;
+}
+
+.dark-mode .commits-container {
+    background-color: var(--frame-bg-colour);
+    color: var(--body-text-colour);
+}
+
+/* Header link styled like .comments-header */
+.commit-header-link {
+    display: block;
+    text-align: left;
+
+    font-size: 1.4rem;
+    font-weight: bold;
+
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+
+    border-bottom: 2px solid var(--nav-border-colour);
+    color: var(--header-text-colour);
+
+    text-decoration: none;
+}
+
+.commit-header-link:hover {
+    text-decoration: underline;
+}
+
+.dark-mode .commit-header-link {
+    color: var(--header-text-colour);
+    border-bottom-color: var(--nav-border-colour);
+}
+
+/* Commit text formatting */
+.commit-block .commit-message {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: var(--header-text-colour);
+}
+
+.commit-block .commit-meta {
+    font-size: 0.9em;
+    color: var(--timestamp-colour);
+    margin-left: 4px;
+}
+
+.commit-meta code {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+
+    font-size: 0.97em;
+    background: var(--chat-input-bg-colour);
+
+    border-radius: 4px;
+    padding: 2px 4px;
+
+    display: inline-block;
+}
+
+/* Commit links */
+.commit-block a {
+    color: var(--menu-button-text-colour);
+    font-size: 0.85em;
+    text-decoration: underline;
+}
+
+.commit-block a:hover {
+    text-decoration: none;
+}

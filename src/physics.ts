@@ -226,7 +226,7 @@ export function patchSmsEnterBounceHtml(html: string, config: SmsEnterBounceConf
     durationMs: config.durationMs ?? 520,
     strength: config.strength ?? 1,
     viscosity: config.viscosity ?? 0.7,
-    cssHref: config.cssHref ?? "../styles/physics.css",
+    cssHref: config.cssHref ?? "../styles/modules/physics.css",
   };
 
   ensureCss(cfg.cssHref);
@@ -264,7 +264,7 @@ type HtmlSyncTransform = (htmlContent: string, cssHref?: string) => string;
  * @returns {<T extends HtmlSyncTransform>(value: T, context: ClassMethodDecoratorContext) => T} Decorator.
  */
 export function smsEnterBounce(config: SmsEnterBounceConfig = {}) {
-  const cssHref = config.cssHref ?? "../styles/physics.css";
+  const cssHref = config.cssHref ?? "../styles/modules/physics.css";
   const effect: HtmlPhysicsEffect<Parameters<HtmlSyncTransform>> = {
     cssHref,
     init: ensurePhysicsRuntime,

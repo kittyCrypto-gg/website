@@ -1,0 +1,38 @@
+/* =========================================
+    Module: Debug Console
+========================================= */
+
+.debug {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+
+    font-size: 12px;
+    font-family: monospace, monospace;
+
+    background: rgba(0, 0, 0, 0.85);
+    color: #0f0;
+
+    padding: 8px 10px;
+
+    z-index: 9999;
+
+    visibility: hidden;
+    pointer-events: none;
+
+    max-width: 95vw;
+    max-height: 40vh;
+    overflow-y: auto;
+    white-space: pre-wrap;
+
+    border-radius: 7px 7px 0 0;
+    box-shadow: 0 -4px 14px 0 rgba(0, 0, 0, 0.6);
+
+    transition: opacity 0.2s;
+}
+
+.debug.visible {
+    visibility: visible;
+    pointer-events: auto;
+    opacity: 1;
+}
