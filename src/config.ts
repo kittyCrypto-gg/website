@@ -1,8 +1,5 @@
-/* @ts-ignore */
-import { env } from "process";
-
-export const BACKEND_URL = env.PUBLIC_BACKEND_URL;
-export const RSS_BACKEND_URL = env.RSS_BACKEND_URL;
+export const BACKEND_URL = 'https://srv.kittycrypto.gg';
+export const RSS_BACKEND_URL = 'https://rss.kittycrypto.gg/rss/kittycrypto';
 
 if (!BACKEND_URL) {
     throw new Error("PUBLIC_BACKEND_URL is not defined");
