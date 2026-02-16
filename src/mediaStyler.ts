@@ -1,3 +1,5 @@
+import { smsEnterBounce } from "./physics.ts";
+
 const themes: Record<string, unknown> = {};
 
 /**
@@ -22,9 +24,7 @@ function getTheme(addr: string): string {
     const a = addr.toLowerCase();
     for (const [theme, addrsRaw] of Object.entries(themes)) {
         const addrs = addrsRaw as unknown as readonly string[];
-        if (addrs.some((x) => x.toLowerCase() === a)) {
-            return theme;
-        }
+        if (addrs.some((x) => x.toLowerCase() === a)) return theme;
     }
     return "";
 }
@@ -49,9 +49,14 @@ function esc(s: string | null | undefined): string {
 export function serialiseMixedContent(node: Node): string {
     return Array.from(node.childNodes)
         .map((n) => {
-            if (n.nodeType === 3) return esc(n.textContent || "");
-            if (n.nodeType === 1) return (n as Element).outerHTML;
-            return "";
+            switch (n.nodeType) {
+                case 3:
+                    return esc(n.textContent || "");
+                case 1:
+                    return (n as Element).outerHTML;
+                default:
+                    return "";
+            }
         })
         .join("")
         .trim();
@@ -140,7 +145,7 @@ function parseSignature(sig: Element, escFn: Escaper): string {
         company && `<span class="email-signature-company">${company}</span>`,
         address && `<span class="email-signature-address">${address}</span>`,
         telephone && `<span class="email-signature-telephone">Tel: ${telephone}</span>`,
-        emailAddress && `<span class="email-signature-email">Email: ${emailAddress}</span>`
+        emailAddress && `<span class="email-signature-email">Email: ${emailAddress}</span>`,
     ].filter(Boolean);
 
     const disclaimerHtml = disclaimers.length
@@ -163,12 +168,34 @@ function parseSignature(sig: Element, escFn: Escaper): string {
     `;
 }
 
+type ReplaceSmsMessagesImpl = (htmlContent: string, cssHref?: string) => string;
+type ReplaceEmailsImpl = (htmlContent: string, cssHref?: string) => Promise<string>;
+type ReplaceSVGsImpl = (root?: Document | Element | string) => Promise<void>;
+type ReplaceTooltipsImpl = (htmlContent: string) => Promise<string>;
+type BindEmailActionsImpl = () => void;
+
+type MediaStylerImpls = Readonly<{
+    replaceSmsMessages: ReplaceSmsMessagesImpl;
+    replaceEmails: ReplaceEmailsImpl;
+    replaceSVGs: ReplaceSVGsImpl;
+    replaceTooltips: ReplaceTooltipsImpl;
+    bindEmailActions: BindEmailActionsImpl;
+}>;
+
+type MediaStylerImplOverrides = Partial<{
+    replaceSmsMessages: ReplaceSmsMessagesImpl;
+    replaceEmails: ReplaceEmailsImpl;
+    replaceSVGs: ReplaceSVGsImpl;
+    replaceTooltips: ReplaceTooltipsImpl;
+    bindEmailActions: BindEmailActionsImpl;
+}>;
+
 /**
  * @param {string} htmlContent - HTML content to transform.
  * @param {string} cssHref - Stylesheet href for SMS rendering.
  * @returns {string} Transformed HTML content with SMS messages replaced by styled HTML structures. This function takes raw HTML content and a CSS stylesheet href as input, checks if the stylesheet is already present in the document, and if not, it adds it to the document head. It then uses a regular expression to find all message blocks in the HTML content that match a specific structure (with a type of "in" or "out"). For each matching block, it parses the XML structure to extract the nickname, content, and timestamp of the message. The content is processed as mixed content to preserve any rich formatting. Finally, it constructs a new HTML structure for each message, applying appropriate classes based on the message type (incoming or outgoing), and replaces the original message blocks in the input HTML with these new structures. The resulting HTML string is returned, ready for rendering with the associated styles.
  */
-export function replaceSmsMessages(htmlContent: string, cssHref: string = "../styles/sms.css"): string {
+function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../styles/sms.css"): string {
     if (!hassCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -212,7 +239,7 @@ export function replaceSmsMessages(htmlContent: string, cssHref: string = "../st
  * @param {string} cssHref - Stylesheet href for email rendering.
  * @returns {Promise<string>} A promise that resolves to the transformed HTML content with email blocks replaced by styled HTML structures. This function processes the input HTML content to identify and replace custom email blocks with a structured and styled representation suitable for rendering as email messages. It first checks if the specified CSS stylesheet for email rendering is already included in the document, and if not, it adds it to the document head. The function then uses a regular expression to find all email blocks in the input HTML, parses each block as XML to extract relevant information such as sender, recipient, subject, timestamp, and content. It constructs a new HTML structure for each email, applying appropriate classes and formatting based on the extracted data. The original email blocks in the input HTML are replaced with these new structures, and the resulting HTML string is returned as a promise.
  */
-export async function replaceEmails(htmlContent: string, cssHref: string = "../styles/email.css"): Promise<string> {
+async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styles/email.css"): Promise<string> {
     if (!hassCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
@@ -240,17 +267,17 @@ export async function replaceEmails(htmlContent: string, cssHref: string = "../s
 
         return Array.from(contentEl.childNodes)
             .map((n) => {
-                if (n.nodeType === 1) {
-                    const el = n as Element;
-                    if (el.tagName.toLowerCase() === "signature") {
-                        return parseSignature(el, esc);
+                switch (n.nodeType) {
+                    case 1: {
+                        const el = n as Element;
+                        const tag = el.tagName.toLowerCase();
+                        return tag === "signature" ? parseSignature(el, esc) : el.outerHTML;
                     }
-                    return el.outerHTML;
+                    case 3:
+                        return esc(n.textContent || "");
+                    default:
+                        return "";
                 }
-                if (n.nodeType === 3) {
-                    return esc(n.textContent || "");
-                }
-                return "";
             })
             .join("");
     };
@@ -324,19 +351,23 @@ export async function replaceEmails(htmlContent: string, cssHref: string = "../s
 }
 
 /**
- * @param root - Document/Element to process, or HTML string to wrap.
+ * @param {Document | Element | string} root - Document/Element to process, or HTML string to wrap.
  * @returns {Promise<void>} A promise that resolves when all SVG images within the specified root have been replaced with their inline SVG content. This function takes either a Document, an Element, or a string of HTML as input. If a string is provided, it creates a temporary wrapper element to parse the HTML. It then searches for all <img> elements within the root that have a source ending with ".svg". For each matching image, it fetches the SVG content from the source URL, parses it as XML, and replaces the <img> element with the inline SVG content. The function also preserves any classes, styles, width, and height attributes from the original <img> element and applies them to the new inline SVG element. If any errors occur during fetching or processing of the SVGs, they are logged to the console, but the function continues processing other images.
  */
-export async function replaceSVGs(root: Document | Element | string = document): Promise<void> {
+async function replaceSVGsImpl(root: Document | Element | string = document): Promise<void> {
+    let resolvedRoot: Document | Element | null = null;
+
     if (typeof root === "string") {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = root;
-        root = wrapper;
+        resolvedRoot = wrapper;
+    } else if (root instanceof Document || root instanceof Element) {
+        resolvedRoot = root;
     }
 
-    if (!(root instanceof Document || root instanceof Element)) return;
+    if (!resolvedRoot) return;
 
-    const images = Array.from(root.querySelectorAll("img"));
+    const images = Array.from(resolvedRoot.querySelectorAll("img"));
 
     for (const img of images) {
         const src = img.getAttribute("src");
@@ -373,19 +404,23 @@ export async function replaceSVGs(root: Document | Element | string = document):
  * @param {string} htmlContent - HTML content to transform.
  * @returns {Promise<string>} A promise that resolves to the transformed HTML content with custom tooltip blocks replaced by styled HTML structures. This function processes the input HTML content to identify and replace custom tooltip blocks defined by <tooltip> tags with a structured and styled representation suitable for rendering as tooltips. It uses a regular expression to find all tooltip blocks in the input HTML, parses each block as XML to extract the trigger content and the tooltip content. The trigger content is what will be visible on the page, while the tooltip content is what will be shown when the user interacts with the trigger. The function constructs a new HTML structure for each tooltip, applying appropriate classes for styling, and replaces the original tooltip blocks in the input HTML with these new structures. The resulting HTML string is returned as a promise, ready for rendering with associated styles.
  */
-export async function replaceTooltips(htmlContent: string): Promise<string> {
+async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
     const re = /<tooltip\b[^>]*>[\s\S]*?<\/tooltip>/gi;
 
     /**
      * @param {Node} n - Node to serialise.
      * @returns {string} A string representation of a node, where text nodes are escaped for HTML and element nodes are included as their full HTML. This function checks the type of the given node and processes it accordingly. If the node is a text node (nodeType 3), it returns the escaped text content. If the node is an element node (nodeType 1), it returns the outer HTML of the element. For any other types of nodes, it returns an empty string. This is useful for serialising mixed content while ensuring that text is safely escaped for HTML contexts and that element structures are preserved in their entirety.
      */
-    const serialise = (n: Node): string =>
-        n.nodeType === 3
-            ? esc(n.textContent || "")
-            : n.nodeType === 1
-                ? new XMLSerializer().serializeToString(n)
-                : "";
+    const serialise = (n: Node): string => {
+        switch (n.nodeType) {
+            case 3:
+                return esc(n.textContent || "");
+            case 1:
+                return new XMLSerializer().serializeToString(n);
+            default:
+                return "";
+        }
+    };
 
     return htmlContent.replace(re, (block: string) => {
         const doc = new DOMParser().parseFromString(`<root>${block}</root>`, "application/xml");
@@ -427,9 +462,9 @@ declare global {
 }
 
 /**
- * Binds click handler for email action buttons.
+ * @returns {void} Binds click handler for email action buttons.
  */
-export function bindEmailActions(): void {
+function bindEmailActionsImpl(): void {
     document.addEventListener("click", (e: MouseEvent) => {
         const button = (e.target as Element).closest(".email-action");
         if (!button) return;
@@ -454,3 +489,70 @@ export function bindEmailActions(): void {
         console.log(`WTH! Who are you?! You performed the email action: ${(button as HTMLElement).dataset.emailAction}`);
     });
 }
+
+class MediaStyler {
+    private readonly impls: MediaStylerImpls;
+
+    /**
+     * @param {MediaStylerImplOverrides} implOverrides - Optional overrides for internal implementations.
+     * @returns {MediaStyler} MediaStyler instance.
+     */
+    constructor(implOverrides: MediaStylerImplOverrides = {}) {
+        this.impls = {
+            replaceSmsMessages: implOverrides.replaceSmsMessages ?? replaceSmsMessagesImpl,
+            replaceEmails: implOverrides.replaceEmails ?? replaceEmailsImpl,
+            replaceSVGs: implOverrides.replaceSVGs ?? replaceSVGsImpl,
+            replaceTooltips: implOverrides.replaceTooltips ?? replaceTooltipsImpl,
+            bindEmailActions: implOverrides.bindEmailActions ?? bindEmailActionsImpl,
+        };
+    }
+
+    /**
+     * @param {string} htmlContent - HTML content to transform.
+     * @param {string} cssHref - Stylesheet href for SMS rendering.
+     * @returns {string} Transformed HTML content with SMS blocks replaced by styled HTML structures.
+     */
+    @smsEnterBounce({
+        durationMs: 520,
+        strength: 1,
+        viscosity: 0.7,
+        cssHref: "../styles/physics.css",
+    })
+    replaceSmsMessages(htmlContent: string, cssHref: string = "../styles/sms.css"): string {
+        return this.impls.replaceSmsMessages(htmlContent, cssHref);
+    }
+
+    /**
+     * @param {string} htmlContent - HTML content to transform.
+     * @param {string} cssHref - Stylesheet href for email rendering.
+     * @returns {Promise<string>} Transformed HTML content with email blocks replaced by styled HTML structures.
+     */
+    replaceEmails(htmlContent: string, cssHref: string = "../styles/email.css"): Promise<string> {
+        return this.impls.replaceEmails(htmlContent, cssHref);
+    }
+
+    /**
+     * @param {Document | Element | string} root - Document/Element to process, or HTML string to wrap.
+     * @returns {Promise<void>} A promise that resolves when all SVG images have been replaced with inline SVG content.
+     */
+    replaceSVGs(root: Document | Element | string = document): Promise<void> {
+        return this.impls.replaceSVGs(root);
+    }
+
+    /**
+     * @param {string} htmlContent - HTML content to transform.
+     * @returns {Promise<string>} Transformed HTML content with tooltip blocks replaced by styled HTML structures.
+     */
+    replaceTooltips(htmlContent: string): Promise<string> {
+        return this.impls.replaceTooltips(htmlContent);
+    }
+
+    /**
+     * @returns {void} Binds click handler for email action buttons.
+     */
+    bindEmailActions(): void {
+        this.impls.bindEmailActions();
+    }
+}
+
+export default MediaStyler; 

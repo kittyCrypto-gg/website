@@ -1,12 +1,6 @@
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
 import { replaceTategaki } from "./tategaki.ts";
-import {
-    replaceSmsMessages,
-    replaceEmails,
-    replaceSVGs,
-    replaceTooltips,
-    bindEmailActions
-} from "./mediaStyler.ts";
+import MediaStyler from "./mediaStyler.ts";
 
 void recreateSingleton;
 
@@ -602,6 +596,8 @@ function getStoryBaseUrl(storyName: string | null = null): string | null {
     return `${apiPath}/stories/${encodeURIComponent(name)}`;
 }
 
+const mediaStyler = new MediaStyler();
+
 /**
  * @param {number} n
  */
@@ -673,15 +669,15 @@ async function loadChapter(n: number): Promise<void> {
             })
             .join("\n");
 
-        htmlContent = await replaceEmails(htmlContent);
-        htmlContent = await replaceSmsMessages(htmlContent);
+        htmlContent = await mediaStyler.replaceEmails(htmlContent);
+        htmlContent = await mediaStyler.replaceSmsMessages(htmlContent);
         htmlContent = await replaceTategaki(htmlContent);
         htmlContent = replaceImageTags(htmlContent);
-        htmlContent = await replaceTooltips(htmlContent);
+        htmlContent = await mediaStyler.replaceTooltips(htmlContent);
         htmlContent = await injectBookmarksIntoHTML(htmlContent, base, window.chapter);
 
         window.readerRoot!.innerHTML = htmlContent;
-        await replaceSVGs(window.readerRoot!);
+        await mediaStyler.replaceSVGs(window.readerRoot!);
 
         requestAnimationFrame(() => {
             refreshPNum(document);
@@ -1211,7 +1207,7 @@ function initiateReader(): void {
         restoreLastStoryRead();
         void initReader();
         activateImageNavigation(document);
-        bindEmailActions();
+        mediaStyler.bindEmailActions();
     });
 
     document.addEventListener("click", (e: MouseEvent) => {
@@ -1379,8 +1375,8 @@ async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<v
         .join("\n");
 
     // Preserve original behaviour (these are async in mediaStyler)
-    htmlContent = replaceEmails(htmlContent as string) as unknown;
-    htmlContent = replaceSmsMessages(htmlContent as string) as unknown;
+    htmlContent = mediaStyler.replaceEmails(htmlContent as string) as unknown;
+    htmlContent = mediaStyler.replaceSmsMessages(htmlContent as string) as unknown;
     htmlContent = replaceTategaki(htmlContent as string) as unknown;
     htmlContent = replaceImageTags(htmlContent as string);
 
@@ -1389,7 +1385,7 @@ async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<v
     }
 
     window.readerRoot!.innerHTML = htmlContent as string;
-    await replaceSVGs(window.readerRoot!);
+    await mediaStyler.replaceSVGs(window.readerRoot!);
 
     requestAnimationFrame(() => {
         refreshPNum(document);

@@ -1,0 +1,92 @@
+:root {
+  --phys-default-duration: 520ms;
+  --phys-default-ease: cubic-bezier(0.18, 0.9, 0.22, 1.15);
+}
+
+/* Base hook: add to the wrapper element you want to animate */
+.phys {
+  --phys-duration: var(--phys-default-duration);
+  --phys-ease: var(--phys-default-ease);
+
+  /* Translation (from side) */
+  --phys-enter-x: 14px;
+  --phys-overshoot-x: -3px;
+  --phys-settle-x: 2px;
+
+  /* Gel deformation */
+  --phys-scale-x0: 0.92;
+  --phys-scale-y0: 1.04;
+  --phys-scale-x1: 1.18;
+  --phys-scale-y1: 0.94;
+  --phys-scale-x2: 0.97;
+  --phys-scale-y2: 1.02;
+
+  /* Text follow-through */
+  --phys-text-delay: 160ms;
+  --phys-text-x0: 3px;
+  --phys-text-x1: -1px;
+}
+
+/*
+  Effect: SMS enter bounce
+  Add classes: phys phys-observe phys-sms-enter
+  JS adds phys-play once it intersects.
+*/
+.phys.phys-play.phys-sms-enter .message {
+  will-change: transform;
+  transform-origin: var(--phys-origin-x, 50%) 100%;
+  animation: phys-sms-bubble var(--phys-duration) var(--phys-ease) both;
+}
+
+.phys.phys-play.phys-sms-enter .message-text {
+  will-change: transform;
+  animation: phys-sms-text var(--phys-duration) var(--phys-ease) forwards;
+  animation-delay: var(--phys-text-delay);
+}
+
+.phys.phys-play.phys-sms-enter.in {
+  --phys-origin-x: 100%;
+}
+
+.phys.phys-play.phys-sms-enter.out {
+  --phys-origin-x: 0%;
+}
+
+@keyframes phys-sms-bubble {
+  0% {
+    transform:
+      translateX(var(--phys-enter-x))
+      scaleX(var(--phys-scale-x0))
+      scaleY(var(--phys-scale-y0));
+  }
+  52% {
+    transform:
+      translateX(var(--phys-overshoot-x))
+      scaleX(var(--phys-scale-x1))
+      scaleY(var(--phys-scale-y1));
+  }
+  76% {
+    transform:
+      translateX(var(--phys-settle-x))
+      scaleX(var(--phys-scale-x2))
+      scaleY(var(--phys-scale-y2));
+  }
+  100% {
+    transform: translateX(0px) scaleX(1) scaleY(1);
+  }
+}
+
+@keyframes phys-sms-text {
+  0% {
+    transform: translateX(0px) scaleX(1);
+  }
+  35% {
+    transform: translateX(var(--phys-text-x0)) scaleX(1.01);
+  }
+  75% {
+    transform: translateX(var(--phys-text-x1)) scaleX(0.995);
+  }
+  100% {
+    transform: translateX(0px) scaleX(1);
+  }
+}

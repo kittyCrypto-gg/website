@@ -16,7 +16,8 @@
         "removeComments": false,
         "verbatimModuleSyntax": true,
         "rewriteRelativeImportExtensions": true,
-        "allowImportingTsExtensions": true
+        "allowImportingTsExtensions": true,
+        "experimentalDecorators": false
     },
     "include": [
         "src"
