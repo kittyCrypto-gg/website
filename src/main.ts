@@ -31,6 +31,7 @@ type KeyboardEmuCtor = new (
 
 type MainJson = Readonly<{
     headScripts?: readonly string[];
+    headerInjections?: readonly string[];
     mainMenu: Record<string, string>;
     header: string;
     footer: string;
@@ -45,6 +46,74 @@ const params = new URLSearchParams(window.location.search);
 
 let terminalMod: TerminalModule | null = null;
 let pendingWebUiTheme: "dark" | "light" | null = null;
+
+/**
+ * @param {Document} doc - Document to operate on.
+ * @param {string} id - Anchor element id.
+ * @returns {HTMLMetaElement} The anchor meta element.
+ */
+function ensureHeadAnchor(doc: Document, id: string): HTMLMetaElement {
+    const existing = doc.getElementById(id);
+    if (existing && existing instanceof HTMLMetaElement) return existing;
+
+    if (existing) existing.remove();
+
+    const meta = doc.createElement("meta");
+    meta.id = id;
+    meta.name = id;
+    meta.content = "";
+    doc.head.appendChild(meta);
+    return meta;
+}
+
+/**
+ * @param {Node} start - Start anchor node (exclusive).
+ * @param {Node} end - End anchor node (exclusive).
+ * @returns {void} Nothing.
+ */
+function clearNodesBetween(start: Node, end: Node): void {
+    let n = start.nextSibling;
+    while (n && n !== end) {
+        const next = n.nextSibling;
+        n.parentNode?.removeChild(n);
+        n = next;
+    }
+}
+
+/**
+ * @param {Document} doc - Document to operate on.
+ * @param {readonly string[]} injections - HTML snippets to inject into <head>.
+ * @returns {void} Nothing.
+ */
+function applyHeaderInjections(doc: Document, injections: readonly string[]): void {
+    const start = ensureHeadAnchor(doc, "kc-header-injections_start");
+    const end = ensureHeadAnchor(doc, "kc-header-injections_end");
+
+    if (start.parentNode !== doc.head) doc.head.appendChild(start);
+    if (end.parentNode !== doc.head) doc.head.appendChild(end);
+
+    // Ensure correct order (start before end)
+    if (start.compareDocumentPosition(end) & Node.DOCUMENT_POSITION_PRECEDING) {
+        doc.head.appendChild(end);
+    }
+
+    clearNodesBetween(start, end);
+
+    const frag = doc.createDocumentFragment();
+
+    for (const raw of injections) {
+        const html = String(raw ?? "").trim();
+        if (!html) continue;
+
+        const tpl = doc.createElement("template");
+        tpl.innerHTML = html;
+
+        frag.appendChild(tpl.content.cloneNode(true));
+        frag.appendChild(doc.createTextNode("\n"));
+    }
+
+    doc.head.insertBefore(frag, end);
+}
 
 /**
  * @param {unknown} v - Value to convert.
@@ -209,6 +278,10 @@ async function initialiseUI(): Promise<void> {
         }
 
         const data = (await response.json()) as MainJson;
+
+        if (data.headerInjections && data.headerInjections.length > 0) {
+            applyHeaderInjections(document, data.headerInjections);
+        }
 
         if (data.headScripts) {
             data.headScripts.forEach((scriptSrc) => {
