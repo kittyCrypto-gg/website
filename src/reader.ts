@@ -1,6 +1,7 @@
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
 import { replaceTategaki } from "./tategaki.ts";
 import MediaStyler from "./mediaStyler.ts";
+import * as config from "./config.ts";
 
 void recreateSingleton;
 
@@ -84,7 +85,6 @@ window.params = new URLSearchParams(window.location.search);
 window.storyPath = window.params.get("story");
 window.storyName = window.storyPath ? (window.storyPath.split("/").pop() ?? null) : null;
 window.chapter = parseInt(window.params.get("chapter") || "1");
-const apiPath = "https://srv.kittycrypto.gg";
 
 const params = window.params;
 
@@ -555,7 +555,7 @@ function bindNavigationEvents(root: Document = document): void {
 async function populateStoryPicker(root: Document = document): Promise<void> {
     if (!window.storyPickerRoot) return;
     try {
-        const res = await fetch(`${apiPath}/stories.json`);
+        const res = await fetch(`${config.storiesIndexURL}`);
         if (!res.ok) throw new Error("No stories found");
         const storiesUnknown: unknown = await res.json();
 
@@ -593,7 +593,7 @@ async function populateStoryPicker(root: Document = document): Promise<void> {
 function getStoryBaseUrl(storyName: string | null = null): string | null {
     const name = storyName || window.storyName || (window.storyPath ? window.storyPath.split("/").pop() : null);
     if (!name) return null;
-    return `${apiPath}/stories/${encodeURIComponent(name)}`;
+    return `${config.storiesURL}/${encodeURIComponent(name)}`;
 }
 
 const mediaStyler = new MediaStyler();
@@ -711,7 +711,7 @@ async function loadChapter(n: number): Promise<void> {
  * @returns {Promise<ChaptersIndexResult>}
  */
 export async function getChapters(storyName: string): Promise<ChaptersIndexResult> {
-    const indexRes = await fetch(`${apiPath}/stories.json`);
+    const indexRes = await fetch(`${config.storiesIndexURL}`);
     if (!indexRes.ok) throw new Error("Failed to load stories index");
 
     const indexUnknown: unknown = await indexRes.json();

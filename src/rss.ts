@@ -1,4 +1,5 @@
 import { Clusteriser } from "./clusterise.ts";
+import * as config from "./config.ts";
 
 declare const marked: {
     /**
@@ -273,7 +274,7 @@ async function loadBlogFeed(): Promise<void> {
     const { blogContainer: container } = result;
     container.innerHTML = "";
 
-    const response = await fetch("https://rss.kittycrypto.gg/rss/kittycrypto");
+    const response = await fetch(`${config.RSS_BACKEND_URL}`);
     if (!response.ok) {
         throw new Error(`RSS fetch error: ${response.status} ${response.statusText}`);
     }

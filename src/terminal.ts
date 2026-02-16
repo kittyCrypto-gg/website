@@ -1,3 +1,5 @@
+import * as config from "./config.ts";
+
 type MobileDetectInstance = Readonly<{
     mobile: () => unknown;
 }>;
@@ -471,7 +473,7 @@ async function getOrCreateSessionToken(): Promise<SessionTokenResult> {
         return { token: existing, isNew: false };
     }
 
-    const res = await fetch("https://srv.kittycrypto.gg/session-token", {
+    const res = await fetch(`${config.sessionTokenURL}`, {
         method: "GET",
         cache: "no-store",
         credentials: "omit"

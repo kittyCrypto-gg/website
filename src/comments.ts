@@ -1,5 +1,5 @@
 import { drawSpiralIdenticon } from "./avatar.ts";
-
+import * as config from "./config.ts";
 //if (window.location.pathname === '/') window.history.replaceState(null, '', '/index.html');
 
 declare global {
@@ -8,10 +8,10 @@ declare global {
     }
 }
 
-const COMMENT_POST_URL = "https://srv.kittycrypto.gg/comment";
-const COMMENT_LOAD_URL = "https://srv.kittycrypto.gg/comments/load";
-const SESSION_TOKEN_URL = "https://srv.kittycrypto.gg/session-token";
-const USER_IP_URL = "https://srv.kittycrypto.gg/get-ip";
+const COMMENT_POST_URL = `${config.commentPostURL}`;
+const COMMENT_LOAD_URL = `${config.commentLoadURL}`;
+const SESSION_TOKEN_URL = `${config.sessionTokenURL}`;
+const USER_IP_URL = `${config.getIpURL}`;
 
 type SessionTokenResponse = Readonly<{
     sessionToken: string;

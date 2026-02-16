@@ -1,3 +1,5 @@
+import * as config from "./config.ts";
+
 interface Window {
     CHAT_SERVER?: string;
     MAIN_SERVER?: string;
@@ -11,8 +13,8 @@ interface Window {
 declare const CHAT_SERVER: string;
 declare const GET_IP_HASH_URL: string;
 
-window.CHAT_SERVER = window.CHAT_SERVER || "https://srv.kittycrypto.gg/chat";
-window.MAIN_SERVER = window.MAIN_SERVER || "https://srv.kittycrypto.gg";
+window.CHAT_SERVER = `${config.chatURL}`;
+window.MAIN_SERVER = `${config.BACKEND_URL}`;
 window.GET_IP_HASH_URL = window.GET_IP_HASH_URL || `${window.MAIN_SERVER}/get-ip/sha256`;
 window.nicknameInput = window.nicknameInput || document.getElementById("nickname");
 

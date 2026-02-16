@@ -1,4 +1,5 @@
 import { Clusteriser } from "./clusterise.ts";
+import * as config from "./config.ts";
 
 declare global {
     interface Window {
@@ -35,10 +36,12 @@ type ClusteriserLike = Readonly<{
 
 type ClusteriserConstructor = new (target: Element) => ClusteriserLike;
 
-const CHAT_SERVER = "https://srv.kittycrypto.gg/chat";
-const CHAT_STREAM_URL = "https://srv.kittycrypto.gg/chat/stream";
-const SESSION_TOKEN_URL = "https://srv.kittycrypto.gg/session-token";
-const SESSION_REREGISTER_URL = "https://srv.kittycrypto.gg/session-token/reregister";
+
+
+const CHAT_SERVER = `${config.chatURL}`;
+const CHAT_STREAM_URL = `${config.chatStreamURL}`;
+const SESSION_TOKEN_URL = `${config.sessionTokenURL}`;
+const SESSION_REREGISTER_URL = `${config.sessionReregisterURL}`;
 
 const chatroom = document.getElementById("chatroom") as HTMLElement;
 const nicknameInput = document.getElementById("nickname") as HTMLInputElement;
@@ -275,7 +278,7 @@ function connectToChatStream(): void {
 
 export async function fetchUserIP(): Promise<string | null> {
     try {
-        const response = await fetch("https://srv.kittycrypto.gg/get-ip");
+        const response = await fetch(`${config.getIpURL}`);
         if (!response.ok) throw new Error(`Failed to fetch IP: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
