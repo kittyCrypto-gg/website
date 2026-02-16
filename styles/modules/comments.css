@@ -141,8 +141,8 @@
     margin-right: 10px;
     flex-shrink: 0;
     display: flex;
-    align-items: centre;
-    justify-content: centre;
+    align-items: center;
+    justify-content: center;
 }
 
 .avatar-container svg {
@@ -158,7 +158,7 @@
 /* Message header layout used by comment items (shared with chat-like markup) */
 .chat-header {
     display: flex;
-    align-items: centre;
+    align-items: center;
     gap: 8px;
     margin-bottom: 4px;
 }

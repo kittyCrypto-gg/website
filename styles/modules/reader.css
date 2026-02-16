@@ -36,7 +36,7 @@
 }
 
 /* =========================================
-   Chapter Navigation Buttons
+    Chapter Navigation Buttons
 ========================================= */
 .chapter-navigation button {
     all: unset;
@@ -81,7 +81,7 @@
 }
 
 /* =========================================
-   Font Controls
+    Font Controls
 ========================================= */
 .font-controls {
     display: flex;
@@ -108,12 +108,12 @@
 }
 
 /* =========================================
-   Chapter Navigation Inputs
+    Chapter Navigation Inputs
 ========================================= */
 .chapter-display,
 .chapter-input {
     width: 2ch;
-    text-align: centre;
+    text-align: center;
     font-weight: bold;
     font-size: 1rem;
     padding: 2px 4px;
@@ -141,7 +141,7 @@
 /* END button */
 .chapter-end {
     width: 2ch;
-    text-align: centre;
+    text-align: center;
     font-weight: bold;
     font-size: 1rem;
     padding: 2px 4px;
@@ -162,11 +162,11 @@
 }
 
 /* =========================================
-   Story Selector Dropdown
+    Story Selector Dropdown
 ========================================= */
 #story-picker {
     margin: 15px auto;
-    text-align: centre;
+    text-align: center;
 }
 
 .story-selector {
@@ -192,7 +192,7 @@
 }
 
 /* =========================================
-   Chapter Reader Container
+    Chapter Reader Container
 ========================================= */
 .reader-container {
     background-color: var(--frame-bg-colour);
@@ -214,12 +214,12 @@
 }
 
 /* =========================================
-   Reader: Block-Level Styling
+    Reader: Block-Level Styling
 ========================================= */
 .reader-title {
     font-size: 2.2em;
     font-weight: bold;
-    text-align: centre;
+    text-align: center;
     margin-top: 2em;
     margin-bottom: 1em;
 }
@@ -227,7 +227,7 @@
 .reader-subtitle {
     font-size: 1.6em;
     font-weight: 600;
-    text-align: centre;
+    text-align: center;
     margin-top: 1.5em;
     margin-bottom: 1em;
     color: var(--header-text-colour);
@@ -276,7 +276,7 @@
 }
 
 /* =========================================
-   Reader: Inline Text Styles
+    Reader: Inline Text Styles
 ========================================= */
 .reader-bold {
     font-weight: bold;
@@ -331,7 +331,7 @@
 }
 
 /* =========================================
-   Reader: Paragraph Numbers
+    Reader: Paragraph Numbers
 ========================================= */
 #reader.reader-show-paragraph-numbers .reader-bookmark {
     --reader-para-num-col-width: 3ch;
@@ -379,10 +379,10 @@
 }
 
 /* =========================================
-   Chapter 404 Message
+    Chapter 404 Message
 ========================================= */
 .chapter-404 {
-    text-align: centre;
+    text-align: center;
     padding: 40px;
     font-size: 1.2rem;
     color: var(--body-text-colour);
