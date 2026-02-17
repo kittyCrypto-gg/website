@@ -240,19 +240,45 @@ function attachToggleLogic(postDiv: HTMLElement): void {
         toggleRef.blur();
     }
 
-    toggleRef.addEventListener("click", () => togglePost());
+    toggleRef.addEventListener("click", (ev) => {
+        const clickPath = ev.composedPath();
+        const clickedAnchor = clickPath.find((node) => node instanceof HTMLAnchorElement);
+        if (clickedAnchor) return;
+
+        togglePost();
+    });
+
     toggleRef.addEventListener("keydown", (e) => {
         if (e.key !== "Enter" && e.key !== " ") return;
         e.preventDefault();
         togglePost();
     });
 
+    Array.from(postDiv.querySelectorAll<HTMLAnchorElement>("a[href]")).forEach((link) => {
+        if (link.dataset.rssNewTab === "1") return;
+        link.dataset.rssNewTab = "1";
+
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        link.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+        });
+    });
+
     contentDiv.addEventListener("click", (ev) => {
         if (!contentDiv.classList.contains("content-expanded")) return;
 
-        const t = ev.target;
-        if (!(t instanceof Element)) return;
-        if (t.closest("a")) return;
+        const clickPath = ev.composedPath();
+        const clickedInteractive = clickPath.find((node) =>
+            node instanceof HTMLAnchorElement ||
+            node instanceof HTMLButtonElement ||
+            node instanceof HTMLInputElement ||
+            node instanceof HTMLTextAreaElement ||
+            node instanceof HTMLSelectElement ||
+            node instanceof HTMLLabelElement
+        );
+        if (clickedInteractive) return;
 
         togglePost();
     });
