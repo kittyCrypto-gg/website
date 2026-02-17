@@ -1,5 +1,5 @@
 /* =========================================
-  Module: RSS Blog Post Feed
+    Module: RSS Blog Post Feed
 ========================================= */
 
 .blog-wrapper,
@@ -142,7 +142,7 @@
 
 .rss-post-content a:hover {
     color: var(--banner-blue);
-    text-decoration: underline;
+    /* text-decoration: underline; */
 }
 
 /* For dark mode links explicitly */
@@ -218,6 +218,6 @@
 .dark-mode .rss-post-block:focus {
     background-color: var(--menu-button-hover-bg-colour) !important;
     color: var(--banner-blue);
-    text-decoration: underline;
+    /* text-decoration: underline; */
     cursor: pointer;
 }
