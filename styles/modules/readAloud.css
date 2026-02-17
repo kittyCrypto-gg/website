@@ -296,6 +296,7 @@
 /* Highlighted text */
 .reader-bookmark.read-aloud-active {
     background: #b388ff !important;
+    color: var(--body-text-colour-light) !important;
     transition:
         background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
         opacity 0.4s;
@@ -313,6 +314,7 @@ body.dark-mode .reader-bookmark.read-aloud-active,
 body.dark .reader-bookmark.read-aloud-active,
 .dark .reader-bookmark.read-aloud-active {
     background: #e1bfff !important;
+    color: var(--body-text-colour-light) !important;
 }
 
 body.dark-mode .reader-bookmark.read-aloud-fadeout,

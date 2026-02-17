@@ -1802,7 +1802,7 @@ class ReadAloudModule {
     }
 
     /**
-     * @param {number} paragraphNumber - 1-based paragraph number.
+     * @param {number} paragraphNumber - Paragraph number.
      * @returns {Promise<void>} Resolves after jump attempt.
      */
     async __jumpToParagraphNumber(paragraphNumber: number): Promise<void> {
@@ -1811,7 +1811,7 @@ class ReadAloudModule {
 
         if (!state.paragraphs || state.paragraphs.length === 0) return;
 
-        const idx = paragraphNumber - 1;
+        const idx = paragraphNumber;
         if (idx < 0 || idx >= state.paragraphs.length) return;
 
         const wasPlaying = !state.paused;
