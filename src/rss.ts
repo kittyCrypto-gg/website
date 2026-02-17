@@ -247,8 +247,13 @@ function attachToggleLogic(postDiv: HTMLElement): void {
         togglePost();
     });
 
-    contentDiv.addEventListener("click", () => {
+    contentDiv.addEventListener("click", (ev) => {
         if (!contentDiv.classList.contains("content-expanded")) return;
+
+        const t = ev.target;
+        if (!(t instanceof Element)) return;
+        if (t.closest("a")) return;
+
         togglePost();
     });
 }
