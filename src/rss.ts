@@ -26,11 +26,61 @@ type RssPost = Readonly<{
 let blogClusteriser: Clusteriser | null = null;
 
 /**
+ * @returns {boolean}
+ */
+function isBlogPath(): boolean {
+    return window.location.pathname.toLowerCase().includes("blog");
+}
+
+/**
+ * On the blog page, ensure the surrounding containers do not clamp height/overflow.
+ * @returns {void}
+ */
+function applyBlogPageLayoutHints(): void {
+    if (!isBlogPath()) return;
+
+    const frame = document.querySelector(".frame");
+    if (frame instanceof HTMLElement) {
+        frame.style.height = "auto";
+        frame.style.maxHeight = "none";
+        frame.style.overflow = "visible";
+    }
+
+    const frameContent = document.querySelector(".frame-content");
+    if (frameContent instanceof HTMLElement) {
+        frameContent.style.height = "auto";
+        frameContent.style.maxHeight = "none";
+        frameContent.style.overflow = "visible";
+    }
+
+    const mainContent = document.querySelector("#main-content");
+    if (mainContent instanceof HTMLElement) {
+        mainContent.style.height = "auto";
+        mainContent.style.maxHeight = "none";
+        mainContent.style.overflow = "visible";
+    }
+
+    const blogWrapper = document.querySelector(".blog-wrapper");
+    if (blogWrapper instanceof HTMLElement) {
+        blogWrapper.style.height = "auto";
+        blogWrapper.style.maxHeight = "none";
+        blogWrapper.style.overflow = "visible";
+    }
+
+    const blogContainer = document.querySelector(".blog-container");
+    if (blogContainer instanceof HTMLElement) {
+        blogContainer.style.height = "auto";
+        blogContainer.style.maxHeight = "none";
+        blogContainer.style.overflow = "visible";
+    }
+}
+
+/**
  * Ensure .blog-container is inside .rss-scroll-2, creating/wrapping as needed.
  * @returns {BlogWrapperResult | null}
  */
 function ensureBlogScrollWrapper(): BlogWrapperResult | null {
-    if (window.location.pathname.includes("blog.html")) {
+    if (isBlogPath()) {
         const blogContainer = document.querySelector(".blog-container");
         if (!(blogContainer instanceof HTMLDivElement)) return null;
         return { scrollBox: null, blogContainer };
@@ -136,7 +186,6 @@ function triggerAdjustOnToggles(): void {
 }
 
 /**
- * Utility: Parse the XML and extract items
  * @param {string} xml
  * @returns {RssPost[]}
  */
@@ -160,7 +209,6 @@ function parseRSS(xml: string): RssPost[] {
 }
 
 /**
- * Utility: Format date to yyyy.mm.dd
  * @param {string} dateStr
  * @returns {string}
  */
@@ -174,18 +222,23 @@ function formatDate(dateStr: string): string {
 }
 
 /**
- * Render a single post as HTML string
  * @param {RssPost} post
  * @returns {string}
  */
 function renderPost(post: RssPost): string {
     const contentHtml = marked.parse(post.content);
+    const expanded = isBlogPath();
+
+    const arrow = expanded ? "🔽" : "▶️";
+    const ariaExpanded = expanded ? "true" : "false";
+    const contentClass = expanded ? "rss-post-content content-expanded" : "rss-post-content content-collapsed";
+    const contentStyle = expanded ? "overflow: visible; max-height: none;" : "overflow: hidden; max-height: 0;";
 
     return `
         <div class="rss-post-block">
-        <div class="rss-post-toggle" tabindex="0" role="button" aria-expanded="false">
+        <div class="rss-post-toggle" ${expanded ? "" : 'tabindex="0" role="button"'} aria-expanded="${ariaExpanded}">
             <div class="rss-post-header">
-            <span class="summary-arrow">▶️</span>
+            <span class="summary-arrow">${arrow}</span>
             <span class="rss-post-title">${post.title}</span>
             <span class="rss-post-date">${formatDate(post.pubDate)}</span>
             </div>
@@ -194,9 +247,58 @@ function renderPost(post: RssPost): string {
             <span class="summary-text">${post.description}</span>
             </div>
         </div>
-        <div class="rss-post-content content-collapsed" style="overflow: hidden; max-height: 0;">${contentHtml}</div>
+        <div class="${contentClass}" style="${contentStyle}">${contentHtml}</div>
         </div>
     `;
+}
+
+/**
+ * @param {HTMLElement} postDiv
+ * @returns {void}
+ */
+function configurePostLinks(postDiv: HTMLElement): void {
+    Array.from(postDiv.querySelectorAll<HTMLAnchorElement>("a[href]")).forEach((link) => {
+        if (link.dataset.rssNewTab === "1") return;
+        link.dataset.rssNewTab = "1";
+
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        link.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+        });
+    });
+}
+
+/**
+ * Force a post open and remove interactivity (blog page only).
+ * @param {HTMLElement} postDiv
+ * @returns {void}
+ */
+function lockPostExpanded(postDiv: HTMLElement): void {
+    const toggleDiv = postDiv.querySelector(".rss-post-toggle");
+    if (!(toggleDiv instanceof HTMLElement)) return;
+
+    const headerDiv = toggleDiv.querySelector(".rss-post-header");
+    if (headerDiv instanceof HTMLElement) {
+        const arrowSpan = headerDiv.querySelector(".summary-arrow");
+        if (arrowSpan instanceof HTMLElement) arrowSpan.textContent = "🔽";
+    }
+
+    toggleDiv.setAttribute("aria-expanded", "true");
+    toggleDiv.removeAttribute("role");
+    toggleDiv.removeAttribute("tabindex");
+    toggleDiv.style.cursor = "default";
+
+    const contentEl = postDiv.querySelector(".rss-post-content");
+    if (!(contentEl instanceof HTMLElement)) return;
+
+    contentEl.classList.add("content-expanded");
+    contentEl.classList.remove("content-collapsed");
+    contentEl.style.maxHeight = "none";
+    contentEl.style.overflow = "visible";
+
+    configurePostLinks(postDiv);
 }
 
 /**
@@ -220,6 +322,8 @@ function attachToggleLogic(postDiv: HTMLElement): void {
     const contentDiv: HTMLElement = contentEl;
     const toggleRef: HTMLElement = toggleDiv;
     const arrowRef: HTMLElement = arrowSpan;
+
+    configurePostLinks(postDiv);
 
     /**
      * @returns {void}
@@ -254,18 +358,6 @@ function attachToggleLogic(postDiv: HTMLElement): void {
         togglePost();
     });
 
-    Array.from(postDiv.querySelectorAll<HTMLAnchorElement>("a[href]")).forEach((link) => {
-        if (link.dataset.rssNewTab === "1") return;
-        link.dataset.rssNewTab = "1";
-
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-
-        link.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-        });
-    });
-
     contentDiv.addEventListener("click", (ev) => {
         if (!contentDiv.classList.contains("content-expanded")) return;
 
@@ -289,13 +381,18 @@ function attachToggleLogic(postDiv: HTMLElement): void {
  * @returns {void}
  */
 function attachAllToggles(container: HTMLElement): void {
-    container.querySelectorAll<HTMLElement>(".rss-post-block").forEach((postDiv) => {
-        attachToggleLogic(postDiv);
-    });
+    const posts = Array.from(container.querySelectorAll<HTMLElement>(".rss-post-block"));
+    if (posts.length === 0) return;
+
+    if (isBlogPath()) {
+        posts.forEach((postDiv) => lockPostExpanded(postDiv));
+        return;
+    }
+
+    posts.forEach((postDiv) => attachToggleLogic(postDiv));
 }
 
 /**
- * Fetch and render the feed
  * @returns {Promise<void>}
  */
 async function loadBlogFeed(): Promise<void> {
@@ -313,16 +410,28 @@ async function loadBlogFeed(): Promise<void> {
     const xmlText = await response.text();
     const posts = parseRSS(xmlText);
     const rows = posts.map((post) => renderPost(post));
+    const blogPage = isBlogPath();
 
-    if (!blogClusteriser) {
-        blogClusteriser = new Clusteriser(container);
-        await blogClusteriser.init();
+    if (blogPage) {
+        container.innerHTML = rows.join("");
     }
 
-    blogClusteriser.update(rows);
+    if (!blogPage) {
+        if (!blogClusteriser) {
+            blogClusteriser = new Clusteriser(container);
+            await blogClusteriser.init();
+        }
+        blogClusteriser.update(rows);
+    }
 
     window.requestAnimationFrame(() => {
         attachAllToggles(container);
+
+        if (blogPage) {
+            applyBlogPageLayoutHints();
+            return;
+        }
+
         triggerAdjustOnToggles();
         setupDynamicScrollBox();
         window.setTimeout(() => adjustBlogScrollHeight(), 100);
@@ -330,5 +439,6 @@ async function loadBlogFeed(): Promise<void> {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+    applyBlogPageLayoutHints();
     void loadBlogFeed();
 });
