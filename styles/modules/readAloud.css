@@ -296,7 +296,6 @@
 /* Highlighted text */
 .reader-bookmark.read-aloud-active {
     background: #b388ff !important;
-    color: var(--body-text-colour-light) !important;
     transition:
         background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
         opacity 0.4s;
@@ -308,13 +307,20 @@
     transition: opacity 0.6s;
 }
 
+.reader-bookmark.read-aloud-active :is(.reader-paragraph, .reader-title, .reader-subtitle, .reader-quote) {
+    color: var(--body-text-colour-light) !important;
+}
+
+.reader-bookmark.read-aloud-active :is(p, h1, h2, blockquote) {
+    color: var(--body-text-colour-light) !important;
+}
+
 /* Dark mode */
 body.dark-mode .reader-bookmark.read-aloud-active,
 .dark-mode .reader-bookmark.read-aloud-active,
 body.dark .reader-bookmark.read-aloud-active,
 .dark .reader-bookmark.read-aloud-active {
     background: #e1bfff !important;
-    color: var(--body-text-colour-light) !important;
 }
 
 body.dark-mode .reader-bookmark.read-aloud-fadeout,
