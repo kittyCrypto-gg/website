@@ -81,7 +81,7 @@ The frontend expects the backend to run at:
 
 - https://srv.kittycrypto.gg
 
-(If you run a local backend or a different environment, adjust the configuration accordingly in ./srv/config.ts)
+(If you run a local backend or a different environment, adjust the configuration accordingly in ./src/config.ts)
 
 ---
 
