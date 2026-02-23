@@ -254,8 +254,8 @@ export async function setupTerminalWindow(): Promise<void> {
                 height: localStorage.getItem('terminal-height') || '',
                 resize: 'both',
                 overflow: 'auto',
-                left: localStorage.getItem('term-icon-x') || '10px',
-                top: localStorage.getItem('term-icon-y') || '10px'
+                left: localStorage.getItem('terminal-x') || localStorage.getItem('term-icon-x') || '10px',
+                top: localStorage.getItem('terminal-y') || localStorage.getItem('term-icon-y') || '10px'
             });
             makeTermDragWPrnt(windowWrapper, document.getElementById('banner-wrapper'));
             localStorage.setItem('terminal-floating', 'true');
@@ -284,8 +284,8 @@ export async function setupTerminalWindow(): Promise<void> {
             height: localStorage.getItem('terminal-height') || '',
             resize: 'both',
             overflow: 'auto',
-            left: localStorage.getItem('term-icon-x') || '10px',
-            top: localStorage.getItem('term-icon-y') || '10px'
+            left: localStorage.getItem('terminal-x') || localStorage.getItem('term-icon-x') || '10px',
+            top: localStorage.getItem('terminal-y') || localStorage.getItem('term-icon-y') || '10px'
         });
         makeTermDragWPrnt(windowWrapper, document.getElementById('banner-wrapper'));
     } else {
@@ -337,8 +337,8 @@ export async function setupTerminalWindow(): Promise<void> {
                 height: localStorage.getItem('terminal-height') || '',
                 resize: 'both',
                 overflow: 'auto',
-                left: localStorage.getItem('terminal-x') || '10px',
-                top: localStorage.getItem('terminal-y') || '10px'
+                left: localStorage.getItem('terminal-x') || localStorage.getItem('term-icon-x') || '10px',
+                top: localStorage.getItem('terminal-y') || localStorage.getItem('term-icon-y') || '10px'
             });
             setTimeout(() => {
                 makeTermDragWPrnt(windowWrapper, document.getElementById('banner-wrapper'));
@@ -388,6 +388,8 @@ function makeIconDraggable(): void {
         icon.style.top = `${y}px`;
         localStorage.setItem('term-icon-x', icon.style.left);
         localStorage.setItem('term-icon-y', icon.style.top);
+        localStorage.setItem('terminal-x', icon.style.left);
+        localStorage.setItem('terminal-y', icon.style.top);
     });
 
     document.addEventListener('mouseup', () => {
@@ -398,8 +400,8 @@ function makeIconDraggable(): void {
     });
 
     // Restore saved position if available
-    const savedX = localStorage.getItem('term-icon-x');
-    const savedY = localStorage.getItem('term-icon-y');
+    const savedX = localStorage.getItem('terminal-x') || localStorage.getItem('term-icon-x');
+    const savedY = localStorage.getItem('terminal-y') || localStorage.getItem('term-icon-y');
     if (savedX && savedY) {
         icon.style.left = savedX;
         icon.style.top = savedY;
@@ -449,12 +451,19 @@ function makeTermDragWPrnt(el: HTMLElement, parent: Element | null): void {
     });
 
     document.addEventListener('mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
-            el.style.cursor = 'default';
-            localStorage.setItem('terminal-width', `${el.offsetWidth}px`);
-            localStorage.setItem('terminal-height', `${el.offsetHeight}px`);
-        }
+        if (!isDragging) return;
+
+        isDragging = false;
+        el.style.cursor = 'default';
+
+        if (el.style.display === 'none') return;
+
+        const w = el.offsetWidth;
+        const h = el.offsetHeight;
+        if (w <= 0 || h <= 0) return;
+
+        localStorage.setItem('terminal-width', `${w}px`);
+        localStorage.setItem('terminal-height', `${h}px`);
     });
 }
 
