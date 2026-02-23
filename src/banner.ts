@@ -207,6 +207,18 @@ export async function setupTerminalWindow(): Promise<void> {
         icon.style.display = 'inline-block';
     });
 
+    closeBtn.addEventListener('mousedown', (e: MouseEvent) => {
+        e.stopPropagation();
+    });
+
+    toggleViewBtn.addEventListener('mousedown', (e: MouseEvent) => {
+        e.stopPropagation();
+    });
+
+    floatBtn.addEventListener('mousedown', (e: MouseEvent) => {
+        e.stopPropagation();
+    });
+
     toggleViewBtn.addEventListener('click', () => {
         const isMinimised = terminalWrapper.style.display === 'none';
         if (isMinimised) {
@@ -411,6 +423,9 @@ function makeTermDragWPrnt(el: HTMLElement, parent: Element | null): void {
 
     header.addEventListener('mousedown', (e: MouseEvent) => {
         if (!el.classList.contains('floating')) return;
+        if (e.button !== 0) return;
+        const target = e.target as HTMLElement;
+        if (target.closest('.window-controls')) return;
         isDragging = true;
         startX = e.clientX - el.offsetLeft;
         startY = e.clientY - el.offsetTop;
