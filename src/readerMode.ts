@@ -109,6 +109,50 @@ class ReaderToggle {
     }
 
     /**
+ * @param {unknown} doc - Document clone to sanitise for Readability parsing.
+ * @returns {void} Removes tooltip behaviour for reader mode by unwrapping triggers and dropping tooltip content.
+ */
+    parseTooltips(doc: unknown): void {
+        if (!doc || !(doc instanceof Document)) return;
+
+        // 1) Tooltips already rendered by MediaStyler: <span class="tooltip">...</span>
+        const renderedTooltips = Array.from(doc.querySelectorAll<HTMLElement>(".tooltip"));
+        for (const tooltip of renderedTooltips) {
+            const trigger = tooltip.querySelector<HTMLElement>(".tooltip-trigger");
+            if (!trigger) {
+                tooltip.remove();
+                continue;
+            }
+
+            const frag = doc.createDocumentFragment();
+            for (const n of Array.from(trigger.childNodes)) {
+                frag.appendChild(n.cloneNode(true));
+            }
+
+            tooltip.replaceWith(frag);
+        }
+
+        // 2) Raw tooltips (if any ever make it through): <tooltip>...</tooltip>
+        const rawTooltips = Array.from(doc.getElementsByTagName("tooltip"));
+        for (const tooltip of rawTooltips) {
+            const contentEl = Array.from(tooltip.children).find((n) => n.tagName.toLowerCase() === "content");
+
+            const triggerNodes = Array.from(tooltip.childNodes).filter((n) => n !== contentEl);
+            if (triggerNodes.length === 0) {
+                tooltip.remove();
+                continue;
+            }
+
+            const frag = doc.createDocumentFragment();
+            for (const n of triggerNodes) {
+                frag.appendChild(n.cloneNode(true));
+            }
+
+            tooltip.replaceWith(frag);
+        }
+    }
+
+    /**
      * @param {Document | Element} root - Root node to scan for chapter images.
      */
     storeChapterImages(root: Document | Element = document): ChapterImageInfo[] {
@@ -161,7 +205,7 @@ class ReaderToggle {
     /**
      * @param {Document} doc - Document clone to sanitise for Readability parsing.
      */
-    sanitiseEmailsForReadability(doc: unknown): void {
+    parseEmails(doc: unknown): void {
         if (!doc || !(doc instanceof Document)) return;
 
         const cards = Array.from(doc.querySelectorAll<HTMLElement>(".email-card"));
@@ -225,7 +269,8 @@ class ReaderToggle {
         if (!this.originalNodeClone) this.originalNodeClone = articleElem.cloneNode(true);
 
         const docClone = document.cloneNode(true) as Document;
-        this.sanitiseEmailsForReadability(docClone);
+        this.parseEmails(docClone);
+        this.parseTooltips(docClone);
 
         const reader = new (window.Readability as ReadabilityConstructor)(docClone);
         const parsed = reader.parse();
