@@ -126,6 +126,11 @@
     opacity: 0.86;
     line-height: 1.74;
     margin-bottom: 0;
+
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
     transition: max-height 0.38s cubic-bezier(0.36, 1.63, 0.41, 0.88);
 }
 
@@ -142,7 +147,6 @@
 
 .rss-post-content a:hover {
     color: var(--banner-blue);
-    /* text-decoration: underline; */
 }
 
 /* For dark mode links explicitly */

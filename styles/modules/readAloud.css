@@ -298,6 +298,7 @@
     background: #b388ff !important;
     transition:
         background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        color 2s ease-in-out,
         opacity 0.4s;
     opacity: 1 !important;
 }
