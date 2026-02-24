@@ -103,3 +103,35 @@
     outline: 2px solid var(--menu-button-hover-bg-colour);
     outline-offset: 2px;
 }
+
+/* =========================================
+    Tooltip portal (prevents clipping inside overflow containers)
+========================================= */
+
+#tooltip-portal {
+    position: fixed;
+    inset: 0;
+    z-index: var(--tooltip-z-index);
+    pointer-events: none;
+}
+
+#tooltip-portal .tooltip-content.portal {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: auto;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+#tooltip-portal .tooltip-content.portal.below::after {
+    top: auto;
+    bottom: 100%;
+    border-color: transparent transparent var(--tooltip-bg-colour) transparent;
+}
+
+.tooltip.portal-active .tooltip-content {
+    visibility: hidden;
+    pointer-events: none;
+}

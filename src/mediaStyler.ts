@@ -484,6 +484,155 @@ async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
     });
 }
 
+const TOOLTIP_PORTAL_ID = "tooltip-portal";
+
+let tooltipPortalInstalled = false;
+
+type TooltipPortalOpenState = Readonly<{
+    wrapperEl: HTMLElement;
+    triggerEl: HTMLElement;
+    portalContentEl: HTMLElement;
+}>;
+
+let tooltipPortalOpenState: TooltipPortalOpenState | null = null;
+
+function ensureTooltipPortalHost(): HTMLDivElement {
+    const existing = document.getElementById(TOOLTIP_PORTAL_ID);
+    if (existing instanceof HTMLDivElement) return existing;
+
+    const host = document.createElement("div");
+    host.id = TOOLTIP_PORTAL_ID;
+    document.body.appendChild(host);
+    return host;
+}
+
+function positionTooltipPortal(triggerEl: HTMLElement, portalEl: HTMLElement): void {
+    const gap = 8;
+    const pad = 8;
+
+    const triggerRect = triggerEl.getBoundingClientRect();
+
+    portalEl.classList.remove("below");
+    portalEl.style.left = "0px";
+    portalEl.style.top = "0px";
+
+    const portalRect = portalEl.getBoundingClientRect();
+
+    let left = triggerRect.left + triggerRect.width / 2 - portalRect.width / 2;
+    left = Math.max(pad, Math.min(left, window.innerWidth - portalRect.width - pad));
+
+    let top = triggerRect.top - portalRect.height - gap;
+    const shouldFlipBelow = top < pad;
+
+    if (shouldFlipBelow) top = triggerRect.bottom + gap;
+
+    portalEl.style.left = `${Math.round(left)}px`;
+    portalEl.style.top = `${Math.round(top)}px`;
+
+    if (shouldFlipBelow) portalEl.classList.add("below");
+}
+
+function closeTooltipPortal(): void {
+    const state = tooltipPortalOpenState;
+    if (!state) return;
+
+    state.wrapperEl.classList.remove("portal-active");
+    state.portalContentEl.remove();
+
+    tooltipPortalOpenState = null;
+}
+
+function openTooltipPortal(triggerEl: HTMLElement): void {
+    if (!triggerEl.isConnected) return;
+
+    const wrapper = triggerEl.closest(".tooltip");
+    if (!(wrapper instanceof HTMLElement)) return;
+
+    const content = wrapper.querySelector(".tooltip-content");
+    if (!(content instanceof HTMLElement)) return;
+
+    const existing = tooltipPortalOpenState;
+    if (existing?.triggerEl === triggerEl) return;
+
+    closeTooltipPortal();
+
+    const portalHost = ensureTooltipPortalHost();
+
+    const portalContent = content.cloneNode(true) as HTMLElement;
+    portalContent.classList.add("portal");
+    portalContent.style.visibility = "visible";
+
+    wrapper.classList.add("portal-active");
+    portalHost.appendChild(portalContent);
+
+    positionTooltipPortal(triggerEl, portalContent);
+
+    tooltipPortalOpenState = {
+        wrapperEl: wrapper,
+        triggerEl,
+        portalContentEl: portalContent
+    };
+}
+
+function ensureTooltipPortal(): void {
+    if (tooltipPortalInstalled) return;
+    tooltipPortalInstalled = true;
+
+    const closestTrigger = (t: EventTarget | null): HTMLElement | null => {
+        if (!(t instanceof Element)) return null;
+        const el = t.closest(".tooltip-trigger");
+        return el instanceof HTMLElement ? el : null;
+    };
+
+    const isInsideOpenTooltip = (t: EventTarget | null): boolean => {
+        const state = tooltipPortalOpenState;
+        if (!state) return false;
+        if (!(t instanceof Node)) return false;
+        return state.triggerEl.contains(t) || state.portalContentEl.contains(t);
+    };
+
+    document.addEventListener("mouseover", (ev: MouseEvent) => {
+        const trigger = closestTrigger(ev.target);
+        if (!trigger) return;
+        openTooltipPortal(trigger);
+    });
+
+    document.addEventListener("focusin", (ev: FocusEvent) => {
+        const trigger = closestTrigger(ev.target);
+        if (!trigger) return;
+        openTooltipPortal(trigger);
+    });
+
+    document.addEventListener("mouseout", (ev: MouseEvent) => {
+        if (!tooltipPortalOpenState) return;
+
+        const from = ev.target;
+        const to = ev.relatedTarget;
+
+        if (!isInsideOpenTooltip(from)) return;
+        if (isInsideOpenTooltip(to)) return;
+
+        closeTooltipPortal();
+    });
+
+    document.addEventListener("focusout", (ev: FocusEvent) => {
+        if (!tooltipPortalOpenState) return;
+
+        const from = ev.target;
+        const to = ev.relatedTarget;
+
+        if (!isInsideOpenTooltip(from)) return;
+        if (isInsideOpenTooltip(to)) return;
+
+        closeTooltipPortal();
+    });
+
+    document.addEventListener("keydown", (ev: KeyboardEvent) => {
+        if (ev.key !== "Escape") return;
+        closeTooltipPortal();
+    });
+}
+
 /**
  * @param {string} htmlContent - HTML content to transform.
  * @returns {Promise<string>} A promise that resolves to the
@@ -491,6 +640,7 @@ async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
  * by styled HTML structures.
  */
 async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
+    ensureTooltipPortal();
     const re = /<tooltip\b[^>]*>[\s\S]*?<\/tooltip>/gi;
 
     /**
