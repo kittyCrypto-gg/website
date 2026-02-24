@@ -672,7 +672,7 @@ async function loadChapter(n: number): Promise<void> {
         htmlContent = await mediaStyler.replaceEmails(htmlContent);
         htmlContent = await mediaStyler.replaceSmsMessages(htmlContent);
         htmlContent = await replaceTategaki(htmlContent);
-        htmlContent = replaceImageTags(htmlContent);
+        htmlContent = await mediaStyler.replaceImageTags(htmlContent);
         htmlContent = await mediaStyler.replaceTooltips(htmlContent);
         htmlContent = await injectBookmarksIntoHTML(htmlContent, base, window.chapter);
 
@@ -768,42 +768,42 @@ function jumpTo(n: number): void {
     window.location.search = `?story=${encodedPath}&chapter=${n}`;
 }
 
-/**
- * @param {string} htmlContent
- * @returns {string}
- */
-function replaceImageTags(htmlContent: string): string {
-    const imageWithAltRegex = /::img:url:(.*?):alt:(.*?)::/g;
+// /**
+//  * @param {string} htmlContent
+//  * @returns {string}
+//  */
+// function replaceImageTags(htmlContent: string): string {
+//     const imageWithAltRegex = /::img:url:(.*?):alt:(.*?)::/g;
 
-    htmlContent = htmlContent.replace(imageWithAltRegex, (_match, url: string, alt: string) => {
-        return `
-            <div class="chapter-image-container">
-                <img 
-                src="${url.trim()}" 
-                alt="${alt.trim()}" 
-                class="chapter-image" 
-                loading="lazy" 
-                onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
-                />
-            </div>
-        `;
-    });
+//     htmlContent = htmlContent.replace(imageWithAltRegex, (_match, url: string, alt: string) => {
+//         return `
+//             <div class="chapter-image-container">
+//                 <img 
+//                 src="${url.trim()}" 
+//                 alt="${alt.trim()}" 
+//                 class="chapter-image" 
+//                 loading="lazy" 
+//                 onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
+//                 />
+//             </div>
+//         `;
+//     });
 
-    const imageWithoutAltRegex = /::img:url:(.*?)::/g;
-    return htmlContent.replace(imageWithoutAltRegex, (_match, url: string) => {
-        return `
-            <div class="chapter-image-container">
-                <img 
-                src="${url.trim()}" 
-                alt="Chapter Image" 
-                class="chapter-image" 
-                loading="lazy" 
-                onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
-                />
-            </div>
-        `;
-    });
-}
+//     const imageWithoutAltRegex = /::img:url:(.*?)::/g;
+//     return htmlContent.replace(imageWithoutAltRegex, (_match, url: string) => {
+//         return `
+//             <div class="chapter-image-container">
+//                 <img 
+//                 src="${url.trim()}" 
+//                 alt="Chapter Image" 
+//                 class="chapter-image" 
+//                 loading="lazy" 
+//                 onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
+//                 />
+//             </div>
+//         `;
+//     });
+// }
 
 /**
  * @param {Document} root
@@ -1375,10 +1375,10 @@ async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<v
         .join("\n");
 
     // Preserve original behaviour (these are async in mediaStyler)
-    htmlContent = mediaStyler.replaceEmails(htmlContent as string) as unknown;
-    htmlContent = mediaStyler.replaceSmsMessages(htmlContent as string) as unknown;
+    htmlContent = await mediaStyler.replaceEmails(htmlContent as string) as unknown;
+    htmlContent = await mediaStyler.replaceSmsMessages(htmlContent as string) as unknown;
     htmlContent = replaceTategaki(htmlContent as string) as unknown;
-    htmlContent = replaceImageTags(htmlContent as string);
+    htmlContent = await mediaStyler.replaceImageTags(htmlContent as string);
 
     if (opts.withBookmarks && opts.storyBase && Number.isInteger(opts.chapter)) {
         htmlContent = injectBookmarksIntoHTML(htmlContent as string, opts.storyBase, opts.chapter as number) as unknown;

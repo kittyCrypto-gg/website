@@ -178,6 +178,7 @@ type MediaStylerImpls = Readonly<{
     replaceSmsMessages: ReplaceSmsMessagesImpl;
     replaceEmails: ReplaceEmailsImpl;
     replaceSVGs: ReplaceSVGsImpl;
+    replaceImageTags: (htmlContent: string) => Promise<string>;
     replaceTooltips: ReplaceTooltipsImpl;
     bindEmailActions: BindEmailActionsImpl;
 }>;
@@ -186,6 +187,7 @@ type MediaStylerImplOverrides = Partial<{
     replaceSmsMessages: ReplaceSmsMessagesImpl;
     replaceEmails: ReplaceEmailsImpl;
     replaceSVGs: ReplaceSVGsImpl;
+    replaceImageTags: (htmlContent: string) => Promise<string>;
     replaceTooltips: ReplaceTooltipsImpl;
     bindEmailActions: BindEmailActionsImpl;
 }>;
@@ -401,6 +403,63 @@ async function replaceSVGsImpl(root: Document | Element | string = document): Pr
 }
 
 /**
+ * @param {string} htmlContent
+ * @returns {Promise<string>}
+ */
+async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
+    const re = /<chapter-image\b[^>]*?(?:\/>|>[\s\S]*?<\/chapter-image>)/gi;
+
+    /**
+     * @param {string} value
+     * @returns {string}
+     */
+    const escAttr = (value: string): string =>
+        (value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("'", "&#39;");
+
+    /**
+     * @param {string} url
+     * @param {string} alt
+     * @returns {string}
+     */
+    const buildImageHtml = (url: string, alt: string): string => {
+        const safeUrl = escAttr(url.trim());
+        const safeAlt = escAttr(alt.trim());
+
+        return `
+            <div class="chapter-image-container">
+                <img
+                src="${safeUrl}"
+                alt="${safeAlt}"
+                class="chapter-image"
+                loading="lazy"
+                onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
+                />
+            </div>
+        `;
+    };
+
+    return htmlContent.replace(re, (block: string) => {
+        const doc = new DOMParser().parseFromString(`<root>${block}</root>`, "application/xml");
+        const imageEl = doc.querySelector("chapter-image");
+        if (!imageEl) return block;
+
+        const url = (imageEl.getAttribute("url") || imageEl.getAttribute("src") || "").trim();
+        if (!url) return block;
+
+        const altAttr = (imageEl.getAttribute("alt") || "").trim();
+        const altFromText = (imageEl.textContent || "").trim();
+        const alt = altAttr || altFromText || "Chapter Image";
+
+        return buildImageHtml(url, alt);
+    });
+}
+
+/**
  * @param {string} htmlContent - HTML content to transform.
  * @returns {Promise<string>} A promise that resolves to the transformed HTML content with custom tooltip blocks replaced by styled HTML structures. This function processes the input HTML content to identify and replace custom tooltip blocks defined by <tooltip> tags with a structured and styled representation suitable for rendering as tooltips. It uses a regular expression to find all tooltip blocks in the input HTML, parses each block as XML to extract the trigger content and the tooltip content. The trigger content is what will be visible on the page, while the tooltip content is what will be shown when the user interacts with the trigger. The function constructs a new HTML structure for each tooltip, applying appropriate classes for styling, and replaces the original tooltip blocks in the input HTML with these new structures. The resulting HTML string is returned as a promise, ready for rendering with associated styles.
  */
@@ -502,6 +561,7 @@ class MediaStyler {
             replaceSmsMessages: implOverrides.replaceSmsMessages ?? replaceSmsMessagesImpl,
             replaceEmails: implOverrides.replaceEmails ?? replaceEmailsImpl,
             replaceSVGs: implOverrides.replaceSVGs ?? replaceSVGsImpl,
+            replaceImageTags: implOverrides.replaceImageTags ?? replaceImageTagsImpl,
             replaceTooltips: implOverrides.replaceTooltips ?? replaceTooltipsImpl,
             bindEmailActions: implOverrides.bindEmailActions ?? bindEmailActionsImpl,
         };
@@ -537,6 +597,14 @@ class MediaStyler {
      */
     replaceSVGs(root: Document | Element | string = document): Promise<void> {
         return this.impls.replaceSVGs(root);
+    }
+
+    /**
+     * @param {string} htmlContent - HTML content to transform.
+     * @returns {Promise<string>} Transformed HTML content with <chapter-image> tags replaced by styled image structures.
+     */
+    replaceImageTags(htmlContent: string): Promise<string> {
+        return this.impls.replaceImageTags(htmlContent);
     }
 
     /**
