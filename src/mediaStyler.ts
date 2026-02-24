@@ -294,9 +294,19 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
         const from = email.querySelector("from");
         const to = email.querySelector("to");
 
-        const fromName = esc(from ? raw(from, "name") : "");
+        const fromNameEl = from?.querySelector("name");
+        const toNameEl = to?.querySelector("name");
+
+        const fromName = fromNameEl
+            ? serialiseMixedContent(fromNameEl)
+            : esc(from ? raw(from, "name") : "");
+
         const fromAddr = esc(from ? raw(from, "addr") : "");
-        const toName = esc(to ? raw(to, "name") : "");
+
+        const toName = toNameEl
+            ? serialiseMixedContent(toNameEl)
+            : esc(to ? raw(to, "name") : "");
+
         const toAddr = esc(to ? raw(to, "addr") : "");
 
         const themeClass = getTheme(toAddr);
@@ -315,15 +325,17 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
                 <div class="email-meta">
                 <div class="email-row">
                     <span class="email-label">From</span>
-                    <span class="email-value">${fromName}
-                    <span class="email-address">(${fromAddr})</span>
+                    <span class="email-value">
+                        <span class="email-name">${fromName}</span>
+                        <span class="email-address">(${fromAddr})</span>
                     </span>
                 </div>
 
                 <div class="email-row">
                     <span class="email-label">To</span>
-                    <span class="email-value">${toName}
-                    <span class="email-address">(${toAddr})</span>
+                    <span class="email-value">
+                        <span class="email-name">${toName}</span>
+                        <span class="email-address">(${toAddr})</span>
                     </span>
                 </div>
 
@@ -541,11 +553,13 @@ function bindEmailActionsImpl(): void {
 
         if (!currentIP || !expectedIP || currentIP !== expectedIP) {
             const toName =
-                emailCard?.querySelector(".email-row:nth-child(2) .email-value")?.childNodes[0]?.textContent?.trim() ||
+                emailCard?.querySelector(".email-row:nth-child(2) .email-name")?.textContent?.trim() ||
                 "Unknown";
 
             const toAddr =
-                emailCard?.querySelector(".email-row:nth-child(2) .email-address")?.textContent?.replace(/[()]/g, "") ||
+                emailCard?.querySelector(".email-row:nth-child(2) .email-address")?.textContent
+                    ?.replace(/[()]/g, "")
+                    ?.trim() ||
                 "unknown";
 
             alert(`Authentication error: Invalid credentials for ${toName} (${toAddr})`);

@@ -238,6 +238,7 @@ class ReaderToggle {
 
     /**
      * @param {Document} doc - Document clone to sanitise for Readability parsing.
+     * @returns {void} Keeps only From/To/Subject and the email body (without signature) for reader mode.
      */
     parseEmails(doc: unknown): void {
         if (!doc || !(doc instanceof Document)) return;
@@ -245,48 +246,45 @@ class ReaderToggle {
         const cards = Array.from(doc.querySelectorAll<HTMLElement>(".email-card"));
         if (cards.length === 0) return;
 
-        const getRowValue = (card: Element, label: string): string => {
-            const rows = Array.from(card.querySelectorAll<HTMLElement>(".email-row"));
-            const row = rows.find((r) => {
-                const t = (r.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
-                return t === label;
-            });
+        const allowedLabels = new Set(["from", "to", "subject"]);
 
-            if (!row) return "";
-
-            const name = (row.querySelector(".email-value")?.childNodes?.[0]?.textContent || "").trim();
-            const addr = (row.querySelector(".email-address")?.textContent || "").trim().replace(/^\(|\)$/g, "");
-            if (!name && !addr) return "";
-
-            return addr ? `${name} (${addr})`.trim() : name;
-        };
+        const getLabel = (row: Element): string =>
+            (row.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
 
         for (const card of cards) {
-            const fromText = getRowValue(card, "from");
-            const toText = getRowValue(card, "to");
+            card.removeAttribute("data-recipient-ip");
 
-            const contentEl = card.querySelector<HTMLElement>(".email-content");
-            const bodyHtml = contentEl ? contentEl.innerHTML : "";
+            const meta = card.querySelector<HTMLElement>(".email-meta")?.cloneNode(true) as HTMLElement | null;
+            if (meta) {
+                for (const row of Array.from(meta.querySelectorAll<HTMLElement>(".email-row"))) {
+                    const label = getLabel(row);
+                    if (!allowedLabels.has(label)) row.remove();
+                }
 
-            // Remove signature that may have been appended inside email-content for any reason
-            const tmp = doc.createElement("div");
-            tmp.innerHTML = bodyHtml;
-            tmp.querySelectorAll(".email-signature, .email-signature-sep").forEach((n) => n.remove());
+                // Only names in reader mode
+                meta.querySelectorAll(".email-address").forEach((n) => n.remove());
 
-            // Replace the entire card content with only from/to/body in a simple structure
-            card.innerHTML = `
-				<div class="email-reader-min">
-					${fromText ? `<div class="email-reader-field"><strong>From</strong> ${fromText}</div>` : ""}
-					${toText ? `<div class="email-reader-field"><strong>To</strong> ${toText}</div>` : ""}
-					<div class="email-reader-body">${tmp.innerHTML}</div>
-				</div>
-			`;
+                // No timestamp in reader mode
+                meta.querySelectorAll(".email-timestamp").forEach((n) => n.remove());
+            }
+
+            const content = card.querySelector<HTMLElement>(".email-content")?.cloneNode(true) as HTMLElement | null;
+            if (content) {
+                content.querySelectorAll(".email-signature, .email-signature-sep").forEach((n) => n.remove());
+            }
+
+            card.innerHTML = "";
+            if (meta) card.appendChild(meta);
+            if (content) card.appendChild(content);
         }
 
-        // Remove toolbars or wrappers if Readability might latch onto them
-        doc.querySelectorAll(".email-actions-bar, .email-header, .email-meta").forEach((n) => n.remove());
+        doc.querySelectorAll(".email-actions-bar").forEach((n) => n.remove());
     }
 
+    /**
+     * @param none
+     * @returns {Promise<void>} Enables reader mode by parsing the current document with Readability.
+     */
     async enableReaderMode(): Promise<void> {
         const imgArray = this.storeChapterImages(document);
 
