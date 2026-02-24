@@ -3,11 +3,13 @@ type ModalMode = "blocking" | "non-blocking";
 type ModalDecoratorInfo = Readonly<{
     id: string;
     mode: ModalMode;
+    readerModeCompatible: boolean;
 }>;
 
 type ModalDecoratorContext = Readonly<{
     id: string;
     mode: ModalMode;
+    readerModeCompatible: boolean;
     modalEl: HTMLDivElement;
     overlayEl: HTMLDivElement | null;
     close: () => void;
@@ -25,6 +27,9 @@ type ModalSpec = Readonly<{
     id?: string;
     mode?: ModalMode;
 
+    // Default true
+    readerModeCompatible?: boolean;
+
     content: string | (() => string);
 
     modalClassName?: string;
@@ -40,6 +45,7 @@ type OpenEntry = Readonly<{
     key: string;
     id: string;
     mode: ModalMode;
+    readerModeCompatible: boolean;
     closeOnEscape: boolean;
     close: () => void;
     overlayEl: HTMLDivElement | null;
@@ -49,6 +55,7 @@ type OpenEntry = Readonly<{
 const MODAL_CLASS = "modal";
 const OVERLAY_CLASS = "modal-overlay";
 const NON_BLOCKING_STACK_ID = "non-blocking-modal-stack";
+const READER_MODE_INCOMPATIBLE_CLASS = "readerModeIncompatible";
 
 const globalRanInit = new WeakSet<() => void>();
 
@@ -239,6 +246,8 @@ export class Modal {
     readonly #id: string;
     #mode: ModalMode;
 
+    readonly #readerModeCompatible: boolean;
+
     #content: string | (() => string);
 
     #modalClassName: string;
@@ -254,6 +263,8 @@ export class Modal {
 
         this.#id = resolveId(spec.id);
         this.#mode = spec.mode ?? "blocking";
+
+        this.#readerModeCompatible = spec.readerModeCompatible ?? true;
 
         this.#content = spec.content;
 
@@ -322,7 +333,11 @@ export class Modal {
      * @returns {string} Rendered HTML after patch decorators.
      */
     renderHtml(): string {
-        const info: ModalDecoratorInfo = { id: this.#id, mode: this.#mode };
+        const info: ModalDecoratorInfo = {
+            id: this.#id,
+            mode: this.#mode,
+            readerModeCompatible: this.#readerModeCompatible
+        };
         const base = typeof this.#content === "function" ? this.#content() : this.#content;
 
         runDecoratorInitOnce(this.#decorators);
@@ -348,6 +363,7 @@ export class Modal {
             factory: this.#factory,
             id: this.#id,
             mode: this.#mode,
+            readerModeCompatible: this.#readerModeCompatible,
             modalClassName: this.#modalClassName,
             overlayClassName: this.#overlayClassName,
             closeOnEscape: this.#closeOnEscape,
@@ -386,6 +402,8 @@ type ModalSessionSpec = Readonly<{
     id: string;
     mode: ModalMode;
 
+    readerModeCompatible: boolean;
+
     modalClassName: string;
     overlayClassName: string;
 
@@ -403,6 +421,8 @@ export class ModalSession {
     readonly #id: string;
     readonly #mode: ModalMode;
 
+    readonly #readerModeCompatible: boolean;
+
     readonly #closeOnEscape: boolean;
     readonly #closeOnOutsideClick: boolean;
 
@@ -417,6 +437,9 @@ export class ModalSession {
         this.#factory = spec.factory;
         this.#id = spec.id;
         this.#mode = spec.mode;
+
+        this.#readerModeCompatible = spec.readerModeCompatible;
+
         this.#closeOnEscape = spec.closeOnEscape;
         this.#closeOnOutsideClick = spec.closeOnOutsideClick;
         this.#decorators = spec.decorators;
@@ -440,6 +463,11 @@ export class ModalSession {
             this.#overlayEl.id = `modal-overlay-${this.#id}`;
             this.#overlayEl.className = [OVERLAY_CLASS, spec.overlayClassName].filter(Boolean).join(" ");
             this.#overlayEl.appendChild(this.#modalEl);
+        }
+
+        if (!this.#readerModeCompatible) {
+            this.#modalEl.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
+            this.#overlayEl?.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
         }
 
         this.setHtml(spec.html);
@@ -500,6 +528,7 @@ export class ModalSession {
             key: this.#key,
             id: this.#id,
             mode: this.#mode,
+            readerModeCompatible: this.#readerModeCompatible,
             closeOnEscape: this.#closeOnEscape,
             close: () => this.close(),
             overlayEl: this.#overlayEl,
@@ -565,6 +594,7 @@ export class ModalSession {
         const ctx: ModalDecoratorContext = {
             id: this.#id,
             mode: this.#mode,
+            readerModeCompatible: this.#readerModeCompatible,
             modalEl: this.#modalEl,
             overlayEl: this.#overlayEl,
             close: () => this.close(),

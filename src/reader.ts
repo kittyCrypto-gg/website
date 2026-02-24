@@ -230,6 +230,7 @@ const persistLanguageTooltipsHelpHide: ModalDecorator = {
 const languageTooltipsHelpModal: Modal = modals.create({
     id: LANGUAGE_TOOLTIPS_HELP_MODAL_ID,
     mode: "non-blocking",
+    readerModeCompatible: false,
     content: LANGUAGE_TOOLTIPS_HELP_MODAL_HTML,
     closeOnOutsideClick: false,
     decorators: [

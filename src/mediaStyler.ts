@@ -232,7 +232,7 @@ function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../style
 
         const nickname = esc(raw(msg, "nickname"));
 
-        const contentNode = msg.querySelector("content");
+        const contentNode = getDirectChildByTag(msg, ["content"]);
         const content = contentNode ? serialiseMixedContent(contentNode) : "";
 
         const timestamp = esc(raw(msg, "timestamp"));
@@ -277,7 +277,7 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
      * @returns {string} HTML string for the email body, using only the email's own content element.
      */
     const buildContentHtml = (emailNode: Element): string => {
-        const contentEl = getDirectChildByTag(emailNode, ["content", "email-content"]);
+        const contentEl = getDirectChildByTag(emailNode, ["content"]);
         if (!contentEl) return "";
 
         return Array.from(contentEl.childNodes)

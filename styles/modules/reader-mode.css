@@ -50,3 +50,7 @@ body.reader-mode .chapter-image.active+.image-nav button {
     min-height: 40px;
     padding: 0;
 }
+
+body.reader-mode .readerModeIncompatible {
+    display: none !important;
+}
