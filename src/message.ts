@@ -1,4 +1,5 @@
 import * as config from "./config.ts";
+import { modals, onModalEvent, closeOnClick } from "./modals.ts";
 
 interface Window {
     CHAT_SERVER?: string;
@@ -19,6 +20,37 @@ window.GET_IP_HASH_URL = window.GET_IP_HASH_URL || `${window.MAIN_SERVER}/get-ip
 window.nicknameInput = window.nicknameInput || document.getElementById("nickname");
 
 let userHashedIp: string | null = null; // Store the user's hashed IP
+
+const EDIT_MESSAGE_MODAL_ID = "edit-message-modal";
+
+const EDIT_MESSAGE_MODAL_HTML = `
+    <div id="edit-message-container">
+        <input type="hidden" id="edit-message-id-hidden" />
+
+        <label for="edit-user-info">Editing message from:</label>
+        <input type="text" id="edit-user-info" disabled>
+
+        <label for="edit-message-input">Message:</label>
+        <textarea id="edit-message-input"></textarea>
+
+        <div id="edit-message-buttons">
+        <button id="edit-message-btn" type="button">Edit</button>
+        <button id="cancel-edit-btn" type="button">Cancel</button>
+        </div>
+    </div>
+`;
+
+const editMessageModal = modals.create({
+    id: EDIT_MESSAGE_MODAL_ID,
+    mode: "blocking",
+    content: EDIT_MESSAGE_MODAL_HTML,
+    decorators: [
+        onModalEvent("#edit-message-btn", "click", () => {
+            void editMessage();
+        }),
+        closeOnClick("#cancel-edit-btn")
+    ]
+});
 
 function isRecord(v: unknown): v is Record<string, unknown> {
     return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -42,7 +74,6 @@ const fetchUserHashedIp = async (): Promise<void> => {
     }
 };
 
-// Enhance chat messages with edit/delete buttons
 // Enhance chat messages with edit/delete buttons
 const enhanceMessages = (): void => {
     const sessionToken = window.sessionToken;
@@ -109,54 +140,12 @@ initialiseChat().then(() => console.log("🚀 Chat enhancements initialised."));
  * @returns {Promise<void>} This function opens a modal dialog for editing a chat message. It first checks if the modal already exists to prevent duplicates. If not, it creates an overlay and a modal container, fetches the modal content from "editMessage.html", and populates the modal fields with the current message data (text, message ID, user info). The function also sets up event listeners to close the modal when clicking outside of it or pressing the Escape key. This allows users to edit their messages in a user-friendly interface while ensuring that only one modal can be open at a time.
  */
 async function openEditModal(messageDiv: Element): Promise<void> {
-    if (document.getElementById("edit-message-modal")) return;
-
-    // Create overlay
-    const overlay = document.createElement("div");
-    overlay.id = "modal-overlay";
-
-    // Create modal container
-    const modal = document.createElement("div");
-    modal.id = "edit-message-modal";
-
-    // Disable scrolling on the page while modal is open
-    document.body.classList.add("no-scroll");
-
-    // Fetch modal content
-    try {
-        const response = await fetch("./editMessage.html");
-        if (!response.ok) throw new Error("Failed to load modal content.");
-        modal.innerHTML = await response.text();
-    } catch (error: unknown) {
-        console.error("❌ Error loading modal:", error);
-        modal.innerHTML = "<p>Failed to load content.</p>";
-    }
-
-    // Append modal and overlay
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-
-    // Wait for modal content to load before populating
-    setTimeout(() => populateModalFields(messageDiv), 0);
-
-    // Close modal when clicking outside
-    overlay.addEventListener("click", (event: MouseEvent) => {
-        if (event.target === overlay) closeEditModal();
-    });
-
-    // Close modal on Escape key
-    document.addEventListener("keydown", function handleEscape(event: KeyboardEvent) {
-        if (event.key === "Escape") {
-            closeEditModal();
-            document.removeEventListener("keydown", handleEscape);
-        }
-    });
+    editMessageModal.open();
+    populateModalFields(messageDiv);
 }
 
 function closeEditModal(): void {
-    const overlay = document.getElementById("modal-overlay");
-    if (overlay) overlay.remove();
-    document.body.classList.remove("no-scroll"); // Re-enable scrolling
+    editMessageModal.close();
 }
 
 async function editMessage(): Promise<void> {
@@ -227,9 +216,9 @@ function populateModalFields(messageDiv: Element): void {
     if (userInfoField) userInfoField.value = `${userNick} (${userId})`;
 
     // Ensure the modal uses the same CSS file as the main page
-    const mainCss = (document.querySelector("link[rel='stylesheet']") as HTMLLinkElement | null)?.href || "";
-    const modalCss = modal.querySelector<HTMLLinkElement>("#theme-stylesheet");
-    if (modalCss) modalCss.href = mainCss;
+    // const mainCss = (document.querySelector("link[rel='stylesheet']") as HTMLLinkElement | null)?.href || "";
+    // const modalCss = modal.querySelector<HTMLLinkElement>("#theme-stylesheet");
+    // if (modalCss) modalCss.href = mainCss;
 }
 
 /**

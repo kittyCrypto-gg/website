@@ -1,4 +1,5 @@
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
+import { modals, closeOnClick, type Modal } from "./modals.ts";
 import { replaceTategaki } from "./tategaki.ts";
 import MediaStyler from "./mediaStyler.ts";
 import * as config from "./config.ts";
@@ -110,6 +111,55 @@ window.buttons = {
     increaseFont: { icon: "➕", action: "Increase font size" },
     scrollUp: { icon: "⏫", action: "Scroll up" }
 };
+
+const READER_INFO_MODAL_ID = "kc-reader-info-modal";
+
+const READER_INFO_MODAL_HTML = (): string => {
+    const b = window.buttons;
+
+    const line = (icon: string, action: string): string =>
+        `<li><span class="kc-info-icon">${icon}</span><span class="kc-info-text">${action}</span></li>`;
+
+    return `
+        <div class="modal-header">
+            <h2>Navigation Button Guide</h2>
+        </div>
+
+        <div class="modal-content">
+            <ul class="kc-info-list">
+            ${line(b.toggleParagraphNumbers.icon, b.toggleParagraphNumbers.action)}
+            ${line(b.clearBookmark.icon, b.clearBookmark.action)}
+            ${line(b.prevChapter.icon, b.prevChapter.action)}
+            ${line(b.jumpToChapter.icon, b.jumpToChapter.action)}
+            ${line(b.nextChapter.icon, b.nextChapter.action)}
+            ${line(b.scrollDown.icon, b.scrollDown.action)}
+            ${line(b.scrollUp.icon, b.scrollUp.action)}
+            </ul>
+
+            <h3>Font Controls</h3>
+            <ul class="kc-info-list">
+            ${line(b.decreaseFont.icon, b.decreaseFont.action)}
+            ${line(b.resetFont.icon, b.resetFont.action)}
+            ${line(b.increaseFont.icon, b.increaseFont.action)}
+            </ul>
+
+            <div class="kc-modal-actions">
+            <button id="kc-reader-info-close" type="button">Close</button>
+            </div>
+
+            <p class="modal-note">Click outside or press <kbd>Esc</kbd> to close.</p>
+        </div>
+    `;
+};
+
+const readerInfoModal: Modal = modals.create({
+    id: READER_INFO_MODAL_ID,
+    mode: "blocking",
+    content: READER_INFO_MODAL_HTML,
+    decorators: [
+        closeOnClick("#kc-reader-info-close")
+    ]
+});
 
 // Reader-specific cookie helpers to avoid collision with main.js
 /**
@@ -471,20 +521,28 @@ function updateFontSize(delta = 0): void {
     refreshTategakiFont();
 }
 
-function showNavigationInfo(): void {
-    alert(`Navigation Button Guide:
-    ${window.buttons.toggleParagraphNumbers.icon}  – ${window.buttons.toggleParagraphNumbers.action}
-    ${window.buttons.clearBookmark.icon}  – ${window.buttons.clearBookmark.action}
-    ${window.buttons.prevChapter.icon}  – ${window.buttons.prevChapter.action}
-    ${window.buttons.jumpToChapter.icon}  – ${window.buttons.jumpToChapter.action}
-    ${window.buttons.nextChapter.icon}  – ${window.buttons.nextChapter.action}
-    ${window.buttons.scrollDown.icon}  – ${window.buttons.scrollDown.action}
-    ${window.buttons.scrollUp.icon}  – ${window.buttons.scrollUp.action}
+// function showNavigationInfo(): void {
+//     alert(`Navigation Button Guide:
+//     ${window.buttons.toggleParagraphNumbers.icon}  – ${window.buttons.toggleParagraphNumbers.action}
+//     ${window.buttons.clearBookmark.icon}  – ${window.buttons.clearBookmark.action}
+//     ${window.buttons.prevChapter.icon}  – ${window.buttons.prevChapter.action}
+//     ${window.buttons.jumpToChapter.icon}  – ${window.buttons.jumpToChapter.action}
+//     ${window.buttons.nextChapter.icon}  – ${window.buttons.nextChapter.action}
+//     ${window.buttons.scrollDown.icon}  – ${window.buttons.scrollDown.action}
+//     ${window.buttons.scrollUp.icon}  – ${window.buttons.scrollUp.action}
 
-    Font Controls:
-    ${window.buttons.decreaseFont.icon}  – ${window.buttons.decreaseFont.action}
-    ${window.buttons.resetFont.icon}  – ${window.buttons.resetFont.action}
-    ${window.buttons.increaseFont.icon}  – ${window.buttons.increaseFont.action}`);
+//     Font Controls:
+//     ${window.buttons.decreaseFont.icon}  – ${window.buttons.decreaseFont.action}
+//     ${window.buttons.resetFont.icon}  – ${window.buttons.resetFont.action}
+//     ${window.buttons.increaseFont.icon}  – ${window.buttons.increaseFont.action}`);
+// }
+
+/**
+ * @param {Document} root
+ * @returns {void} 
+ */
+function showNavigationInfo(): void {
+    readerInfoModal.open();
 }
 
 /**

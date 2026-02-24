@@ -1,4 +1,5 @@
 import { forceBookmark } from "./reader.ts";
+import { modals, type Modal } from "./modals.ts";
 import * as loader from "./loader.ts";
 
 type ReadAloudButton = Readonly<{
@@ -129,7 +130,7 @@ type SpeechSynthesizer = Readonly<{
     close: () => void;
 }>;
 
-type ModalOverlayEl = HTMLDivElement & { __handleEscape?: (event: KeyboardEvent) => void };
+//type ModalOverlayEl = HTMLDivElement & { __handleEscape?: (event: KeyboardEvent) => void };
 
 declare global {
     interface Window {
@@ -139,7 +140,7 @@ declare global {
 
         readAloudState: ReadAloudState;
 
-        closeCustomModal?: (modalId: string) => void;
+        //closeCustomModal?: (modalId: string) => void;
     }
 }
 
@@ -184,6 +185,8 @@ class ReadAloudModule {
     #SPEECH_RESOURCE_KEY = "readAloudSpeechResource";
 
     #regionResolvePromise: Promise<RegionResolveResult> | null = null;
+
+    #customModalsById = new Map<string, Modal>();
 
     #elemsToIgnore = [
         ".reader-paragraph-num",
@@ -1931,76 +1934,112 @@ class ReadAloudModule {
         return Number.parseFloat(localStorage.getItem("readAloudSpeechRate") || "") || 1.0;
     }
 
+    // /**
+    //  * @param {string} html - Modal HTML.
+    //  * @param {string} modalId - Modal id.
+    //  * @returns {void} Nothing.
+    //  */
+    // __openCustomModal(html: string, modalId: string): void {
+    //     const overlayId = `modal-overlay-${modalId}`;
+
+    //     if (document.getElementById(modalId)) return;
+    //     if (document.getElementById(overlayId)) return;
+
+    //     const overlay = document.createElement("div") as ModalOverlayEl;
+    //     overlay.id = overlayId;
+    //     overlay.className = "modal-overlay";
+
+    //     const modal = document.createElement("div");
+    //     modal.id = modalId;
+    //     modal.className = "modal";
+    //     modal.innerHTML = html;
+
+    //     document.body.classList.add("no-scroll");
+
+    //     overlay.appendChild(modal);
+    //     document.body.appendChild(overlay);
+
+    //     window.closeCustomModal = (id: string): void => this.__closeCustomModal(id);
+
+    //     overlay.addEventListener("click", (event: MouseEvent) => {
+    //         if (event.target !== overlay) return;
+    //         this.__closeCustomModal(modalId);
+    //     });
+
+    //     /**
+    //      * @param {KeyboardEvent} event - Keydown event.
+    //      * @returns {void} Nothing.
+    //      */
+    //     const handleEscape = (event: KeyboardEvent): void => {
+    //         if (event.key !== "Escape") return;
+    //         this.__closeCustomModal(modalId);
+    //     };
+
+    //     overlay.__handleEscape = handleEscape;
+    //     document.addEventListener("keydown", handleEscape);
+    // }
+
     /**
      * @param {string} html - Modal HTML.
      * @param {string} modalId - Modal id.
      * @returns {void} Nothing.
      */
     __openCustomModal(html: string, modalId: string): void {
-        const overlayId = `modal-overlay-${modalId}`;
+        const existing = this.#customModalsById.get(modalId);
+        if (existing) {
+            existing.setContent(html).open();
+            return;
+        }
 
-        if (document.getElementById(modalId)) return;
-        if (document.getElementById(overlayId)) return;
-
-        const overlay = document.createElement("div") as ModalOverlayEl;
-        overlay.id = overlayId;
-        overlay.className = "modal-overlay";
-
-        const modal = document.createElement("div");
-        modal.id = modalId;
-        modal.className = "modal";
-        modal.innerHTML = html;
-
-        document.body.classList.add("no-scroll");
-
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-
-        window.closeCustomModal = (id: string): void => this.__closeCustomModal(id);
-
-        overlay.addEventListener("click", (event: MouseEvent) => {
-            if (event.target !== overlay) return;
-            this.__closeCustomModal(modalId);
+        const modal = modals.create({
+            id: modalId,
+            mode: "blocking",
+            content: html
         });
 
-        /**
-         * @param {KeyboardEvent} event - Keydown event.
-         * @returns {void} Nothing.
-         */
-        const handleEscape = (event: KeyboardEvent): void => {
-            if (event.key !== "Escape") return;
-            this.__closeCustomModal(modalId);
-        };
-
-        overlay.__handleEscape = handleEscape;
-        document.addEventListener("keydown", handleEscape);
+        this.#customModalsById.set(modalId, modal);
+        modal.open();
     }
+
+    // /**
+    //  * @param {string} modalId - Modal id.
+    //  * @returns {void} Nothing.
+    //  */
+    // __closeCustomModal(modalId: string): void {
+    //     const overlayId = `modal-overlay-${modalId}`;
+
+    //     const modal = document.getElementById(modalId);
+    //     const overlay =
+    //         document.getElementById(overlayId) ||
+    //         (modal ? (modal.closest(".modal-overlay") as HTMLElement | null) : null);
+
+    //     if (!(overlay instanceof HTMLDivElement)) return;
+
+    //     const overlayEl = overlay as ModalOverlayEl;
+
+    //     const handleEscape = overlayEl.__handleEscape;
+    //     if (handleEscape) document.removeEventListener("keydown", handleEscape);
+
+    //     overlayEl.remove();
+
+    //     const remaining = document.querySelectorAll(".modal-overlay, #modal-overlay").length;
+    //     if (remaining) return;
+
+    //     document.body.classList.remove("no-scroll");
+    // }
 
     /**
      * @param {string} modalId - Modal id.
      * @returns {void} Nothing.
      */
     __closeCustomModal(modalId: string): void {
-        const overlayId = `modal-overlay-${modalId}`;
+        const cached = this.#customModalsById.get(modalId);
+        if (cached) {
+            cached.close();
+            return;
+        }
 
-        const modal = document.getElementById(modalId);
-        const overlay =
-            document.getElementById(overlayId) ||
-            (modal ? (modal.closest(".modal-overlay") as HTMLElement | null) : null);
-
-        if (!(overlay instanceof HTMLDivElement)) return;
-
-        const overlayEl = overlay as ModalOverlayEl;
-
-        const handleEscape = overlayEl.__handleEscape;
-        if (handleEscape) document.removeEventListener("keydown", handleEscape);
-
-        overlayEl.remove();
-
-        const remaining = document.querySelectorAll(".modal-overlay, #modal-overlay").length;
-        if (remaining) return;
-
-        document.body.classList.remove("no-scroll");
+        modals.getOpenSession(modalId)?.close();
     }
 
     /**

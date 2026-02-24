@@ -161,3 +161,82 @@ body.no-scroll {
 .modal-content a:focus {
     color: var(--banner-blue);
 }
+
+/* =========================
+    Non-blocking Modal
+    (toast-like, top-right, no overlay)
+========================= */
+
+/* A modal with this class becomes a top-right panel */
+.modal.non-blocking {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+
+    z-index: 10000;
+    /* above most UI */
+
+    /* Keep it compact and not shouty */
+    width: min(360px, 95vw);
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+
+    /* Optional: slightly softer spacing than your main modal */
+    padding: 16px 18px;
+
+    /* Optional: make it feel lighter than a big blocking dialog */
+    border-radius: 12px;
+}
+
+/* If you have multiple non-blocking panels, they can stack neatly */
+.modal.non-blocking+.modal.non-blocking {
+    margin-top: 10px;
+}
+
+/* Host for non-blocking modals (stacked top-right) */
+#non-blocking-modal-stack {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 10000;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+
+    /* Lets clicks go to the page except where a modal actually is */
+    pointer-events: none;
+}
+
+#non-blocking-modal-stack .modal.non-blocking {
+    position: static;
+    /* stack layout handles positioning */
+    pointer-events: auto;
+    width: min(360px, 95vw);
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+}
+
+.kc-info-list {
+    margin: 0.5rem 0 1rem;
+    padding-left: 1.2rem;
+}
+
+.kc-info-list li {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: 0.5rem;
+    align-items: baseline;
+    margin: 0.25rem 0;
+}
+
+.kc-info-icon {
+    text-align: center;
+}
+
+.kc-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}

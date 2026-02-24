@@ -1,6 +1,6 @@
 /* =========================================
-  GitHub Commits Module
-  modules/commits.css
+    GitHub Commits Module
+    modules/commits.css
 ========================================= */
 
 /* Outer card that wraps the whole commits area */
@@ -57,7 +57,7 @@
 }
 
 /* =========================================
-  Side-by-side commit panel layout
+    Side-by-side commit panel layout
 ========================================= */
 .commits-row {
     display: flex;
