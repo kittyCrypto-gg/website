@@ -28,6 +28,10 @@ interface ReaderButtonDef {
     action: string;
 }
 
+// Type-safe access to the modal decorator ctx without importing non-exported types
+type ModalDecorator = ReturnType<typeof closeOnClick>;
+type ModalCtx = Parameters<NonNullable<ModalDecorator["mount"]>>[0];
+
 type ReaderButtons = Record<ReaderButtonKey, ReaderButtonDef>;
 
 interface StoriesIndex {
@@ -160,6 +164,115 @@ const readerInfoModal: Modal = modals.create({
         closeOnClick("#kc-reader-info-close")
     ]
 });
+
+const LANGUAGE_TOOLTIPS_HELP_MODAL_ID = "kc-language-tooltips-help-modal";
+const LANGUAGE_TOOLTIPS_HELP_HIDE_KEY = "languageTooltipsHelpModalHide";
+
+let languageTooltipsHelpShownThisSession = false;
+let languageTooltipsHelpObserver: IntersectionObserver | null = null;
+
+function readBoolFromLocalStorage(key: string): boolean {
+    return localStorage.getItem(key) === "true";
+}
+
+function writeBoolToLocalStorage(key: string, value: boolean): void {
+    localStorage.setItem(key, value ? "true" : "false");
+}
+
+function showLangTThlp(): boolean {
+    if (languageTooltipsHelpShownThisSession) return false;
+    if (readBoolFromLocalStorage(LANGUAGE_TOOLTIPS_HELP_HIDE_KEY)) return false;
+    return true;
+}
+
+const LANGUAGE_TOOLTIPS_HELP_MODAL_HTML = (): string => `
+    <div class="modal-header">
+        <h3>Did you know?</h3>
+    </div>
+
+    <div class="modal-content">
+        <p>
+        Some bits of text in the story are interactive. If you see something in another language,
+        hover your mouse over it to reveal a quick translation. On phones and tablets, just tap the text instead.
+        </p>
+
+        <label class="kc-checkbox-row">
+        <input id="kc-language-tooltips-help-hide" type="checkbox" />
+        <span>Do not show this tip again</span>
+        </label>
+
+        <div class="kc-modal-actions">
+        <button id="kc-language-tooltips-help-close" type="button">Close</button>
+        </div>
+
+        <p class="modal-note">You can also close this window with <kbd>Esc</kbd>.</p>
+    </div>
+`;
+
+const persistLanguageTooltipsHelpHide: ModalDecorator = {
+    mount: (ctx: ModalCtx) => {
+        const box = ctx.modalEl.querySelector("#kc-language-tooltips-help-hide");
+        if (!(box instanceof HTMLInputElement)) return;
+
+        box.checked = readBoolFromLocalStorage(LANGUAGE_TOOLTIPS_HELP_HIDE_KEY);
+
+        const onChange = (): void => {
+            const nextHidden = box.checked;
+            writeBoolToLocalStorage(LANGUAGE_TOOLTIPS_HELP_HIDE_KEY, nextHidden);
+            if (nextHidden) ctx.close();
+        };
+
+        box.addEventListener("change", onChange);
+        return () => box.removeEventListener("change", onChange);
+    }
+};
+
+const languageTooltipsHelpModal: Modal = modals.create({
+    id: LANGUAGE_TOOLTIPS_HELP_MODAL_ID,
+    mode: "non-blocking",
+    content: LANGUAGE_TOOLTIPS_HELP_MODAL_HTML,
+    closeOnOutsideClick: false,
+    decorators: [
+        closeOnClick("#kc-language-tooltips-help-close"),
+        persistLanguageTooltipsHelpHide
+    ]
+});
+
+function openLangTThlp(): void {
+    if (!showLangTThlp()) return;
+    if (languageTooltipsHelpModal.isOpen()) return;
+
+    languageTooltipsHelpModal.open();
+    languageTooltipsHelpShownThisSession = true;
+}
+
+function initLangTTObs(root: Document = document): void {
+    if (!showLangTThlp()) return;
+
+    const triggers = Array.from(root.querySelectorAll("span.tooltip-trigger"))
+        .filter((n): n is HTMLSpanElement => n instanceof HTMLSpanElement);
+
+    if (!triggers.length) return;
+
+    languageTooltipsHelpObserver?.disconnect();
+
+    languageTooltipsHelpObserver = new IntersectionObserver(
+        (entries: IntersectionObserverEntry[]) => {
+            const anyVisible = entries.some((e) => e.isIntersecting);
+            if (!anyVisible) return;
+
+            openLangTThlp();
+
+            languageTooltipsHelpObserver?.disconnect();
+            languageTooltipsHelpObserver = null;
+        },
+        { threshold: 0.15 }
+    );
+
+    for (const el of triggers) {
+        languageTooltipsHelpObserver.observe(el);
+    }
+}
 
 // Reader-specific cookie helpers to avoid collision with main.js
 /**
@@ -521,22 +634,6 @@ function updateFontSize(delta = 0): void {
     refreshTategakiFont();
 }
 
-// function showNavigationInfo(): void {
-//     alert(`Navigation Button Guide:
-//     ${window.buttons.toggleParagraphNumbers.icon}  – ${window.buttons.toggleParagraphNumbers.action}
-//     ${window.buttons.clearBookmark.icon}  – ${window.buttons.clearBookmark.action}
-//     ${window.buttons.prevChapter.icon}  – ${window.buttons.prevChapter.action}
-//     ${window.buttons.jumpToChapter.icon}  – ${window.buttons.jumpToChapter.action}
-//     ${window.buttons.nextChapter.icon}  – ${window.buttons.nextChapter.action}
-//     ${window.buttons.scrollDown.icon}  – ${window.buttons.scrollDown.action}
-//     ${window.buttons.scrollUp.icon}  – ${window.buttons.scrollUp.action}
-
-//     Font Controls:
-//     ${window.buttons.decreaseFont.icon}  – ${window.buttons.decreaseFont.action}
-//     ${window.buttons.resetFont.icon}  – ${window.buttons.resetFont.action}
-//     ${window.buttons.increaseFont.icon}  – ${window.buttons.increaseFont.action}`);
-// }
-
 /**
  * @param {Document} root
  * @returns {void} 
@@ -741,7 +838,7 @@ async function loadChapter(n: number): Promise<void> {
             refreshPNum(document);
         });
 
-        observeAndSaveBookmarkProgress(document);
+        saveBookmarks(document);
 
         requestAnimationFrame(() => {
             restoreBookmark(base, window.chapter);
@@ -751,6 +848,7 @@ async function loadChapter(n: number): Promise<void> {
 
         updateNav(document);
         bindNavigationEvents(document);
+        initLangTTObs(document);
         setReaderCookie(`bookmark_${makeStoryKey(base)}`, String(window.chapter));
         window.scrollTo(0, 0);
     } catch (err) {
@@ -825,43 +923,6 @@ function jumpTo(n: number): void {
     const encodedPath = encodeURIComponent(currentStoryPath);
     window.location.search = `?story=${encodedPath}&chapter=${n}`;
 }
-
-// /**
-//  * @param {string} htmlContent
-//  * @returns {string}
-//  */
-// function replaceImageTags(htmlContent: string): string {
-//     const imageWithAltRegex = /::img:url:(.*?):alt:(.*?)::/g;
-
-//     htmlContent = htmlContent.replace(imageWithAltRegex, (_match, url: string, alt: string) => {
-//         return `
-//             <div class="chapter-image-container">
-//                 <img 
-//                 src="${url.trim()}" 
-//                 alt="${alt.trim()}" 
-//                 class="chapter-image" 
-//                 loading="lazy" 
-//                 onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
-//                 />
-//             </div>
-//         `;
-//     });
-
-//     const imageWithoutAltRegex = /::img:url:(.*?)::/g;
-//     return htmlContent.replace(imageWithoutAltRegex, (_match, url: string) => {
-//         return `
-//             <div class="chapter-image-container">
-//                 <img 
-//                 src="${url.trim()}" 
-//                 alt="Chapter Image" 
-//                 class="chapter-image" 
-//                 loading="lazy" 
-//                 onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
-//                 />
-//             </div>
-//         `;
-//     });
-// }
 
 /**
  * @param {Document} root
@@ -1158,7 +1219,7 @@ export async function injectBookmarksIntoHTML(
 /**
  * @param {Document} root
  */
-function observeAndSaveBookmarkProgress(root: Document = document): void {
+function saveBookmarks(root: Document = document): void {
     const bookmarks = Array.from(root.querySelectorAll<HTMLElement>(".reader-bookmark"));
     const observer = new IntersectionObserver(
         (entries: IntersectionObserverEntry[]) => {
@@ -1303,7 +1364,8 @@ export async function setupReader(root: Document = document): Promise<void> {
     bindNavigationEvents(root);
     activateImageNavigation(root);
     refreshTategakiFont(root);
-    observeAndSaveBookmarkProgress(root);
+    saveBookmarks(root);
+    initLangTTObs(root);
 }
 
 /**
@@ -1449,9 +1511,10 @@ async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<v
         refreshPNum(document);
     });
 
-    observeAndSaveBookmarkProgress(document);
+    saveBookmarks(document);
     activateImageNavigation(document);
     bindNavigationEvents(document);
+    initLangTTObs(document);
     refreshTategakiFont(document);
 
     if (opts.withBookmarks && opts.storyBase && Number.isInteger(opts.chapter)) {

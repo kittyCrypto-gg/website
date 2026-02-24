@@ -214,11 +214,6 @@ function populateModalFields(messageDiv: Element): void {
     const msgIdHidden = modal.querySelector<HTMLInputElement>("#edit-message-id-hidden");
     if (msgIdHidden) msgIdHidden.value = msgId;
     if (userInfoField) userInfoField.value = `${userNick} (${userId})`;
-
-    // Ensure the modal uses the same CSS file as the main page
-    // const mainCss = (document.querySelector("link[rel='stylesheet']") as HTMLLinkElement | null)?.href || "";
-    // const modalCss = modal.querySelector<HTMLLinkElement>("#theme-stylesheet");
-    // if (modalCss) modalCss.href = mainCss;
 }
 
 /**

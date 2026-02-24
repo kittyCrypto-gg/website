@@ -240,3 +240,16 @@ body.no-scroll {
     justify-content: flex-end;
     margin-top: 0.75rem;
 }
+
+.kc-checkbox-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.kc-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}
