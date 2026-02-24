@@ -148,7 +148,7 @@ const READER_INFO_MODAL_HTML = (): string => {
             </ul>
 
             <div class="kc-modal-actions">
-            <button id="kc-reader-info-close" type="button">Close</button>
+            <!--<button id="kc-reader-info-close" type="button">Close</button>-->
             </div>
 
             <p class="modal-note">Click outside or press <kbd>Esc</kbd> to close.</p>
@@ -202,10 +202,10 @@ const LANGUAGE_TOOLTIPS_HELP_MODAL_HTML = (): string => `
         </label>
 
         <div class="kc-modal-actions">
-        <button id="kc-language-tooltips-help-close" type="button">Close</button>
+        <!--<button id="kc-language-tooltips-help-close" type="button">Close</button>-->
         </div>
 
-        <p class="modal-note">You can also close this window with <kbd>Esc</kbd>.</p>
+        <p class="modal-note">You can close this window with <kbd>Esc</kbd>.</p>
     </div>
 `;
 
