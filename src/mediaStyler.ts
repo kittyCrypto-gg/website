@@ -461,14 +461,16 @@ async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
 
 /**
  * @param {string} htmlContent - HTML content to transform.
- * @returns {Promise<string>} A promise that resolves to the transformed HTML content with custom tooltip blocks replaced by styled HTML structures. This function processes the input HTML content to identify and replace custom tooltip blocks defined by <tooltip> tags with a structured and styled representation suitable for rendering as tooltips. It uses a regular expression to find all tooltip blocks in the input HTML, parses each block as XML to extract the trigger content and the tooltip content. The trigger content is what will be visible on the page, while the tooltip content is what will be shown when the user interacts with the trigger. The function constructs a new HTML structure for each tooltip, applying appropriate classes for styling, and replaces the original tooltip blocks in the input HTML with these new structures. The resulting HTML string is returned as a promise, ready for rendering with associated styles.
+ * @returns {Promise<string>} A promise that resolves to the
+ * transformed HTML content with custom tooltip blocks replaced
+ * by styled HTML structures.
  */
 async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
     const re = /<tooltip\b[^>]*>[\s\S]*?<\/tooltip>/gi;
 
     /**
      * @param {Node} n - Node to serialise.
-     * @returns {string} A string representation of a node, where text nodes are escaped for HTML and element nodes are included as their full HTML. This function checks the type of the given node and processes it accordingly. If the node is a text node (nodeType 3), it returns the escaped text content. If the node is an element node (nodeType 1), it returns the outer HTML of the element. For any other types of nodes, it returns an empty string. This is useful for serialising mixed content while ensuring that text is safely escaped for HTML contexts and that element structures are preserved in their entirety.
+     * @returns {string} Serialised node string.
      */
     const serialise = (n: Node): string => {
         switch (n.nodeType) {
@@ -491,6 +493,9 @@ async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
 
         const isHtml = contentEl.hasAttribute("html");
 
+        const translationAttr = (contentEl.getAttribute("translation") || "").trim().toLowerCase();
+        const isTranslation = translationAttr === "true";
+
         const triggerHtml = Array.from(tooltip.childNodes)
             .filter((n) => n !== contentEl)
             .map(serialise)
@@ -505,10 +510,12 @@ async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
                 .join("")
             : esc(contentEl.textContent || "");
 
+        const contentClass = `tooltip-content${isTranslation ? " translation" : ""}`;
+
         return `
             <span class="tooltip">
                 <span class="tooltip-trigger">${triggerHtml}</span>
-                <span class="tooltip-content">${contentHtml}</span>
+                <span class="${contentClass}">${contentHtml}</span>
             </span>
         `;
     });

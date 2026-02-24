@@ -109,15 +109,26 @@ class ReaderToggle {
     }
 
     /**
- * @param {unknown} doc - Document clone to sanitise for Readability parsing.
- * @returns {void} Removes tooltip behaviour for reader mode by unwrapping triggers and dropping tooltip content.
- */
+     * @param {unknown} doc - Document clone to sanitise for Readability parsing.
+     * @returns {void} Removes tooltip behaviour for reader mode.
+     * - Normal tooltips: unwrap trigger, drop tooltip content.
+     * - Translation tooltips: unwrap translation content, drop trigger.
+     */
     parseTooltips(doc: unknown): void {
         if (!doc || !(doc instanceof Document)) return;
 
-        // 1) Tooltips already rendered by MediaStyler: <span class="tooltip">...</span>
         const renderedTooltips = Array.from(doc.querySelectorAll<HTMLElement>(".tooltip"));
         for (const tooltip of renderedTooltips) {
+            const translationContent = tooltip.querySelector<HTMLElement>(".tooltip-content.translation");
+            if (translationContent && (translationContent.textContent || "").trim()) {
+                const frag = doc.createDocumentFragment();
+                for (const n of Array.from(translationContent.childNodes)) {
+                    frag.appendChild(n.cloneNode(true));
+                }
+                tooltip.replaceWith(frag);
+                continue;
+            }
+
             const trigger = tooltip.querySelector<HTMLElement>(".tooltip-trigger");
             if (!trigger) {
                 tooltip.remove();
@@ -132,10 +143,33 @@ class ReaderToggle {
             tooltip.replaceWith(frag);
         }
 
-        // 2) Raw tooltips (if any ever make it through): <tooltip>...</tooltip>
         const rawTooltips = Array.from(doc.getElementsByTagName("tooltip"));
         for (const tooltip of rawTooltips) {
-            const contentEl = Array.from(tooltip.children).find((n) => n.tagName.toLowerCase() === "content");
+            const contentEl = Array.from(tooltip.children).find((n) => n.tagName.toLowerCase() === "content") as Element | undefined;
+
+            if (!contentEl) {
+                tooltip.remove();
+                continue;
+            }
+
+            const translationAttr = (contentEl.getAttribute("translation") || "").trim().toLowerCase();
+            const isTranslation = translationAttr === "true";
+
+            if (isTranslation) {
+                const nodes = Array.from(contentEl.childNodes);
+                if (nodes.length === 0 || (contentEl.textContent || "").trim() === "") {
+                    tooltip.remove();
+                    continue;
+                }
+
+                const frag = doc.createDocumentFragment();
+                for (const n of nodes) {
+                    frag.appendChild(n.cloneNode(true));
+                }
+
+                tooltip.replaceWith(frag);
+                continue;
+            }
 
             const triggerNodes = Array.from(tooltip.childNodes).filter((n) => n !== contentEl);
             if (triggerNodes.length === 0) {
