@@ -11,6 +11,19 @@
     cursor: help;
     display: inline-block;
     position: relative;
+    color: var(--banner-teal);
+    background: color-mix(in srgb, var(--body-text-colour-light) 10%, transparent);
+    border-radius: var(--tooltip-radius);
+    padding: 2px 2px;
+    transition: background-color 0.2s;
+}
+
+.light-mode .tooltip-trigger {
+    color: color-mix(in srgb, var(--banner-teal) 50%, black);
+}
+
+.dark-mode .tooltip-trigger {
+    background: color-mix(in srgb, var(--body-text-colour-light) 80%, transparent)
 }
 
 .tooltip-content {
