@@ -185,6 +185,13 @@ class ReadAloudModule {
 
     #regionResolvePromise: Promise<RegionResolveResult> | null = null;
 
+    #elemsToIgnore = [
+        ".reader-paragraph-num",
+        ".bookmark-emoji",
+        ".tooltip",
+        "tooltip"
+    ];
+
     #boundShowMenu: () => void;
     #boundReload: () => Promise<void>;
     #boundCloseMenu: () => void;
@@ -621,16 +628,24 @@ class ReadAloudModule {
 
     /**
      * @param {HTMLElement | null} paragraph - Paragraph wrapper.
+     * @param {string[] | null} elemsToIgnore - Optional extra ignore selectors.
      * @returns {string} Plain text for speech.
      */
-    __getParagraphPlainText(paragraph: HTMLElement | null): string {
+    __paragPlain(
+        paragraph: HTMLElement | null,
+        elemsToIgnore: string[] | null = null
+    ): string {
         if (!paragraph) return "";
 
+        const ignoreList = elemsToIgnore ?? this.#elemsToIgnore;
         const clone = paragraph.cloneNode(true) as HTMLElement;
 
-        clone.querySelectorAll(".reader-paragraph-num, .bookmark-emoji").forEach((n) => n.remove());
+        if (ignoreList.length) {
+            const ignoreStr = ignoreList.join(", ");
+            clone.querySelectorAll(ignoreStr).forEach((n) => n.remove());
+        }
 
-        return (clone.textContent || "").replace(/\s+/g, " ").trim();
+        return (clone.textContent ?? "").replace(/\s+/g, " ").trim();
     }
 
     /**
@@ -1415,7 +1430,7 @@ class ReadAloudModule {
         this.__highlightP(paragraph);
         this.__scrollToP(paragraph);
 
-        const plainText = this.__getParagraphPlainText(paragraph);
+        const plainText = this.__paragPlain(paragraph);
         if (!plainText) {
             await this.__speakP(idx + 1);
             return;
@@ -1505,7 +1520,7 @@ class ReadAloudModule {
         if (idx >= state.paragraphs.length) return null;
 
         const paragraph = state.paragraphs[idx] ?? null;
-        const plainText = this.__getParagraphPlainText(paragraph);
+        const plainText = this.__paragPlain(paragraph);
         if (!plainText) return null;
 
         const sdk = await this.__sdkReady();
