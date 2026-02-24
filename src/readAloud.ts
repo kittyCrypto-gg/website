@@ -188,8 +188,8 @@ class ReadAloudModule {
     #elemsToIgnore = [
         ".reader-paragraph-num",
         ".bookmark-emoji",
-        ".tooltip",
-        "tooltip"
+        ".tooltip-content",
+        "tooltip > content"
     ];
 
     #boundShowMenu: () => void;
