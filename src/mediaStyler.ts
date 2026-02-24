@@ -82,6 +82,19 @@ function getText(node: ParentNode, tag: string): string {
     return (node.querySelector(tag)?.textContent || "").trim();
 }
 
+/**
+ * @param {Element} parent - Parent element to scan.
+ * @param {readonly string[]} tagNames - Allowed tag names (lowercase).
+ * @returns {Element | null} First direct child element whose tag matches one of the provided tag names.
+ */
+function getDirectChildByTag(parent: Element, tagNames: readonly string[]): Element | null {
+    for (const child of Array.from(parent.children)) {
+        const tag = child.tagName.toLowerCase();
+        if (tagNames.includes(tag)) return child;
+    }
+    return null;
+}
+
 type Escaper = (s: string | null | undefined) => string;
 
 /**
@@ -261,10 +274,10 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
 
     /**
      * @param {Element} emailNode - Email XML element.
-     * @returns {string} A string representation of the email content extracted from the given email XML element. This function looks for a "content" child element within the provided email node and processes its child nodes to construct the email's content as an HTML string. It handles both text nodes and element nodes, escaping text content for HTML safety and including element nodes as their outer HTML. If no content element is found, it returns an empty string. This allows for rich content within the email to be preserved while ensuring that any text is safely escaped for display in an HTML context.
+     * @returns {string} HTML string for the email body, using only the email's own content element.
      */
     const buildContentHtml = (emailNode: Element): string => {
-        const contentEl = emailNode.querySelector("content");
+        const contentEl = getDirectChildByTag(emailNode, ["content", "email-content"]);
         if (!contentEl) return "";
 
         return Array.from(contentEl.childNodes)
