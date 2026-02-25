@@ -2,21 +2,98 @@
     Module: Modal Overlay
 ========================= */
 
+:root {
+    --modal-overlay-z-index: 9999;
+    --modal-z-index: 10000;
+
+    --modal-radius: 12px;
+    --modal-shadow: var(--frame-box-shadow);
+    --modal-pad-block: 22px;
+    --modal-pad-inline: 28px;
+    --modal-gap: 10px;
+
+    --modal-min-width: 320px;
+    --modal-max-width: 95vw;
+    --modal-max-height: 80vh;
+
+    /* Controls inside modals */
+    --modal-control-radius: 10px;
+    --modal-control-border-width: 1px;
+
+    --modal-control-pad-block: 9px;
+    --modal-control-pad-inline: 12px;
+
+    --modal-control-font-size: 1rem;
+
+    --modal-control-bg: color-mix(in srgb, var(--edit-modal-input-bg-colour) 92%, transparent);
+    --modal-control-fg: var(--edit-modal-input-text-colour);
+    --modal-control-border: var(--edit-modal-input-border-colour);
+
+    --modal-control-focus-ring: color-mix(in srgb, var(--menu-button-hover-bg-colour) 65%, transparent);
+    --modal-control-focus-outline: 2px;
+
+    /* Buttons */
+    --modal-btn-radius: 10px;
+    --modal-btn-font-weight: 700;
+
+    --modal-btn-pad-block: 10px;
+    --modal-btn-pad-inline: 14px;
+
+    --modal-btn-min-height: 40px;
+
+    --modal-btn-bg: color-mix(in srgb, var(--menu-button-bg-colour) 78%, var(--frame-bg-colour));
+    --modal-btn-fg: var(--menu-button-text-colour);
+    --modal-btn-border: color-mix(in srgb, var(--nav-border-colour) 45%, transparent);
+
+    --modal-btn-hover-bg: var(--menu-button-hover-bg-colour);
+    --modal-btn-active-scale: 0.98;
+
+    --modal-btn-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+
+    /* Primary / danger can map to your existing edit modal tokens */
+    --modal-btn-primary-bg: var(--edit-modal-btn-save-bg-colour);
+    --modal-btn-primary-hover-bg: var(--edit-modal-btn-save-hover-colour);
+
+    --modal-btn-danger-bg: var(--edit-modal-btn-cancel-bg-colour);
+    --modal-btn-danger-hover-bg: var(--edit-modal-btn-cancel-hover-colour);
+
+    /* Radios + checkboxes */
+    --modal-choice-size: 18px;
+    --modal-choice-border: color-mix(in srgb, var(--nav-border-colour) 55%, transparent);
+    --modal-choice-bg: var(--modal-control-bg);
+
+    --modal-choice-accent: var(--menu-button-hover-bg-colour);
+    --modal-choice-accent-contrast: color-mix(in srgb, var(--body-text-colour-light) 92%, transparent);
+
+    --modal-choice-ring: color-mix(in srgb, var(--menu-button-hover-bg-colour) 55%, transparent);
+    --modal-choice-ring-width: 2px;
+
+    /* Temporary notice (kept) */
+    --temporary-notice-padding-block: 12px;
+    --temporary-notice-padding-inline: 24px;
+    --temporary-notice-border-width: 2px;
+    --temporary-notice-radius: 8px;
+    --temporary-notice-z-index: 9999;
+    --temporary-notice-fade: 0.3s ease;
+}
+
 /* Modal overlay: full-screen backdrop for modals, with centering for modal content */
 #modal-overlay,
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
+
     width: 100vw;
     height: 100vh;
 
     background-color: var(--modal-overlay-bg-colour);
+
     display: flex;
     align-items: center;
     justify-content: center;
 
-    z-index: 9999;
+    z-index: var(--modal-overlay-z-index);
 }
 
 /* =========================================
@@ -28,24 +105,38 @@
     left: 50%;
     transform: translateX(-50%);
 
-    padding: var(--temporary-notice-padding-block, var(--comments-notice-padding-block)) var(--temporary-notice-padding-inline, var(--comments-notice-padding-inline));
+    padding: var(--temporary-notice-padding-block) var(--temporary-notice-padding-inline);
 
     background-color: var(--chatroom-bg-colour);
     color: var(--chatroom-text-colour);
 
-    border: var(--temporary-notice-border-width, var(--comments-notice-border-width)) solid var(--nav-border-colour);
-    border-radius: var(--temporary-notice-radius, var(--comments-notice-radius));
+    border: var(--temporary-notice-border-width) solid var(--nav-border-colour);
+    border-radius: var(--temporary-notice-radius);
 
     box-shadow: var(--frame-box-shadow);
-    font-weight: var(--temporary-notice-font-weight, var(--comments-notice-font-weight));
+    font-weight: 700;
 
-    z-index: var(--temporary-notice-z-index, var(--comments-notice-z-index));
-    transition: opacity var(--temporary-notice-fade, var(--comments-notice-fade));
+    z-index: var(--temporary-notice-z-index);
+    transition: opacity var(--temporary-notice-fade);
+}
+
+.dark-mode {
+    .temporary-notice::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+
+        background-color: var(--chatroom-bg-colour);
+        filter: brightness(var(--temporary-notice-dark-brightness, 1.2));
+
+        z-index: -1;
+    }
 }
 
 /* =========================
     Edit Message Modal
 ========================= */
+
 #edit-message-modal {
     background-color: var(--edit-modal-bg-colour);
     color: var(--edit-modal-text-colour);
@@ -57,16 +148,21 @@
     width: 400px;
     max-width: 90%;
 
-    z-index: 10000;
+    z-index: var(--modal-z-index);
 
     display: flex;
     flex-direction: column;
     gap: 10px;
+
+    /* Make generic modal controls inside this modal look good too */
+    :is(button, input, textarea, select) {
+        font: inherit;
+    }
 }
 
 /* Modal Title */
 #edit-message-id {
-    font-weight: bold;
+    font-weight: 700;
     font-size: 1rem;
     margin-bottom: 10px;
 }
@@ -105,85 +201,272 @@
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
-}
 
-#edit-message-buttons button {
-    flex: 1;
-
-    padding: 10px;
-    margin: 0 5px;
-
-    border-radius: 5px;
-    border: none;
-
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-
-    transition: background-color 0.2s;
-}
-
-/* Save */
-#edit-message-btn {
-    background-color: var(--edit-modal-btn-save-bg-colour);
-    color: #fff;
-}
-
-#edit-message-btn:hover {
-    background-color: var(--edit-modal-btn-save-hover-colour);
-}
-
-/* Cancel */
-#cancel-edit-btn {
-    background-color: var(--edit-modal-btn-cancel-bg-colour);
-    color: #fff;
-}
-
-#cancel-edit-btn:hover {
-    background-color: var(--edit-modal-btn-cancel-hover-colour);
-}
-
-/* Disable scrolling on page when modal is open */
-body.no-scroll {
-    overflow: hidden;
+    button {
+        flex: 1;
+        margin: 0 5px;
+    }
 }
 
 /* =========================
     General Modal Box
 ========================= */
+
 .modal {
     background: var(--edit-modal-bg-colour, #fff);
     color: var(--edit-modal-text-colour, #004d40);
 
-    border-radius: 12px;
-    box-shadow: var(--frame-box-shadow, 0 4px 10px rgba(0, 0, 0, 0.2));
+    border-radius: var(--modal-radius);
+    box-shadow: var(--modal-shadow);
 
-    padding: 22px 28px;
+    padding: var(--modal-pad-block) var(--modal-pad-inline);
 
-    min-width: 320px;
-    max-width: 95vw;
+    min-width: var(--modal-min-width);
+    max-width: var(--modal-max-width);
     width: fit-content;
 
-    max-height: 80vh;
+    max-height: var(--modal-max-height);
     overflow-y: auto;
 
     font-size: 1.05em;
 
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
+    gap: var(--modal-gap);
 
-/* Links inside modal content */
-.modal-content a {
-    color: var(--menu-button-text-colour);
-    text-decoration: underline;
-    transition: color 0.2s;
-}
+    z-index: var(--modal-z-index);
 
-.modal-content a:hover,
-.modal-content a:focus {
-    color: var(--banner-blue);
+    /* -----------------------------------------
+     Modal content primitives
+     Anything "normal HTML" inside a modal looks native to your theme.
+  ------------------------------------------ */
+
+    :where(h1, h2, h3) {
+        margin: 0.2em 0 0.4em;
+        color: var(--header-text-colour);
+    }
+
+    :where(p) {
+        margin: 0.35em 0;
+    }
+
+    /* Links inside modal content */
+    :where(a) {
+        color: var(--menu-button-text-colour);
+        text-decoration: underline;
+        transition: color 0.2s;
+
+        &:hover,
+        &:focus {
+            color: var(--banner-blue);
+        }
+    }
+
+    /* Inputs, selects, textareas */
+    :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+        width: 100%;
+
+        background: var(--modal-control-bg);
+        color: var(--modal-control-fg);
+
+        border: var(--modal-control-border-width) solid var(--modal-control-border);
+        border-radius: var(--modal-control-radius);
+
+        padding: var(--modal-control-pad-block) var(--modal-control-pad-inline);
+        font-size: var(--modal-control-font-size);
+
+        box-sizing: border-box;
+
+        outline: none;
+        transition:
+            border-color 0.18s ease,
+            box-shadow 0.18s ease,
+            background 0.18s ease;
+
+        &:focus {
+            border-color: var(--menu-button-hover-bg-colour);
+            box-shadow: 0 0 0 var(--modal-control-focus-outline) var(--modal-control-focus-ring);
+        }
+
+        &:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+    }
+
+    :where(textarea) {
+        resize: vertical;
+        min-height: 96px;
+    }
+
+    /* Buttons */
+    :where(button) {
+        appearance: none;
+        -webkit-appearance: none;
+
+        border: 1px solid var(--modal-btn-border);
+        background: var(--modal-btn-bg);
+        color: var(--modal-btn-fg);
+
+        border-radius: var(--modal-btn-radius);
+
+        padding: var(--modal-btn-pad-block) var(--modal-btn-pad-inline);
+        min-height: var(--modal-btn-min-height);
+
+        font: inherit;
+        font-weight: var(--modal-btn-font-weight);
+
+        cursor: pointer;
+        user-select: none;
+
+        box-shadow: var(--modal-btn-shadow);
+
+        transition:
+            transform 0.14s ease,
+            background 0.14s ease,
+            border-color 0.14s ease,
+            box-shadow 0.14s ease;
+
+        &:hover {
+            background: var(--modal-btn-hover-bg);
+            border-color: color-mix(in srgb, var(--nav-border-colour) 70%, transparent);
+        }
+
+        &:active {
+            transform: scale(var(--modal-btn-active-scale));
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow:
+                0 0 0 var(--modal-control-focus-outline) var(--modal-control-focus-ring),
+                var(--modal-btn-shadow);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+    }
+
+    /* Common intent classes (optional but handy). Won't break anything if unused. */
+    :where(button.primary, button[data-intent="primary"]) {
+        background: var(--modal-btn-primary-bg);
+        border-color: color-mix(in srgb, var(--modal-btn-primary-bg) 65%, black);
+        color: var(--body-text-colour-light, #fff);
+
+        &:hover {
+            background: var(--modal-btn-primary-hover-bg);
+        }
+    }
+
+    :where(button.danger, button[data-intent="danger"]) {
+        background: var(--modal-btn-danger-bg);
+        border-color: color-mix(in srgb, var(--modal-btn-danger-bg) 65%, black);
+        color: var(--body-text-colour-light, #fff);
+
+        &:hover {
+            background: var(--modal-btn-danger-hover-bg);
+        }
+    }
+
+    /* Checkboxes + radios (modern, theme-aware) */
+    :where(input[type="checkbox"], input[type="radio"]) {
+        appearance: none;
+        -webkit-appearance: none;
+
+        width: var(--modal-choice-size);
+        height: var(--modal-choice-size);
+
+        border: 1px solid var(--modal-choice-border);
+        background: var(--modal-choice-bg);
+
+        display: inline-grid;
+        place-items: center;
+
+        margin: 0;
+        vertical-align: middle;
+
+        cursor: pointer;
+        transition:
+            transform 0.12s ease,
+            background 0.14s ease,
+            border-color 0.14s ease,
+            box-shadow 0.14s ease;
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 var(--modal-choice-ring-width) var(--modal-choice-ring);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    }
+
+    :where(input[type="checkbox"]) {
+        border-radius: 6px;
+
+        &::after {
+            content: "";
+            width: calc(var(--modal-choice-size) * 0.45);
+            height: calc(var(--modal-choice-size) * 0.28);
+            border-left: 2px solid transparent;
+            border-bottom: 2px solid transparent;
+            transform: rotate(-45deg) translateY(-1px);
+            opacity: 0;
+            transition: opacity 0.12s ease;
+        }
+
+        &:checked {
+            background: var(--modal-choice-accent);
+            border-color: color-mix(in srgb, var(--modal-choice-accent) 70%, black);
+
+            &::after {
+                border-left-color: var(--modal-choice-accent-contrast);
+                border-bottom-color: var(--modal-choice-accent-contrast);
+                opacity: 1;
+            }
+        }
+    }
+
+    :where(input[type="radio"]) {
+        border-radius: 999px;
+
+        &::after {
+            content: "";
+            width: calc(var(--modal-choice-size) * 0.5);
+            height: calc(var(--modal-choice-size) * 0.5);
+            border-radius: 999px;
+            background: var(--modal-choice-accent-contrast);
+            opacity: 0;
+            transition: opacity 0.12s ease;
+        }
+
+        &:checked {
+            background: var(--modal-choice-accent);
+            border-color: color-mix(in srgb, var(--modal-choice-accent) 70%, black);
+
+            &::after {
+                opacity: 1;
+            }
+        }
+    }
+
+    /* Make label + control pairings feel tidy */
+    :where(label) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55em;
+
+        cursor: pointer;
+
+        &:has(input:disabled) {
+            cursor: not-allowed;
+        }
+    }
 }
 
 /* =========================
@@ -191,28 +474,21 @@ body.no-scroll {
     (toast-like, top-right, no overlay)
 ========================= */
 
-/* A modal with this class becomes a top-right panel */
 .modal.non-blocking {
     position: fixed;
     top: 14px;
     right: 14px;
 
-    z-index: 10000;
-    /* above most UI */
+    z-index: var(--modal-z-index);
 
-    /* Keep it compact and not shouty */
     width: min(360px, 95vw);
     max-height: calc(100vh - 28px);
     overflow-y: auto;
 
-    /* Optional: slightly softer spacing than your main modal */
     padding: 16px 18px;
-
-    /* Optional: make it feel lighter than a big blocking dialog */
-    border-radius: 12px;
+    border-radius: var(--modal-radius);
 }
 
-/* If you have multiple non-blocking panels, they can stack neatly */
 .modal.non-blocking+.modal.non-blocking {
     margin-top: 10px;
 }
@@ -222,37 +498,39 @@ body.no-scroll {
     position: fixed;
     top: 14px;
     right: 14px;
-    z-index: 10000;
+
+    z-index: var(--modal-z-index);
 
     display: flex;
     flex-direction: column;
     gap: 10px;
+
     align-items: flex-end;
 
-    /* Lets clicks go to the page except where a modal actually is */
     pointer-events: none;
+
+    .modal.non-blocking {
+        position: static;
+        pointer-events: auto;
+
+        width: min(360px, 95vw);
+        max-height: calc(100vh - 28px);
+        overflow-y: auto;
+    }
 }
 
-#non-blocking-modal-stack .modal.non-blocking {
-    position: static;
-    /* stack layout handles positioning */
-    pointer-events: auto;
-    width: min(360px, 95vw);
-    max-height: calc(100vh - 28px);
-    overflow-y: auto;
-}
-
+/* These are modal-specific helpers used by your KC modals */
 .kc-info-list {
     margin: 0.5rem 0 1rem;
     padding-left: 1.2rem;
-}
 
-.kc-info-list li {
-    display: grid;
-    grid-template-columns: 2.5rem 1fr;
-    gap: 0.5rem;
-    align-items: baseline;
-    margin: 0.25rem 0;
+    li {
+        display: grid;
+        grid-template-columns: 2.5rem 1fr;
+        gap: 0.5rem;
+        align-items: baseline;
+        margin: 0.25rem 0;
+    }
 }
 
 .kc-info-icon {
@@ -261,8 +539,17 @@ body.no-scroll {
 
 .kc-modal-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
     margin-top: 0.75rem;
+}
+
+.kc-modal-actions>div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
 }
 
 .kc-checkbox-row {
@@ -272,8 +559,7 @@ body.no-scroll {
     margin-top: 0.75rem;
 }
 
-.kc-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.75rem;
+/* Disable scrolling on page when modal is open */
+body.no-scroll {
+    overflow: hidden;
 }

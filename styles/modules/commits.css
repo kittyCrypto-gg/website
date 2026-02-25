@@ -245,40 +245,6 @@
     }
 }
 
-/* =========================================
-    Commit identicon
-========================================= */
-.commit-identicon {
-    width: var(--commit-identicon-size);
-    height: var(--commit-identicon-size);
-    min-width: var(--commit-identicon-size);
-    min-height: var(--commit-identicon-size);
-
-    border-radius: var(--commit-identicon-radius);
-    overflow: hidden;
-    flex-shrink: 0;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background-color: var(--chatroom-bg-colour);
-    box-shadow: var(--frame-box-shadow);
-
-    & svg {
-        width: 100%;
-        height: 100%;
-        border-radius: var(--commit-identicon-svg-radius);
-        display: block;
-    }
-}
-
-.dark-mode {
-    & .commit-identicon {
-        filter: contrast(var(--commit-identicon-dark-contrast)) brightness(var(--commit-identicon-dark-brightness));
-    }
-}
-
 /* Text column */
 .commit-content {
     flex: 1;
