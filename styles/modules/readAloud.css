@@ -463,6 +463,7 @@
 .reader-bookmark {
     &.read-aloud-active {
         background: var(--read-aloud-highlight-bg) !important;
+        border-radius: var(--read-aloud-menu-radius);
         transition: var(--read-aloud-highlight-transition);
         opacity: 1 !important;
 
