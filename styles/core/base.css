@@ -13,6 +13,13 @@
 
     --emoticon-line-height: 1;
     --blink-duration: 6s;
+    --kc-text-scale: 1;
+}
+
+html {
+  font-size: calc(16px * var(--kc-text-scale)) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* General styles */
