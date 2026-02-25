@@ -1,226 +1,256 @@
 /* =========================================
     Module: Comments
-    - Comments panel + input + transient notices
-    - Includes shared avatar + message header bits used by comments markup
 ========================================= */
 
+:root {
+    --comments-header-font-size: 1.4rem;
+    --comments-header-font-weight: 700;
+    --comments-header-margin-bottom: 10px;
+    --comments-header-padding-bottom: 6px;
+    --comments-header-border-width: 2px;
+
+    --comments-container-bottom: 10px;
+    --comments-container-radius: 12px;
+    --comments-container-margin-block: 40px;
+    --comments-container-margin-inline: auto;
+    --comments-container-padding: 20px;
+    --comments-container-width: 90%;
+    --comments-container-gap: 20px;
+    --comments-container-border-width: 1.5px;
+
+    --comments-box-border-width: 1px;
+    --comments-box-radius: 8px;
+    --comments-box-padding: 15px;
+    --comments-box-max-height: 400px;
+    --comments-box-font-size: 1rem;
+    --comments-box-gap: 15px;
+
+    --comment-message-padding: 12px;
+    --comment-message-radius: 6px;
+    --comment-even-mix: 85%;
+
+    --comment-input-gap: 10px;
+
+    --comment-field-padding: 10px;
+    --comment-field-font-size: 1rem;
+    --comment-field-border-width: 1px;
+    --comment-field-radius: 6px;
+
+    --comment-textarea-min-height: 100px;
+    --comment-textarea-max-height: 300px;
+
+    --comment-post-btn-padding-block: 10px;
+    --comment-post-btn-padding-inline: 20px;
+    --comment-post-btn-font-size: 1rem;
+    --comment-post-btn-radius: 6px;
+    --comment-post-btn-hover-transition: 0.2s ease-in-out;
+
+    --comments-avatar-size: 40px;
+    --comments-avatar-radius: 50%;
+    --comments-avatar-gap-inline: 10px;
+    --comments-avatar-dark-contrast: 1.2;
+    --comments-avatar-dark-brightness: 0.85;
+
+    --comments-chat-header-gap: 8px;
+    --comments-chat-header-margin-bottom: 4px;
+    --comments-chat-nick-font-weight: 700;
+    --comments-chat-nick-font-size: 1rem;
+    --comments-chat-timestamp-font-size: 0.85rem;
+    --comments-chat-timestamp-fallback-colour: #888;
+
+    --comments-notice-padding-block: 12px;
+    --comments-notice-padding-inline: 24px;
+    --comments-notice-border-width: 2px;
+    --comments-notice-radius: 8px;
+    --comments-notice-font-weight: 700;
+    --comments-notice-z-index: 9999;
+    --comments-notice-fade: 0.3s ease;
+    --comments-notice-dark-brightness: 1.2;
+}
+
 .comments-header {
-    font-size: 1.4rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-    padding-bottom: 6px;
-    border-bottom: 2px solid var(--nav-border-colour);
+    font-size: var(--comments-header-font-size);
+    font-weight: var(--comments-header-font-weight);
+    margin-bottom: var(--comments-header-margin-bottom);
+    padding-bottom: var(--comments-header-padding-bottom);
+    border-bottom: var(--comments-header-border-width) solid var(--nav-border-colour);
     color: var(--header-text-colour);
     text-align: left;
 }
 
-.dark-mode .comments-header {
-    color: var(--header-text-colour);
-    border-bottom-color: var(--nav-border-colour);
-}
-
 .comments-container {
-    bottom: 10px;
+    bottom: var(--comments-container-bottom);
     background-color: var(--frame-bg-colour);
-    border-radius: 12px;
+    border-radius: var(--comments-container-radius);
     box-shadow: var(--frame-box-shadow);
-    margin: 40px auto;
-    padding: 20px;
-    width: 90%;
+
+    margin: var(--comments-container-margin-block) var(--comments-container-margin-inline);
+    padding: var(--comments-container-padding);
+
+    width: var(--comments-container-width);
     color: var(--body-text-colour);
+
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--comments-container-gap);
 
-    /* Kept explicit to avoid relying on cross-module shared selectors */
-    border: 1.5px solid var(--frame-border-light);
+    border: var(--comments-container-border-width) solid var(--frame-border-light);
 }
 
 .comments-box {
     background-color: var(--chatroom-bg-colour);
-    border: 1px solid var(--chatroom-border-colour);
-    border-radius: 8px;
-    padding: 15px;
-    max-height: 400px;
+    border: var(--comments-box-border-width) solid var(--chatroom-border-colour);
+    border-radius: var(--comments-box-radius);
+
+    padding: var(--comments-box-padding);
+    max-height: var(--comments-box-max-height);
     overflow-y: auto;
-    font-size: 1rem;
+
+    font-size: var(--comments-box-font-size);
+
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: var(--comments-box-gap);
+
     color: var(--chatroom-text-colour);
 }
 
 /* Individual comment message */
 .comment-message {
     text-align: left;
-    padding: 12px;
-    border-radius: 6px;
+    padding: var(--comment-message-padding);
+    border-radius: var(--comment-message-radius);
+
     display: flex;
     flex-direction: column;
-}
 
-/* Alternate comment backgrounds */
-.comment-message:nth-child(odd) {
     background-color: var(--chatroom-bg-colour);
+
+    &:nth-child(even) {
+        background-color: color-mix(in srgb, var(--chatroom-bg-colour) var(--comment-even-mix), black);
+    }
 }
 
-.comment-message:nth-child(even) {
-    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, black);
-}
-
-.dark-mode .comment-message:nth-child(even) {
-    background-color: color-mix(in srgb, var(--chatroom-bg-colour) 85%, white);
+.dark-mode {
+    & .comment-message:nth-child(even) {
+        background-color: color-mix(in srgb, var(--chatroom-bg-colour) var(--comment-even-mix), white);
+    }
 }
 
 /* Input section */
 .comment-input {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--comment-input-gap);
+}
+
+/* Shared field base */
+:is(#new-comment, #comment-nick) {
+    width: 100%;
+    padding: var(--comment-field-padding);
+    font-size: var(--comment-field-font-size);
+
+    border: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+    border-radius: var(--comment-field-radius);
+
+    background-color: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+
+    box-sizing: border-box;
 }
 
 #new-comment {
-    width: 100%;
-    min-height: 100px;
-    max-height: 300px;
+    min-height: var(--comment-textarea-min-height);
+    max-height: var(--comment-textarea-max-height);
     resize: vertical;
-    font-size: 1rem;
-    padding: 10px;
-    border: 1px solid var(--chat-input-border-colour);
-    border-radius: 6px;
-    background-color: var(--chat-input-bg-colour);
-    color: var(--chat-input-text-colour);
-    box-sizing: border-box;
 }
 
 #post-comment-button {
     align-self: flex-end;
+
     background-color: var(--chat-send-btn-bg-colour);
     color: var(--chat-send-btn-text-colour);
+
     border: none;
-    padding: 10px 20px;
-    font-size: 1rem;
-    border-radius: 6px;
+
+    padding: var(--comment-post-btn-padding-block) var(--comment-post-btn-padding-inline);
+    font-size: var(--comment-post-btn-font-size);
+    border-radius: var(--comment-post-btn-radius);
+
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-}
+    transition: background-color var(--comment-post-btn-hover-transition);
 
-#post-comment-button:hover {
-    background-color: var(--menu-button-hover-bg-colour);
-}
-
-/* Dark mode support */
-.dark-mode .comments-box {
-    background-color: var(--chatroom-bg-colour);
-    border-color: var(--chatroom-border-colour);
-    color: var(--chatroom-text-colour);
-}
-
-.dark-mode #new-comment {
-    background-color: var(--chat-input-bg-colour);
-    color: var(--chat-input-text-colour);
-    border-color: var(--chat-input-border-colour);
-}
-
-.dark-mode #post-comment-button {
-    background-color: var(--chat-send-btn-bg-colour);
-    color: var(--chat-send-btn-text-colour);
+    &:hover {
+        background-color: var(--menu-button-hover-bg-colour);
+    }
 }
 
 /* =========================================
-  Avatar / Identicon Styling (used in comments lists)
+    Avatar / Identicon Styling (used in comments lists)
 ========================================= */
 
 .avatar-container {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    min-height: 40px;
-    border-radius: 50%;
+    width: var(--avatar-size, var(--comments-avatar-size));
+    height: var(--avatar-size, var(--comments-avatar-size));
+
+    min-width: var(--avatar-size, var(--comments-avatar-size));
+    min-height: var(--avatar-size, var(--comments-avatar-size));
+
+    border-radius: var(--avatar-radius, var(--comments-avatar-radius));
     overflow: hidden;
-    margin-right: 10px;
+
+    margin-right: var(--avatar-gap-inline, var(--comments-avatar-gap-inline));
+
     flex-shrink: 0;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    svg {
+        width: 100%;
+        height: 100%;
+        border-radius: var(--avatar-radius, var(--comments-avatar-radius));
+    }
 }
 
-.avatar-container svg {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-}
-
-.dark-mode .avatar-container {
-    filter: contrast(1.2) brightness(0.85);
+.dark-mode {
+    & .avatar-container {
+        filter: contrast(var(--avatar-dark-contrast, var(--comments-avatar-dark-contrast))) brightness(var(--avatar-dark-brightness, var(--comments-avatar-dark-brightness)));
+    }
 }
 
 /* Message header layout used by comment items (shared with chat-like markup) */
 .chat-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
+
+    gap: var(--chat-header-gap, var(--comments-chat-header-gap));
+    margin-bottom: var(--chat-header-margin-bottom, var(--comments-chat-header-margin-bottom));
 }
 
 .chat-nick {
-    font-weight: bold;
-    font-size: 1rem;
+    font-weight: var(--chat-nick-font-weight, var(--comments-chat-nick-font-weight));
+    font-size: var(--chat-nick-font-size, var(--comments-chat-nick-font-size));
     color: var(--chat-nick-colour, inherit);
 }
 
 .chat-timestamp {
-    font-size: 0.85rem;
-    color: var(--chat-timestamp-colour, #888);
+    font-size: var(--chat-timestamp-font-size, var(--comments-chat-timestamp-font-size));
+    color: var(--chat-timestamp-colour, var(--comments-chat-timestamp-fallback-colour));
     margin-left: auto;
 }
 
-/* =========================================
-  Comment Nickname Input
-========================================= */
+/* Brightened background overlay in dark mode */
+.dark-mode {
+    & .temporary-notice::before {
+        content: "";
+        position: absolute;
+        inset: 0;
 
-#comment-nick {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    border: 1px solid var(--chat-input-border-colour);
-    border-radius: 6px;
-    background-color: var(--chat-input-bg-colour);
-    color: var(--chat-input-text-colour);
-    box-sizing: border-box;
-}
+        background-color: var(--chatroom-bg-colour);
+        filter: brightness(var(--temporary-notice-dark-brightness, var(--comments-notice-dark-brightness)));
 
-.dark-mode #comment-nick {
-    background-color: var(--chat-input-bg-colour);
-    color: var(--chat-input-text-colour);
-    border-color: var(--chat-input-border-colour);
-}
-
-/* =========================================
-  Temporary Notice
-========================================= */
-
-.temporary-notice {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 24px;
-    background-color: var(--chatroom-bg-colour);
-    color: var(--chatroom-text-colour);
-    border: 2px solid var(--nav-border-colour);
-    border-radius: 8px;
-    box-shadow: var(--frame-box-shadow);
-    font-weight: bold;
-    z-index: 9999;
-    transition: opacity 0.3s ease;
-}
-
-/* Create a brightened background overlay in dark mode */
-.dark-mode .temporary-notice::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-color: var(--chatroom-bg-colour);
-    filter: brightness(1.2);
-    z-index: -1;
+        z-index: -1;
+    }
 }

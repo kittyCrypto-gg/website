@@ -2,29 +2,62 @@
     Module: About Page
 ========================================= */
 
+:root {
+    --about-frame-radius: 15px;
+    --about-frame-width: 80%;
+    --about-frame-max-width: 1200px;
+    --about-frame-margin-block: 20px;
+    --about-frame-margin-inline: auto;
+    --about-frame-padding: 20px;
+    --about-frame-gap: 20px;
+
+    --about-text-line-height: 1.6;
+    --about-text-font-size: 1.1rem;
+
+    --jp-about-border-width: 1px;
+    --jp-about-padding-block-start: 20px;
+    --jp-about-padding-block-end: 10px;
+    --jp-about-margin-top: 30px;
+    --jp-about-scrollbar-height: 8px;
+    --jp-about-scrollbar-radius: 4px;
+    --jp-about-column-gap: 10px;
+
+    --profile-row-padding-inline: 2rem;
+    --profile-row-margin-block: 2rem;
+
+    --profile-avatar-size: 150px;
+    --profile-avatar-border-width: 2px;
+    --profile-avatar-radius: 50%;
+}
+
+/* About page frame + text */
 .about-frame {
     background-color: var(--frame-bg-colour);
-    border-radius: 15px;
+    border-radius: var(--about-frame-radius);
     box-shadow: var(--frame-box-shadow);
-    width: 80%;
-    max-width: 1200px;
-    margin: 20px auto;
-    padding: 20px;
+
+    width: var(--about-frame-width);
+    max-width: var(--about-frame-max-width);
+
+    margin: var(--about-frame-margin-block) var(--about-frame-margin-inline);
+    padding: var(--about-frame-padding);
+
     box-sizing: border-box;
     overflow: auto;
     height: fit-content;
+
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: var(--about-frame-gap);
     align-items: flex-start;
-}
 
-.about-text {
-    flex-grow: 1;
-    text-align: justify;
-    line-height: 1.6;
-    font-size: 1.1rem;
-    color: var(--body-text-colour);
+    .about-text {
+        flex-grow: 1;
+        text-align: justify;
+        line-height: var(--about-text-line-height);
+        font-size: var(--about-text-font-size);
+        color: var(--body-text-colour);
+    }
 }
 
 /* =========================================
@@ -36,41 +69,44 @@
     justify-content: flex-end;
     flex-direction: row-reverse;
     direction: rtl;
+
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
-    border-top: 1px solid var(--nav-border-colour);
-    padding: 20px 0 10px 0;
-    margin-top: 30px;
+
+    border-top: var(--jp-about-border-width) solid var(--nav-border-colour);
+    padding: var(--jp-about-padding-block-start) 0 var(--jp-about-padding-block-end) 0;
+    margin-top: var(--jp-about-margin-top);
+
     font-family: "Noto Serif JP", "Yu Mincho", serif;
 
     scrollbar-width: thin;
     scrollbar-color: var(--nav-border-colour) var(--frame-bg-colour);
-}
 
-.jp-about::-webkit-scrollbar {
-    height: 8px;
-}
+    &::-webkit-scrollbar {
+        height: var(--jp-about-scrollbar-height);
+    }
 
-.jp-about::-webkit-scrollbar-thumb {
-    background-color: var(--nav-border-colour);
-    border-radius: 4px;
-}
+    &::-webkit-scrollbar-thumb {
+        background-color: var(--nav-border-colour);
+        border-radius: var(--jp-about-scrollbar-radius);
+    }
 
-.jp-about::-webkit-scrollbar-track {
-    background-color: var(--frame-bg-colour);
-    border-radius: 4px;
-}
+    &::-webkit-scrollbar-track {
+        background-color: var(--frame-bg-colour);
+        border-radius: var(--jp-about-scrollbar-radius);
+    }
 
-/* About-specific spacing for tategaki columns */
-.jp-about .tategaki-container {
-    display: inline-block;
-    margin-left: 0;
-    margin-right: 10px;
-}
+    /* About-specific spacing for tategaki columns */
+    .tategaki-container {
+        display: inline-block;
+        margin-left: 0;
+        margin-right: var(--jp-about-column-gap);
 
-.jp-about .tategaki-container svg {
-    margin-left: 10px;
+        svg {
+            margin-left: var(--jp-about-column-gap);
+        }
+    }
 }
 
 /* =========================================
@@ -81,47 +117,32 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+
     width: 100%;
-    padding: 0 2rem;
+    padding: 0 var(--profile-row-padding-inline);
+
     box-sizing: border-box;
-    margin-bottom: 2rem;
-    margin-top: 2rem;
-}
+    margin: var(--profile-row-margin-block) 0;
 
-/* Floating PFP */
-.pfp {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: var(--frame-box-shadow);
-    border: 2px solid var(--nav-border-colour);
-    flex-shrink: 0;
-    align-self: center;
-}
+    /* Shared avatar styling for profile images */
+    :is(.pfp, .irl-pic) {
+        width: var(--profile-avatar-size);
+        height: var(--profile-avatar-size);
 
-.pfp img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
+        border-radius: var(--profile-avatar-radius);
+        overflow: hidden;
 
-/* IRL Anime-Styled Image */
-.irl-pic {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: var(--frame-box-shadow);
-    border: 2px solid var(--nav-border-colour);
-    flex-shrink: 0;
-    align-self: center;
-}
+        box-shadow: var(--frame-box-shadow);
+        border: var(--profile-avatar-border-width) solid var(--nav-border-colour);
 
-.irl-pic img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+        flex-shrink: 0;
+        align-self: center;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+    }
 }

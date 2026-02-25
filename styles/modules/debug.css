@@ -2,37 +2,59 @@
     Module: Debug Console
 ========================================= */
 
+:root {
+    --debug-font-size: 12px;
+    --debug-font-family: monospace, monospace;
+
+    --debug-bg-colour: rgba(0, 0, 0, 0.85);
+    --debug-text-colour: #0f0;
+
+    --debug-padding-block: 8px;
+    --debug-padding-inline: 10px;
+
+    --debug-z-index: 9999;
+
+    --debug-max-width: 95vw;
+    --debug-max-height: 40vh;
+
+    --debug-radius-top: 7px;
+    --debug-shadow: 0 -4px 14px 0 rgba(0, 0, 0, 0.6);
+
+    --debug-opacity-transition: 0.2s;
+}
+
 .debug {
     position: fixed;
     bottom: 0;
     left: 0;
 
-    font-size: 12px;
-    font-family: monospace, monospace;
+    font-size: var(--debug-font-size);
+    font-family: var(--debug-font-family);
 
-    background: rgba(0, 0, 0, 0.85);
-    color: #0f0;
+    background: var(--debug-bg-colour);
+    color: var(--debug-text-colour);
 
-    padding: 8px 10px;
+    padding: var(--debug-padding-block) var(--debug-padding-inline);
 
-    z-index: 9999;
+    z-index: var(--debug-z-index);
 
     visibility: hidden;
     pointer-events: none;
 
-    max-width: 95vw;
-    max-height: 40vh;
+    max-width: var(--debug-max-width);
+    max-height: var(--debug-max-height);
+
     overflow-y: auto;
     white-space: pre-wrap;
 
-    border-radius: 7px 7px 0 0;
-    box-shadow: 0 -4px 14px 0 rgba(0, 0, 0, 0.6);
+    border-radius: var(--debug-radius-top) var(--debug-radius-top) 0 0;
+    box-shadow: var(--debug-shadow);
 
-    transition: opacity 0.2s;
-}
+    transition: opacity var(--debug-opacity-transition);
 
-.debug.visible {
-    visibility: visible;
-    pointer-events: auto;
-    opacity: 1;
+    &.visible {
+        visibility: visible;
+        pointer-events: auto;
+        opacity: 1;
+    }
 }

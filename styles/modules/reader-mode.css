@@ -2,55 +2,82 @@
     Module: Reader Mode Styles
 ========================================= */
 
-body.reader-mode {
-    background: var(--frame-bg-colour);
-    --frame-box-shadow: none !important;
+:root {
+    --reader-mode-max-width: 70ch;
+    --reader-mode-margin-block: 4rem;
+
+    --reader-mode-font-size: 1.2rem;
+    --reader-mode-line-height: 1.8;
+
+    --reader-mode-image-nav-offset: 15px;
+    --reader-mode-image-nav-gap: 5px;
+    --reader-mode-image-nav-z-index: 10;
+
+    --reader-mode-image-nav-button-font-size: 2.5rem;
+    --reader-mode-image-nav-button-min-size: 40px;
 }
 
-body.reader-mode #banner-wrapper,
-body.reader-mode #main-menu,
-body.reader-mode #main-header,
-body.reader-mode #story-picker,
-body.reader-mode #comments,
-body.reader-mode #main-footer {
-    display: none !important;
-}
+body {
+    &.reader-mode {
+        background: var(--frame-bg-colour);
+        --frame-box-shadow: none !important;
 
-body.reader-mode article#reader {
-    display: block !important;
-    max-width: 70ch;
-    margin: 4rem auto;
-    font-size: 1.2rem;
-    line-height: 1.8;
-    background: none;
-    box-shadow: var(--frame-box-shadow);
-    padding: 0;
-    color: var(--body-text-colour);
-    text-align: justify;
-}
+        :is(#banner-wrapper,
+            #main-menu,
+            #main-header,
+            #story-picker,
+            #comments,
+            #main-footer) {
+            display: none !important;
+        }
 
-body.reader-mode article#reader .chapter-image {
-    box-shadow: none !important;
-    border: none !important;
-}
+        article#reader {
+            display: block !important;
 
-body.reader-mode .chapter-image.active+.image-nav {
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
-    flex-direction: column;
-    gap: 5px;
-    z-index: 10;
-    opacity: 1;
-}
+            max-width: var(--reader-mode-max-width);
+            margin: var(--reader-mode-margin-block) auto;
 
-body.reader-mode .chapter-image.active+.image-nav button {
-    font-size: 2.5rem;
-    min-width: 40px;
-    min-height: 40px;
-    padding: 0;
-}
+            font-size: var(--reader-mode-font-size);
+            line-height: var(--reader-mode-line-height);
 
-body.reader-mode .readerModeIncompatible {
-    display: none !important;
+            background: none;
+
+            box-shadow: var(--frame-box-shadow);
+
+            padding: 0;
+
+            color: var(--body-text-colour);
+            text-align: justify;
+
+            .chapter-image {
+                box-shadow: none !important;
+                border: none !important;
+            }
+        }
+
+        .chapter-image.active+.image-nav {
+            position: absolute;
+            bottom: var(--reader-mode-image-nav-offset);
+            right: var(--reader-mode-image-nav-offset);
+
+            flex-direction: column;
+            gap: var(--reader-mode-image-nav-gap);
+
+            z-index: var(--reader-mode-image-nav-z-index);
+            opacity: 1;
+
+            button {
+                font-size: var(--reader-mode-image-nav-button-font-size);
+
+                min-width: var(--reader-mode-image-nav-button-min-size);
+                min-height: var(--reader-mode-image-nav-button-min-size);
+
+                padding: 0;
+            }
+        }
+
+        .readerModeIncompatible {
+            display: none !important;
+        }
+    }
 }

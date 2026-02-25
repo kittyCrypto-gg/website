@@ -3,17 +3,28 @@
     (tiny helpers used across modules)
 ========================================= */
 
+:root {
+    --util-hidden-display: none;
+    --util-wait-cursor: progress;
+    --util-no-scroll-overflow: hidden;
+}
+
 .hidden {
-    display: none !important;
+    display: var(--util-hidden-display) !important;
 }
 
 /* Used while awaiting async work (eg modal submit, fetch, etc) */
-.cursor-wait,
-.cursor-wait * {
-    cursor: progress !important;
+.cursor-wait {
+    cursor: var(--util-wait-cursor) !important;
+
+    & * {
+        cursor: var(--util-wait-cursor) !important;
+    }
 }
 
 /* Disable page scroll while overlays/modals are open */
-body.no-scroll {
-    overflow: hidden;
+body {
+    &.no-scroll {
+        overflow: var(--util-no-scroll-overflow);
+    }
 }

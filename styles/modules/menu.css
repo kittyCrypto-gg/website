@@ -2,109 +2,174 @@
     Module: Menu
 ========================================= */
 
+:root {
+    --menu-padding: 15px;
+    --menu-gap: 15px;
+    --menu-border-width: 2px;
+
+    --menu-button-padding-block: 10px;
+    --menu-button-padding-inline: 15px;
+    --menu-button-radius: 8px;
+    --menu-button-font-size: 1rem;
+    --menu-button-font-weight: 700;
+
+    --menu-button-hover-scale: 1.1;
+    --menu-button-bg-transition: 0.3s;
+    --menu-button-transform-transition: 0.2s;
+
+    --menu-crossed-line-height: 2px;
+    --menu-crossed-line-colour: red;
+    --menu-crossed-line-rotation: 45deg;
+
+    --menu-eye-opacity: 0.5;
+}
+
 /* Menu styles */
 nav {
     background-color: var(--nav-bg-colour);
-    padding: 15px;
+    padding: var(--menu-padding);
+
     display: flex;
-    gap: 15px;
-    border-bottom: 2px solid var(--nav-border-colour);
+    gap: var(--menu-gap);
+
+    border-bottom: var(--menu-border-width) solid var(--nav-border-colour);
+
     overflow-x: auto;
     white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-    /* Smooth scrolling on mobile */
-}
 
-/* Hide scrollbar on some browsers */
-nav::-webkit-scrollbar {
-    display: none;
+    -webkit-overflow-scrolling: touch;
+
+    /* Hide scrollbar on some browsers */
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
 /* Menu buttons */
 .menu-button {
     flex: 1 1 0;
+
     text-decoration: none;
+
     color: var(--menu-button-text-colour);
     background-color: var(--menu-button-bg-colour);
-    padding: 10px 15px;
-    border-radius: 8px;
+
+    padding: var(--menu-button-padding-block) var(--menu-button-padding-inline);
+    border-radius: var(--menu-button-radius);
+
     transition:
-        background-color 0.3s,
-        transform 0.2s;
-    font-size: 1rem;
-    font-weight: bold;
+        background-color var(--menu-button-bg-transition),
+        transform var(--menu-button-transform-transition);
+
+    font-size: var(--menu-button-font-size);
+    font-weight: var(--menu-button-font-weight);
+
     text-align: center;
+
+    &:hover {
+        background-color: var(--menu-button-hover-bg-colour);
+        transform: scale(var(--menu-button-hover-scale));
+    }
 }
 
-.menu-button:hover {
-    background-color: var(--menu-button-hover-bg-colour);
-    transform: scale(1.1);
-}
+button {
+    &.menu-crossed {
+        position: relative;
 
-button.menu-crossed {
-    position: relative;
-}
+        &::after {
+            content: "";
+            position: absolute;
 
-button.menu-crossed::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: red;
-    transform: rotate(45deg);
-    pointer-events: none;
-}
+            top: 50%;
+            left: 0;
 
-button.menu-eye::before {
-    content: "👁️";
-    opacity: 0.5;
-    /* margin-right: 0.25em; */
+            width: 100%;
+            height: var(--menu-crossed-line-height);
+
+            background: var(--menu-crossed-line-colour);
+            transform: rotate(var(--menu-crossed-line-rotation));
+
+            pointer-events: none;
+        }
+    }
+
+    &.menu-eye::before {
+        content: "👁️";
+        opacity: var(--menu-eye-opacity);
+    }
 }
 
 /* =========================================
     Home Intro Block (currently adjacent to menu)
 ========================================= */
 
+:root {
+    --kitty-intro-width: 90%;
+    --kitty-intro-margin-block: 2rem;
+    --kitty-intro-padding: 1.5rem;
+
+    --kitty-intro-font-size: 1.1rem;
+    --kitty-intro-line-height: 1.8;
+
+    --kitty-intro-radius: 12px;
+
+    --kitty-intro-code-padding-block: 0.2em;
+    --kitty-intro-code-padding-inline: 0.4em;
+    --kitty-intro-code-radius: 4px;
+    --kitty-intro-code-font-size: 0.95em;
+
+    --kitty-intro-text-align: justify;
+    --kitty-intro-text-align-last: left;
+}
+
 .kitty-intro {
-    width: 90%;
-    margin: 2rem auto;
-    padding: 1.5rem;
-    font-size: 1.1rem;
-    line-height: 1.8;
+    width: var(--kitty-intro-width);
+
+    margin: var(--kitty-intro-margin-block) auto;
+    padding: var(--kitty-intro-padding);
+
+    font-size: var(--kitty-intro-font-size);
+    line-height: var(--kitty-intro-line-height);
+
     color: var(--body-text-colour);
     background-color: var(--frame-bg-colour);
-    border-radius: 12px;
+
+    border-radius: var(--kitty-intro-radius);
     box-shadow: var(--frame-box-shadow);
-    text-align: justify;
-    text-align-last: left;
+
+    text-align: var(--kitty-intro-text-align);
+    text-align-last: var(--kitty-intro-text-align-last);
+
     box-sizing: border-box;
+
+    a {
+        color: var(--menu-button-text-colour);
+    }
+
+    code {
+        font-family: monospace;
+        background: var(--chat-input-bg-colour);
+
+        padding: var(--kitty-intro-code-padding-block) var(--kitty-intro-code-padding-inline);
+        border-radius: var(--kitty-intro-code-radius);
+
+        font-size: var(--kitty-intro-code-font-size);
+    }
 }
 
-.kitty-intro a {
-    color: var(--menu-button-text-colour);
-}
+/* Dark mode support (kept for equivalence, even though values are variable-driven) */
+.dark-mode {
+    .kitty-intro {
+        background-color: var(--frame-bg-colour);
+        color: var(--body-text-colour);
 
-.kitty-intro code {
-    font-family: monospace;
-    background: var(--chat-input-bg-colour);
-    padding: 0.2em 0.4em;
-    border-radius: 4px;
-    font-size: 0.95em;
-}
+        a {
+            color: var(--menu-button-text-colour);
+        }
 
-/* Dark mode support */
-.dark-mode .kitty-intro {
-    background-color: var(--frame-bg-colour);
-    color: var(--body-text-colour);
-}
-
-.dark-mode .kitty-intro a {
-    color: var(--menu-button-text-colour);
-}
-
-.dark-mode .kitty-intro code {
-    background-color: var(--chat-input-bg-colour);
-    color: var(--chat-input-text-colour);
+        code {
+            background-color: var(--chat-input-bg-colour);
+            color: var(--chat-input-text-colour);
+        }
+    }
 }

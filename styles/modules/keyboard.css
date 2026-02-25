@@ -1,3 +1,7 @@
+/* =========================================
+    Module: Keyboard Emulator
+========================================= */
+
 :root {
     --kb-toolbar-bg: rgba(250, 250, 252, 0.92);
     --kb-toolbar-border: rgba(0, 0, 0, 0.12);
@@ -10,6 +14,48 @@
 
     --kb-sticky-bg: rgba(0, 106, 255, 0.14);
     --kb-sticky-border: rgba(0, 106, 255, 0.38);
+
+    /* Layout / motion tokens (kept equivalent, just made explicit) */
+    --kb-width: 100vw;
+
+    --kb-outer-pad-y: 8px;
+    --kb-outer-pad-x: 8px;
+
+    --kb-backdrop-blur: 12px;
+
+    --kb-z-index: 2147483647;
+
+    --kb-key-h: 40px;
+    --kb-key-w: 44px;
+
+    --kb-btn-gap: 8px;
+    --kb-row-gap: 2px;
+
+    --kb-btn-pad-x: 12px;
+    --kb-btn-inner-gap: 6px;
+
+    --kb-font-size: 13px;
+    --kb-icon-size: 15px;
+    --kb-radius: 10px;
+
+    --kb-show-opacity: 1;
+    --kb-hide-opacity: 0;
+
+    --kb-hide-translate-y: 110%;
+
+    --kb-opacity-transition: 160ms ease;
+    --kb-transform-transition: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    --kb-active-scale: 0.98;
+
+    --kb-stacked-gap: 2px;
+    --kb-stacked-pad-y: 2px;
+
+    --kb-stacked-text-scale: 0.92;
+    --kb-arrow-scale: 1.1;
+
+    /* Safe area */
+    --kb-safe-area-bottom: env(safe-area-inset-bottom);
 }
 
 .dark-mode {
@@ -30,10 +76,12 @@
     position: fixed;
     left: 0;
     top: 0;
-    width: 100vw;
+
+    width: var(--kb-width);
     box-sizing: border-box;
 
-    padding: var(--outer-pad-y, 8px) var(--outer-pad-x, 8px) calc(var(--outer-pad-y, 8px) + env(safe-area-inset-bottom));
+    padding:
+        var(--outer-pad-y, var(--kb-outer-pad-y)) var(--outer-pad-x, var(--kb-outer-pad-x)) calc(var(--outer-pad-y, var(--kb-outer-pad-y)) + var(--kb-safe-area-bottom));
 
     display: flex;
     flex-direction: column;
@@ -41,209 +89,219 @@
     justify-content: center;
 
     background: var(--kb-toolbar-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+
+    backdrop-filter: blur(var(--kb-backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--kb-backdrop-blur));
+
     border-top: 1px solid var(--kb-toolbar-border);
 
-    z-index: var(--toolbar-z, 2147483647);
+    z-index: var(--toolbar-z, var(--kb-z-index));
 
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
 
-    --key-h: 40px;
-    --key-w: 44px;
-    --btn-gap: 8px;
+    /* Internal sizing knobs */
+    --key-h: var(--kb-key-h);
+    --key-w: var(--kb-key-w);
+    --btn-gap: var(--kb-btn-gap);
 
-    --row-gap: 2px;
-    --pad-x: 12px;
-    --inner-gap: 6px;
+    --row-gap: var(--kb-row-gap);
+    --pad-x: var(--kb-btn-pad-x);
+    --inner-gap: var(--kb-btn-inner-gap);
 
-    --font-size: 13px;
-    --icon-size: 15px;
-    --radius: 10px;
+    --font-size: var(--kb-font-size);
+    --icon-size: var(--kb-icon-size);
+    --radius: var(--kb-radius);
 
-    opacity: 1;
+    opacity: var(--kb-show-opacity);
     transform: translate3d(0, 0, 0);
+
     transition:
-        opacity 160ms ease,
-        transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        opacity var(--kb-opacity-transition),
+        transform var(--kb-transform-transition);
+
     will-change: opacity, transform;
     gap: var(--row-gap);
-}
 
-#keyboard-emu.kb-hidden {
-    opacity: 0;
-    transform: translate3d(0, 110%, 0);
-    pointer-events: none;
-}
+    &.kb-hidden {
+        opacity: var(--kb-hide-opacity);
+        transform: translate3d(0, var(--kb-hide-translate-y), 0);
+        pointer-events: none;
+    }
 
-#keyboard-emu .fn-grid-wrap {
-    display: none;
-    width: 100%;
-    overflow: hidden;
-}
+    & .fn-grid-wrap {
+        display: none;
+        width: 100%;
+        overflow: hidden;
+    }
 
-#keyboard-emu.fn-on .fn-grid-wrap {
-    display: flex;
-    justify-content: center;
-}
+    &.fn-on .fn-grid-wrap {
+        display: flex;
+        justify-content: center;
+    }
 
-#keyboard-emu .fn-grid {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: var(--key-w);
-    grid-template-rows: var(--key-h);
-    gap: var(--btn-gap);
-    align-items: stretch;
-    justify-content: start;
+    & .fn-grid {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: var(--key-w);
+        grid-template-rows: var(--key-h);
+        gap: var(--btn-gap);
 
-    transform-origin: center top;
-    will-change: transform;
-}
+        align-items: stretch;
+        justify-content: start;
 
-#keyboard-emu .key-grid {
-    display: grid;
-    grid-template-columns: repeat(7, var(--key-w));
-    grid-template-rows: repeat(2, var(--key-h));
-    gap: var(--btn-gap);
-    align-items: stretch;
-    justify-content: center;
-}
+        transform-origin: center top;
+        will-change: transform;
+    }
 
-#keyboard-emu button {
-    appearance: none;
+    & .key-grid {
+        display: grid;
+        grid-template-columns: repeat(7, var(--key-w));
+        grid-template-rows: repeat(2, var(--key-h));
+        gap: var(--btn-gap);
 
-    border: 1px solid var(--kb-btn-border);
-    background: var(--kb-btn-bg);
-    color: var(--kb-btn-text);
+        align-items: stretch;
+        justify-content: center;
+    }
 
-    border-radius: var(--radius);
+    & button {
+        appearance: none;
 
-    height: 100%;
-    width: 100%;
-    min-width: 0;
+        border: 1px solid var(--kb-btn-border);
+        background: var(--kb-btn-bg);
+        color: var(--kb-btn-text);
 
-    padding: 0 var(--pad-x);
+        border-radius: var(--radius);
 
-    font-family:
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-    font-weight: 600;
-    font-size: var(--font-size);
-    line-height: 1;
+        height: 100%;
+        width: 100%;
+        min-width: 0;
 
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--inner-gap);
-    white-space: nowrap;
+        padding: 0 var(--pad-x);
 
-    overflow: hidden;
-}
+        font-family:
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
 
-#keyboard-emu button:active {
-    transform: scale(0.98);
-}
+        font-weight: 600;
+        font-size: var(--font-size);
+        line-height: 1;
 
-#keyboard-emu button.sticky-on {
-    background: var(--kb-sticky-bg);
-    border-color: var(--kb-sticky-border);
-}
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--inner-gap);
 
-#keyboard-emu .key-icon {
-    font-size: var(--icon-size);
-    line-height: 1;
-    flex: 0 0 auto;
-}
+        white-space: nowrap;
+        overflow: hidden;
 
-#keyboard-emu .key-text {
-    opacity: var(--kb-text-opacity);
-    flex: 0 1 auto;
-}
+        &:active {
+            transform: scale(var(--kb-active-scale));
+        }
 
-#keyboard-emu button.plain {
-    padding: 0;
-}
+        &.sticky-on {
+            background: var(--kb-sticky-bg);
+            border-color: var(--kb-sticky-border);
+        }
 
-#keyboard-emu button.stacked {
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 2px;
-    padding-top: 2px;
-    padding-bottom: 2px;
-}
+        &.plain {
+            padding: 0;
+        }
 
-#keyboard-emu button.stacked .key-text {
-    font-size: calc(var(--font-size) * 0.92);
-    line-height: 1;
-}
+        &.stacked {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
 
-#keyboard-emu .arrow {
-    font-size: calc(var(--font-size) * 1.1);
-    padding: 0;
-}
+            gap: var(--kb-stacked-gap);
+            padding-top: var(--kb-stacked-pad-y);
+            padding-bottom: var(--kb-stacked-pad-y);
 
-#keyboard-emu .esc-key {
-    grid-column: 1;
-    grid-row: 1;
-}
+            & .key-text {
+                font-size: calc(var(--font-size) * var(--kb-stacked-text-scale));
+                line-height: 1;
+            }
+        }
+    }
 
-#keyboard-emu .ctrl-key {
-    grid-column: 2;
-    grid-row: 1;
-}
+    & .key-icon {
+        font-size: var(--icon-size);
+        line-height: 1;
+        flex: 0 0 auto;
+    }
 
-#keyboard-emu .alt-key {
-    grid-column: 3;
-    grid-row: 1;
-}
+    & .key-text {
+        opacity: var(--kb-text-opacity);
+        flex: 0 1 auto;
+    }
 
-#keyboard-emu .meta-key {
-    grid-column: 4;
-    grid-row: 1;
-}
+    & .arrow {
+        font-size: calc(var(--font-size) * var(--kb-arrow-scale));
+        padding: 0;
+    }
 
-#keyboard-emu .up-key {
-    grid-column: 5;
-    grid-row: 1;
-}
+    /* Key placement */
+    & .esc-key {
+        grid-column: 1;
+        grid-row: 1;
+    }
 
-#keyboard-emu .return-key {
-    grid-column: 6 / span 2;
-    grid-row: 1;
-}
+    & .ctrl-key {
+        grid-column: 2;
+        grid-row: 1;
+    }
 
-#keyboard-emu .shift-key {
-    grid-column: 1 / span 2;
-    grid-row: 2;
-}
+    & .alt-key {
+        grid-column: 3;
+        grid-row: 1;
+    }
 
-#keyboard-emu .tab-key {
-    grid-column: 3;
-    grid-row: 2;
-}
+    & .meta-key {
+        grid-column: 4;
+        grid-row: 1;
+    }
 
-#keyboard-emu .left-key {
-    grid-column: 4;
-    grid-row: 2;
-}
+    & .up-key {
+        grid-column: 5;
+        grid-row: 1;
+    }
 
-#keyboard-emu .down-key {
-    grid-column: 5;
-    grid-row: 2;
-}
+    & .return-key {
+        grid-column: 6 / span 2;
+        grid-row: 1;
+    }
 
-#keyboard-emu .right-key {
-    grid-column: 6;
-    grid-row: 2;
-}
+    & .shift-key {
+        grid-column: 1 / span 2;
+        grid-row: 2;
+    }
 
-#keyboard-emu .fn-key {
-    grid-column: 7;
-    grid-row: 2;
+    & .tab-key {
+        grid-column: 3;
+        grid-row: 2;
+    }
+
+    & .left-key {
+        grid-column: 4;
+        grid-row: 2;
+    }
+
+    & .down-key {
+        grid-column: 5;
+        grid-row: 2;
+    }
+
+    & .right-key {
+        grid-column: 6;
+        grid-row: 2;
+    }
+
+    & .fn-key {
+        grid-column: 7;
+        grid-row: 2;
+    }
 }

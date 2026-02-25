@@ -3,12 +3,36 @@
     (.frame, header/nav/footer, shared layout primitives)
 ========================================= */
 
-.kitty-intro,
-.comments-container,
-.commits-outer-container,
-.blog-wrapper,
-.rss-post-block {
-    border: 1.5px solid var(--frame-border-light);
+:root {
+    --layout-panel-border-width: 1.5px;
+
+    --layout-frame-radius: 15px;
+    --layout-frame-max-width: 1200px;
+    --layout-frame-outer-margin-block: 20px;
+    --layout-frame-outer-margin-inline: auto;
+
+    --layout-header-padding: 20px;
+    --layout-header-font-size: 1.8rem;
+
+    --layout-nav-padding: 15px;
+    --layout-nav-gap: 15px;
+    --layout-nav-border-width: 2px;
+
+    --layout-main-padding: 20px;
+    --layout-main-font-size: 1.2rem;
+    --layout-main-line-height: 1.6;
+
+    --layout-footer-padding-block: 10px;
+    --layout-footer-font-size: 0.9rem;
+    --layout-footer-border-width: 2px;
+}
+
+:is(.kitty-intro,
+    .comments-container,
+    .commits-outer-container,
+    .blog-wrapper,
+    .rss-post-block) {
+    border: var(--layout-panel-border-width) solid var(--frame-border-light);
 }
 
 /* Frame styles */
@@ -16,7 +40,6 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    /* Pushes content and footer apart */
     min-height: 100vh;
     height: fit-content;
 
@@ -25,11 +48,13 @@
     position: relative;
 
     background-color: var(--frame-bg-colour);
-    border-radius: 15px;
+    border-radius: var(--layout-frame-radius);
     box-shadow: var(--frame-box-shadow);
+
     width: var(--frame-width);
-    max-width: 1200px;
-    margin: 20px auto;
+    max-width: var(--layout-frame-max-width);
+
+    margin: var(--layout-frame-outer-margin-block) var(--layout-frame-outer-margin-inline);
     overflow: auto;
 }
 
@@ -37,49 +62,59 @@
 header {
     background-color: var(--header-bg-colour);
     color: var(--header-text-colour);
-    padding: 20px;
+
+    padding: var(--layout-header-padding);
     text-align: center;
-    font-size: 1.8rem;
-    font-weight: bold;
+
+    font-size: var(--layout-header-font-size);
+    font-weight: 700;
+
     box-shadow: var(--frame-box-shadow);
 }
 
 /* Menu container (nav) */
 nav {
     background-color: var(--nav-bg-colour);
-    padding: 15px;
+    padding: var(--layout-nav-padding);
+
     display: flex;
-    gap: 15px;
-    border-bottom: 2px solid var(--nav-border-colour);
+    gap: var(--layout-nav-gap);
+
+    border-bottom: var(--layout-nav-border-width) solid var(--nav-border-colour);
+
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
-    /* Smooth scrolling on mobile */
-}
 
-nav::-webkit-scrollbar {
-    display: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
 /* Body content styles */
 #main-content {
-    padding: 20px;
+    padding: var(--layout-main-padding);
     text-align: center;
-    font-size: 1.2rem;
-    line-height: 1.6;
+
+    font-size: var(--layout-main-font-size);
+    line-height: var(--layout-main-line-height);
 }
 
 /* Footer styles */
 footer {
     background-color: var(--footer-bg-colour);
     color: var(--footer-text-colour);
+
     text-align: center;
-    padding: 10px var(--frame-padding);
-    font-size: 0.9rem;
-    border-top: 2px solid var(--footer-border-colour);
+    padding: var(--layout-footer-padding-block) var(--frame-padding);
+
+    font-size: var(--layout-footer-font-size);
+    border-top: var(--layout-footer-border-width) solid var(--footer-border-colour);
+
     left: 0;
     right: 0;
     bottom: 0;
+
     box-sizing: border-box;
     width: 100%;
 }

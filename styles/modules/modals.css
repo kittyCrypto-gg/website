@@ -19,6 +19,30 @@
     z-index: 9999;
 }
 
+/* =========================================
+    Temporary Notice
+========================================= */
+
+.temporary-notice {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+
+    padding: var(--temporary-notice-padding-block, var(--comments-notice-padding-block)) var(--temporary-notice-padding-inline, var(--comments-notice-padding-inline));
+
+    background-color: var(--chatroom-bg-colour);
+    color: var(--chatroom-text-colour);
+
+    border: var(--temporary-notice-border-width, var(--comments-notice-border-width)) solid var(--nav-border-colour);
+    border-radius: var(--temporary-notice-radius, var(--comments-notice-radius));
+
+    box-shadow: var(--frame-box-shadow);
+    font-weight: var(--temporary-notice-font-weight, var(--comments-notice-font-weight));
+
+    z-index: var(--temporary-notice-z-index, var(--comments-notice-z-index));
+    transition: opacity var(--temporary-notice-fade, var(--comments-notice-fade));
+}
+
 /* =========================
     Edit Message Modal
 ========================= */

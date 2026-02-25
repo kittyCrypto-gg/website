@@ -5,108 +5,127 @@
 .tooltip {
     position: relative;
     display: inline-block;
+
+    .tooltip-trigger {
+        cursor: help;
+        display: inline-block;
+        position: relative;
+        color: var(--banner-teal);
+        background: color-mix(in srgb, var(--body-text-colour-light) 10%, transparent);
+        border-radius: var(--tooltip-radius);
+        padding: 2px;
+        transition: background-color 0.2s;
+
+        &:focus {
+            outline: none;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--menu-button-hover-bg-colour);
+            outline-offset: 2px;
+        }
+    }
+
+    .tooltip-content {
+        --tt-fade: var(--tooltip-fade-duration);
+        --tt-vis-delay: var(--tt-fade);
+        --tt-hidden-transform: translateX(-50%) translateY(6px) scale(0.98);
+        --tt-show-transform: translateX(-50%) translateY(0) scale(1);
+
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 8px);
+
+        background-color: var(--tooltip-bg-colour);
+        color: var(--tooltip-text-colour);
+        border: 1px solid var(--tooltip-border-colour);
+        border-radius: var(--tooltip-radius);
+        box-shadow: var(--tooltip-shadow);
+
+        padding: var(--tooltip-padding);
+        max-width: var(--tooltip-max-width);
+        width: max-content;
+
+        font-size: 0.95em;
+        line-height: 1.4;
+
+        z-index: var(--tooltip-z-index);
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: var(--tt-hidden-transform);
+
+        transition:
+            opacity var(--tt-fade) ease,
+            transform var(--tt-fade) ease,
+            visibility 0s linear var(--tt-vis-delay);
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--tooltip-bg-colour) transparent transparent transparent;
+        }
+
+        b {
+            font-weight: 600;
+        }
+
+        i {
+            font-style: italic;
+        }
+
+        a {
+            color: var(--menu-button-text-colour);
+            text-decoration: underline;
+
+            &:hover {
+                color: var(--banner-blue);
+            }
+        }
+    }
+
+    /* Show tooltip */
+    &.show,
+    &:hover {
+        .tooltip-content {
+            --tt-vis-delay: 0s;
+
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: var(--tt-show-transform);
+        }
+    }
+
+    /* Hide the inline tooltip while a portal tooltip is active */
+    &.portal-active {
+        .tooltip-content {
+            --tt-vis-delay: var(--tt-fade);
+
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: var(--tt-hidden-transform);
+        }
+    }
 }
 
-.tooltip-trigger {
-    cursor: help;
-    display: inline-block;
-    position: relative;
-    color: var(--banner-teal);
-    background: color-mix(in srgb, var(--body-text-colour-light) 10%, transparent);
-    border-radius: var(--tooltip-radius);
-    padding: 2px;
-    transition: background-color 0.2s;
+.light-mode {
+    .tooltip-trigger {
+        color: color-mix(in srgb, var(--banner-teal) 50%, black);
+    }
 }
 
-.light-mode .tooltip-trigger {
-    color: color-mix(in srgb, var(--banner-teal) 50%, black);
-}
-
-.dark-mode .tooltip-trigger {
-    background: color-mix(in srgb, var(--body-text-colour-light) 80%, transparent);
-}
-
-.tooltip-content {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 8px);
-
-    background-color: var(--tooltip-bg-colour);
-    color: var(--tooltip-text-colour);
-    border: 1px solid var(--tooltip-border-colour);
-    border-radius: var(--tooltip-radius);
-    box-shadow: var(--tooltip-shadow);
-
-    padding: var(--tooltip-padding);
-    max-width: var(--tooltip-max-width);
-    width: max-content;
-
-    font-size: 0.95em;
-    line-height: 1.4;
-
-    z-index: var(--tooltip-z-index);
-
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transform: translateX(-50%) translateY(6px) scale(0.98);
-
-    transition:
-        opacity var(--tooltip-fade-duration) ease,
-        transform var(--tooltip-fade-duration) ease,
-        visibility 0s linear var(--tooltip-fade-duration);
-}
-
-/* Show tooltip */
-.tooltip.show .tooltip-content,
-.tooltip:hover .tooltip-content {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translateX(-50%) translateY(0) scale(1);
-
-    transition:
-        opacity var(--tooltip-fade-duration) ease,
-        transform var(--tooltip-fade-duration) ease,
-        visibility 0s;
-}
-
-.tooltip-content::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-
-    border-width: 6px;
-    border-style: solid;
-    border-color: var(--tooltip-bg-colour) transparent transparent transparent;
-}
-
-.tooltip-content b {
-    font-weight: 600;
-}
-
-.tooltip-content i {
-    font-style: italic;
-}
-
-.tooltip-content a {
-    color: var(--menu-button-text-colour);
-    text-decoration: underline;
-}
-
-.tooltip-content a:hover {
-    color: var(--banner-blue);
-}
-
-.tooltip-trigger:focus {
-    outline: none;
-}
-
-.tooltip-trigger:focus-visible {
-    outline: 2px solid var(--menu-button-hover-bg-colour);
-    outline-offset: 2px;
+.dark-mode {
+    .tooltip-trigger {
+        background: color-mix(in srgb, var(--body-text-colour-light) 80%, transparent);
+    }
 }
 
 /* =========================================
@@ -118,55 +137,28 @@
     inset: 0;
     z-index: var(--tooltip-z-index);
     pointer-events: none;
-}
 
-#tooltip-portal .tooltip.portal {
-    position: fixed;
-    left: 0;
-    top: 0;
-}
+    .tooltip.portal {
+        position: fixed;
+        left: 0;
+        top: 0;
 
-#tooltip-portal .tooltip.portal .tooltip-content {
-    position: relative;
-    left: 0;
-    top: 0;
-    bottom: auto;
+        .tooltip-content {
+            --tt-hidden-transform: translateY(6px) scale(0.98);
+            --tt-show-transform: translateY(0) scale(1);
 
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+            position: relative;
+            left: 0;
+            top: 0;
+            bottom: auto;
+        }
 
-    transform: translateY(6px) scale(0.98);
-
-    transition:
-        opacity var(--tooltip-fade-duration) ease,
-        transform var(--tooltip-fade-duration) ease,
-        visibility 0s linear var(--tooltip-fade-duration);
-}
-
-#tooltip-portal .tooltip.portal.show .tooltip-content {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-
-    transform: translateY(0) scale(1);
-
-    transition:
-        opacity var(--tooltip-fade-duration) ease,
-        transform var(--tooltip-fade-duration) ease,
-        visibility 0s;
-}
-
-#tooltip-portal .tooltip.portal.below .tooltip-content::after {
-    top: auto;
-    bottom: 100%;
-    border-color: transparent transparent var(--tooltip-bg-colour) transparent;
-}
-
-/* Hide the inline tooltip while a portal tooltip is active */
-.tooltip.portal-active .tooltip-content {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transform: translateX(-50%) translateY(6px) scale(0.98);
+        &.below {
+            .tooltip-content::after {
+                top: auto;
+                bottom: 100%;
+                border-color: transparent transparent var(--tooltip-bg-colour) transparent;
+            }
+        }
+    }
 }

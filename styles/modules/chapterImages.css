@@ -2,40 +2,68 @@
     Module: Chapter Images (zoom + nav overlay)
 ========================================= */
 
+:root {
+    --chapter-image-margin-block: 20px;
+    --chapter-image-radius: 8px;
+
+    --chapter-image-border-width: 2px;
+
+    --chapter-image-zoom-scale: 2;
+    --chapter-image-transition: 0.3s ease;
+
+    --image-nav-offset: 15px;
+    --image-nav-gap: 5px;
+    --image-nav-z-index: 10;
+    --image-nav-fade: 0.3s ease;
+
+    --image-nav-button-font-size: 2.5rem;
+    --image-nav-button-hover-scale: 1.1;
+    --image-nav-button-active-scale: 0.95;
+    --image-nav-button-transition: 0.1s;
+
+    --image-nav-button-shadow: none;
+}
+
 .chapter-image-container {
     display: flex;
     justify-content: center;
-    margin: 20px 0;
+
+    margin: var(--chapter-image-margin-block) 0;
     overflow: hidden;
-    border-radius: 8px;
+
+    border-radius: var(--chapter-image-radius);
     max-width: 100%;
+
     position: relative;
 }
 
 .chapter-image {
     max-width: 100%;
-    border: 2px solid var(--body-text-colour);
-    border-radius: 8px;
+
+    border: var(--chapter-image-border-width) solid var(--body-text-colour);
+    border-radius: var(--chapter-image-radius);
+
     box-shadow: var(--frame-box-shadow);
+
     cursor: zoom-in;
     object-fit: cover;
 
     transition:
-        transform 0.3s ease,
-        transform-origin 0.3s ease;
+        transform var(--chapter-image-transition),
+        transform-origin var(--chapter-image-transition);
 
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     user-select: none;
 
     touch-action: manipulation;
-}
 
-/* Zoom effect */
-.chapter-image.active {
-    transform: scale(2);
-    cursor: move;
-    touch-action: none;
+    /* Zoom effect */
+    &.active {
+        transform: scale(var(--chapter-image-zoom-scale));
+        cursor: move;
+        touch-action: none;
+    }
 }
 
 /* =========================================
@@ -44,52 +72,61 @@
 
 .image-nav {
     position: absolute;
-    bottom: 15px;
-    right: 15px;
+    bottom: var(--image-nav-offset);
+    right: var(--image-nav-offset);
+
     display: none;
     flex-direction: column;
-    gap: 5px;
-    z-index: 10;
+    gap: var(--image-nav-gap);
+
+    z-index: var(--image-nav-z-index);
+
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--image-nav-fade);
+
+    /* Show overlay when image is zoomed */
+    .chapter-image.active+& {
+        display: flex;
+        opacity: 1;
+    }
+
+    /* Transparent buttons with padding for usability */
+    & button {
+        all: unset;
+
+        font-size: var(--image-nav-button-font-size);
+        cursor: pointer;
+
+        padding: 0;
+
+        box-shadow: var(--image-nav-button-shadow);
+        color: inherit;
+
+        transition: transform var(--image-nav-button-transition);
+
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        user-select: none;
+
+        &:hover {
+            transform: scale(var(--image-nav-button-hover-scale));
+            background: none;
+            color: inherit;
+        }
+
+        &:active {
+            transform: scale(var(--image-nav-button-active-scale));
+        }
+    }
 }
-
-/* Show overlay when image is zoomed */
-.chapter-image.active+.image-nav {
-    display: flex;
-    opacity: 1;
-}
-
-/* Transparent buttons with padding for usability */
-.image-nav button {
-    all: unset;
-    font-size: 2.5rem;
-    cursor: pointer;
-    padding: 0;
-    background: none;
-    border: none;
-    box-shadow: var(--frame-box-shadow);
-    color: inherit;
-    transition: transform 0.1s;
-
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-}
-
-.image-nav button:hover {
-    transform: scale(1.1);
-}
-
-.image-nav button:active {
-    transform: scale(0.95);
-}
-
 /* Ensure transparency in dark mode too */
-.dark-mode .image-nav button,
-.dark-mode .image-nav button:hover {
-    background: none;
-    color: inherit;
+.dark-mode {
+    & .image-nav {
+
+        & button,
+        & button:hover {
+            background: var(--image-nav-button-background);
+            color: inherit;
+        }
+    }
 }

@@ -2,133 +2,277 @@
     Module: Reader
 ========================================= */
 
-/* Reader controls: top bar with chapter navigation and font controls */
+:root {
+    /* Reader controls (top bar) */
+    --reader-controls-transition: 0.2s ease;
+
+    --reader-controls-detached-z-index: 2000;
+    --reader-controls-detached-max-width: 1200px;
+
+    --reader-controls-detached-bg-alpha: 0.88;
+    --reader-controls-detached-opacity: 0.92;
+
+    --reader-controls-detached-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+
+    /* Chapter navigation buttons */
+    --reader-nav-btn-font-size: 1.5rem;
+    --reader-nav-btn-padding-inline: 4px;
+    --reader-nav-btn-disabled-opacity: 0.4;
+
+    --reader-nav-crossed-slash-colour: red;
+    --reader-nav-crossed-slash-height: 2px;
+    --reader-nav-crossed-slash-rotate: 45deg;
+
+    /* Font controls */
+    --reader-font-controls-gap: 0.5em;
+    --reader-font-controls-margin-top: 0.5em;
+
+    --reader-font-btn-font-size: 1.3rem;
+    --reader-font-btn-padding: 5px;
+    --reader-font-btn-hover-scale: 1.2;
+
+    /* Chapter inputs */
+    --reader-chapter-input-width: 2ch;
+    --reader-chapter-input-font-size: 1rem;
+    --reader-chapter-input-font-weight: 700;
+
+    --reader-chapter-input-padding-block: 2px;
+    --reader-chapter-input-padding-inline: 4px;
+
+    --reader-chapter-input-radius: 4px;
+
+    /* Story picker */
+    --reader-story-picker-margin-block: 15px;
+
+    --reader-story-selector-radius: 8px;
+    --reader-story-selector-border-width: 1px;
+    --reader-story-selector-padding-block: 8px;
+    --reader-story-selector-padding-inline: 12px;
+    --reader-story-selector-font-size: 1rem;
+    --reader-story-selector-font-weight: 700;
+    --reader-story-selector-hover-transition: 0.3s ease;
+
+    /* Reader container */
+    --reader-container-padding: 20px;
+    --reader-container-radius: 12px;
+    --reader-container-margin-block: 20px;
+    --reader-container-width: 90%;
+    --reader-container-max-width: 800px;
+
+    --reader-container-font-size: 1.2rem;
+    --reader-container-line-height: 1.8;
+
+    /* Reader block styling */
+    --reader-title-font-size: 2.2em;
+    --reader-title-font-weight: 700;
+    --reader-title-margin-top: 2em;
+    --reader-title-margin-bottom: 1em;
+
+    --reader-subtitle-font-size: 1.6em;
+    --reader-subtitle-font-weight: 600;
+    --reader-subtitle-margin-top: 1.5em;
+    --reader-subtitle-margin-bottom: 1em;
+
+    --reader-paragraph-line-height: 1.75;
+    --reader-paragraph-margin-block: 1.2em;
+    --reader-paragraph-max-width: 65ch;
+
+    --reader-quote-bg: rgba(0, 0, 0, 0.05);
+    --reader-quote-bg-dark: rgba(255, 255, 255, 0.05);
+
+    --reader-quote-border-width: 4px;
+    --reader-quote-margin-block: 1.5em;
+    --reader-quote-padding-block: 1em;
+    --reader-quote-padding-inline: 1.5em;
+    --reader-quote-max-width: 60ch;
+
+    --reader-intense-bg: rgba(255, 213, 79, 0.1);
+    --reader-intense-border-colour: gold;
+
+    --reader-intense-bg-dark: rgba(255, 230, 128, 0.1);
+    --reader-intense-border-colour-dark: #ffcc00;
+
+    /* Highlighting */
+    --reader-highlight-bg: #f9e79f;
+    --reader-highlight-text-colour: #222;
+    --reader-highlight-transition: 2s ease-in-out;
+
+    /* Bookmark emoji */
+    --reader-bookmark-emoji-gap: 0.4em;
+
+    /* Paragraph numbers */
+    --reader-para-num-col-width: 3ch;
+    --reader-para-num-gap: 0.9em;
+
+    --reader-para-num-wrapper-radius: 10px;
+    --reader-para-num-wrapper-padding-inline: 0.6em;
+
+    --reader-para-num-font-size: 0.9em;
+    --reader-para-num-opacity: 0.55;
+    --reader-para-num-margin-top: 1.2em;
+
+    --reader-para-num-odd-bg: rgba(0, 0, 0, 0.03);
+    --reader-para-num-odd-bg-dark: rgba(255, 255, 255, 0.04);
+
+    /* Chapter 404 */
+    --reader-404-padding: 40px;
+    --reader-404-font-size: 1.2rem;
+}
+
+/* =========================================
+    Reader controls (top bar)
+========================================= */
+
 .reader-controls-top {
     background: var(--frame-bg-colour);
     box-shadow: none;
     z-index: auto;
 
     transition:
-        opacity 0.2s ease,
-        background 0.2s ease,
-        box-shadow 0.2s ease,
-        transform 0.2s ease;
-}
+        opacity var(--reader-controls-transition),
+        background var(--reader-controls-transition),
+        box-shadow var(--reader-controls-transition),
+        transform var(--reader-controls-transition);
 
-/* Detached state: floating, translucent, hard top */
-.reader-controls-top.is-detached {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    &.is-detached {
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
 
-    width: var(--frame-width);
-    max-width: 1200px;
+        width: var(--frame-width);
+        max-width: var(--reader-controls-detached-max-width);
 
-    z-index: 2000;
+        z-index: var(--reader-controls-detached-z-index);
 
-    background: rgba(var(--frame-bg-colour-rgb), 0.88);
-    opacity: 0.92;
+        background: rgba(var(--frame-bg-colour-rgb), var(--reader-controls-detached-bg-alpha));
+        opacity: var(--reader-controls-detached-opacity);
 
-    box-shadow:
-        0 6px 18px rgba(0, 0, 0, 0.25),
-        var(--frame-box-shadow);
+        box-shadow:
+            var(--reader-controls-detached-shadow),
+            var(--frame-box-shadow);
+    }
 }
 
 /* =========================================
     Chapter Navigation Buttons
 ========================================= */
-.chapter-navigation button {
-    all: unset;
-    font-size: 1.5rem;
-    cursor: pointer;
-    line-height: 1;
-    color: var(--body-text-colour);
-    display: inline-block;
-    padding: 0 4px;
+
+.chapter-navigation {
+    button {
+        all: unset;
+        font-size: var(--reader-nav-btn-font-size);
+        cursor: pointer;
+        line-height: 1;
+
+        color: var(--body-text-colour);
+
+        display: inline-block;
+        padding: 0 var(--reader-nav-btn-padding-inline);
+
+        &:disabled {
+            opacity: var(--reader-nav-btn-disabled-opacity);
+            cursor: not-allowed;
+        }
+
+        &.menu-crossed {
+            position: relative;
+
+            &::after {
+                content: "";
+                position: absolute;
+
+                top: 50%;
+                left: 50%;
+
+                width: 100%;
+                height: var(--reader-nav-crossed-slash-height);
+
+                background: var(--reader-nav-crossed-slash-colour);
+
+                transform: translate(-50%, -50%) rotate(var(--reader-nav-crossed-slash-rotate));
+                transform-origin: center;
+
+                pointer-events: none;
+            }
+        }
+    }
 }
 
-.chapter-navigation button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-/* Only the crossed state gets a positioning context */
-.chapter-navigation button.menu-crossed {
-    position: relative;
-}
-
-/* Draw the slash without changing the button box model */
-.chapter-navigation button.menu-crossed::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-
-    width: 100%;
-    height: 2px;
-
-    background: red;
-    transform: translate(-50%, -50%) rotate(45deg);
-    transform-origin: center;
-
-    pointer-events: none;
-}
-
-/* Dark mode (kept explicit for clarity) */
-.dark-mode .chapter-navigation button {
-    color: var(--body-text-colour);
+/* Kept explicit for clarity and to protect against cross-module overrides */
+.dark-mode {
+    .chapter-navigation {
+        button {
+            color: var(--body-text-colour);
+        }
+    }
 }
 
 /* =========================================
     Font Controls
 ========================================= */
+
 .font-controls {
     display: flex;
     justify-content: center;
-    gap: 0.5em;
-    margin-top: 0.5em;
+
+    gap: var(--reader-font-controls-gap);
+    margin-top: var(--reader-font-controls-margin-top);
+
+    button {
+        background: none;
+        border: none;
+
+        font-size: var(--reader-font-btn-font-size);
+        cursor: pointer;
+
+        padding: var(--reader-font-btn-padding);
+        color: var(--body-text-colour);
+
+        &:hover {
+            transform: scale(var(--reader-font-btn-hover-scale));
+        }
+    }
 }
 
-.font-controls button {
-    background: none;
-    border: none;
-    font-size: 1.3rem;
-    cursor: pointer;
-    padding: 5px;
-    color: var(--body-text-colour);
-}
-
-.font-controls button:hover {
-    transform: scale(1.2);
-}
-
-.dark-mode .font-controls button {
-    color: var(--body-text-colour);
+.dark-mode {
+    .font-controls {
+        button {
+            color: var(--body-text-colour);
+        }
+    }
 }
 
 /* =========================================
     Chapter Navigation Inputs
 ========================================= */
-.chapter-display,
-.chapter-input {
-    width: 2ch;
+
+:is(.chapter-display, .chapter-input) {
+    width: var(--reader-chapter-input-width);
     text-align: center;
-    font-weight: bold;
-    font-size: 1rem;
-    padding: 2px 4px;
+
+    font-weight: var(--reader-chapter-input-font-weight);
+    font-size: var(--reader-chapter-input-font-size);
+
+    padding: var(--reader-chapter-input-padding-block) var(--reader-chapter-input-padding-inline);
+
     border: none;
-    border-radius: 4px;
+    border-radius: var(--reader-chapter-input-radius);
+
     background-color: var(--chat-input-bg-colour);
     color: var(--chat-input-text-colour);
+
     appearance: textfield;
 }
 
 /* Remove spinners in Chrome/Safari */
-.chapter-input::-webkit-outer-spin-button,
-.chapter-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+.chapter-input {
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
 }
 
 /* Readonly display input */
@@ -140,146 +284,182 @@
 
 /* END button */
 .chapter-end {
-    width: 2ch;
+    width: var(--reader-chapter-input-width);
     text-align: center;
-    font-weight: bold;
-    font-size: 1rem;
-    padding: 2px 4px;
+
+    font-weight: var(--reader-chapter-input-font-weight);
+    font-size: var(--reader-chapter-input-font-size);
+
+    padding: var(--reader-chapter-input-padding-block) var(--reader-chapter-input-padding-inline);
+
     border: none;
+
     background: transparent;
     color: var(--body-text-colour);
 }
 
-.dark-mode .chapter-display,
-.dark-mode .chapter-input,
-.dark-mode .chapter-end {
-    background-color: var(--chat-input-bg-colour);
-    color: var(--chat-input-text-colour);
-}
+.dark-mode {
+    :is(.chapter-display, .chapter-input, .chapter-end) {
+        background-color: var(--chat-input-bg-colour);
+        color: var(--chat-input-text-colour);
+    }
 
-.dark-mode .chapter-end {
-    color: var(--body-text-colour);
+    .chapter-end {
+        color: var(--body-text-colour);
+    }
 }
 
 /* =========================================
     Story Selector Dropdown
 ========================================= */
+
 #story-picker {
-    margin: 15px auto;
+    margin: var(--reader-story-picker-margin-block) auto;
     text-align: center;
 }
 
 .story-selector {
     background-color: var(--menu-button-bg-colour);
     color: var(--menu-button-text-colour);
-    border: 1px solid var(--nav-border-colour);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 1rem;
-    font-weight: bold;
+
+    border: var(--reader-story-selector-border-width) solid var(--nav-border-colour);
+    border-radius: var(--reader-story-selector-radius);
+
+    padding:
+        var(--reader-story-selector-padding-block) var(--reader-story-selector-padding-inline);
+
+    font-size: var(--reader-story-selector-font-size);
+    font-weight: var(--reader-story-selector-font-weight);
+
     cursor: pointer;
-    transition: background-color 0.3s ease;
+
+    transition: background-color var(--reader-story-selector-hover-transition);
+
+    &:hover {
+        background-color: var(--menu-button-hover-bg-colour);
+    }
 }
 
-.story-selector:hover {
-    background-color: var(--menu-button-hover-bg-colour);
-}
-
-.dark-mode .story-selector {
-    background-color: var(--menu-button-bg-colour);
-    color: var(--menu-button-text-colour);
-    border-color: var(--nav-border-colour);
+.dark-mode {
+    .story-selector {
+        background-color: var(--menu-button-bg-colour);
+        color: var(--menu-button-text-colour);
+        border-color: var(--nav-border-colour);
+    }
 }
 
 /* =========================================
     Chapter Reader Container
 ========================================= */
+
 .reader-container {
     background-color: var(--frame-bg-colour);
-    padding: 20px;
-    border-radius: 12px;
+
+    padding: var(--reader-container-padding);
+    border-radius: var(--reader-container-radius);
+
     box-shadow: var(--frame-box-shadow);
-    margin: 20px auto;
-    width: 90%;
-    max-width: 800px;
+
+    margin: var(--reader-container-margin-block) auto;
+
+    width: var(--reader-container-width);
+    max-width: var(--reader-container-max-width);
 
     color: var(--body-text-colour);
-    font-size: 1.2rem;
-    line-height: 1.8;
+
+    font-size: var(--reader-container-font-size);
+    line-height: var(--reader-container-line-height);
 }
 
-.dark-mode .reader-container {
-    background-color: var(--frame-bg-colour);
-    color: var(--body-text-colour);
+.dark-mode {
+    .reader-container {
+        background-color: var(--frame-bg-colour);
+        color: var(--body-text-colour);
+    }
 }
 
 /* =========================================
     Reader: Block-Level Styling
 ========================================= */
+
 .reader-title {
-    font-size: 2.2em;
-    font-weight: bold;
+    font-size: var(--reader-title-font-size);
+    font-weight: var(--reader-title-font-weight);
+
     text-align: center;
-    margin-top: 2em;
-    margin-bottom: 1em;
+
+    margin-top: var(--reader-title-margin-top);
+    margin-bottom: var(--reader-title-margin-bottom);
 }
 
 .reader-subtitle {
-    font-size: 1.6em;
-    font-weight: 600;
+    font-size: var(--reader-subtitle-font-size);
+    font-weight: var(--reader-subtitle-font-weight);
+
     text-align: center;
-    margin-top: 1.5em;
-    margin-bottom: 1em;
+
+    margin-top: var(--reader-subtitle-margin-top);
+    margin-bottom: var(--reader-subtitle-margin-bottom);
+
     color: var(--header-text-colour);
 }
 
 .reader-paragraph {
     font-size: 1em;
-    line-height: 1.75;
-    margin: 1.2em auto;
-    max-width: 65ch;
+    line-height: var(--reader-paragraph-line-height);
+
+    margin: var(--reader-paragraph-margin-block) auto;
+    max-width: var(--reader-paragraph-max-width);
+
     text-align: justify;
+
     color: var(--body-text-colour);
 }
 
 .reader-quote {
     font-size: 1em;
     font-style: italic;
-    background-color: rgba(0, 0, 0, 0.05);
-    border-left: 4px solid var(--nav-border-colour);
-    margin: 1.5em auto;
-    padding: 1em 1.5em;
-    max-width: 60ch;
+
+    background-color: var(--reader-quote-bg);
+
+    border-left: var(--reader-quote-border-width) solid var(--nav-border-colour);
+
+    margin: var(--reader-quote-margin-block) auto;
+
+    padding: var(--reader-quote-padding-block) var(--reader-quote-padding-inline);
+
+    max-width: var(--reader-quote-max-width);
+
     color: var(--body-text-colour);
 }
 
 .reader-intense {
-    background-color: rgba(255, 213, 79, 0.1);
-    border-left-color: gold;
+    background-color: var(--reader-intense-bg);
+    border-left-color: var(--reader-intense-border-colour);
 }
 
-/* Dark mode tweaks for reader blocks */
-.dark-mode .reader-quote {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-left-color: var(--nav-border-colour);
-}
+.dark-mode {
+    .reader-quote {
+        background-color: var(--reader-quote-bg-dark);
+        border-left-color: var(--nav-border-colour);
+    }
 
-.dark-mode .reader-intense {
-    background-color: rgba(255, 230, 128, 0.1);
-    border-left-color: #ffcc00;
-}
+    .reader-intense {
+        background-color: var(--reader-intense-bg-dark);
+        border-left-color: var(--reader-intense-border-colour-dark);
+    }
 
-.dark-mode .reader-subtitle,
-.dark-mode .reader-title,
-.dark-mode .reader-paragraph {
-    color: var(--body-text-colour);
+    :is(.reader-subtitle, .reader-title, .reader-paragraph) {
+        color: var(--body-text-colour);
+    }
 }
 
 /* =========================================
     Reader: Inline Text Styles
 ========================================= */
+
 .reader-bold {
-    font-weight: bold;
+    font-weight: 700;
 }
 
 .reader-italic {
@@ -298,34 +478,40 @@
     font-variant: small-caps;
 }
 
-/* Highlighting used for bookmarks and read-aloud emphasis */
+/* =========================================
+    Highlighting (bookmarks and read-aloud emphasis)
+========================================= */
+
 .reader-highlight {
-    background-color: #f9e79f;
+    background-color: var(--reader-highlight-bg);
+
     transition:
-        background-color 2s ease-in-out,
-        color 2s ease-in-out;
+        background-color var(--reader-highlight-transition),
+        color var(--reader-highlight-transition);
 }
 
-.reader-bookmark.reader-highlight {
-    background-color: #f9e79f;
-    transition: background-color 2s ease-in-out;
-}
+.reader-bookmark {
+    &.reader-highlight {
+        background-color: var(--reader-highlight-bg);
+        transition: background-color var(--reader-highlight-transition);
 
-.reader-bookmark.reader-highlight .reader-paragraph {
-    color: #222;
-    transition: color 2s ease-in-out;
-}
+        .reader-paragraph {
+            color: var(--reader-highlight-text-colour);
+            transition: color var(--reader-highlight-transition);
+        }
+    }
 
-.reader-bookmark.fade-out {
-    background-color: transparent;
-}
+    &.fade-out {
+        background-color: transparent;
 
-.reader-bookmark.fade-out .reader-paragraph {
-    color: var(--chatroom-text-colour);
+        .reader-paragraph {
+            color: var(--chatroom-text-colour);
+        }
+    }
 }
 
 .bookmark-emoji {
-    margin-right: 0.4em;
+    margin-right: var(--reader-bookmark-emoji-gap);
     font-size: 1em;
     vertical-align: middle;
 }
@@ -333,61 +519,82 @@
 /* =========================================
     Reader: Paragraph Numbers
 ========================================= */
-#reader.reader-show-paragraph-numbers .reader-bookmark {
-    --reader-para-num-col-width: 3ch;
-    --reader-para-num-gap: 0.9em;
 
-    display: grid;
-    grid-template-columns: var(--reader-para-num-col-width) 1fr;
-    column-gap: var(--reader-para-num-gap);
-    align-items: start;
+#reader.reader-show-paragraph-numbers {
+    .reader-bookmark {
+        --reader-para-num-col-width: var(--reader-para-num-col-width);
+        --reader-para-num-gap: var(--reader-para-num-gap);
 
-    box-sizing: border-box;
-    max-width: calc(65ch + var(--reader-para-num-col-width) + var(--reader-para-num-gap));
-    margin-left: auto;
-    margin-right: auto;
+        display: grid;
+        grid-template-columns: var(--reader-para-num-col-width) 1fr;
+        column-gap: var(--reader-para-num-gap);
 
-    border-radius: 10px;
-    padding: 0 0.6em;
+        align-items: start;
 
-    justify-items: stretch;
+        box-sizing: border-box;
+
+        max-width: calc(65ch + var(--reader-para-num-col-width) + var(--reader-para-num-gap));
+
+        margin-left: auto;
+        margin-right: auto;
+
+        border-radius: var(--reader-para-num-wrapper-radius);
+        padding: 0 var(--reader-para-num-wrapper-padding-inline);
+
+        justify-items: stretch;
+
+        &:nth-child(odd) {
+            background-color: var(--reader-para-num-odd-bg);
+        }
+
+        > :is(.reader-paragraph, .reader-title, .reader-subtitle, .reader-quote) {
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            justify-self: stretch;
+        }
+    }
+
+    .reader-paragraph-num {
+        font-family: monospace;
+        font-size: var(--reader-para-num-font-size);
+        line-height: var(--reader-paragraph-line-height);
+
+        text-align: right;
+
+        opacity: var(--reader-para-num-opacity);
+
+        user-select: none;
+
+        margin-top: var(--reader-para-num-margin-top);
+    }
 }
 
-#reader.reader-show-paragraph-numbers .reader-paragraph-num {
-    font-family: monospace;
-    font-size: 0.9em;
-    line-height: 1.75;
-    text-align: right;
-    opacity: 0.55;
-    user-select: none;
-    margin-top: 1.2em;
-}
-
-#reader.reader-show-paragraph-numbers .reader-bookmark:nth-child(odd) {
-    background-color: rgba(0, 0, 0, 0.03);
-}
-
-.dark-mode #reader.reader-show-paragraph-numbers .reader-bookmark:nth-child(odd) {
-    background-color: rgba(255, 255, 255, 0.04);
-}
-
-#reader.reader-show-paragraph-numbers .reader-bookmark> :is(.reader-paragraph, .reader-title, .reader-subtitle, .reader-quote) {
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
-    justify-self: stretch;
+.dark-mode {
+    #reader.reader-show-paragraph-numbers {
+        .reader-bookmark {
+            &:nth-child(odd) {
+                background-color: var(--reader-para-num-odd-bg-dark);
+            }
+        }
+    }
 }
 
 /* =========================================
     Chapter 404 Message
 ========================================= */
+
 .chapter-404 {
     text-align: center;
-    padding: 40px;
-    font-size: 1.2rem;
+
+    padding: var(--reader-404-padding);
+
+    font-size: var(--reader-404-font-size);
     color: var(--body-text-colour);
 }
 
-.dark-mode .chapter-404 {
-    color: var(--body-text-colour);
+.dark-mode {
+    .chapter-404 {
+        color: var(--body-text-colour);
+    }
 }
