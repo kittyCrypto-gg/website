@@ -246,36 +246,64 @@ class ReaderToggle {
         const cards = Array.from(doc.querySelectorAll<HTMLElement>(".email-card"));
         if (cards.length === 0) return;
 
-        const allowedLabels = new Set(["from", "to", "subject"]);
-
         const getLabel = (row: Element): string =>
             (row.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
 
+        const getNameFor = (card: Element, labelLower: string): string => {
+            const rows = Array.from(card.querySelectorAll<HTMLElement>(".email-row"));
+            const row = rows.find((r) => getLabel(r) === labelLower);
+            if (!row) return "";
+
+            const nameEl = row.querySelector<HTMLElement>(".email-name") || row.querySelector<HTMLElement>(".email-value");
+            return (nameEl?.textContent || "").trim();
+        };
+
+        const getSubject = (card: Element): string =>
+            (card.querySelector<HTMLElement>(".email-subject-text")?.textContent || "").trim();
+
+        const splitParagraphs = (text: string): string[] => {
+            const t = (text || "").replace(/\r\n?/g, "\n");
+            return t
+                .split(/\n+/g)
+                .map((p) => p.replace(/\s+/g, " ").trim())
+                .filter(Boolean);
+        };
+
         for (const card of cards) {
-            card.removeAttribute("data-recipient-ip");
+            const fromName = getNameFor(card, "from");
+            const toName = getNameFor(card, "to");
+            const subject = getSubject(card);
 
-            const meta = card.querySelector<HTMLElement>(".email-meta")?.cloneNode(true) as HTMLElement | null;
-            if (meta) {
-                for (const row of Array.from(meta.querySelectorAll<HTMLElement>(".email-row"))) {
-                    const label = getLabel(row);
-                    if (!allowedLabels.has(label)) row.remove();
-                }
-
-                // Only names in reader mode
-                meta.querySelectorAll(".email-address").forEach((n) => n.remove());
-
-                // No timestamp in reader mode
-                meta.querySelectorAll(".email-timestamp").forEach((n) => n.remove());
+            const contentClone = card.querySelector<HTMLElement>(".email-content")?.cloneNode(true) as HTMLElement | null;
+            if (contentClone) {
+                contentClone.querySelectorAll(".email-signature, .email-signature-sep").forEach((n) => n.remove());
             }
 
-            const content = card.querySelector<HTMLElement>(".email-content")?.cloneNode(true) as HTMLElement | null;
-            if (content) {
-                content.querySelectorAll(".email-signature, .email-signature-sep").forEach((n) => n.remove());
+            const bodyRaw = contentClone ? (contentClone.innerText || contentClone.textContent || "") : "";
+            const bodyParas = splitParagraphs(bodyRaw);
+
+            const replacement = doc.createElement("div");
+            replacement.className = "reader-email";
+
+            const addLine = (label: string, value: string): void => {
+                if (!value) return;
+                const p = doc.createElement("p");
+                p.textContent = `${label}: ${value}`;
+                replacement.appendChild(p);
+            };
+
+            addLine("From", fromName);
+            addLine("To", toName);
+            addLine("Subject", subject);
+
+            for (const para of bodyParas) {
+                const p = doc.createElement("p");
+                p.textContent = para;
+                replacement.appendChild(p);
             }
 
-            card.innerHTML = "";
-            if (meta) card.appendChild(meta);
-            if (content) card.appendChild(content);
+            const wrapper = card.closest<HTMLElement>(".email-wrapper") ?? card;
+            wrapper.replaceWith(replacement);
         }
 
         doc.querySelectorAll(".email-actions-bar").forEach((n) => n.remove());
@@ -301,8 +329,8 @@ class ReaderToggle {
         if (!this.originalNodeClone) this.originalNodeClone = articleElem.cloneNode(true);
 
         const docClone = document.cloneNode(true) as Document;
-        this.parseEmails(docClone);
         this.parseTooltips(docClone);
+        this.parseEmails(docClone);
 
         const reader = new (window.Readability as ReadabilityConstructor)(docClone);
         const parsed = reader.parse();
