@@ -179,6 +179,7 @@ class ReadAloudModule {
 
     #JUMP_VIS_KEY = "readAloudJumpVisible";
     #SPEECH_RESOURCE_KEY = "readAloudSpeechResource";
+    #READALOUD_META_ATTR = "data-readaloud";
 
     #regionResolvePromise: Promise<RegionResolveResult> | null = null;
 
@@ -626,6 +627,100 @@ class ReadAloudModule {
     }
 
     /**
+     * @param {unknown} v - Value to check.
+     * @returns {boolean} True if it is a non-null object.
+     */
+    __isRecord(v: unknown): v is Record<string, unknown> {
+        return typeof v === "object" && v !== null;
+    }
+
+    /**
+     * @param {string} raw - Raw JSON or plain text.
+     * @returns {unknown | null} Parsed JSON or null.
+     */
+    __safeJsonParse(raw: string): unknown | null {
+        try {
+            return JSON.parse(raw) as unknown;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * @param {string} raw - Attribute value from data-readaloud.
+     * @returns {string} Text that should be spoken.
+     */
+    __tTextFromAttr(raw: string): string {
+        const trimmed = raw.trim();
+        if (!trimmed) return "";
+
+        const parsed = this.__safeJsonParse(trimmed);
+        if (parsed === null) return trimmed;
+        if (typeof parsed === "string") return parsed.trim();
+
+        if (!this.__isRecord(parsed)) return trimmed;
+
+        const textRaw = parsed["text"];
+        const text = typeof textRaw === "string" ? textRaw.trim() : "";
+        if (text) return text;
+
+        const speakRaw = parsed["speak"];
+        const speak = typeof speakRaw === "string" ? speakRaw.trim() : "";
+        if (speak) return speak;
+
+        return trimmed;
+    }
+
+    /**
+     * Adds read-aloud metadata to tooltips so speech prefers translations when available.
+     * @param {HTMLElement} root - Root to scan.
+     * @returns {void} Nothing.
+     */
+    __hydrateTTMeta(root: HTMLElement): void {
+        const attr = this.#READALOUD_META_ATTR;
+
+        const renderedTooltips = Array.from(root.querySelectorAll<HTMLElement>(".tooltip"));
+        for (const tooltip of renderedTooltips) {
+            const translationEl = tooltip.querySelector<HTMLElement>(".tooltip-content.translation");
+            const translationText = (translationEl?.textContent ?? "").replace(/\s+/g, " ").trim();
+            if (!translationText) continue;
+
+            tooltip.setAttribute(attr, JSON.stringify({ text: translationText, kind: "tooltip_translation" }));
+        }
+
+        const rawTooltips = Array.from(root.getElementsByTagName("tooltip"));
+        for (const tooltip of rawTooltips) {
+            const contentEl = Array.from(tooltip.children).find((n) => n.tagName.toLowerCase() === "content") ?? null;
+            if (!contentEl) continue;
+
+            const translationAttr = (contentEl.getAttribute("translation") ?? "").trim().toLowerCase();
+            if (translationAttr !== "true") continue;
+
+            const translationText = (contentEl.textContent ?? "").replace(/\s+/g, " ").trim();
+            if (!translationText) continue;
+
+            tooltip.setAttribute(attr, JSON.stringify({ text: translationText, kind: "tooltip_translation" }));
+        }
+    }
+
+    /**
+     * Replaces marked elements with configured speech text.
+     * @param {HTMLElement} root - Root to scan.
+     * @returns {void} Nothing.
+     */
+    __applyMeta(root: HTMLElement): void {
+        const attr = this.#READALOUD_META_ATTR;
+        const nodes = Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).reverse();
+
+        for (const el of nodes) {
+            const raw = el.getAttribute(attr) ?? "";
+            const text = this.__tTextFromAttr(raw);
+            if (!text) continue;
+            el.textContent = text;
+        }
+    }
+
+    /**
      * @param {HTMLElement | null} paragraph - Paragraph wrapper.
      * @param {string[] | null} elemsToIgnore - Optional extra ignore selectors.
      * @returns {string} Plain text for speech.
@@ -638,6 +733,9 @@ class ReadAloudModule {
 
         const ignoreList = elemsToIgnore ?? this.#elemsToIgnore;
         const clone = paragraph.cloneNode(true) as HTMLElement;
+
+        this.__hydrateTTMeta(clone);
+        this.__applyMeta(clone);
 
         if (ignoreList.length) {
             const ignoreStr = ignoreList.join(", ");
