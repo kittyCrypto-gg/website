@@ -38,6 +38,16 @@ type ReadAloudBuffer = Readonly<{
     audioData: ArrayBuffer;
 }>;
 
+type ReadAloudSsmlToken = Readonly<{
+    ssml: string;
+    fallbackText: string;
+}>;
+
+type ReadAloudParagraphSpeech = Readonly<{
+    plainText: string;
+    ssmlBody: string | null;
+}>;
+
 type ReadAloudState = {
     paused: boolean;
     pressed: boolean;
@@ -647,9 +657,33 @@ class ReadAloudModule {
     }
 
     /**
+     * @param {string} raw - Raw text.
+     * @returns {string} Text with collapsed whitespace.
+     */
+    __normSpace(raw: string): string {
+        return raw.replace(/\s+/g, " ").trim();
+    }
+
+    /**
+     * @param {string} ssml - Inline SSML fragment.
+     * @returns {boolean} True if fragment should be rejected.
+     */
+    __isUnsafeInlineSsml(ssml: string): boolean {
+        const lower = ssml.toLowerCase();
+        const blocked = [
+            "<speak", "</speak",
+            "<voice", "</voice",
+            "<prosody", "</prosody",
+            "<audio", "</audio"
+        ];
+
+        return blocked.some((t) => lower.includes(t));
+    }
+
+    /**
      * @param {string} raw - Attribute value from data-readaloud.
      * @returns {string} Text that should be spoken.
-     */
+     */ //// MIGHT DELETE
     __tTextFromAttr(raw: string): string {
         const trimmed = raw.trim();
         if (!trimmed) return "";
@@ -669,6 +703,40 @@ class ReadAloudModule {
         if (speak) return speak;
 
         return trimmed;
+    }
+
+    /**
+ * @param {string} raw - Attribute value from data-readaloud.
+ * @returns {Readonly<{ kind: "text" | "ssml"; value: string }> | null} Override payload.
+ */
+    __readOverrideFromAttr(
+        raw: string
+    ): Readonly<{ kind: "text" | "ssml"; value: string }> | null {
+        const trimmed = raw.trim();
+        if (!trimmed) return null;
+
+        const parsed = this.__safeJsonParse(trimmed);
+
+        if (parsed === null) return { kind: "text", value: trimmed };
+        if (typeof parsed === "string") return { kind: "text", value: parsed.trim() };
+        if (!this.__isRecord(parsed)) return { kind: "text", value: trimmed };
+
+        const ssmlRaw = parsed["ssml"];
+        const ssml = typeof ssmlRaw === "string" ? ssmlRaw.trim() : "";
+        if (ssml) {
+            if (this.__isUnsafeInlineSsml(ssml)) return { kind: "text", value: trimmed };
+            return { kind: "ssml", value: ssml };
+        }
+
+        const textRaw = parsed["text"];
+        const text = typeof textRaw === "string" ? textRaw.trim() : "";
+        if (text) return { kind: "text", value: text };
+
+        const speakRaw = parsed["speak"];
+        const speak = typeof speakRaw === "string" ? speakRaw.trim() : "";
+        if (speak) return { kind: "text", value: speak };
+
+        return { kind: "text", value: trimmed };
     }
 
     /**
@@ -704,20 +772,77 @@ class ReadAloudModule {
     }
 
     /**
-     * Replaces marked elements with configured speech text.
+     * Applies read-aloud metadata. Text overrides become textContent, SSML overrides become tokens.
      * @param {HTMLElement} root - Root to scan.
-     * @returns {void} Nothing.
+     * @returns {Map<string, ReadAloudSsmlToken>} Token map for SSML substitutions.
      */
-    __applyMeta(root: HTMLElement): void {
+    __applyMeta(root: HTMLElement): Map<string, ReadAloudSsmlToken> {
         const attr = this.#READALOUD_META_ATTR;
         const nodes = Array.from(root.querySelectorAll<HTMLElement>(`[${attr}]`)).reverse();
 
+        const tokens = new Map<string, ReadAloudSsmlToken>();
+        let tokenIdx = 0;
+
         for (const el of nodes) {
             const raw = el.getAttribute(attr) ?? "";
-            const text = this.__tTextFromAttr(raw);
-            if (!text) continue;
-            el.textContent = text;
+            const override = this.__readOverrideFromAttr(raw);
+            if (!override) continue;
+
+            if (override.kind === "ssml") {
+                const fallbackText = this.__normSpace(el.textContent ?? "");
+                const token = `__RA_SSML_${tokenIdx}__`;
+                tokenIdx += 1;
+
+                tokens.set(token, { ssml: override.value, fallbackText });
+                el.textContent = token;
+                continue;
+            }
+
+            el.textContent = override.value;
         }
+
+        return tokens;
+    }
+
+    /**
+     * @param {HTMLElement | null} paragraph - Paragraph wrapper.
+     * @param {string[] | null} elemsToIgnore - Optional extra ignore selectors.
+     * @returns {ReadAloudParagraphSpeech} Plain text and optional SSML body.
+     */
+    __paragSpeech(
+        paragraph: HTMLElement | null,
+        elemsToIgnore: string[] | null = null
+    ): ReadAloudParagraphSpeech {
+        if (!paragraph) return { plainText: "", ssmlBody: null };
+
+        const ignoreList = elemsToIgnore ?? this.#elemsToIgnore;
+        const clone = paragraph.cloneNode(true) as HTMLElement;
+
+        this.__hydrateTTMeta(clone);
+        const ssmlTokens = this.__applyMeta(clone);
+
+        if (ignoreList.length) {
+            const ignoreStr = ignoreList.join(", ");
+            clone.querySelectorAll(ignoreStr).forEach((n) => n.remove());
+        }
+
+        const withTokens = this.__normSpace(clone.textContent ?? "");
+        if (!withTokens) return { plainText: "", ssmlBody: null };
+
+        if (!ssmlTokens.size) return { plainText: withTokens, ssmlBody: null };
+
+        let plainText = withTokens;
+        let ssmlBody = this.__escapeXml(withTokens);
+
+        for (const [token, meta] of ssmlTokens) {
+            const fallback = meta.fallbackText || "";
+            plainText = plainText.split(token).join(fallback);
+            ssmlBody = ssmlBody.split(token).join(meta.ssml);
+        }
+
+        plainText = this.__normSpace(plainText);
+
+        return { plainText, ssmlBody };
     }
 
     /**
@@ -729,20 +854,7 @@ class ReadAloudModule {
         paragraph: HTMLElement | null,
         elemsToIgnore: string[] | null = null
     ): string {
-        if (!paragraph) return "";
-
-        const ignoreList = elemsToIgnore ?? this.#elemsToIgnore;
-        const clone = paragraph.cloneNode(true) as HTMLElement;
-
-        this.__hydrateTTMeta(clone);
-        this.__applyMeta(clone);
-
-        if (ignoreList.length) {
-            const ignoreStr = ignoreList.join(", ");
-            clone.querySelectorAll(ignoreStr).forEach((n) => n.remove());
-        }
-
-        return (clone.textContent ?? "").replace(/\s+/g, " ").trim();
+        return this.__paragSpeech(paragraph, elemsToIgnore).plainText;
     }
 
     /**
@@ -751,7 +863,7 @@ class ReadAloudModule {
      * @param {number} rate - Rate multiplier.
      * @returns {string} SSML markup.
      */
-    __buildSSML(text: string, voiceName: string, rate: number): string {
+    __buildSSML(speech: ReadAloudParagraphSpeech, voiceName: string, rate: number): string {
         const rateMap: Record<string, string> = {
             "0.5": "-50%",
             "0.75": "-25%",
@@ -770,7 +882,7 @@ class ReadAloudModule {
                 xml:lang="en-US">
                 <voice name="${voiceName}">
                 <prosody rate="${prosodyRate}">
-                    ${this.__escapeXml(text)}
+                    ${speech.ssmlBody ?? this.__escapeXml(speech.plainText)}
                 </prosody>
                 </voice>
             </speak>
@@ -1617,11 +1729,11 @@ class ReadAloudModule {
         if (idx >= state.paragraphs.length) return null;
 
         const paragraph = state.paragraphs[idx] ?? null;
-        const plainText = this.__paragPlain(paragraph);
-        if (!plainText) return null;
+        const speech = this.__paragSpeech(paragraph);
+        if (!speech.plainText && !speech.ssmlBody) return null;
 
         const sdk = await this.__sdkReady();
-        const ssml = this.__buildSSML(plainText, state.voiceName, state.speechRate);
+        const ssml = this.__buildSSML(speech, state.voiceName, state.speechRate);
 
         const speechConfig = sdk.SpeechConfig.fromSubscription(state.speechKey, state.serviceRegion);
         speechConfig.speechSynthesisVoiceName = state.voiceName;
