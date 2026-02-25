@@ -202,7 +202,7 @@ const LANGUAGE_TOOLTIPS_HELP_MODAL_HTML = (): string => `
         </label>
 
         <div class="kc-modal-actions">
-        <button id="kc-language-tooltips-help-close" type="button" style="display:block; margin:0 auto;">
+        <button id="kc-language-tooltips-help-close" type="button" style="display:block; margin:0 auto;">Close</button>
         </div>
 
         <p class="modal-note">You can close this window with <kbd>Esc</kbd>.</p>
