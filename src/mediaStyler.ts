@@ -2,9 +2,15 @@ import { smsEnterBounce } from "./physics.ts";
 
 const themes: Record<string, unknown> = {};
 
+type TooltipPortalOpenState = Readonly<{
+    wrapperEl: HTMLElement;
+    triggerEl: HTMLElement;
+    portalEl: HTMLElement;
+}>;
+
 /**
  * @param {string} url - URL to themes JSON.
- * @returns {Promise<void>} This function loads theme data from a specified JSON URL and populates the global `themes` object with the retrieved data. It fetches the JSON data, checks for a successful response, and then parses the JSON content. The existing keys in the `themes` object are cleared before populating it with the new data to ensure that only the latest themes are available. If the fetch operation fails or if the response is not successful, it throws an error with an appropriate message.
+ * @returns {Promise<void>}
  */
 async function loadThemes(url: string = "../data/themes.json"): Promise<void> {
     const res = await fetch(url);
@@ -18,7 +24,7 @@ async function loadThemes(url: string = "../data/themes.json"): Promise<void> {
 
 /**
  * @param {string} addr - Recipient address.
- * @returns {string} Theme name associated with the given recipient address. This function takes an email address as input and checks it against the loaded themes to determine if there is a matching theme for that address. It converts the input address to lowercase and compares it against the list of addresses associated with each theme, also in lowercase, to ensure a case-insensitive match. If a matching theme is found, it returns the name of that theme; otherwise, it returns an empty string, indicating that no specific theme is associated with the provided address.
+ * @returns {string} Theme name associated with the given recipient
  */
 function getTheme(addr: string): string {
     const a = addr.toLowerCase();
@@ -44,7 +50,7 @@ function esc(s: string | null | undefined): string {
 
 /**
  * @param {Node} node - Node whose children are serialised as mixed content.
- * @returns {string} A string representation of the mixed content of a node, where text nodes are escaped for HTML and element nodes are included as their outer HTML. This function iterates through the child nodes of the given node, checks the type of each child, and processes it accordingly. Text nodes (nodeType 3) have their text content escaped to prevent HTML injection, while element nodes (nodeType 1) are included in the output as their full HTML representation. Other types of nodes are ignored. The resulting strings from all child nodes are concatenated together and trimmed of whitespace before being returned. This is useful for preserving the structure of rich content while ensuring that any text is safely escaped for display in an HTML context.
+ * @returns {string} A string representation of the mixed content of a node
  */
 export function serialiseMixedContent(node: Node): string {
     return Array.from(node.childNodes)
@@ -64,7 +70,7 @@ export function serialiseMixedContent(node: Node): string {
 
 /**
  * @param {string} cssHref - CSS href substring to look for.
- * @returns {boolean | Element | null} True if a stylesheet with the given href substring is found, or the matching link element, or null if not found. This function checks if a stylesheet with a specific href substring is already present in the document. It first looks through the document's stylesheets to see if any of them have an href that includes the specified substring. If it finds one, it returns true. If not, it then queries the document for a link element with a rel of "stylesheet" and an href that exactly matches the provided substring. If such an element is found, it returns that element; otherwise, it returns null. This is useful for determining whether a particular stylesheet has already been loaded or is present in the document before attempting to add it again.
+ * @returns {boolean | Element | null} True if a stylesheet with the given href substring is found, or the matching link element, or null if not found.
  */
 function hassCss(cssHref: string): boolean | Element | null {
     return (
@@ -76,7 +82,7 @@ function hassCss(cssHref: string): boolean | Element | null {
 /**
  * @param {ParentNode} node - Node to query within.
  * @param {string} tag - Tag name selector.
- * @returns {string} Text content of the first matching element for the given tag within the specified node, trimmed of whitespace. This function takes a parent node and a tag name as input, queries for the first element that matches the tag within that node, and returns its text content. If no matching element is found, it returns an empty string. The returned text is also trimmed to remove any leading or trailing whitespace. This is useful for extracting specific pieces of text content from structured data, such as XML or HTML documents, based on tag names.
+ * @returns {string} Text content of the first matching element for the given tag within the specified node, trimmed of whitespace.
  */
 function getText(node: ParentNode, tag: string): string {
     return (node.querySelector(tag)?.textContent || "").trim();
@@ -101,7 +107,7 @@ type Escaper = (s: string | null | undefined) => string;
  * @param {ParentNode} root - Root node to search within.
  * @param {string} selector - Selector for rich content nodes.
  * @param {Escaper} escFn - Escaper (kept for signature parity).
- * @returns {string[]} An array of string representations of rich content nodes that match the given selector within the specified root node. This function queries the root node for all elements that match the provided selector, then processes each matching element to extract its mixed content as a string. The mixed content is serialised using the `serialiseMixedContent` function, which handles both text and element nodes appropriately. The resulting array contains the serialised content of all matching nodes, with any empty or falsy values filtered out. This is useful for extracting and processing specific pieces of rich content from a larger document structure based on CSS selectors.
+ * @returns {string[]} An array of string representations of rich content nodes that match the given selector within the specified root node.
  */
 function mapRichContent(root: ParentNode, selector: string, escFn: Escaper): string[] {
     void escFn;
@@ -113,7 +119,7 @@ function mapRichContent(root: ParentNode, selector: string, escFn: Escaper): str
 /**
  * @param {Element} sig - Signature element.
  * @param {Escaper} escFn - Escaper function.
- * @returns {string} A string representation of an email signature constructed from the provided signature element and escaped using the given escaper function. This function extracts various pieces of information from the signature element, such as name, company, address, telephone, email address, logo, positions, and disclaimers. It uses the escaper function to ensure that all extracted text is safely escaped for HTML insertion. The function then constructs an HTML structure for the email signature, including a logo if provided, and formats the extracted information into a visually appealing layout. If no relevant information is found in the signature element, it returns an empty string.
+ * @returns {string} A string representation of an email signature constructed from the provided signature element and escaped using the given escaper function.
  */
 function parseSignature(sig: Element, escFn: Escaper): string {
     const t = (q: string): string => (sig.querySelector(q)?.textContent || "").trim();
@@ -208,7 +214,7 @@ type MediaStylerImplOverrides = Partial<{
 /**
  * @param {string} htmlContent - HTML content to transform.
  * @param {string} cssHref - Stylesheet href for SMS rendering.
- * @returns {string} Transformed HTML content with SMS messages replaced by styled HTML structures. This function takes raw HTML content and a CSS stylesheet href as input, checks if the stylesheet is already present in the document, and if not, it adds it to the document head. It then uses a regular expression to find all message blocks in the HTML content that match a specific structure (with a type of "in" or "out"). For each matching block, it parses the XML structure to extract the nickname, content, and timestamp of the message. The content is processed as mixed content to preserve any rich formatting. Finally, it constructs a new HTML structure for each message, applying appropriate classes based on the message type (incoming or outgoing), and replaces the original message blocks in the input HTML with these new structures. The resulting HTML string is returned, ready for rendering with the associated styles.
+ * @returns {string} Transformed HTML content with SMS messages replaced by styled HTML structures.
  */
 function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../styles/modules/sms.css"): string {
     if (!hassCss(cssHref)) {
@@ -252,7 +258,7 @@ function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../style
 /**
  * @param {string} htmlContent - HTML content to transform.
  * @param {string} cssHref - Stylesheet href for email rendering.
- * @returns {Promise<string>} A promise that resolves to the transformed HTML content with email blocks replaced by styled HTML structures. This function processes the input HTML content to identify and replace custom email blocks with a structured and styled representation suitable for rendering as email messages. It first checks if the specified CSS stylesheet for email rendering is already included in the document, and if not, it adds it to the document head. The function then uses a regular expression to find all email blocks in the input HTML, parses each block as XML to extract relevant information such as sender, recipient, subject, timestamp, and content. It constructs a new HTML structure for each email, applying appropriate classes and formatting based on the extracted data. The original email blocks in the input HTML are replaced with these new structures, and the resulting HTML string is returned as a promise.
+ * @returns {Promise<string>} A promise that resolves to the transformed HTML content with email blocks replaced by styled HTML structures.
  */
 async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styles/modules/email.css"): Promise<string> {
     if (!hassCss(cssHref)) {
@@ -379,7 +385,7 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
 
 /**
  * @param {Document | Element | string} root - Document/Element to process, or HTML string to wrap.
- * @returns {Promise<void>} A promise that resolves when all SVG images within the specified root have been replaced with their inline SVG content. This function takes either a Document, an Element, or a string of HTML as input. If a string is provided, it creates a temporary wrapper element to parse the HTML. It then searches for all <img> elements within the root that have a source ending with ".svg". For each matching image, it fetches the SVG content from the source URL, parses it as XML, and replaces the <img> element with the inline SVG content. The function also preserves any classes, styles, width, and height attributes from the original <img> element and applies them to the new inline SVG element. If any errors occur during fetching or processing of the SVGs, they are logged to the console, but the function continues processing other images.
+ * @returns {Promise<void>} A promise that resolves when all SVG images within the specified root have been replaced with their inline SVG content.
  */
 async function replaceSVGsImpl(root: Document | Element | string = document): Promise<void> {
     let resolvedRoot: Document | Element | null = null;
@@ -488,12 +494,6 @@ const TOOLTIP_PORTAL_ID = "tooltip-portal";
 
 let tooltipPortalInstalled = false;
 
-type TooltipPortalOpenState = Readonly<{
-    wrapperEl: HTMLElement;
-    triggerEl: HTMLElement;
-    portalContentEl: HTMLElement;
-}>;
-
 let tooltipPortalOpenState: TooltipPortalOpenState | null = null;
 
 function ensureTooltipPortalHost(): HTMLDivElement {
@@ -504,6 +504,25 @@ function ensureTooltipPortalHost(): HTMLDivElement {
     host.id = TOOLTIP_PORTAL_ID;
     document.body.appendChild(host);
     return host;
+}
+
+function parseCssTimeMs(raw: string): number {
+    const s = raw.trim();
+    if (!s) return 0;
+    if (s.endsWith("ms")) return Number.parseFloat(s);
+    if (s.endsWith("s")) return Number.parseFloat(s) * 1000;
+    return Number.parseFloat(s);
+}
+
+
+function getTooltipFadeMs(el: HTMLElement): number {
+    const cssVar = getComputedStyle(el).getPropertyValue("--tooltip-fade-duration");
+    const fromVar = parseCssTimeMs(cssVar);
+    if (Number.isFinite(fromVar) && fromVar > 0) return fromVar;
+
+    const first = (getComputedStyle(el).transitionDuration.split(",")[0] || "").trim();
+    const fromTransition = parseCssTimeMs(first);
+    return (Number.isFinite(fromTransition) && fromTransition > 0) ? fromTransition : 160;
 }
 
 function positionTooltipPortal(triggerEl: HTMLElement, portalEl: HTMLElement): void {
@@ -532,14 +551,46 @@ function positionTooltipPortal(triggerEl: HTMLElement, portalEl: HTMLElement): v
     if (shouldFlipBelow) portalEl.classList.add("below");
 }
 
-function closeTooltipPortal(): void {
+function closeTooltipPortal(opts: { immediate?: boolean } = {}): void {
     const state = tooltipPortalOpenState;
     if (!state) return;
 
-    state.wrapperEl.classList.remove("portal-active");
-    state.portalContentEl.remove();
+    const { immediate = false } = opts;
 
-    tooltipPortalOpenState = null;
+    const portalEl = state.portalEl;
+    const portalContent = portalEl.querySelector(".tooltip-content");
+    const contentEl = portalContent instanceof HTMLElement ? portalContent : null;
+
+    const cleanup = (): void => {
+        if (tooltipPortalOpenState !== state) return;
+        state.wrapperEl.classList.remove("portal-active");
+        portalEl.remove();
+        tooltipPortalOpenState = null;
+    };
+
+    if (immediate || !contentEl) {
+        cleanup();
+        return;
+    }
+
+    portalEl.classList.remove("show");
+
+    let cleaned = false;
+    const finish = (): void => {
+        if (cleaned) return;
+        cleaned = true;
+        portalEl.removeEventListener("transitionend", onEnd);
+        cleanup();
+    };
+
+    const onEnd = (ev: TransitionEvent): void => {
+        if (ev.propertyName !== "opacity") return;
+        finish();
+    };
+
+    portalEl.addEventListener("transitionend", onEnd);
+
+    window.setTimeout(finish, getTooltipFadeMs(contentEl) + 50);
 }
 
 function openTooltipPortal(triggerEl: HTMLElement): void {
@@ -554,24 +605,31 @@ function openTooltipPortal(triggerEl: HTMLElement): void {
     const existing = tooltipPortalOpenState;
     if (existing?.triggerEl === triggerEl) return;
 
-    closeTooltipPortal();
+    closeTooltipPortal({ immediate: true });
 
     const portalHost = ensureTooltipPortalHost();
 
+    const portalWrapper = document.createElement("span");
+    portalWrapper.className = "tooltip portal";
+
     const portalContent = content.cloneNode(true) as HTMLElement;
-    portalContent.classList.add("portal");
-    portalContent.style.visibility = "visible";
+    portalWrapper.appendChild(portalContent);
 
     wrapper.classList.add("portal-active");
-    portalHost.appendChild(portalContent);
+    portalHost.appendChild(portalWrapper);
 
-    positionTooltipPortal(triggerEl, portalContent);
+    positionTooltipPortal(triggerEl, portalWrapper);
 
     tooltipPortalOpenState = {
         wrapperEl: wrapper,
         triggerEl,
-        portalContentEl: portalContent
+        portalEl: portalWrapper,
     };
+
+    requestAnimationFrame(() => {
+        if (tooltipPortalOpenState?.portalEl !== portalWrapper) return;
+        portalWrapper.classList.add("show");
+    });
 }
 
 function ensureTooltipPortal(): void {
@@ -588,7 +646,7 @@ function ensureTooltipPortal(): void {
         const state = tooltipPortalOpenState;
         if (!state) return false;
         if (!(t instanceof Node)) return false;
-        return state.triggerEl.contains(t) || state.portalContentEl.contains(t);
+        return state.triggerEl.contains(t) || state.portalEl.contains(t);
     };
 
     document.addEventListener("mouseover", (ev: MouseEvent) => {
