@@ -163,6 +163,20 @@ async function checkMobile(): Promise<boolean> {
     return mdHit || !desktop;
 }
 
+/**
+ * @param {boolean} isMobile - Whether the current device is mobile.
+ * @returns {void} Nothing.
+ */
+function applyMobileTextScale(isMobile: boolean): void {
+    const root = document.documentElement;
+
+    // Single dial for CSS to consume
+    root.style.setProperty("--kc-text-scale", isMobile ? "0.75" : "1");
+
+    // Optional hook if you also want a class for other mobile-only tweaks
+    root.classList.toggle("kc-mobile", isMobile);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     document.body.style.visibility = "visible";
     document.body.style.opacity = "1";
@@ -174,6 +188,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const isMobile = params.get("isMobile") !== null
             ? params.get("isMobile") === "true"
             : await checkMobile();
+    
+    applyMobileTextScale(isMobile);
 
         const terminal = await setupTerminalModule()
             .then((mod) => {
