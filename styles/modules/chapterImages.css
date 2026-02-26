@@ -16,7 +16,7 @@
     --image-nav-z-index: 10;
     --image-nav-fade: 0.3s ease;
 
-    --image-nav-button-font-size: 2.5rem;
+    --image-nav-button-font-size: calc(2.5rem * var(--kc-text-scale));
     --image-nav-button-hover-scale: 1.1;
     --image-nav-button-active-scale: 0.95;
     --image-nav-button-transition: 0.1s;

@@ -4,7 +4,7 @@
 
 :root {
     --banner-font-family: "Courier New", Courier, "Lucida Console", monospace;
-    --banner-font-size: 11px;
+    --banner-font-size: calc(11px * var(--kc-text-scale));
     --banner-line-height: 10px;
 
     --banner-row-content-gap: 2rem;

@@ -16,39 +16,39 @@
 
     --rss-scroll-behaviour: smooth;
 
-    --rss-title-font-size: 1.1rem;
+    --rss-title-font-size: calc(1.1rem * var(--kc-text-scale));
     --rss-title-font-weight: 700;
     --rss-title-margin-block-end: 2px;
     --rss-title-line-height: 1.12;
 
-    --rss-date-font-size: 0.99em;
+    --rss-date-font-size: calc(0.99em * var(--kc-text-scale));
     --rss-date-font-weight: 400;
     --rss-date-margin-inline-start: 18px;
     --rss-date-opacity: 0.65;
 
-    --rss-meta-font-size: 0.95em;
+    --rss-meta-font-size: calc(0.95em * var(--kc-text-scale));
     --rss-meta-font-weight: 500;
     --rss-meta-margin-block-start: 4px;
     --rss-meta-margin-block-end: 10px;
     --rss-meta-gap: 10px;
 
-    --rss-tag-font-size: 0.92em;
+    --rss-tag-font-size: calc(0.92em * var(--kc-text-scale));
 
     --rss-pill-radius: 5px;
     --rss-pill-padding-block: 2px;
     --rss-pill-padding-inline: 8px;
     --rss-pill-margin-inline-end: 2px;
-    --rss-pill-font-size: 0.9em;
+    --rss-pill-font-size: calc(0.9em * var(--kc-text-scale));
     --rss-pill-font-weight: 500;
 
-    --rss-summary-font-size: 1.05em;
+    --rss-summary-font-size: calc(1.05em * var(--kc-text-scale));
     --rss-summary-gap: 8px;
     --rss-summary-padding-inline-start: 2px;
     --rss-summary-radius: 4px;
     --rss-summary-transition-bg: 0.17s;
     --rss-summary-transition-color: 0.2s;
 
-    --rss-content-font-size: 0.97em;
+    --rss-content-font-size: calc(0.97em * var(--kc-text-scale));
     --rss-content-colour: #2e4242;
     --rss-content-opacity: 0.86;
     --rss-content-line-height: 1.74;
@@ -72,7 +72,7 @@
     --rss-image-margin-block: 1rem;
 
     --rss-post-link-margin-top: 6px;
-    --rss-post-link-font-size: 1em;
+    --rss-post-link-font-size: calc(1em * var(--kc-text-scale));
     --rss-post-link-font-weight: 600;
     --rss-post-link-transition: 0.2s;
 

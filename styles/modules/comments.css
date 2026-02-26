@@ -3,7 +3,7 @@
 ========================================= */
 
 :root {
-    --comments-header-font-size: 1.4rem;
+    --comments-header-font-size: calc(1.4rem * var(--kc-text-scale));
     --comments-header-font-weight: 700;
     --comments-header-margin-bottom: 10px;
     --comments-header-padding-bottom: 6px;
@@ -22,7 +22,7 @@
     --comments-box-radius: 8px;
     --comments-box-padding: 15px;
     --comments-box-max-height: 400px;
-    --comments-box-font-size: 1rem;
+    --comments-box-font-size: calc(1rem * var(--kc-text-scale));
     --comments-box-gap: 15px;
 
     --comment-message-padding: 12px;
@@ -32,7 +32,7 @@
     --comment-input-gap: 10px;
 
     --comment-field-padding: 10px;
-    --comment-field-font-size: 1rem;
+    --comment-field-font-size: calc(1rem * var(--kc-text-scale));
     --comment-field-border-width: 1px;
     --comment-field-radius: 6px;
 
@@ -41,7 +41,7 @@
 
     --comment-post-btn-padding-block: 10px;
     --comment-post-btn-padding-inline: 20px;
-    --comment-post-btn-font-size: 1rem;
+    --comment-post-btn-font-size: calc(1rem * var(--kc-text-scale));
     --comment-post-btn-radius: 6px;
     --comment-post-btn-hover-transition: 0.2s ease-in-out;
 
@@ -54,8 +54,8 @@
     --comments-chat-header-gap: 8px;
     --comments-chat-header-margin-bottom: 4px;
     --comments-chat-nick-font-weight: 700;
-    --comments-chat-nick-font-size: 1rem;
-    --comments-chat-timestamp-font-size: 0.85rem;
+    --comments-chat-nick-font-size: calc(1rem * var(--kc-text-scale));
+    --comments-chat-timestamp-font-size: calc(0.85rem * var(--kc-text-scale));
     --comments-chat-timestamp-fallback-colour: #888;
 
     --comments-notice-padding-block: 12px;
@@ -67,7 +67,6 @@
     --comments-notice-fade: 0.3s ease;
     --comments-notice-dark-brightness: 1.2;
 }
-
 .comments-header {
     font-size: var(--comments-header-font-size);
     font-weight: var(--comments-header-font-weight);

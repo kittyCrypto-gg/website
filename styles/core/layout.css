@@ -12,18 +12,18 @@
     --layout-frame-outer-margin-inline: auto;
 
     --layout-header-padding: 20px;
-    --layout-header-font-size: 1.8rem;
+    --layout-header-font-size: calc(1.8rem * var(--kc-text-scale));
 
     --layout-nav-padding: 15px;
     --layout-nav-gap: 15px;
     --layout-nav-border-width: 2px;
 
     --layout-main-padding: 20px;
-    --layout-main-font-size: 1.2rem;
+    --layout-main-font-size: calc(1.2rem * var(--kc-text-scale));
     --layout-main-line-height: 1.6;
 
     --layout-footer-padding-block: 10px;
-    --layout-footer-font-size: 0.9rem;
+    --layout-footer-font-size: calc(0.9rem * var(--kc-text-scale));
     --layout-footer-border-width: 2px;
 }
 

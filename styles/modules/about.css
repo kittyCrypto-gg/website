@@ -12,7 +12,7 @@
     --about-frame-gap: 20px;
 
     --about-text-line-height: 1.6;
-    --about-text-font-size: 1.1rem;
+    --about-text-font-size: calc(1.1rem * var(--kc-text-scale));
 
     --jp-about-border-width: 1px;
     --jp-about-padding-block-start: 20px;

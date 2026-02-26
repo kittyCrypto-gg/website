@@ -34,8 +34,8 @@
     --kb-btn-pad-x: 12px;
     --kb-btn-inner-gap: 6px;
 
-    --kb-font-size: 13px;
-    --kb-icon-size: 15px;
+    --kb-font-size: calc(13px * var(--kc-text-scale));
+    --kb-icon-size: calc(15px * var(--kc-text-scale));
     --kb-radius: 10px;
 
     --kb-show-opacity: 1;

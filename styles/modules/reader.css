@@ -15,7 +15,7 @@
     --reader-controls-detached-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 
     /* Chapter navigation buttons */
-    --reader-nav-btn-font-size: 1.5rem;
+    --reader-nav-btn-font-size: calc(1.5rem * var(--kc-text-scale));
     --reader-nav-btn-padding-inline: 4px;
     --reader-nav-btn-disabled-opacity: 0.4;
 
@@ -27,13 +27,13 @@
     --reader-font-controls-gap: 0.5em;
     --reader-font-controls-margin-top: 0.5em;
 
-    --reader-font-btn-font-size: 1.3rem;
+    --reader-font-btn-font-size: calc(1.3rem * var(--kc-text-scale));
     --reader-font-btn-padding: 5px;
     --reader-font-btn-hover-scale: 1.2;
 
     /* Chapter inputs */
     --reader-chapter-input-width: 2ch;
-    --reader-chapter-input-font-size: 1rem;
+    --reader-chapter-input-font-size: calc(1rem * var(--kc-text-scale));
     --reader-chapter-input-font-weight: 700;
 
     --reader-chapter-input-padding-block: 2px;
@@ -48,7 +48,7 @@
     --reader-story-selector-border-width: 1px;
     --reader-story-selector-padding-block: 8px;
     --reader-story-selector-padding-inline: 12px;
-    --reader-story-selector-font-size: 1rem;
+    --reader-story-selector-font-size: calc(1rem * var(--kc-text-scale));
     --reader-story-selector-font-weight: 700;
     --reader-story-selector-hover-transition: 0.3s ease;
 
@@ -59,16 +59,16 @@
     --reader-container-width: 90%;
     --reader-container-max-width: 800px;
 
-    --reader-container-font-size: 1.2rem;
+    --reader-container-font-size: calc(1.2rem * var(--kc-text-scale));
     --reader-container-line-height: 1.8;
 
     /* Reader block styling */
-    --reader-title-font-size: 2.2em;
+    --reader-title-font-size: calc(2.2em * var(--kc-text-scale));
     --reader-title-font-weight: 700;
     --reader-title-margin-top: 2em;
     --reader-title-margin-bottom: 1em;
 
-    --reader-subtitle-font-size: 1.6em;
+    --reader-subtitle-font-size: calc(1.6em * var(--kc-text-scale));
     --reader-subtitle-font-weight: 600;
     --reader-subtitle-margin-top: 1.5em;
     --reader-subtitle-margin-bottom: 1em;
@@ -107,7 +107,7 @@
     --reader-para-num-wrapper-radius: 10px;
     --reader-para-num-wrapper-padding-inline: 0.6em;
 
-    --reader-para-num-font-size: 0.9em;
+    --reader-para-num-font-size: calc(0.9em * var(--kc-text-scale));
     --reader-para-num-opacity: 0.55;
     --reader-para-num-margin-top: 1.2em;
 
@@ -116,7 +116,7 @@
 
     /* Chapter 404 */
     --reader-404-padding: 40px;
-    --reader-404-font-size: 1.2rem;
+    --reader-404-font-size: calc(1.2rem * var(--kc-text-scale));
 }
 
 /* =========================================

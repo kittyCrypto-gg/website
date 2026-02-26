@@ -23,7 +23,7 @@
     --modal-control-pad-block: 9px;
     --modal-control-pad-inline: 12px;
 
-    --modal-control-font-size: 1rem;
+    --modal-control-font-size: calc(1rem * var(--kc-text-scale));
 
     --modal-control-bg: color-mix(in srgb, var(--edit-modal-input-bg-colour) 92%, transparent);
     --modal-control-fg: var(--edit-modal-input-text-colour);
@@ -50,7 +50,6 @@
 
     --modal-btn-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
 
-    /* Primary / danger can map to your existing edit modal tokens */
     --modal-btn-primary-bg: var(--edit-modal-btn-save-bg-colour);
     --modal-btn-primary-hover-bg: var(--edit-modal-btn-save-hover-colour);
 

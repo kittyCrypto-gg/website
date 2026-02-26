@@ -10,7 +10,7 @@
     --menu-button-padding-block: 10px;
     --menu-button-padding-inline: 15px;
     --menu-button-radius: 8px;
-    --menu-button-font-size: 1rem;
+    --menu-button-font-size: calc(1rem * var(--kc-text-scale));
     --menu-button-font-weight: 700;
 
     --menu-button-hover-scale: 1.1;

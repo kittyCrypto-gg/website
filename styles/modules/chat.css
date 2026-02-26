@@ -8,7 +8,7 @@
 
     --chatroom-padding: 10px;
     --chatroom-border-width: 1px;
-    --chatroom-font-size: 14px;
+    --chatroom-font-size: calc(14px * var(--kc-text-scale));
     --chatroom-min-height: 500px;
 
     --chatroom-even-mix: 65%;
@@ -27,16 +27,16 @@
     --chat-header-gap: 8px;
     --chat-header-margin-bottom: 4px;
 
-    --chat-nick-font-size: 1rem;
+    --chat-nick-font-size: calc(1rem * var(--kc-text-scale));
 
-    --chat-timestamp-font-size: 0.85rem;
+    --chat-timestamp-font-size: calc(0.85rem * var(--kc-text-scale));
     --chat-timestamp-fallback-colour: #888;
 
     --chat-actions-gap: 4px;
     --chat-action-padding-block: 4px;
     --chat-action-padding-inline: 6px;
     --chat-action-radius: 5px;
-    --chat-action-font-size: 50%;
+    --chat-action-font-size: calc(50% * var(--kc-text-scale));
     --chat-action-hover-bg-fallback: rgba(0, 0, 0, 0.15);
     --chat-action-hover-transition: 0.2s ease-in-out;
 
@@ -51,7 +51,7 @@
     --chat-inputs-margin-block-start: 10px;
 
     --chat-input-padding: 10px;
-    --chat-input-font-size: 14px;
+    --chat-input-font-size: calc(14px * var(--kc-text-scale));
     --chat-input-radius: 5px;
     --chat-input-width: 40%;
     --chat-input-min-width: 100px;
@@ -63,7 +63,7 @@
     --theme-toggle-offset: 20px;
     --theme-toggle-inline-offset: 25px;
     --theme-toggle-size: 50px;
-    --theme-toggle-font-size: 1.5rem;
+    --theme-toggle-font-size: calc(1.5rem * var(--kc-text-scale));
     --theme-toggle-radius: 50%;
     --theme-toggle-hover-scale: 1.1;
     --theme-toggle-bg-transition: 0.3s ease;

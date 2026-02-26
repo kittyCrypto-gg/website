@@ -2,7 +2,6 @@
     Module: SMS
 ========================================= */
 
-/* Light mode defaults */
 :root {
     /* Colours */
     --msg-in-bg: #2fa84f;
@@ -25,7 +24,7 @@
     /* Bubble */
     --msg-bubble-radius: 16px;
     --msg-bubble-notch-radius: 4px;
-    --msg-bubble-font-size: 0.65em;
+    --msg-bubble-font-size: calc(0.65em * var(--kc-text-scale));
     --msg-bubble-line-height: 1.4;
 
     /* Tail */
@@ -34,7 +33,7 @@
     --msg-tail-size: 8px;
 
     /* Nickname strip */
-    --msg-strip-font-size: 0.9em;
+    --msg-strip-font-size: calc(0.9em * var(--kc-text-scale));
     --msg-strip-font-weight: 700;
     --msg-strip-opacity: 0.85;
     --msg-strip-margin-bottom: 4px;
@@ -47,7 +46,7 @@
     --msg-out-text-padding-right: 22px;
 
     /* Timestamp */
-    --msg-timestamp-font-size: 0.8em;
+    --msg-timestamp-font-size: calc(0.8em * var(--kc-text-scale));
     --msg-timestamp-margin-top: 2px;
     --msg-timestamp-align: right;
 }

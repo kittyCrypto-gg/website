@@ -49,7 +49,7 @@
     --email-card-radius: 14px;
     --email-card-border-width: 1px;
     --email-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    --email-card-font-size: 0.9em;
+    --email-card-font-size: calc(0.9em * var(--kc-text-scale));
     --email-card-line-height: 1.45;
 
     --email-header-padding-block-start: 12px;
@@ -62,15 +62,15 @@
     --email-row-padding-inline: 10px;
 
     --email-label-font-weight: 700;
-    --email-label-font-size: 0.75em;
+    --email-label-font-size: calc(0.75em * var(--kc-text-scale));
     --email-label-letter-spacing: 0.04em;
 
     --email-value-gap: 6px;
-    --email-address-font-size: 0.78em;
+    --email-address-font-size: calc(0.78em * var(--kc-text-scale));
 
     --email-subject-font-weight: 400;
-    --email-subject-font-size: 0.95em;
-    --email-timestamp-font-size: 0.78em;
+    --email-subject-font-size: calc(0.95em * var(--kc-text-scale));
+    --email-timestamp-font-size: calc(0.78em * var(--kc-text-scale));
 
     --email-content-padding: 14px;
     --email-content-paragraph-margin-block-end: 10px;
@@ -81,7 +81,7 @@
 
     --email-action-radius: 8px;
     --email-action-backdrop-blur: 5px;
-    --email-action-font-size: 1.05em;
+    --email-action-font-size: calc(1.05em * var(--kc-text-scale));
     --email-action-line-height: 1;
     --email-action-active-lift: 1px;
     --email-action-active-scale: 1;
@@ -98,10 +98,10 @@
     --email-signature-logo-max: 180px;
     --email-signature-logo-ideal: 28cqi;
 
-    --email-signature-font-size: 0.74em;
+    --email-signature-font-size: calc(0.74em * var(--kc-text-scale));
     --email-signature-line-height: 1.4;
 
-    --email-signature-disclaimer-font-size: 0.72em;
+    --email-signature-disclaimer-font-size: calc(0.72em * var(--kc-text-scale));
     --email-signature-disclaimer-opacity: 0.75;
     --email-signature-disclaimer-gap: 8px;
 
@@ -116,11 +116,11 @@
     --email-signature-margin-block-end-max: 14px;
 
     --email-reader-min-margin-block: 0.6rem;
-    --email-reader-field-font-size: 0.9em;
+    --email-reader-field-font-size: calc(0.9em * var(--kc-text-scale));
     --email-reader-field-opacity: 0.9;
     --email-reader-field-margin-block-end: 0.2rem;
     --email-reader-body-margin-block-start: 0.45rem;
-}
+}e
 
 .email-wrapper {
     display: flex;

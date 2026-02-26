@@ -1,4 +1,41 @@
 /* =========================================
+    Module: Tooltip (hardcoded tokens extracted)
+========================================= */
+
+:root {
+    /* Trigger */
+    --tt-trigger-padding: 2px;
+    --tt-trigger-transition-bg: 0.2s;
+    --tt-focus-outline-width: 2px;
+    --tt-focus-outline-offset: 2px;
+    --tt-trigger-bg-mix: 10%;
+    --tt-trigger-light-fg-mix: 50%;
+    --tt-trigger-dark-bg-mix: 80%;
+
+    /* Positioning */
+    --tt-anchor-offset-bottom: 8px;
+
+    /* Content motion */
+    --tt-hidden-translate-y: 6px;
+    --tt-hidden-scale: 0.98;
+    --tt-show-translate-y: 0;
+    --tt-show-scale: 1;
+
+    /* Content border + arrow */
+    --tt-content-border-width: 1px;
+    --tt-arrow-border-width: 6px;
+
+    /* Typography (scaled) */
+    --tt-content-font-size: calc(0.95em * var(--kc-text-scale));
+    --tt-content-line-height: 1.4;
+    --tt-bold-weight: 600;
+
+    /* Portal sizing */
+    --tt-portal-max-width-fallback: 36ch;
+    --tt-portal-side-padding: 16px;
+}
+
+/* =========================================
     Module: Tooltip
 ========================================= */
 
@@ -11,34 +48,34 @@
         display: inline-block;
         position: relative;
         color: var(--banner-teal);
-        background: color-mix(in srgb, var(--body-text-colour-light) 10%, transparent);
+        background: color-mix(in srgb, var(--body-text-colour-light) var(--tt-trigger-bg-mix), transparent);
         border-radius: var(--tooltip-radius);
-        padding: 2px;
-        transition: background-color 0.2s;
+        padding: var(--tt-trigger-padding);
+        transition: background-color var(--tt-trigger-transition-bg);
 
         &:focus {
             outline: none;
         }
 
         &:focus-visible {
-            outline: 2px solid var(--menu-button-hover-bg-colour);
-            outline-offset: 2px;
+            outline: var(--tt-focus-outline-width) solid var(--menu-button-hover-bg-colour);
+            outline-offset: var(--tt-focus-outline-offset);
         }
     }
 
     .tooltip-content {
         --tt-fade: var(--tooltip-fade-duration);
         --tt-vis-delay: var(--tt-fade);
-        --tt-hidden-transform: translateX(-50%) translateY(6px) scale(0.98);
-        --tt-show-transform: translateX(-50%) translateY(0) scale(1);
+        --tt-hidden-transform: translateX(-50%) translateY(var(--tt-hidden-translate-y)) scale(var(--tt-hidden-scale));
+        --tt-show-transform: translateX(-50%) translateY(var(--tt-show-translate-y)) scale(var(--tt-show-scale));
 
         position: absolute;
         left: 50%;
-        bottom: calc(100% + 8px);
+        bottom: calc(100% + var(--tt-anchor-offset-bottom));
 
         background-color: var(--tooltip-bg-colour);
         color: var(--tooltip-text-colour);
-        border: 1px solid var(--tooltip-border-colour);
+        border: var(--tt-content-border-width) solid var(--tooltip-border-colour);
         border-radius: var(--tooltip-radius);
         box-shadow: var(--tooltip-shadow);
 
@@ -46,8 +83,8 @@
         max-width: var(--tooltip-max-width);
         width: max-content;
 
-        font-size: 0.95em;
-        line-height: 1.4;
+        font-size: var(--tt-content-font-size);
+        line-height: var(--tt-content-line-height);
 
         z-index: var(--tooltip-z-index);
 
@@ -67,13 +104,13 @@
             top: 100%;
             left: 50%;
             transform: translateX(-50%);
-            border-width: 6px;
+            border-width: var(--tt-arrow-border-width);
             border-style: solid;
             border-color: var(--tooltip-bg-colour) transparent transparent transparent;
         }
 
         b {
-            font-weight: 600;
+            font-weight: var(--tt-bold-weight);
         }
 
         i {
@@ -118,13 +155,13 @@
 
 .light-mode {
     .tooltip-trigger {
-        color: color-mix(in srgb, var(--banner-teal) 50%, black);
+        color: color-mix(in srgb, var(--banner-teal) var(--tt-trigger-light-fg-mix), black);
     }
 }
 
 .dark-mode {
     .tooltip-trigger {
-        background: color-mix(in srgb, var(--body-text-colour-light) 80%, transparent);
+        background: color-mix(in srgb, var(--body-text-colour-light) var(--tt-trigger-dark-bg-mix), transparent);
     }
 }
 
@@ -144,8 +181,8 @@
         top: 0;
 
         .tooltip-content {
-            --tt-hidden-transform: translateY(6px) scale(0.98);
-            --tt-show-transform: translateY(0) scale(1);
+            --tt-hidden-transform: translateY(var(--tt-hidden-translate-y)) scale(var(--tt-hidden-scale));
+            --tt-show-transform: translateY(var(--tt-show-translate-y)) scale(var(--tt-show-scale));
 
             position: relative;
             left: 0;
@@ -157,7 +194,8 @@
             overflow-wrap: break-word;
             word-break: normal;
 
-            max-width: min(var(--tooltip-max-width, 36ch), calc(100vw - 16px));
+            max-width: min(var(--tooltip-max-width, var(--tt-portal-max-width-fallback)),
+                    calc(100vw - var(--tt-portal-side-padding)));
 
             width: auto;
         }

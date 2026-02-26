@@ -3,7 +3,7 @@
 ========================================= */
 
 :root {
-    --debug-font-size: 12px;
+    --debug-font-size: calc(12px * var(--kc-text-scale));
     --debug-font-family: monospace, monospace;
 
     --debug-bg-colour: rgba(0, 0, 0, 0.85);

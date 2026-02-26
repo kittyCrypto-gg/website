@@ -8,7 +8,7 @@
     --commits-outer-margin-inline: auto;
     --commits-outer-padding: 1.5rem;
 
-    --commits-outer-font-size: 1.1rem;
+    --commits-outer-font-size: calc(1.1rem * var(--kc-text-scale));
     --commits-outer-line-height: 1.8;
 
     --commits-outer-radius: 12px;
@@ -21,7 +21,7 @@
     --commits-scroll-radius: 8px;
     --commits-scroll-padding: 15px;
     --commits-scroll-max-height: 400px;
-    --commits-scroll-font-size: 1rem;
+    --commits-scroll-font-size: calc(1rem * var(--kc-text-scale));
     --commits-scroll-gap: 15px;
 
     --commits-row-gap: 20px;
@@ -44,7 +44,7 @@
     --commits-container-padding: 20px;
     --commits-container-gap: 20px;
 
-    --commit-header-font-size: 1.4rem;
+    --commit-header-font-size: calc(1.4rem * var(--kc-text-scale));
     --commit-header-font-weight: 700;
     --commit-header-margin-bottom: 10px;
     --commit-header-padding-bottom: 6px;
@@ -53,15 +53,15 @@
     --commit-message-font-weight: 700;
     --commit-message-margin-bottom: 4px;
 
-    --commit-meta-font-size: 0.9em;
+    --commit-meta-font-size: calc(0.9em * var(--kc-text-scale));
     --commit-meta-margin-inline-start: 4px;
 
-    --commit-code-font-size: 0.97em;
+    --commit-code-font-size: calc(0.97em * var(--kc-text-scale));
     --commit-code-radius: 4px;
     --commit-code-padding-block: 2px;
     --commit-code-padding-inline: 4px;
 
-    --commit-link-font-size: 0.85em;
+    --commit-link-font-size: calc(0.85em * var(--kc-text-scale));
 }
 
 /* Outer card that wraps the whole commits area */

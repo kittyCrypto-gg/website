@@ -19,16 +19,16 @@
 
     --terminal-header-height: 22px;
     --terminal-header-pad-inline: 8px;
-    --terminal-header-font-size: 11px;
+    --terminal-header-font-size: calc(11px * var(--kc-text-scale));
     --terminal-header-z-index: 1;
 
     --terminal-controls-gap: 6px;
-    --terminal-btn-font-size: 11px;
+    --terminal-btn-font-size: calc(11px * var(--kc-text-scale));
     --terminal-btn-line-height: 1;
     --terminal-btn-hover-scale: 1.2;
     --terminal-btn-hover-transition: 0.2s ease;
 
-    --terminal-btn-symbol-font-size: 10px;
+    --terminal-btn-symbol-font-size: calc(10px * var(--kc-text-scale));
     --terminal-btn-symbol-font-weight: 700;
 
     --terminal-btn-close-colour: #8b0000;
