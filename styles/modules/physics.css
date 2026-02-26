@@ -36,7 +36,6 @@
   --phys-duration: var(--phys-default-duration);
   --phys-ease: var(--phys-default-ease);
 
-  /* Allow per-instance overrides (fall back to :root tokens above) */
   --phys-enter-x: var(--phys-enter-x);
   --phys-overshoot-x: var(--phys-overshoot-x);
   --phys-settle-x: var(--phys-settle-x);

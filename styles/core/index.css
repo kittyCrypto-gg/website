@@ -1,0 +1,74 @@
+/* =========================================
+    Home Intro Block
+========================================= */
+
+:root {
+    --kitty-intro-width: 90%;
+    --kitty-intro-margin-block: 2rem;
+    --kitty-intro-padding: 1.5rem;
+
+    --kitty-intro-font-size: calc(1.1rem * var(--kc-text-scale));
+    --kitty-intro-line-height: 1.8;
+
+    --kitty-intro-radius: 12px;
+
+    --kitty-intro-code-padding-block: 0.2em;
+    --kitty-intro-code-padding-inline: 0.4em;
+    --kitty-intro-code-radius: 4px;
+    --kitty-intro-code-font-size: calc(0.95em * var(--kc-text-scale));
+
+    --kitty-intro-text-align: justify;
+    --kitty-intro-text-align-last: left;
+}
+
+.kitty-intro {
+    width: var(--kitty-intro-width);
+
+    margin: var(--kitty-intro-margin-block) auto;
+    padding: var(--kitty-intro-padding);
+
+    font-size: var(--kitty-intro-font-size);
+    line-height: var(--kitty-intro-line-height);
+
+    color: var(--body-text-colour);
+    background-color: var(--frame-bg-colour);
+
+    border-radius: var(--kitty-intro-radius);
+    box-shadow: var(--frame-box-shadow);
+
+    text-align: var(--kitty-intro-text-align);
+    text-align-last: var(--kitty-intro-text-align-last);
+
+    box-sizing: border-box;
+
+    a {
+        color: var(--menu-button-text-colour);
+    }
+
+    code {
+        font-family: monospace;
+        background: var(--chat-input-bg-colour);
+
+        padding: var(--kitty-intro-code-padding-block) var(--kitty-intro-code-padding-inline);
+        border-radius: var(--kitty-intro-code-radius);
+
+        font-size: var(--kitty-intro-code-font-size);
+    }
+}
+
+/* Dark mode support (kept for equivalence, even though values are variable-driven) */
+.dark-mode {
+    .kitty-intro {
+        background-color: var(--frame-bg-colour);
+        color: var(--body-text-colour);
+
+        a {
+            color: var(--menu-button-text-colour);
+        }
+
+        code {
+            background-color: var(--chat-input-bg-colour);
+            color: var(--chat-input-text-colour);
+        }
+    }
+}

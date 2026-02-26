@@ -2,6 +2,7 @@
     Entrypoint: imports everything in order
 ========================================= */
 
+@import url("./core/index.css");
 @import url("./core/tokens.css");
 @import url("./core/theme.light.css");
 @import url("./core/theme.dark.css");
