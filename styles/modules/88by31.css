@@ -1,0 +1,90 @@
+/* =========================================
+    Module: 88x31 Buttons
+========================================= */
+
+:root {
+    --kc-88by31-outer-width: 90%;
+    --kc-88by31-outer-margin-block: 2rem;
+    --kc-88by31-outer-margin-inline: auto;
+    --kc-88by31-outer-padding: 1.5rem;
+
+    --kc-88by31-outer-radius: 12px;
+    --kc-88by31-outer-border-width: 1.5px;
+
+    --kc-88by31-inner-width: 90%;
+    --kc-88by31-inner-padding-inline: 20px;
+
+    --kc-88by31-button-width: 88px;
+    --kc-88by31-button-height: 31px;
+
+    --kc-88by31-grid-gap: 14px;
+    --kc-88by31-max-width: 1200px;
+
+    --kc-88by31-button-hover-scale: 1.1;
+    --kc-88by31-button-hover-transition: 0.2s;
+}
+
+.kc-88by31 {
+    width: var(--kc-88by31-outer-width);
+    max-width: var(--kc-88by31-max-width);
+    margin: var(--kc-88by31-outer-margin-block) var(--kc-88by31-outer-margin-inline);
+    padding: var(--kc-88by31-outer-padding);
+
+    box-sizing: border-box;
+
+    color: var(--body-text-colour);
+    background-color: var(--frame-bg-colour);
+
+    border: var(--kc-88by31-outer-border-width) solid var(--frame-border-light);
+    border-radius: var(--kc-88by31-outer-radius);
+    box-shadow: var(--frame-box-shadow);
+
+    text-align: left;
+}
+
+.kc-88by31__inner {
+    width: var(--kc-88by31-inner-width);
+    max-width: var(--kc-88by31-max-width);
+    margin: 0 auto;
+    padding: 0 var(--kc-88by31-inner-padding-inline);
+
+    box-sizing: border-box;
+}
+
+.kc-88by31__grid {
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, var(--kc-88by31-button-width));
+    justify-content: center;
+    justify-items: center;
+
+    gap: var(--kc-88by31-grid-gap);
+
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* JS can inject anchors, divs, whatever, as direct children */
+.kc-88by31__grid>* {
+    width: var(--kc-88by31-button-width);
+    height: var(--kc-88by31-button-height);
+
+    display: block;
+    box-sizing: border-box;
+}
+
+/* If you inject <img> inside <a>, keep it tidy */
+.kc-88by31__grid img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: pointer;
+}
+
+.kc-88by31__grid>* {
+    transition: transform var(--kc-88by31-button-hover-transition);
+}
+
+.kc-88by31__grid>*:hover {
+    transform: scale(var(--kc-88by31-button-hover-scale));
+}

@@ -188,8 +188,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const isMobile = params.get("isMobile") !== null
             ? params.get("isMobile") === "true"
             : await checkMobile();
-    
-    applyMobileTextScale(isMobile);
+
+        applyMobileTextScale(isMobile);
 
         const terminal = await setupTerminalModule()
             .then((mod) => {
@@ -282,6 +282,27 @@ const deleteCookie = (name: string): void => {
 const repaint = (): void => {
     void document.body.offsetHeight;
 };
+
+/**
+ * Installs the copy button handler for the Kitty badge HTML snippet textarea.
+ *
+ * Expects:
+ * - <textarea id="kittyBadgeSnippet" readonly>...</textarea>
+ * - <button id="kittyBadgeSnippetCopy" type="button">Copy snippet</button>
+ *
+ * @returns {void} Nothing.
+ */
+function initBadgSnptCpy(): void {
+    const textareaEl = document.getElementById("kittyBadgeSnippet");
+    if (!(textareaEl instanceof HTMLTextAreaElement)) return;
+
+    const buttonEl = document.getElementById("kittyBadgeSnippetCopy");
+    if (!(buttonEl instanceof HTMLButtonElement)) return;
+
+    buttonEl.addEventListener("click", () => {
+        void copyTxt(textareaEl.value);
+    });
+}
 
 /**
  * @returns {Promise<void>} Resolves after UI initialisation.
@@ -445,6 +466,42 @@ async function initialiseUI(): Promise<void> {
     }
 }
 
+/**
+ * Copies a string to the clipboard.
+ * Prefers the Clipboard API and falls back to `execCommand("copy")` when needed.
+ *
+ * @param {string} text The text to copy.
+ * @returns {Promise<boolean>} True if copying likely succeeded, otherwise false.
+ */
+async function copyTxt(text: string): Promise<boolean> {
+    if (!text) return false;
+
+    const clipboard = navigator.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+        try {
+            await clipboard.writeText(text);
+            return true;
+        } catch {
+            // Fall through to the legacy method
+        }
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+
+    return ok;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    initBadgSnptCpy();
     void initialiseUI();
 });

@@ -1,30 +1,212 @@
 /* =========================================
-    Core: Utilities
-    (tiny helpers used across modules)
+    Utilities: kc-badge-snippet (tokens)
 ========================================= */
 
 :root {
-    --util-hidden-display: none;
-    --util-wait-cursor: progress;
-    --util-no-scroll-overflow: hidden;
+  --kc-badge-snippet-gap: 10px;
+  --kc-badge-snippet-margin-top: 14px;
+
+  /* Hint label */
+  --kc-badge-snippet-hint-padding: 10px 12px;
+  --kc-badge-snippet-hint-radius: 10px;
+  --kc-badge-snippet-hint-border-width: 1px;
+  --kc-badge-snippet-hint-accent-width: 3px;
+
+  --kc-badge-snippet-label-font-size: 0.9rem;
+  --kc-badge-snippet-label-line-height: 1.35;
+
+  --kc-badge-snippet-label-font:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    "Noto Sans",
+    "Liberation Sans",
+    sans-serif;
+
+  --kc-badge-snippet-label-fg: var(--body-text-colour);
+  --kc-badge-snippet-label-muted: var(--timestamp-colour);
+
+  --kc-badge-snippet-hint-bg: rgba(var(--frame-bg-colour-rgb), 0.55);
+  --kc-badge-snippet-hint-border: var(--chat-input-border-colour);
+  --kc-badge-snippet-hint-accent: var(--accent);
+
+  /* Code block textarea */
+  --kc-badge-snippet-textarea-width: 100%;
+  --kc-badge-snippet-textarea-min-height: 6.5rem;
+  --kc-badge-snippet-textarea-padding: 10px 12px;
+  --kc-badge-snippet-textarea-radius: 10px;
+  --kc-badge-snippet-textarea-border-width: 1px;
+
+  --kc-badge-snippet-code-font-size: 0.85rem;
+  --kc-badge-snippet-code-line-height: 1.3;
+
+  --kc-badge-snippet-textarea-bg: var(--chatroom-bg-colour);
+  --kc-badge-snippet-textarea-fg: var(--chatroom-text-colour);
+  --kc-badge-snippet-textarea-border: var(--chatroom-border-colour);
+
+  --kc-badge-snippet-textarea-rail-width: 3px;
+  --kc-badge-snippet-textarea-rail-colour: var(--accent);
+
+  --kc-badge-snippet-textarea-font:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace;
+
+  --kc-badge-snippet-textarea-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* Copy button */
+  --kc-badge-snippet-btn-padding: 8px 12px;
+  --kc-badge-snippet-btn-radius: 10px;
+  --kc-badge-snippet-btn-border-width: 1px;
+
+  --kc-badge-snippet-btn-bg: var(--menu-button-bg-colour);
+  --kc-badge-snippet-btn-fg: var(--menu-button-text-colour);
+  --kc-badge-snippet-btn-hover-bg: var(--menu-button-hover-bg-colour);
+  --kc-badge-snippet-btn-border: var(--nav-border-colour);
+
+  --kc-badge-snippet-btn-font-weight: 600;
+  --kc-badge-snippet-btn-letter-spacing: 0.2px;
+
+  --kc-badge-snippet-focus-outline: 2px solid var(--accent);
+  --kc-badge-snippet-focus-outline-offset: 2px;
+
+  --kc-badge-snippet-transition: 0.2s;
 }
 
-.hidden {
-    display: var(--util-hidden-display) !important;
+/* =========================================
+    Utilities: Badge Snippet (rules)
+========================================= */
+
+.kc-badge-snippet {
+  margin-top: var(--kc-badge-snippet-margin-top);
+  display: flex;
+  flex-direction: column;
+  gap: var(--kc-badge-snippet-gap);
+  box-sizing: border-box;
 }
 
-/* Used while awaiting async work (eg modal submit, fetch, etc) */
-.cursor-wait {
-    cursor: var(--util-wait-cursor) !important;
+.kc-badge-snippet__label {
+  display: block;
+  padding: var(--kc-badge-snippet-hint-padding);
 
-    & * {
-        cursor: var(--util-wait-cursor) !important;
-    }
+  box-sizing: border-box;
+
+  border: var(--kc-badge-snippet-hint-border-width) solid var(--kc-badge-snippet-hint-border);
+  border-left: var(--kc-badge-snippet-hint-accent-width) solid var(--kc-badge-snippet-hint-accent);
+  border-radius: var(--kc-badge-snippet-hint-radius);
+
+  background-color: var(--kc-badge-snippet-hint-bg);
+  color: var(--kc-badge-snippet-label-fg);
+
+  font-family: var(--kc-badge-snippet-label-font);
+  font-size: var(--kc-badge-snippet-label-font-size);
+  line-height: var(--kc-badge-snippet-label-line-height);
+
+  letter-spacing: 0.1px;
+
+  & strong {
+    font-weight: 600;
+  }
 }
 
-/* Disable page scroll while overlays/modals are open */
-body {
-    &.no-scroll {
-        overflow: var(--util-no-scroll-overflow);
-    }
+.kc-badge-snippet__textarea {
+  width: var(--kc-badge-snippet-textarea-width);
+  min-height: var(--kc-badge-snippet-textarea-min-height);
+  padding: var(--kc-badge-snippet-textarea-padding);
+
+  box-sizing: border-box;
+
+  border: var(--kc-badge-snippet-textarea-border-width) solid var(--kc-badge-snippet-textarea-border);
+  border-left: var(--kc-badge-snippet-textarea-rail-width) solid var(--kc-badge-snippet-textarea-rail-colour);
+  border-radius: var(--kc-badge-snippet-textarea-radius);
+
+  background-color: var(--kc-badge-snippet-textarea-bg);
+  color: var(--kc-badge-snippet-textarea-fg);
+
+  font-family: var(--kc-badge-snippet-textarea-font);
+  font-size: var(--kc-badge-snippet-code-font-size);
+  line-height: var(--kc-badge-snippet-code-line-height);
+
+  font-variant-ligatures: none;
+  tab-size: 2;
+
+  resize: vertical;
+
+  overflow-x: auto;
+  scrollbar-gutter: stable both-edges;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--frame-bg-colour-rgb), 0.35) transparent;
+
+  white-space: pre;
+  word-break: normal;
+
+  box-shadow: var(--kc-badge-snippet-textarea-shadow);
+
+  &:focus-visible {
+    outline: var(--kc-badge-snippet-focus-outline);
+    outline-offset: var(--kc-badge-snippet-focus-outline-offset);
+  }
+
+  /* WebKit overlay-style scrollbar (both axes) */
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(var(--frame-bg-colour-rgb), 0.35);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(var(--frame-bg-colour-rgb), 0.5);
+  }
+}
+
+.kc-badge-snippet__copy {
+  padding: var(--kc-badge-snippet-btn-padding);
+  border-radius: var(--kc-badge-snippet-btn-radius);
+  border: var(--kc-badge-snippet-btn-border-width) solid var(--kc-badge-snippet-btn-border);
+
+  background-color: var(--kc-badge-snippet-btn-bg);
+  color: var(--kc-badge-snippet-btn-fg);
+
+  font-weight: var(--kc-badge-snippet-btn-font-weight);
+  letter-spacing: var(--kc-badge-snippet-btn-letter-spacing);
+
+  cursor: pointer;
+
+  transition:
+    background-color var(--kc-badge-snippet-transition),
+    transform var(--kc-badge-snippet-transition);
+
+  &:hover {
+    background-color: var(--kc-badge-snippet-btn-hover-bg);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: var(--kc-badge-snippet-focus-outline);
+    outline-offset: var(--kc-badge-snippet-focus-outline-offset);
+  }
 }
