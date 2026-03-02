@@ -144,21 +144,22 @@ async function checkMobile(): Promise<boolean> {
     const MOBILE_DETECT_CDN =
         "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
 
-    if (!("MobileDetect" in window) || typeof (window as unknown as { MobileDetect?: unknown }).MobileDetect === "undefined") {
+    if (!("MobileDetect" in window)
+        || typeof (window as unknown as { MobileDetect?: unknown }).MobileDetect === "undefined"
+    ) {
         await loader.loadScript(MOBILE_DETECT_CDN, { asModule: false });
     }
 
     const ua = navigator.userAgent;
 
-    const MD = (window as unknown as { MobileDetect: new (ua: string) => { mobile: () => string | null } }).MobileDetect;
+    const MD = (window as unknown as { MobileDetect: new (ua: string) => { mobile: () => string | null } })
+        .MobileDetect;
     const md = new MD(ua);
 
     const mdHit = !!md.mobile();
     const touch = navigator.maxTouchPoints > 0;
 
-    const desktop =
-        /\b(Windows NT|Macintosh|X11|Linux x86_64)\b/.test(ua) &&
-        !touch;
+    const desktop = /\b(Windows NT|Macintosh|X11|Linux x86_64)\b/.test(ua) && !touch;
 
     return mdHit || !desktop;
 }
@@ -171,7 +172,7 @@ function applyMobileTextScale(isMobile: boolean): void {
     const root = document.documentElement;
 
     // Single dial for CSS to consume
-    root.style.setProperty("--kc-text-scale", isMobile ? "0.75" : "1");
+    root.style.setProperty("--kc-text-scale", isMobile ? "0.65" : "1");
 
     // Optional hook if you also want a class for other mobile-only tweaks
     root.classList.toggle("kc-mobile", isMobile);
@@ -185,17 +186,14 @@ document.addEventListener("DOMContentLoaded", () => {
      * @returns {Promise<void>} Resolves after terminal initialisation.
      */
     const init = async (): Promise<void> => {
-        const isMobile = params.get("isMobile") !== null
-            ? params.get("isMobile") === "true"
-            : await checkMobile();
-    
-    applyMobileTextScale(isMobile);
+        const isMobile =
+            params.get("isMobile") !== null ? params.get("isMobile") === "true" : await checkMobile();
+
+        applyMobileTextScale(isMobile);
 
         const terminal = await setupTerminalModule()
             .then((mod) => {
-                document
-                    .getElementById("terminal-loading")
-                    ?.style.setProperty("display", "none");
+                document.getElementById("terminal-loading")?.style.setProperty("display", "none");
 
                 console.log("Banner loaded successfully");
                 return mod as TerminalModule;
@@ -214,18 +212,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const KeyboardEmu = keyboardEmu as unknown as KeyboardEmuCtor;
 
-        const keyboard: KeyboardEmuInstance | null = (isMobile && xtermTextarea)
-            ? await new KeyboardEmu(
-                isMobile,
-                "../keyboard.html",
-                "../styles/modules/keyboard.css"
-            ).install(
-                {
-                    send: ({ seq }) => terminal.sendSeq(seq)
-                },
-                xtermTextarea
-            )
-            : null;
+        const keyboard: KeyboardEmuInstance | null =
+            isMobile && xtermTextarea
+                ? await new KeyboardEmu(isMobile, "../keyboard.html", "../styles/modules/keyboard.css").install(
+                    {
+                        send: ({ seq }) => terminal.sendSeq(seq)
+                    },
+                    xtermTextarea
+                )
+                : null;
 
         const dispose = terminal.dispose;
         (terminal as { dispose: () => void }).dispose = () => {
@@ -284,6 +279,69 @@ const repaint = (): void => {
 };
 
 /**
+ * Normalises CSS `content:` strings into plain text.
+ *
+ * @param {string} raw - Raw computed `content` value.
+ * @returns {string} Text suitable for clipboard.
+ */
+function normaliseCssContent(raw: string): string {
+    // Computed `content` is usually quoted, or "none"/"normal" when nothing is rendered.
+    if (!raw || raw === "none" || raw === "normal") return "";
+
+    const quote = raw[0];
+    const hasQuotes =
+        (quote === `"` || quote === `'`) &&
+        raw[raw.length - 1] === quote;
+
+    const withoutOuterQuotes = hasQuotes ? raw.slice(1, -1) : raw;
+
+    // Unescape CSS newlines and common escapes from computed `content`.
+    return withoutOuterQuotes
+        .replaceAll("\\A", "\n")
+        .replaceAll("\\a", "\n")
+        .replaceAll("\\00000A", "\n")
+        .replaceAll("\\00000a", "\n")
+        .replaceAll('\\"', '"')
+        .replaceAll("\\'", "'")
+        .replaceAll("\\\\", "\\");
+}
+
+/**
+ * Reads the Kitty badge snippet text from the pre pseudo-element (and falls back to DOM text).
+ *
+ * @returns {string} The snippet text.
+ */
+function readBadgeSnippetText(): string {
+    const preEl = document.querySelector(".kc-badge-snippet__code");
+    if (!(preEl instanceof HTMLElement)) return "";
+
+    const raw = window.getComputedStyle(preEl, "::before").content;
+    const fromBefore = normaliseCssContent(raw).trim();
+    if (fromBefore) return fromBefore;
+
+    return (preEl.textContent ?? "").trim();
+}
+
+/**
+ * Installs the copy button handler for the Kitty badge snippet.
+ *
+ * Expects:
+ * - <pre class="kc-badge-snippet__code"> ... (snippet via ::before) </pre>
+ * - <button class="kc-badge-snippet__copy" type="button">Copy</button>
+ *
+ * @returns {void} Nothing.
+ */
+function initBadgSnptCpy(): void {
+    const buttonEl = document.querySelector(".kc-badge-snippet__copy");
+    if (!(buttonEl instanceof HTMLButtonElement)) return;
+
+    buttonEl.addEventListener("click", () => {
+        const text = readBadgeSnippetText();
+        void copyTxt(text);
+    });
+}
+
+/**
  * @returns {Promise<void>} Resolves after UI initialisation.
  */
 async function initialiseUI(): Promise<void> {
@@ -338,11 +396,7 @@ async function initialiseUI(): Promise<void> {
         const currentYear = new Date().getFullYear();
         footer.textContent = data.footer.replace("${year}", String(currentYear));
 
-        const themeToggle = recreateSingleton(
-            "theme-toggle",
-            () => document.createElement("button"),
-            document
-        );
+        const themeToggle = recreateSingleton("theme-toggle", () => document.createElement("button"), document);
         themeToggle.classList.add("theme-toggle-button");
         document.body.appendChild(themeToggle);
 
@@ -355,8 +409,7 @@ async function initialiseUI(): Promise<void> {
             document.documentElement.classList.toggle("dark-mode", theme === "dark");
             document.documentElement.classList.toggle("light-mode", theme === "light");
 
-            themeToggle.textContent =
-                theme === "dark" ? data.themeToggle.dark : data.themeToggle.light;
+            themeToggle.textContent = theme === "dark" ? data.themeToggle.dark : data.themeToggle.light;
 
             currentTheme = theme;
 
@@ -398,17 +451,11 @@ async function initialiseUI(): Promise<void> {
             });
         }
 
-        const isReaderRoute =
-            window.location.pathname === "/reader" ||
-            window.location.pathname.startsWith("/reader/");
+        const isReaderRoute = window.location.pathname === "/reader" || window.location.pathname.startsWith("/reader/");
 
         if (!isReaderRoute) return;
 
-        const readerToggle = recreateSingleton(
-            "reader-toggle",
-            () => document.createElement("button"),
-            document
-        );
+        const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
         readerToggle.classList.add("theme-toggle-button");
         readerToggle.style.bottom = "80px";
         readerToggle.textContent = data.readerModeToggle.enable;
@@ -419,11 +466,7 @@ async function initialiseUI(): Promise<void> {
 
         await setupReaderToggle();
 
-        const readAloudToggle = recreateSingleton(
-            "read-aloud-toggle",
-            () => document.createElement("button"),
-            document
-        );
+        const readAloudToggle = recreateSingleton("read-aloud-toggle", () => document.createElement("button"), document);
         readAloudToggle.classList.add("theme-toggle-button");
         readAloudToggle.style.bottom = "140px";
         readAloudToggle.textContent = data.readAloudToggle.enable;
@@ -445,6 +488,42 @@ async function initialiseUI(): Promise<void> {
     }
 }
 
+/**
+ * Copies a string to the clipboard.
+ * Prefers the Clipboard API and falls back to `execCommand("copy")` when needed.
+ *
+ * @param {string} text The text to copy.
+ * @returns {Promise<boolean>} True if copying likely succeeded, otherwise false.
+ */
+async function copyTxt(text: string): Promise<boolean> {
+    if (!text) return false;
+
+    const clipboard = navigator.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+        try {
+            await clipboard.writeText(text);
+            return true;
+        } catch {
+            // Fall through to the legacy method
+        }
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+
+    return ok;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    initBadgSnptCpy();
     void initialiseUI();
 });

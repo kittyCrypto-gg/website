@@ -138,8 +138,8 @@
     Commit section container (panel)
 ========================================= */
 .commits-container {
-    flex: 1;
-    min-width: var(--commits-container-min-width);
+    flex: 1 1 var(--commits-container-min-width);
+    min-width: min(var(--commits-container-min-width), 100%);
     max-width: var(--commits-container-max-width);
 
     background-color: var(--frame-bg-colour);
@@ -254,4 +254,10 @@
     justify-content: center;
 
     min-width: 0;
+}
+
+@media (max-width: 659px) {
+    .commits-outer-container {
+        display: none !important;
+    }
 }
