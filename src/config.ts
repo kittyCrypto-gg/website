@@ -18,3 +18,4 @@ export const commentPostURL = `${BACKEND_URL}/comment`;
 export const commentLoadURL = `${BACKEND_URL}/comments/load`;
 export const storiesIndexURL = `${BACKEND_URL}/stories.json`;
 export const storiesURL = `${BACKEND_URL}/stories`;
+export const statusEndpointUrl = `${BACKEND_URL}/status`;

@@ -1,9 +1,11 @@
+import * as config from "./config.ts";
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
 import { setupTerminalModule } from "./terminal.ts";
 import { setupReaderToggle } from "./readerMode.ts";
 import * as readAloud from "./readAloud.ts";
 import { keyboardEmu } from "./keyboard.ts";
 import * as loader from "./loader.ts";
+import { loadBanner, scaleBannerToFit, setupTerminalWindow } from "./banner.ts";
 
 type TerminalModule = Readonly<{
     term: Readonly<{
@@ -41,6 +43,79 @@ type MainJson = Readonly<{
 }>;
 
 type CookieValue = string | null;
+
+type ServerStatusOk = Readonly<{
+    ok: true;
+    online: true;
+    now: string;
+}>;
+
+type ServerStatusResult =
+    | Readonly<{ kind: "online"; now: string }>
+    | Readonly<{ kind: "offline"; reason: string }>;
+
+
+/**
+ * 
+ * @param res Response to read JSON from.
+ * @returns json if possible
+ */
+function readJsonIfAny(res: Response): Promise<unknown> {
+    return res.json().catch(() => null);
+}
+
+/**
+ * 
+ * @param v Value to check.
+ * @returns whether v is a record (non-null object, not an array)
+ */
+function isRecord(v: unknown): v is Record<string, unknown> {
+    return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * @param {number} timeoutMs - Timeout in milliseconds.
+ * @returns {Promise<ServerStatusResult>} Online/offline status result.
+ */
+async function fetchServerStatus(timeoutMs: number): Promise<ServerStatusResult> {
+    const ctl = new AbortController();
+    const t = window.setTimeout(() => ctl.abort(), timeoutMs);
+
+    try {
+        const res = await fetch(config.statusEndpointUrl, {
+            method: "GET",
+            cache: "no-store",
+            credentials: "omit",
+            signal: ctl.signal,
+            headers: { accept: "application/json" }
+        });
+
+        if (!res.ok) {
+            return { kind: "offline", reason: `status endpoint returned ${res.status}` };
+        }
+
+        const bodyUnknown: unknown = await readJsonIfAny(res);
+
+        const looksOk =
+            isRecord(bodyUnknown) &&
+            bodyUnknown.ok === true &&
+            bodyUnknown.online === true &&
+            typeof bodyUnknown.now === "string" &&
+            bodyUnknown.now.length > 0;
+
+        if (!looksOk) {
+            return { kind: "offline", reason: "status endpoint returned unexpected payload" };
+        }
+
+        const body = bodyUnknown as ServerStatusOk;
+        return { kind: "online", now: body.now };
+    } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "unknown error";
+        return { kind: "offline", reason: msg };
+    } finally {
+        window.clearTimeout(t);
+    }
+}
 
 const params = new URLSearchParams(window.location.search);
 
@@ -191,11 +266,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         applyMobileTextScale(isMobile);
 
+        const status = await fetchServerStatus(2000);
+        if (status.kind === "offline") {
+            document.getElementById("terminal-loading")?.style.setProperty("display", "none");
+
+            await loadBanner({ serverOffline: true });
+            await scaleBannerToFit();
+            await setupTerminalWindow();
+            return;
+        }
+
         const terminal = await setupTerminalModule()
             .then((mod) => {
                 document.getElementById("terminal-loading")?.style.setProperty("display", "none");
-
-                console.log("Banner loaded successfully");
                 return mod as TerminalModule;
             })
             .catch((err: unknown) => {
@@ -215,9 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const keyboard: KeyboardEmuInstance | null =
             isMobile && xtermTextarea
                 ? await new KeyboardEmu(isMobile, "../keyboard.html", "../styles/modules/keyboard.css").install(
-                    {
-                        send: ({ seq }) => terminal.sendSeq(seq)
-                    },
+                    { send: ({ seq }) => terminal.sendSeq(seq) },
                     xtermTextarea
                 )
                 : null;

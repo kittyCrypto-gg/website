@@ -70,6 +70,7 @@ type SessionTokenResult = Readonly<{
 type WebSocketTransportOptions = Readonly<{
     onOpen?: (socket: WebSocket) => void;
     connectRef?: () => void;
+    onConnectivityIssue?: (trigger: string) => void;
 }>;
 
 type WebUiTheme = "dark" | "light";
@@ -515,11 +516,53 @@ async function attachWebSocketTransport(
 
     const onOpen = typeof opts.onOpen === "function" ? opts.onOpen : null;
     const connectRef = typeof opts.connectRef === "function" ? opts.connectRef : null;
+    const onConnectivityIssue =
+        typeof opts.onConnectivityIssue === "function" ? opts.onConnectivityIssue : null;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
 
+    let openTimer: number | null = null;
+    const openTimeoutMs = 3500;
+
+    let connectivityIssueEmitted = false;
+
+    /**
+     * @param {string} trigger - Issue trigger label.
+     * @returns {void} Nothing.
+     */
+    const emitConnectivityIssue = (trigger: string): void => {
+        if (!onConnectivityIssue) return;
+        if (connectivityIssueEmitted) return;
+        connectivityIssueEmitted = true;
+        onConnectivityIssue(trigger);
+    };
+
+    /**
+     * @returns {void} Nothing.
+     */
+    const clearOpenTimer = (): void => {
+        if (openTimer === null) return;
+        window.clearTimeout(openTimer);
+        openTimer = null;
+    };
+
+    openTimer = window.setTimeout(() => {
+        openTimer = null;
+
+        const notOpenYet = ws.readyState !== WebSocket.OPEN;
+        if (!notOpenYet) return;
+
+        const terminalState = ws.readyState === WebSocket.CLOSING || ws.readyState === WebSocket.CLOSED;
+        if (terminalState) return;
+
+        term.writeln("\r\n[connection timeout]");
+        scrollCtl.forceFollowAndScroll();
+        emitConnectivityIssue("ws-open-timeout");
+    }, openTimeoutMs);
+
     ws.addEventListener("open", () => {
+        clearOpenTimer();
         scrollCtl.forceFollowAndScroll();
 
         if (onOpen) onOpen(ws);
@@ -559,6 +602,8 @@ async function attachWebSocketTransport(
     });
 
     ws.addEventListener("close", (ev: CloseEvent) => {
+        clearOpenTimer();
+
         if (ev.code === 4001) {
             sessionStorage.removeItem("kc-session-token");
             term.writeln("\r\n[session ended, reconnecting with a new token…]");
@@ -573,16 +618,38 @@ async function attachWebSocketTransport(
             return;
         }
 
+        const normalClosure = ev.code === 1000;
+        if (normalClosure) {
+            term.writeln("\r\n[disconnected]");
+            scrollCtl.forceFollowAndScroll();
+            return;
+        }
+
         term.writeln("\r\n[disconnected]");
         scrollCtl.forceFollowAndScroll();
+        emitConnectivityIssue(`ws-close-${ev.code}`);
     });
 
     ws.addEventListener("error", () => {
+        clearOpenTimer();
+
         term.writeln("\r\n[connection error]");
         scrollCtl.forceFollowAndScroll();
+        emitConnectivityIssue("ws-error");
     });
 
     return ws;
+}
+
+/**
+ * @param {string} trigger - Connectivity trigger.
+ * @returns {string} Friendly notice for WebSocket failures.
+ */
+function wsUnreachableNoticeText(trigger: string): string {
+    const base =
+        "The terminal couldn’t connect. This is usually a temporary hiccup, or a network that blocks WebSockets. Try refreshing the page, switching network, or disabling VPN and ad blockers. If it keeps happening, email kitty@kittycrypto.gg.";
+
+    return `[notice] ${base} (trigger: ${trigger})`;
 }
 
 /**
@@ -598,37 +665,6 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const FitAddonCtor = FitAddonNamespace?.FitAddon;
     if (!FitAddonCtor) throw new Error("xterm fit addon failed to load (window.FitAddon.FitAddon missing)");
 
-    let ws: WebSocket | null = null;
-    let reconnecting = false;
-    let webUiThemePending: WebUiTheme | null = null;
-
-    /**
-     * @param {WebSocket | null} socket - Optional socket override.
-     * @returns {void} Nothing.
-     */
-    const sendPendingWebUiTheme = (socket: WebSocket | null = null): void => {
-        const s = socket || ws;
-        if (!webUiThemePending) return;
-        if (!s || s.readyState !== WebSocket.OPEN) return;
-
-        s.send(JSON.stringify({
-            type: "setEnv",
-            key: "WEB_UI_THEME",
-            value: webUiThemePending
-        }));
-
-        webUiThemePending = null;
-    };
-
-    /**
-     * @param {WebUiTheme} theme - Theme value.
-     * @returns {void} Nothing.
-     */
-    const setWebUiTheme = (theme: WebUiTheme): void => {
-        webUiThemePending = theme;
-        sendPendingWebUiTheme();
-    };
-
     const terminalWrapper = safeGetEl("terminal-wrapper");
     const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
     const iconEl = safeGetEl("term-icon");
@@ -636,6 +672,13 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     if (!terminalWrapper) throw new Error("Missing element: #terminal-wrapper");
     if (!shellWrapper) throw new Error("Missing element: #shell-wrapper or #banner-wrapper");
     if (!(iconEl instanceof HTMLImageElement)) throw new Error("Missing element: #term-icon");
+
+    let ws: WebSocket | null = null;
+    let reconnecting = false;
+    let webUiThemePending: WebUiTheme | null = null;
+
+    let lastWsNoticeAt = 0;
+    let lastWsNoticeKey: string | null = null;
 
     const icon = iconEl;
 
@@ -704,6 +747,25 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const followState: FollowState = { value: true };
     const scrollCtl = attachScrollTracking(term, followState);
 
+    /**
+     * @param {string} trigger - What triggered the notice.
+     * @returns {void} Nothing.
+     */
+    const notifyWsUnreachable = (trigger: string): void => {
+        const nowMs = Date.now();
+        const throttleMs = 4000;
+        const key = trigger;
+
+        const tooSoon = nowMs - lastWsNoticeAt < throttleMs;
+        if (tooSoon && lastWsNoticeKey === key) return;
+
+        lastWsNoticeAt = nowMs;
+        lastWsNoticeKey = key;
+
+        term.writeln(`\r\n${wsUnreachableNoticeText(trigger)}`);
+        scrollCtl.forceFollowAndScroll();
+    };
+
     let fitScheduled = false;
 
     /**
@@ -770,6 +832,35 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     });
 
     /**
+     * @param {WebSocket | null} socket - Optional socket override.
+     * @returns {void} Nothing.
+     */
+    const sendPendingWebUiTheme = (socket: WebSocket | null = null): void => {
+        const s = socket || ws;
+        if (!webUiThemePending) return;
+        if (!s || s.readyState !== WebSocket.OPEN) return;
+
+        s.send(
+            JSON.stringify({
+                type: "setEnv",
+                key: "WEB_UI_THEME",
+                value: webUiThemePending
+            })
+        );
+
+        webUiThemePending = null;
+    };
+
+    /**
+     * @param {WebUiTheme} theme - Theme value.
+     * @returns {void} Nothing.
+     */
+    const setWebUiTheme = (theme: WebUiTheme): void => {
+        webUiThemePending = theme;
+        sendPendingWebUiTheme();
+    };
+
+    /**
      * @returns {Promise<void>} Resolves once a connection attempt finishes.
      */
     const connectWs = async (): Promise<void> => {
@@ -791,6 +882,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
                 },
                 connectRef: () => {
                     void connectWs();
+                },
+                onConnectivityIssue: (trigger: string) => {
+                    notifyWsUnreachable(trigger);
                 }
             });
 
@@ -807,6 +901,11 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
                 sendResize(term.cols, term.rows);
             });
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "unknown error";
+            term.writeln(`\r\n[connection failed: ${msg}]`);
+            scrollCtl.forceFollowAndScroll();
+            notifyWsUnreachable("ws-setup-failed");
         } finally {
             reconnecting = false;
         }
@@ -823,13 +922,19 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         const origWriteln = term.writeln.bind(term);
 
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        (term as unknown as { write: (data: string, cb?: () => void) => void }).write = (data: string, cb?: () => void) => {
+        (term as unknown as { write: (data: string, cb?: () => void) => void }).write = (
+            data: string,
+            cb?: () => void
+        ) => {
             origWrite(data, cb);
             raf2(() => scrollCtl.maybeScroll());
         };
 
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        (term as unknown as { writeln: (data: string, cb?: () => void) => void }).writeln = (data: string, cb?: () => void) => {
+        (term as unknown as { writeln: (data: string, cb?: () => void) => void }).writeln = (
+            data: string,
+            cb?: () => void
+        ) => {
             origWriteln(data, cb);
             raf2(() => scrollCtl.maybeScroll());
         };
@@ -948,7 +1053,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(seq);
         },
-        //setWebUiTheme,
+        // setWebUiTheme,
         dispose: (): void => {
             detachResizeHandlers();
             document.removeEventListener("mouseup", onMouseUp);
