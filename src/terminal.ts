@@ -647,7 +647,7 @@ async function attachWebSocketTransport(
  */
 function wsUnreachableNoticeText(trigger: string): string {
     const base =
-        "The terminal couldn’t connect. This is usually a temporary hiccup, or a network that blocks WebSockets. Try refreshing the page, switching network, or disabling VPN and ad blockers. If it keeps happening, email kitty@kittycrypto.gg.";
+        "Try refreshing to reconnect. If the issue persists email me at kitty@kittycrypto.gg";
 
     return `[notice] ${base} (trigger: ${trigger})`;
 }
