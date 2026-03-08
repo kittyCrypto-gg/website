@@ -1,4 +1,4 @@
-# kittycrypto.gg – Frontend - ${V2.5011}
+# kittycrypto.gg – Frontend - ${V2.51111}
 
 The public-facing frontend of https://kittycrypto.gg 🐾
 
