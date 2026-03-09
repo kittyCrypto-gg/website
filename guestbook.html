@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="./dist/themeLoad.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script type="module" src="./dist/main.js"></script>
+    <script type="module" src="./dist/comments.js"></script>
+    <script type="module" src="./dist/rss.js"></script>
+
+    <title>Kitty Crypto Guestbook</title>
+    <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
+    <meta name="description" content="Leave a message in Kitty Crypto's guestbook." />
+</head>
+
+<body>
+    <div class="frame">
+        <div class="frame-content">
+            <aside id="banner-wrapper" role="presentation" aria-hidden="true">
+                <img id="term-icon" />
+                <div id="terminal-wrapper">
+                    <div id="terminal-loading">Loading terminal...</div>
+                    <div id="terminal"></div>
+                    <div id="banner"></div>
+                </div>
+            </aside>
+
+            <nav id="main-menu"></nav>
+            <header id="main-header">Guestbook</header>
+
+            <div id="main-content">
+                <div id="comments" class="comments-container">
+                    <div class="comments-header">Leave your comment!</div>
+
+                    <div class="comment-input">
+                        <div class="comment-row comment-meta-row">
+                            <input type="text" id="comment-nick" maxlength="32"
+                                placeholder="Your nickname (max 32 characters)" />
+
+                            <input type="text" id="comment-website" placeholder="Your Website (Optional)" />
+
+                            <div class="comment-location-field">
+                                <div class="comment-location-control">
+                                    <select id="comment-location" aria-label="Your location">
+                                        <option value="">Location (Optional)</option>
+                                    </select>
+                                    <span id="comment-location-flag" aria-hidden="true">🌎</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="comment-row comment-body-row">
+                            <textarea id="new-comment" maxlength="256" rows="4"
+                                placeholder="Write your comment here (max 256 characters)..."></textarea>
+                        </div>
+
+                        <div class="comment-row comment-submit-row">
+                            <button id="post-comment-button">Post</button>
+                        </div>
+                    </div>
+
+                    <div class="comments-header">Visitor Comments</div>
+                    <div id="comments-box" class="comments-box">
+                        <!-- Comments will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <footer id="main-footer"></footer>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

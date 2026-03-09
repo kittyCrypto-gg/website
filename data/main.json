@@ -3,6 +3,7 @@
     "🏠Main": "./",
     "❓About": "./about",
     "📚Stories": "./reader",
+    "📖Guestbook": "./guestbook",
     "💬Chat": "./chat",
     "🧶Blog": "./blog"
   },
