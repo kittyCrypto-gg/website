@@ -16,6 +16,9 @@ const USER_IP_URL = `${config.getIpURL}`;
 const LOCATION_DATA_URL = "../data/locations.json";
 const LOCATION_FLAGS_URL = "../images/flags";
 
+const NICKNAME_STORAGE_KEY = "nickname";
+const LOCATION_STORAGE_KEY = "comment-location";
+
 type SessionTokenResponse = Readonly<{
     sessionToken: string;
 }>;
@@ -30,7 +33,7 @@ type PostCommentInput = Readonly<{
     ip: string | null;
     sessionToken: string | null;
     website?: string;
-    location: string
+    location: string;
 }>;
 
 type PostCommentSuccess = Readonly<{
@@ -130,6 +133,18 @@ function normaliseLocationKey(rawValue: string | null | undefined): string {
 }
 
 /**
+ * @param {HTMLSelectElement} locationSelect - The location select element.
+ * @returns {void} Restores the saved location from localStorage when possible, otherwise falls back to "world".
+ */
+function restoreStoredLocation(locationSelect: HTMLSelectElement): void {
+    const storedLocation = normaliseLocationKey(localStorage.getItem(LOCATION_STORAGE_KEY));
+    const hasStoredOption = Array.from(locationSelect.options).some((option) => option.value === storedLocation);
+
+    locationSelect.value = hasStoredOption ? storedLocation : "world";
+    locationSelect.dispatchEvent(new Event("change"));
+}
+
+/**
  * @returns {Promise<void>} Resolves when the location dropdown has been initialised, or immediately if the required DOM elements are not present.
  */
 async function setupLocationPicker(): Promise<void> {
@@ -147,6 +162,11 @@ async function setupLocationPicker(): Promise<void> {
     });
 
     await locAPI.init();
+    restoreStoredLocation(locationSelect);
+
+    locationSelect.addEventListener("change", () => {
+        localStorage.setItem(LOCATION_STORAGE_KEY, normaliseLocationKey(locationSelect.value));
+    });
 }
 
 /**
@@ -417,7 +437,7 @@ function setupCommentPosting(): void {
 
     if (!nickInput || !textarea || !button) return;
 
-    const storedNick = localStorage.getItem("nickname");
+    const storedNick = localStorage.getItem(NICKNAME_STORAGE_KEY);
     if (storedNick) nickInput.value = storedNick;
 
     button.addEventListener("click", async () => {
@@ -444,7 +464,8 @@ function setupCommentPosting(): void {
 
         const location = normaliseLocationKey(locationSelect?.value);
 
-        localStorage.setItem("nickname", nick);
+        localStorage.setItem(NICKNAME_STORAGE_KEY, nick);
+        localStorage.setItem(LOCATION_STORAGE_KEY, location);
 
         const result = await postComment({
             nick,
@@ -462,7 +483,6 @@ function setupCommentPosting(): void {
 
         textarea.value = "";
         if (websiteInput) websiteInput.value = rawWebsite.trim().length > 0 ? rawWebsite.trim() : "";
-        if (locationSelect) locationSelect.value = locationSelect.value;
         await renderComments();
     });
 }

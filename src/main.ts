@@ -156,6 +156,48 @@ function clearNodesBetween(start: Node, end: Node): void {
 }
 
 /**
+ * @param {Document} doc - Document used to create replacement nodes.
+ * @param {Node} node - Parsed node to clone.
+ * @returns {Node} A cloned node where script elements are recreated so they execute when inserted.
+ */
+function cloneHeadInjectionNode(doc: Document, node: Node): Node {
+    if (node.nodeType === Node.TEXT_NODE) {
+        return doc.createTextNode(node.textContent ?? "");
+    }
+
+    if (node.nodeType === Node.COMMENT_NODE) {
+        return doc.createComment(node.textContent ?? "");
+    }
+
+    if (node instanceof HTMLScriptElement) {
+        const script = doc.createElement("script");
+
+        for (const attr of Array.from(node.attributes)) {
+            script.setAttribute(attr.name, attr.value);
+        }
+
+        script.textContent = node.textContent ?? "";
+        return script;
+    }
+
+    if (node instanceof HTMLElement) {
+        const el = doc.createElement(node.tagName.toLowerCase());
+
+        for (const attr of Array.from(node.attributes)) {
+            el.setAttribute(attr.name, attr.value);
+        }
+
+        for (const child of Array.from(node.childNodes)) {
+            el.appendChild(cloneHeadInjectionNode(doc, child));
+        }
+
+        return el;
+    }
+
+    return node.cloneNode(true);
+}
+
+/**
  * @param {Document} doc - Document to operate on.
  * @param {readonly string[]} injections - HTML snippets to inject into <head>.
  * @returns {void} Nothing.
@@ -183,7 +225,10 @@ function applyHeaderInjections(doc: Document, injections: readonly string[]): vo
         const tpl = doc.createElement("template");
         tpl.innerHTML = html;
 
-        frag.appendChild(tpl.content.cloneNode(true));
+        for (const node of Array.from(tpl.content.childNodes)) {
+            frag.appendChild(cloneHeadInjectionNode(doc, node));
+        }
+
         frag.appendChild(doc.createTextNode("\n"));
     }
 
