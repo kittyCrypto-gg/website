@@ -128,9 +128,11 @@ function resolveRequestedPage(options: VisitCounterOptions): string | undefined 
     }
 
     const currentPath = window.location.pathname.trim();
+    const currentSearch = window.location.search.trim();
+    const currentPage = `${currentPath}${currentSearch}`;
 
-    if (currentPath && currentPath !== "/") {
-        return currentPath;
+    if (currentPage && currentPage !== "/") {
+        return currentPage;
     }
 
     return "/index.html";

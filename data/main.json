@@ -26,8 +26,6 @@
     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\">",
     "<meta charset=\"UTF-8\">",
     "<meta property=\"og:type\" content=\"website\">",
-    "<script type=\"module\">import { installInjectionGuard } from \"/dist/injectionGuard.js\"; installInjectionGuard(new Set([\"banner-wrapper\", \"main-menu\", \"story-selector\"])).enforce(document);</script>",
-    "<script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>",
-    "<script type=\"module\" src=\"./dist/visitLogger.js\"></script>"
+    "<script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>"
   ]
 }
