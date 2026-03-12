@@ -19,3 +19,5 @@ export const commentLoadURL = `${BACKEND_URL}/comments/load`;
 export const storiesIndexURL = `${BACKEND_URL}/stories.json`;
 export const storiesURL = `${BACKEND_URL}/stories`;
 export const statusEndpointUrl = `${BACKEND_URL}/status`;
+export const statsEndpoint = `${BACKEND_URL}/visits/stats`;
+export const logVisitEndpoint = `${BACKEND_URL}/visits/log`;

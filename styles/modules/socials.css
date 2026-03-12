@@ -1,0 +1,207 @@
+/* =========================================
+    Module: About Socials Segment
+========================================= */
+
+:root {
+    --socials-segment-width: 90%;
+    --socials-segment-margin-block: 2rem;
+    --socials-segment-margin-inline: auto;
+    --socials-segment-padding: 1.5rem;
+
+    --socials-segment-radius: 12px;
+    --socials-segment-border-width: 1.5px;
+
+    --socials-grid-columns: 2;
+    --socials-grid-gap: 16px;
+
+    --socials-card-padding-block: 14px;
+    --socials-card-padding-inline: 16px;
+    --socials-card-radius: 10px;
+    --socials-card-border-width: 1px;
+
+    --socials-card-icon-size: 32px;
+    --socials-card-gap: 14px;
+
+    --socials-card-min-height: 72px;
+
+    --socials-title-font-size: calc(1rem * var(--kc-text-scale));
+    --socials-title-font-weight: 700;
+    --socials-title-line-height: 1.2;
+
+    --socials-url-font-size: calc(0.92rem * var(--kc-text-scale));
+    --socials-url-line-height: 1.4;
+    --socials-url-opacity: 0.82;
+
+    --socials-card-hover-translate: -1px;
+    --socials-card-transition: 0.2s ease-in-out;
+
+    --socials-card-bg: var(--chatroom-bg-colour);
+    --socials-card-text: var(--body-text-colour);
+    --socials-card-border-colour: var(--frame-border-light);
+    --socials-card-url-colour: var(--timestamp-colour);
+    --socials-card-hover-bg: var(--menu-button-hover-bg-colour);
+    --socials-card-hover-text: var(--menu-button-text-colour);
+    --socials-card-shadow: var(--frame-box-shadow);
+}
+
+/* Outer segment */
+.socials-segment {
+    width: var(--socials-segment-width);
+    margin: var(--socials-segment-margin-block) var(--socials-segment-margin-inline);
+    padding: var(--socials-segment-padding);
+
+    box-sizing: border-box;
+
+    color: var(--body-text-colour);
+    background-color: var(--frame-bg-colour);
+
+    border: var(--socials-segment-border-width) solid var(--frame-border-light);
+    border-radius: var(--socials-segment-radius);
+    box-shadow: var(--frame-box-shadow);
+
+    text-align: left;
+}
+
+/* Grid */
+.socials-segment__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--socials-grid-columns), minmax(0, 1fr));
+    gap: var(--socials-grid-gap);
+
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Spacer used when count is odd, so the final real item lands on the right */
+.socials-segment__spacer {
+    min-height: 1px;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Social card */
+.socials-segment__item {
+    display: flex;
+    align-items: center;
+    gap: var(--socials-card-gap);
+
+    min-height: var(--socials-card-min-height);
+    padding: var(--socials-card-padding-block) var(--socials-card-padding-inline);
+
+    box-sizing: border-box;
+
+    background-color: var(--socials-card-bg);
+    color: var(--socials-card-text);
+
+    border: var(--socials-card-border-width) solid var(--socials-card-border-colour);
+    border-radius: var(--socials-card-radius);
+    box-shadow: var(--socials-card-shadow);
+
+    text-decoration: none;
+
+    transition:
+        background-color var(--socials-card-transition),
+        color var(--socials-card-transition),
+        transform var(--socials-card-transition),
+        border-color var(--socials-card-transition);
+}
+
+/* Icon */
+.socials-segment__icon {
+    width: var(--socials-card-icon-size);
+    height: var(--socials-card-icon-size);
+
+    flex: 0 0 var(--socials-card-icon-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--body-text-colour);
+}
+
+.socials-segment__icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.socials-segment__icon img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+/* Text body */
+.socials-segment__body {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+
+    flex: 1 1 auto;
+}
+
+/* Social name */
+.socials-segment__title {
+    font-size: var(--socials-title-font-size);
+    font-weight: var(--socials-title-font-weight);
+    line-height: var(--socials-title-line-height);
+
+    color: inherit;
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* URL */
+.socials-segment__url {
+    font-size: var(--socials-url-font-size);
+    line-height: var(--socials-url-line-height);
+
+    color: var(--socials-card-url-colour);
+    opacity: var(--socials-url-opacity);
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Interaction */
+.socials-segment__item:hover,
+.socials-segment__item:focus-visible {
+    background-color: var(--socials-card-hover-bg);
+    color: var(--socials-card-hover-text);
+    border-color: var(--nav-border-colour);
+
+    transform: translateY(var(--socials-card-hover-translate));
+    text-decoration: none;
+}
+
+.socials-segment__item:hover .socials-segment__icon,
+.socials-segment__item:focus-visible .socials-segment__icon {
+    color: var(--socials-card-hover-text);
+}
+
+.socials-segment__item:hover .socials-segment__url,
+.socials-segment__item:focus-visible .socials-segment__url {
+    color: inherit;
+    opacity: 0.9;
+}
+
+.socials-segment__item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Responsive collapse */
+@media (max-width: 700px) {
+    .socials-segment__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .socials-segment__spacer {
+        display: none;
+    }
+}

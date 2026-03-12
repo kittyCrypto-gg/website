@@ -7,6 +7,15 @@
     <script type="module" src="./dist/main.js"></script>
     <script type="module" src="./dist/comments.js"></script>
     <script type="module" src="./dist/rss.js"></script>
+    <script type="module">
+        import { renderVisits } from "./dist/visits.js";
+
+        void renderVisits({
+            scope: "page",
+            metric: "uniqueVisitors",
+            target: "unique-visits-count"
+        });
+    </script>
 
     <title>Kitty Crypto Guestbook</title>
     <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
@@ -62,6 +71,14 @@
                     <div class="comments-header">Visitor Comments</div>
                     <div id="comments-box" class="comments-box">
                         <!-- Comments will be dynamically inserted here -->
+                    </div>
+                </div>
+                <div class="site-stats kc-88by31">
+                    <div class="comments-header">Stats</div>
+
+                    <div class="site-stats__item">
+                        <span class="stats-segment">Unique Visitors</span>
+                        <div id="unique-visits-count"></div>
                     </div>
                 </div>
 

@@ -8,7 +8,7 @@
     "🧶Blog": "./blog"
   },
   "header": "${pageTitle}",
-  "footer": "Kitty's website is open-source. 1991 - ${year}",
+  "footer": "Kitty's website is open-source. 2024 - ${year}",
   "themeToggle": {
     "light": "🌙",
     "dark": "☀️"
@@ -27,6 +27,7 @@
     "<meta charset=\"UTF-8\">",
     "<meta property=\"og:type\" content=\"website\">",
     "<script type=\"module\">import { installInjectionGuard } from \"/dist/injectionGuard.js\"; installInjectionGuard(new Set([\"banner-wrapper\", \"main-menu\", \"story-selector\"])).enforce(document);</script>",
-    "<script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>"
+    "<script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>",
+    "<script type=\"module\" src=\"./dist/visitLogger.js\"></script>"
   ]
 }

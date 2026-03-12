@@ -93,6 +93,13 @@
     --chat-even-meta-brightness: 1;
 }
 
+/* Shared box sizing for consistent width calculations */
+#main-content,
+#chatroom,
+.chat-inputs {
+    box-sizing: border-box;
+}
+
 /* Chat page frame behaviour */
 .frame-chat {
     height: auto;
@@ -119,6 +126,7 @@
 
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
     }
 
     &>.frame-content {
@@ -127,6 +135,7 @@
 
         height: 100%;
         min-height: 0;
+        box-sizing: border-box;
     }
 
     & :is(#banner-wrapper, #main-menu, #main-header, #main-footer, .chat-inputs) {
@@ -141,6 +150,7 @@
         flex-direction: column;
 
         min-height: 0;
+        width: 100%;
     }
 
     & #chatroom {
@@ -179,6 +189,7 @@
     flex-grow: 1;
 
     overflow-y: auto;
+    border-radius: var(--chat-input-radius);
 }
 
 /* Message wrapper */

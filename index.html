@@ -14,14 +14,29 @@
     <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
     <script type="application/ld+json">
             {
-                "@context": "https://schema.org",
-                "@type": "Person",
-                "name": "KittyCrypto",
-                "alternateName": ["Kitty Crypto", "KittyCrypto.gg", "Kitty Crypto GG", "Kitty Crypro"],
-                "url": "https://kittycrypto.gg",
-                "description": "KittyCrypto is the personal blog and online home of Kitty, sharing stories, ideas, and technical projects. This site is not affiliated with CryptoKitties, NFTs, or any related schemes."
-            }
-        </script>
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": "KittyCrypto",
+            "alternateName": ["Kitty Crypto", "KittyCrypto.gg", "Kitty Crypto GG", "Kitty Crypro"],
+            "url": "https://kittycrypto.gg",
+            "description": "KittyCrypto is the personal blog and online home of Kitty, sharing stories, ideas, and technical projects. This site is not affiliated with CryptoKitties, NFTs, or any related schemes."
+        }
+    </script>
+    <script type="module">
+        import { renderVisits } from "./dist/visits.js";
+
+        void renderVisits({
+            scope: "overall",
+            metric: "visits",
+            target: "visits-count",
+        });
+
+        void renderVisits({
+            scope: "overall",
+            metric: "uniqueVisitors",
+            target: "unique-visits-count"
+        });
+    </script>
 </head>
 
 <body>
@@ -37,71 +52,71 @@
             </aside>
             <nav id="main-menu"></nav>
             <header id="main-header">Kitty Crypto's Website!</header>
-            <div id="main-content">
-                <div class="kitty-intro">
-                    <a class="comments-header" style="display: block; text-align: left;">Introduction</a>
-                    <p>
-                        <span class="emoticons">
-                            <span class="emoticon-blink">
-                                <span class="blink-open">(=^ΦωΦ^=)</span>
-                                <span class="blink-closed">(=^—ω—^=)</span>
-                            </span>
+            <!--<div id="main-content">--><!--DEPRECATED-->
+            <div class="kitty-intro">
+                <a class="comments-header" style="display: block; text-align: left;">Introduction</a>
+                <p>
+                    <span class="emoticons">
+                        <span class="emoticon-blink">
+                            <span class="blink-open">(=^ΦωΦ^=)</span>
+                            <span class="blink-closed">(=^—ω—^=)</span>
                         </span>
-                    </p>
-                    <p> Nyaa~ This site is a live system in construction. It boots, it crashes and then comes back with
-                        scars. </p>
-                    <p> Expect terminal windows, strange little tools, and notes that look like they were written at
-                        03:00 with shaking hands. Expect love letters hidden in plain sight, commented out where only
-                        the right kind of girl will notice. If you’re the sort who reads config files like diaries,
-                        welcome home, nya~ <span class="emoticons">
-                            <span class="emoticon">(=^uᄌu^=)</span>
+                    </span>
+                </p>
+                <p> Nyaa~ This site is a live system in construction. It boots, it crashes and then comes back with
+                    scars. </p>
+                <p> Expect terminal windows, strange little tools, and notes that look like they were written at
+                    03:00 with shaking hands. Expect love letters hidden in plain sight, commented out where only
+                    the right kind of girl will notice. If you’re the sort who reads config files like diaries,
+                    welcome home, nya~ <span class="emoticons">
+                        <span class="emoticon">(=^uᄌu^=)</span>
+                    </span>
+                </p>
+                <p> The code is open source. Fork it, patch it, break it, send a PR if you’re brave. It’s MIT and I
+                    mean it. The writing is mine though. If something here gets under your skin and you want to
+                    share it, do it gently, or better… just tell me what you felt. <a
+                        href="/cdn-cgi/l/email-protection#6803011c1c112803011c1c110b1a11181c07460f0f">meow me
+                        directly~</a>
+                    <span class="emoticons">
+                        <span class="emoticon">(=^-ω-^=)</span>
+                    </span>
+                <p>
+                    <span class="emoticons">
+                        <span class="emoticon-blink">
+                            <span class="blink-open">(ฅ^•ﻌ•^ฅ)</span>
+                            <span class="blink-closed">(ฅ^-ﻌ-^ฅ)</span>
                         </span>
-                    </p>
-                    <p> The code is open source. Fork it, patch it, break it, send a PR if you’re brave. It’s MIT and I
-                        mean it. The writing is mine though. If something here gets under your skin and you want to
-                        share it, do it gently, or better… just tell me what you felt. <a
-                            href="/cdn-cgi/l/email-protection#6803011c1c112803011c1c110b1a11181c07460f0f">meow me
-                            directly~</a>
-                        <span class="emoticons">
-                            <span class="emoticon">(=^-ω-^=)</span>
-                        </span>
-                    <p>
-                        <span class="emoticons">
-                            <span class="emoticon-blink">
-                                <span class="blink-open">(ฅ^•ﻌ•^ฅ)</span>
-                                <span class="blink-closed">(ฅ^-ﻌ-^ฅ)</span>
-                            </span>
-                        </span>
-                    </p>
-                    </p> ~Kitty 🧶 <code>
+                    </span>
+                </p>
+                </p> ~Kitty 🧶 <code>
                             <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="375c5e43434e775c5e43434e54454e474358195050">[email&#160;protected]</a>
                         </code> – <a
-                        href="/cdn-cgi/l/email-protection#91faf8e5e5e8d1faf8e5e5e8f2e3e8e1e5febff6f6">Email me!</a>
-                    </p>
-                </div>
-                <div class="blog-wrapper">
-                    <a class="comments-header" href="./blog.html" style="display: block; text-align: left;">Blog
-                        Posts</a>
-                    <div class="blog-container"></div>
-                </div>
-                <div class="commits-outer-container">
-                    <a class="comments-header" style="display: block; text-align: left;"> Source Code Tracker </a>
-                    <div class="commits-wrapper">
-                        <div class="commits-row">
-                            <div class="commits-container">
-                                <a class="comments-header" href="https://github.com/kittyCrypto-gg/website"
-                                    target="_blank" rel="noopener noreferrer"> Front-end Commits </a>
-                                <div id="github-commits-frontend" class="github-output-frame"></div>
-                            </div>
-                            <div class="commits-container">
-                                <a class="comments-header" href="https://github.com/kittyCrypto-gg/server"
-                                    target="_blank" rel="noopener noreferrer"> Back-end Commits </a>
-                                <div id="github-commits-backend" class="github-output-frame"></div>
-                            </div>
+                    href="/cdn-cgi/l/email-protection#91faf8e5e5e8d1faf8e5e5e8f2e3e8e1e5febff6f6">Email me!</a>
+                </p>
+            </div>
+            <div class="blog-wrapper">
+                <a class="comments-header" href="./blog.html" style="display: block; text-align: left;">Blog
+                    Posts</a>
+                <div class="blog-container"></div>
+            </div>
+            <div class="commits-outer-container">
+                <a class="comments-header" style="display: block; text-align: left;"> Source Code Tracker </a>
+                <div class="commits-wrapper">
+                    <div class="commits-row">
+                        <div class="commits-container">
+                            <a class="comments-header" href="https://github.com/kittyCrypto-gg/website" target="_blank"
+                                rel="noopener noreferrer"> Front-end Commits </a>
+                            <div id="github-commits-frontend" class="github-output-frame"></div>
+                        </div>
+                        <div class="commits-container">
+                            <a class="comments-header" href="https://github.com/kittyCrypto-gg/server" target="_blank"
+                                rel="noopener noreferrer"> Back-end Commits </a>
+                            <div id="github-commits-backend" class="github-output-frame"></div>
                         </div>
                     </div>
                 </div>
             </div>
+            <!--</div>--><!--DEPRECATED-->
             <div class="kc-88by31">
                 <div class="comments-header">Sites I find Interesting</div>
                 <div class="kc-88by31__inner">
@@ -173,6 +188,7 @@
                     </div>
                 </div>
             </div>
+
             <div id="comments" class="comments-container">
                 <div class="comments-header">Leave your comment!</div>
 
@@ -209,6 +225,22 @@
                 </div>
             </div>
         </div>
+        <div class="site-stats kc-88by31">
+            <div class="comments-header">Stats</div>
+
+            <div class="site-stats__grid">
+                <div class="site-stats__item">
+                    <span class="stats-segment">Visits</span>
+                    <div class="site-stats__counter" id="visits-count"></div>
+                </div>
+
+                <div class="site-stats__item">
+                    <span class="stats-segment">Unique Visitors</span>
+                    <div class="site-stats__counter" id="unique-visits-count"></div>
+                </div>
+            </div>
+        </div>
+
         <footer id="main-footer"></footer>
     </div>
     <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>

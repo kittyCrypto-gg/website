@@ -1,0 +1,20 @@
+{
+    "social": {
+        "github": {
+            "url": "https://github.com/kitty-crypto",
+            "icon": "../images/github.svg"
+        },
+        "discord": {
+            "url": "https://discord.com/users/kitty.crypto",
+            "icon": "../images/discord.svg"
+        },
+        "twitter": {
+            "url": "https://twitter.com/kitty_cgc",
+            "icon": "../images/twitter.svg"
+        },
+        "telegram": {
+            "url": "https://t.me/kitty_crypto",
+            "icon": "../images/telegram.svg"
+        }
+    }
+}

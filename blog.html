@@ -6,6 +6,15 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="module" src="./dist/main.js"></script>
   <script type="module" src="./dist/rss.js"></script>
+  <script type="module">
+    import { renderVisits } from "./dist/visits.js";
+
+    void renderVisits({
+      scope: "page",
+      metric: "uniqueVisitors",
+      target: "unique-visits-count"
+    });
+  </script>
   <title>Kitty Crypto Blog</title>
   <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
 </head>
@@ -29,6 +38,14 @@
         <div class="blog-wrapper">
           <a class="comments-header" style="display: block; text-align: left;">Blog Posts</a>
           <div class="blog-container"></div>
+        </div>
+        <div class="site-stats kc-88by31">
+          <div class="comments-header">Stats</div>
+
+          <div class="site-stats__item">
+            <span class="stats-segment">Unique Visitors</span>
+            <div id="unique-visits-count"></div>
+          </div>
         </div>
 
         <footer id="main-footer"></footer>

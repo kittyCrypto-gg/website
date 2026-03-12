@@ -1,0 +1,149 @@
+/* =========================================
+    Home Stats Segment
+========================================= */
+
+:root {
+    --site-stats-width: 90%;
+    --site-stats-margin-block: 2rem;
+    --site-stats-padding: 1.5rem;
+    --site-stats-radius: 12px;
+
+    --site-stats-grid-gap: 1.25rem;
+    --site-stats-grid-min-column-width: 16rem;
+
+    --site-stats-item-padding: 1rem;
+    --site-stats-item-radius: 10px;
+    --site-stats-item-min-height: 8.5rem;
+
+    --site-stats-item-background: rgba(var(--frame-bg-colour-rgb), 0.18);
+    --site-stats-item-border: 1px solid var(--nav-border-colour);
+    --site-stats-item-box-shadow: none;
+
+    --site-stats-item-align: center;
+    --site-stats-item-justify: flex-start;
+    --site-stats-item-gap: 0.9rem;
+
+    --site-stats-counter-min-height: 3.5rem;
+    --site-stats-counter-justify: center;
+
+    --stats-segment-display: inline-flex;
+    --stats-segment-align-items: center;
+    --stats-segment-justify-content: center;
+
+    --stats-segment-width: 100%;
+    --stats-segment-margin-bottom: 0;
+
+    --stats-segment-font-size: calc(1rem * var(--kc-text-scale));
+    --stats-segment-font-weight: 700;
+    --stats-segment-line-height: 1.3;
+    --stats-segment-letter-spacing: 0.01em;
+    --stats-segment-text-align: center;
+
+    --stats-segment-text-colour: var(--menu-button-text-colour);
+    --stats-segment-background: var(--nav-bg-colour);
+    --stats-segment-border: 1px solid var(--nav-border-colour);
+
+    --stats-segment-padding-block: 0.55rem;
+    --stats-segment-padding-inline: 0.9rem;
+    --stats-segment-radius: 999px;
+
+    --stats-segment-box-shadow: none;
+}
+
+.site-stats {
+    width: var(--site-stats-width);
+
+    margin: var(--site-stats-margin-block) auto;
+    padding: var(--site-stats-padding);
+
+    background-color: var(--frame-bg-colour);
+    border-radius: var(--site-stats-radius);
+    box-shadow: var(--frame-box-shadow);
+
+    box-sizing: border-box;
+
+    & .comments-header {
+        margin-bottom: 1.25rem;
+    }
+
+    & .site-stats__item {
+        display: flex;
+        flex-direction: column;
+        align-items: var(--site-stats-item-align);
+        justify-content: var(--site-stats-item-justify);
+        gap: var(--site-stats-item-gap);
+
+        min-height: var(--site-stats-item-min-height);
+        padding: var(--site-stats-item-padding);
+
+        background: var(--site-stats-item-background);
+        border: var(--site-stats-item-border);
+        border-radius: var(--site-stats-item-radius);
+        box-shadow: var(--site-stats-item-box-shadow);
+
+        box-sizing: border-box;
+    }
+
+    & .site-stats__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(var(--site-stats-grid-min-column-width), 1fr));
+        gap: var(--site-stats-grid-gap);
+        align-items: stretch;
+    }
+
+    & .site-stats__counter,
+    & .site-stats__item>div:last-child,
+    & .site-stats__item>.counter {
+        display: flex;
+        align-items: center;
+        justify-content: var(--site-stats-counter-justify);
+        width: 100%;
+        min-height: var(--site-stats-counter-min-height);
+    }
+}
+
+.stats-segment {
+    display: var(--stats-segment-display);
+    align-items: var(--stats-segment-align-items);
+    justify-content: var(--stats-segment-justify-content);
+
+    width: var(--stats-segment-width);
+    margin-bottom: var(--stats-segment-margin-bottom);
+
+    padding: var(--stats-segment-padding-block) var(--stats-segment-padding-inline);
+
+    font-size: var(--stats-segment-font-size);
+    font-weight: var(--stats-segment-font-weight);
+    line-height: var(--stats-segment-line-height);
+    letter-spacing: var(--stats-segment-letter-spacing);
+    text-align: var(--stats-segment-text-align);
+
+    color: var(--stats-segment-text-colour);
+    background: var(--stats-segment-background);
+    border: var(--stats-segment-border);
+    border-radius: var(--stats-segment-radius);
+    box-shadow: var(--stats-segment-box-shadow);
+
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.dark-mode {
+    .site-stats {
+        background-color: var(--frame-bg-colour);
+        box-shadow: var(--frame-box-shadow);
+
+        .site-stats__item {
+            background: var(--site-stats-item-background);
+            border: var(--site-stats-item-border);
+            box-shadow: var(--site-stats-item-box-shadow);
+        }
+    }
+
+    .stats-segment {
+        color: var(--stats-segment-text-colour);
+        background: var(--stats-segment-background);
+        border: var(--stats-segment-border);
+        box-shadow: var(--stats-segment-box-shadow);
+    }
+}
