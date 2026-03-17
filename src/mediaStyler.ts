@@ -649,6 +649,11 @@ function ensureTooltipPortal(): void {
         return state.triggerEl.contains(t) || state.portalEl.contains(t);
     };
 
+    const hideOnViewportChange = (): void => {
+        if (!tooltipPortalOpenState) return;
+        closeTooltipPortal();
+    };
+
     document.addEventListener("mouseover", (ev: MouseEvent) => {
         const trigger = closestTrigger(ev.target);
         if (!trigger) return;
@@ -689,6 +694,14 @@ function ensureTooltipPortal(): void {
         if (ev.key !== "Escape") return;
         closeTooltipPortal();
     });
+
+    document.addEventListener("scroll", hideOnViewportChange, true);
+    window.addEventListener("resize", hideOnViewportChange);
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("scroll", hideOnViewportChange);
+        window.visualViewport.addEventListener("resize", hideOnViewportChange);
+    }
 }
 
 /**
