@@ -1,35 +1,35 @@
-import { renderCounter } from "./counter.ts";
-import * as config from "./config.ts";
+import { renderCounter } from "./counter.ts"
+import * as config from "./config.ts"
 
 export interface VisitCounterOptions {
-    scope: "overall" | "page";
-    metric: "visits" | "uniqueVisitors";
-    target?: HTMLElement | string;
-    page?: string;
-    durationMs?: number;
-    endpoint?: string;
+    scope: "overall" | "page"
+    metric: "visits" | "uniqueVisitors"
+    target?: HTMLElement | string
+    page?: string
+    durationMs?: number
+    endpoint?: string
 }
 
 export interface RenderedVisitCounter {
-    host: HTMLElement;
-    value: number;
-    page?: string;
-    updatedAt: string;
+    host: HTMLElement
+    value: number
+    page?: string
+    updatedAt: number
 }
 
 interface BaseVisitStats {
-    visits: number;
-    uniqueVisitors: number;
-    updatedAt: string;
+    visits: number
+    uniqueVisitors: number
+    updatedAt: number
 }
 
 interface PageVisitStats extends BaseVisitStats {
-    page: string;
+    page: string
 }
 
-const DEFAULT_STATS_ENDPOINT = config.statsEndpoint;
+const DEFAULT_STATS_ENDPOINT = config.statsEndpoint
 
-let generatedCounterHostIndex = 0;
+let generatedCounterHostIndex = 0
 
 /**
  * Checks whether a value is a non-null record.
@@ -38,7 +38,7 @@ let generatedCounterHostIndex = 0;
  * @returns {boolean} True when the value is an object record.
  */
 function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
+    return typeof value === "object" && value !== null
 }
 
 /**
@@ -49,13 +49,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * @returns {number} Parsed numeric value.
  */
 function readRequiredNumber(source: Record<string, unknown>, fieldName: string): number {
-    const fieldValue = source[fieldName];
+    const fieldValue = source[fieldName]
 
     if (typeof fieldValue !== "number" || !Number.isFinite(fieldValue)) {
-        throw new Error(`Visit stats field "${fieldName}" is missing or invalid.`);
+        throw new Error(`Visit stats field "${fieldName}" is missing or invalid.`)
     }
 
-    return fieldValue;
+    return fieldValue
 }
 
 /**
@@ -66,13 +66,13 @@ function readRequiredNumber(source: Record<string, unknown>, fieldName: string):
  * @returns {string} Parsed string value.
  */
 function readRequiredString(source: Record<string, unknown>, fieldName: string): string {
-    const fieldValue = source[fieldName];
+    const fieldValue = source[fieldName]
 
     if (typeof fieldValue !== "string" || !fieldValue.trim()) {
-        throw new Error(`Visit stats field "${fieldName}" is missing or invalid.`);
+        throw new Error(`Visit stats field "${fieldName}" is missing or invalid.`)
     }
 
-    return fieldValue;
+    return fieldValue
 }
 
 /**
@@ -83,14 +83,14 @@ function readRequiredString(source: Record<string, unknown>, fieldName: string):
  */
 function parseBaseVisitStats(payload: unknown): BaseVisitStats {
     if (!isRecord(payload)) {
-        throw new Error("Visit stats response is not a valid object.");
+        throw new Error("Visit stats response is not a valid object.")
     }
 
     return {
         visits: readRequiredNumber(payload, "visits"),
         uniqueVisitors: readRequiredNumber(payload, "uniqueVisitors"),
-        updatedAt: readRequiredString(payload, "updatedAt")
-    };
+        updatedAt: readRequiredNumber(payload, "updatedAt")
+    }
 }
 
 /**
@@ -101,13 +101,13 @@ function parseBaseVisitStats(payload: unknown): BaseVisitStats {
  */
 function parsePageVisitStats(payload: unknown): PageVisitStats {
     if (!isRecord(payload)) {
-        throw new Error("Page visit stats response is not a valid object.");
+        throw new Error("Page visit stats response is not a valid object.")
     }
 
     return {
         ...parseBaseVisitStats(payload),
         page: readRequiredString(payload, "page")
-    };
+    }
 }
 
 /**
@@ -118,24 +118,24 @@ function parsePageVisitStats(payload: unknown): PageVisitStats {
  */
 function resolveRequestedPage(options: VisitCounterOptions): string | undefined {
     if (options.scope !== "page") {
-        return undefined;
+        return undefined
     }
 
-    const explicitPage = options.page?.trim();
+    const explicitPage = options.page?.trim()
 
     if (explicitPage) {
-        return explicitPage;
+        return explicitPage
     }
 
-    const currentPath = window.location.pathname.trim();
-    const currentSearch = window.location.search.trim();
-    const currentPage = `${currentPath}${currentSearch}`;
+    const currentPath = window.location.pathname.trim()
+    const currentSearch = window.location.search.trim()
+    const currentPage = `${currentPath}${currentSearch}`
 
-    if (currentPage && currentPage !== "/") {
-        return currentPage;
+    if (currentPage) {
+        return currentPage
     }
 
-    return "/index.html";
+    return "/"
 }
 
 /**
@@ -146,13 +146,13 @@ function resolveRequestedPage(options: VisitCounterOptions): string | undefined 
  * @returns {string} Fully qualified request URL.
  */
 function buildStatsUrl(endpoint: string, page: string | undefined): string {
-    const requestUrl = new URL(endpoint, window.location.href);
+    const requestUrl = new URL(endpoint, window.location.href)
 
     if (page?.trim()) {
-        requestUrl.searchParams.set("page", page);
+        requestUrl.searchParams.set("page", page)
     }
 
-    return requestUrl.toString();
+    return requestUrl.toString()
 }
 
 /**
@@ -162,22 +162,22 @@ function buildStatsUrl(endpoint: string, page: string | undefined): string {
  * @returns {Promise<BaseVisitStats | PageVisitStats>} Parsed stats payload.
  */
 async function fetchVisitStats(options: VisitCounterOptions): Promise<BaseVisitStats | PageVisitStats> {
-    const endpoint = options.endpoint?.trim() || DEFAULT_STATS_ENDPOINT;
-    const requestedPage = resolveRequestedPage(options);
-    const requestUrl = buildStatsUrl(endpoint, requestedPage);
-    const response = await fetch(requestUrl);
+    const endpoint = options.endpoint?.trim() || DEFAULT_STATS_ENDPOINT
+    const requestedPage = resolveRequestedPage(options)
+    const requestUrl = buildStatsUrl(endpoint, requestedPage)
+    const response = await fetch(requestUrl)
 
     if (!response.ok) {
-        throw new Error(`Failed to load visit stats from "${requestUrl}" (${response.status}).`);
+        throw new Error(`Failed to load visit stats from "${requestUrl}" (${response.status}).`)
     }
 
-    const payload: unknown = await response.json();
+    const payload: unknown = await response.json()
 
     if (requestedPage) {
-        return parsePageVisitStats(payload);
+        return parsePageVisitStats(payload)
     }
 
-    return parseBaseVisitStats(payload);
+    return parseBaseVisitStats(payload)
 }
 
 /**
@@ -188,28 +188,28 @@ async function fetchVisitStats(options: VisitCounterOptions): Promise<BaseVisitS
  */
 function resolveTargetElement(target?: HTMLElement | string): HTMLElement {
     if (target instanceof HTMLElement) {
-        return target;
+        return target
     }
 
-    const targetSelector = target?.trim();
+    const targetSelector = target?.trim()
 
     if (!targetSelector) {
-        return document.body;
+        return document.body
     }
 
-    const elementById = document.getElementById(targetSelector);
+    const elementById = document.getElementById(targetSelector)
 
     if (elementById instanceof HTMLElement) {
-        return elementById;
+        return elementById
     }
 
-    const elementBySelector = document.querySelector<HTMLElement>(targetSelector);
+    const elementBySelector = document.querySelector<HTMLElement>(targetSelector)
 
     if (elementBySelector instanceof HTMLElement) {
-        return elementBySelector;
+        return elementBySelector
     }
 
-    throw new Error(`Target element "${targetSelector}" was not found.`);
+    throw new Error(`Target element "${targetSelector}" was not found.`)
 }
 
 /**
@@ -218,9 +218,9 @@ function resolveTargetElement(target?: HTMLElement | string): HTMLElement {
  * @returns {string} Unique host id.
  */
 function getNextCounterHostId(): string {
-    generatedCounterHostIndex += 1;
+    generatedCounterHostIndex += 1
 
-    return `visits-counter-${generatedCounterHostIndex}`;
+    return `visits-counter-${generatedCounterHostIndex}`
 }
 
 /**
@@ -230,24 +230,24 @@ function getNextCounterHostId(): string {
  * @returns {HTMLElement} Host element with an id.
  */
 function prepareCounterHost(target?: HTMLElement | string): HTMLElement {
-    const resolvedTarget = resolveTargetElement(target);
+    const resolvedTarget = resolveTargetElement(target)
 
     if (resolvedTarget === document.body) {
-        const generatedHost = document.createElement("div");
+        const generatedHost = document.createElement("div")
 
-        generatedHost.id = getNextCounterHostId();
-        document.body.appendChild(generatedHost);
+        generatedHost.id = getNextCounterHostId()
+        document.body.appendChild(generatedHost)
 
-        return generatedHost;
+        return generatedHost
     }
 
     if (resolvedTarget.id) {
-        return resolvedTarget;
+        return resolvedTarget
     }
 
-    resolvedTarget.id = getNextCounterHostId();
+    resolvedTarget.id = getNextCounterHostId()
 
-    return resolvedTarget;
+    return resolvedTarget
 }
 
 /**
@@ -261,7 +261,7 @@ function readCounterValue(
     metric: VisitCounterOptions["metric"],
     stats: BaseVisitStats | PageVisitStats
 ): number {
-    return metric === "visits" ? stats.visits : stats.uniqueVisitors;
+    return metric === "visits" ? stats.visits : stats.uniqueVisitors
 }
 
 /**
@@ -272,10 +272,28 @@ function readCounterValue(
  */
 function readRenderedPage(stats: BaseVisitStats | PageVisitStats): string | undefined {
     if (!("page" in stats)) {
-        return undefined;
+        return undefined
     }
 
-    return stats.page;
+    return stats.page
+}
+
+/**
+ * Formats a Unix timestamp as YYYY.MM.DD HH:MM:SS using UTC.
+ *
+ * @param {number} timestampMs Unix timestamp in milliseconds.
+ * @returns {string} Formatted timestamp.
+ */
+export function formatVisitTimestamp(timestampMs: number): string {
+    const date = new Date(timestampMs)
+    const year = String(date.getUTCFullYear()).padStart(4, "0")
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+    const day = String(date.getUTCDate()).padStart(2, "0")
+    const hours = String(date.getUTCHours()).padStart(2, "0")
+    const minutes = String(date.getUTCMinutes()).padStart(2, "0")
+    const seconds = String(date.getUTCSeconds()).padStart(2, "0")
+
+    return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`
 }
 
 /**
@@ -287,20 +305,20 @@ function readRenderedPage(stats: BaseVisitStats | PageVisitStats): string | unde
 export async function renderVisits(
     options: VisitCounterOptions
 ): Promise<RenderedVisitCounter> {
-    const stats = await fetchVisitStats(options);
-    const counterValue = readCounterValue(options.metric, stats);
-    const counterHost = prepareCounterHost(options.target);
+    const stats = await fetchVisitStats(options)
+    const counterValue = readCounterValue(options.metric, stats)
+    const counterHost = prepareCounterHost(options.target)
 
     renderCounter({
         elementId: counterHost.id,
         target: counterValue,
         durationMs: options.durationMs
-    });
+    })
 
     return {
         host: counterHost,
         value: counterValue,
         page: readRenderedPage(stats),
         updatedAt: stats.updatedAt
-    };
+    }
 }

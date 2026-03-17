@@ -1,28 +1,55 @@
 import * as config from "./config.ts"
 
-type IpResponse = {
-    ip: string
+/**
+ * Returns the current page path including query parameters.
+ *
+ * @returns {string} The current pathname and search string.
+ */
+function getCurrentPage(): string {
+    return `${window.location.pathname}${window.location.search}`
 }
 
-async function fetchClientIp(): Promise<string> {
-    const response = await fetch(config.getIpURL)
-
-    if (!response.ok) {
-        throw new Error("Failed to get client IP")
-    }
-
-    const payload = await response.json() as IpResponse
-
-    if (typeof payload.ip !== "string" || !payload.ip.trim()) {
-        throw new Error("Server returned an invalid IP")
-    }
-
-    return payload.ip
+/**
+ * Builds the session storage key for a specific page.
+ *
+ * @param {string} page The page identifier to store.
+ * @returns {string} The session storage key.
+ */
+function getVisitStorageKey(page: string): string {
+    return `visitLogged:${page}`
 }
 
+/**
+ * Checks whether the current page visit has already been logged in this tab session.
+ *
+ * @param {string} page The page identifier to check.
+ * @returns {boolean} True when the page visit was already logged in this session.
+ */
+function hasVisitBeenLoggedThisSession(page: string): boolean {
+    return sessionStorage.getItem(getVisitStorageKey(page)) === "true"
+}
+
+/**
+ * Marks the current page visit as logged for this tab session.
+ *
+ * @param {string} page The page identifier to mark.
+ * @returns {void}
+ */
+function markVisitAsLoggedThisSession(page: string): void {
+    sessionStorage.setItem(getVisitStorageKey(page), "true")
+}
+
+/**
+ * Logs the current page visit unless it was already logged in this tab session.
+ *
+ * @returns {Promise<void>}
+ */
 async function logCurrentPageVisit(): Promise<void> {
-    const ip = await fetchClientIp()
-    const page = `${window.location.pathname}${window.location.search}`
+    const page = getCurrentPage()
+
+    if (hasVisitBeenLoggedThisSession(page)) {
+        return
+    }
 
     const response = await fetch(config.logVisitEndpoint, {
         method: "POST",
@@ -30,7 +57,6 @@ async function logCurrentPageVisit(): Promise<void> {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            ip,
             page
         })
     })
@@ -38,8 +64,15 @@ async function logCurrentPageVisit(): Promise<void> {
     if (!response.ok) {
         throw new Error(`Failed to log visit for page ${page}`)
     }
+
+    markVisitAsLoggedThisSession(page)
 }
 
+/**
+ * Starts visit logging in browser environments.
+ *
+ * @returns {void}
+ */
 function startVisitLogger(): void {
     if (typeof window === "undefined") {
         return

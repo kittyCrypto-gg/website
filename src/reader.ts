@@ -1,6 +1,7 @@
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
 import { modals, closeOnClick, type Modal } from "./modals.ts";
-import { replaceTategaki } from "./tategaki.ts";
+import { getReaderNds, replaceTategaki, serialisNde } from "./tategaki.ts";
+import { replaceSsmlAuthoring } from "./ssml.ts";
 import MediaStyler from "./mediaStyler.ts";
 import * as config from "./config.ts";
 
@@ -769,19 +770,26 @@ async function loadChapter(n: number): Promise<void> {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlText, "application/xml");
 
-        const paras = getElementsByAliases(xmlDoc, ["w:p", "paragraph"]);
+        const readerNodes = getReaderNds(xmlDoc);
 
-        let htmlContent = paras
-            .map((p) => {
+        let htmlContent = readerNodes
+            .map((node) => {
+                const preservedTategakiMarkup = serialisNde(node);
+                if (preservedTategakiMarkup) return preservedTategakiMarkup;
+
+                const p = node;
                 const isCleaned = p.tagName === "paragraph";
                 const pPr = isCleaned ? null : p.getElementsByTagName("w:pPr")[0];
                 let style = "";
+
                 if (!isCleaned && pPr) {
                     const styleEl = pPr.getElementsByTagName("w:pStyle")[0];
                     if (styleEl) style = styleEl.getAttribute("w:val") || "";
                 }
+
                 let tag = "p";
                 let className = "reader-paragraph";
+
                 if (style === "Title") {
                     tag = "h1";
                     className = "reader-title";
@@ -795,12 +803,13 @@ async function loadChapter(n: number): Promise<void> {
                     tag = "blockquote";
                     className = "reader-quote reader-intense";
                 }
+
                 const runs = isCleaned
                     ? Array.from(p.childNodes)
-                        .map((node) =>
-                            node.nodeType === 1
-                                ? new XMLSerializer().serializeToString(node)
-                                : (node.textContent || "")
+                        .map((childNode) =>
+                            childNode.nodeType === 1
+                                ? new XMLSerializer().serializeToString(childNode)
+                                : (childNode.textContent || "")
                         )
                         .join("")
                     : Array.from(p.getElementsByTagName("w:r"))
@@ -808,15 +817,22 @@ async function loadChapter(n: number): Promise<void> {
                             const text = Array.from(run.getElementsByTagName("w:t"))
                                 .map((t) => t.textContent || "")
                                 .join("");
+
                             const rPr = run.getElementsByTagName("w:rPr")[0];
                             const spanClass: string[] = [];
-                            if (rPr) {
-                                if (rPr.getElementsByTagName("w:b").length) spanClass.push("reader-bold");
-                                if (rPr.getElementsByTagName("w:i").length) spanClass.push("reader-italic");
-                                if (rPr.getElementsByTagName("w:u").length) spanClass.push("reader-underline");
-                                if (rPr.getElementsByTagName("w:strike").length) spanClass.push("reader-strike");
-                                if (rPr.getElementsByTagName("w:smallCaps").length) spanClass.push("reader-smallcaps");
-                            }
+
+                            const hasBold = Boolean(rPr?.getElementsByTagName("w:b").length);
+                            const hasItalic = Boolean(rPr?.getElementsByTagName("w:i").length);
+                            const hasUnderline = Boolean(rPr?.getElementsByTagName("w:u").length);
+                            const hasStrike = Boolean(rPr?.getElementsByTagName("w:strike").length);
+                            const hasSmallCaps = Boolean(rPr?.getElementsByTagName("w:smallCaps").length);
+
+                            if (hasBold) spanClass.push("reader-bold");
+                            if (hasItalic) spanClass.push("reader-italic");
+                            if (hasUnderline) spanClass.push("reader-underline");
+                            if (hasStrike) spanClass.push("reader-strike");
+                            if (hasSmallCaps) spanClass.push("reader-smallcaps");
+
                             return `<span class="${spanClass.join(" ")}">${text}</span>`;
                         })
                         .join("");
@@ -828,6 +844,7 @@ async function loadChapter(n: number): Promise<void> {
         htmlContent = await mediaStyler.replaceEmails(htmlContent);
         htmlContent = await mediaStyler.replaceSmsMessages(htmlContent);
         htmlContent = await replaceTategaki(htmlContent);
+        htmlContent = await replaceSsmlAuthoring(htmlContent);
         htmlContent = await mediaStyler.replaceImageTags(htmlContent);
         htmlContent = await mediaStyler.replaceTooltips(htmlContent);
         htmlContent = await injectBookmarksIntoHTML(htmlContent, base, window.chapter);
@@ -1434,10 +1451,14 @@ export function forceBookmark(bookmarkId: string): void {
  * @param {RenderXmlDocOpts} opts
  */
 async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<void> {
-    const paras = getElementsByAliases(xmlDoc, ["w:p", "paragraph"]);
+    const readerNodes = getReaderNds(xmlDoc);
 
-    let htmlContent: unknown = paras
-        .map((p) => {
+    let htmlContent: string = readerNodes
+        .map((node) => {
+            const preservedTategakiMarkup = serialisNde(node);
+            if (preservedTategakiMarkup) return preservedTategakiMarkup;
+
+            const p = node;
             const isCleaned = p.tagName === "paragraph";
             const pPr = isCleaned ? null : p.getElementsByTagName("w:pPr")[0];
             let style = "";
@@ -1466,8 +1487,10 @@ async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<v
 
             const runs = isCleaned
                 ? Array.from(p.childNodes)
-                    .map((n) =>
-                        n.nodeType === 1 ? new XMLSerializer().serializeToString(n) : (n.textContent || "")
+                    .map((childNode) =>
+                        childNode.nodeType === 1
+                            ? new XMLSerializer().serializeToString(childNode)
+                            : (childNode.textContent || "")
                     )
                     .join("")
                 : Array.from(p.getElementsByTagName("w:r"))
@@ -1479,13 +1502,17 @@ async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<v
                         const rPr = run.getElementsByTagName("w:rPr")[0];
                         const spanClass: string[] = [];
 
-                        if (rPr) {
-                            if (rPr.getElementsByTagName("w:b").length) spanClass.push("reader-bold");
-                            if (rPr.getElementsByTagName("w:i").length) spanClass.push("reader-italic");
-                            if (rPr.getElementsByTagName("w:u").length) spanClass.push("reader-underline");
-                            if (rPr.getElementsByTagName("w:strike").length) spanClass.push("reader-strike");
-                            if (rPr.getElementsByTagName("w:smallCaps").length) spanClass.push("reader-smallcaps");
-                        }
+                        const hasBold = Boolean(rPr?.getElementsByTagName("w:b").length);
+                        const hasItalic = Boolean(rPr?.getElementsByTagName("w:i").length);
+                        const hasUnderline = Boolean(rPr?.getElementsByTagName("w:u").length);
+                        const hasStrike = Boolean(rPr?.getElementsByTagName("w:strike").length);
+                        const hasSmallCaps = Boolean(rPr?.getElementsByTagName("w:smallCaps").length);
+
+                        if (hasBold) spanClass.push("reader-bold");
+                        if (hasItalic) spanClass.push("reader-italic");
+                        if (hasUnderline) spanClass.push("reader-underline");
+                        if (hasStrike) spanClass.push("reader-strike");
+                        if (hasSmallCaps) spanClass.push("reader-smallcaps");
 
                         return `<span class="${spanClass.join(" ")}">${text}</span>`;
                     })
@@ -1495,17 +1522,21 @@ async function renderXmlDoc(xmlDoc: Document, opts: RenderXmlDocOpts): Promise<v
         })
         .join("\n");
 
-    // Preserve original behaviour (these are async in mediaStyler)
-    htmlContent = await mediaStyler.replaceEmails(htmlContent as string) as unknown;
-    htmlContent = await mediaStyler.replaceSmsMessages(htmlContent as string) as unknown;
-    htmlContent = replaceTategaki(htmlContent as string) as unknown;
-    htmlContent = await mediaStyler.replaceImageTags(htmlContent as string);
+    htmlContent = await mediaStyler.replaceEmails(htmlContent);
+    htmlContent = await mediaStyler.replaceSmsMessages(htmlContent);
+    htmlContent = await replaceTategaki(htmlContent);
+    htmlContent = await replaceSsmlAuthoring(htmlContent);
+    htmlContent = await mediaStyler.replaceImageTags(htmlContent);
 
     if (opts.withBookmarks && opts.storyBase && Number.isInteger(opts.chapter)) {
-        htmlContent = injectBookmarksIntoHTML(htmlContent as string, opts.storyBase, opts.chapter as number) as unknown;
+        htmlContent = await injectBookmarksIntoHTML(
+            htmlContent,
+            opts.storyBase,
+            opts.chapter as number
+        );
     }
 
-    window.readerRoot!.innerHTML = htmlContent as string;
+    window.readerRoot!.innerHTML = htmlContent;
     await mediaStyler.replaceSVGs(window.readerRoot!);
 
     requestAnimationFrame(() => {
