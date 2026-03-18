@@ -675,14 +675,6 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         if (!webUiThemePending) return;
         if (!s || s.readyState !== WebSocket.OPEN) return;
 
-        s.send(
-            JSON.stringify({
-                type: "setEnv",
-                key: "WEB_UI_THEME",
-                value: webUiThemePending
-            })
-        );
-
         webUiThemePending = null;
     };
 
