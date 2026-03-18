@@ -5,8 +5,6 @@
 :root {
     --term-icon-size: 48px;
     --term-icon-margin: 1rem;
-    --term-icon-offset: 1rem;
-    --term-icon-z-index: 1000;
     --term-icon-radius: 4px;
     --term-icon-border-width: 1px;
     --term-icon-hover-shadow: 0 0 3px;
@@ -49,22 +47,13 @@
     }
 }
 
-/* Terminal Icon */
+/* Terminal Icon, terminal-specific visuals only */
 #term-icon {
-    display: none;
-
-    position: absolute;
-    top: var(--term-icon-offset);
-    left: var(--term-icon-offset);
-    z-index: var(--term-icon-z-index);
-
     width: var(--term-icon-size);
     height: var(--term-icon-size);
     margin: var(--term-icon-margin);
 
-    cursor: grab;
     user-select: none;
-
     image-rendering: pixelated;
 
     box-shadow: var(--frame-box-shadow);
@@ -76,25 +65,38 @@
     }
 }
 
-/* ====================================
-    Terminal Window Frame & Header
-==================================== */
+/* Terminal window theme overrides */
+#shell-wrapper {
+    --window-radius: var(--terminal-radius);
+    --window-border-width: var(--terminal-border-width);
+    --window-border-colour: var(--terminal-border-colour);
+    --window-bg: var(--term-bg);
+    --window-content-bg: var(--term-bg);
 
-#terminal-window {
-    display: inline-block;
-    position: relative;
+    --window-header-height: var(--terminal-header-height);
+    --window-header-pad-inline: var(--terminal-header-pad-inline);
+    --window-header-font-size: var(--terminal-header-font-size);
+    --window-header-z-index: var(--terminal-header-z-index);
+    --window-header-bg: var(--term-header-bg);
+    --window-header-fg: var(--term-header-fg);
 
-    width: 100%;
-    max-width: 100%;
+    --window-controls-gap: var(--terminal-controls-gap);
+    --window-btn-font-size: var(--terminal-btn-font-size);
+    --window-btn-line-height: var(--terminal-btn-line-height);
+    --window-btn-hover-scale: var(--terminal-btn-hover-scale);
+    --window-btn-hover-transition: var(--terminal-btn-hover-transition);
+    --window-btn-symbol-font-size: var(--terminal-btn-symbol-font-size);
+    --window-btn-symbol-font-weight: var(--terminal-btn-symbol-font-weight);
 
-    border-radius: var(--terminal-radius);
-    overflow: hidden;
+    --window-btn-close-colour: var(--terminal-btn-close-colour);
+    --window-btn-minimise-colour: var(--terminal-btn-toggle-colour);
+    --window-btn-float-colour: var(--terminal-btn-float-colour);
+
+    --window-title-colour: var(--term-title);
+    --window-title-font-family: "Courier New", Courier, "Lucida Console", monospace;
+    --window-title-font-weight: 700;
 
     font-family: "Courier New", Courier, "Lucida Console", monospace;
-
-    background: var(--term-bg);
-    box-shadow: var(--frame-box-shadow);
-    border: var(--terminal-border-width) solid var(--terminal-border-colour);
 }
 
 #term {
@@ -111,99 +113,4 @@
 #terminal-wrapper {
     background: var(--term-bg);
     overflow: hidden;
-}
-
-#terminal-header {
-    height: var(--terminal-header-height);
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    position: sticky;
-    top: 0;
-    z-index: var(--terminal-header-z-index);
-
-    background: var(--term-header-bg);
-    color: var(--term-header-fg);
-
-    padding: 0 var(--terminal-header-pad-inline);
-    font-size: var(--terminal-header-font-size);
-
-    user-select: none;
-}
-
-.window-controls {
-    display: flex;
-    gap: var(--terminal-controls-gap);
-
-    .btn {
-        position: relative;
-
-        cursor: pointer;
-        user-select: none;
-
-        font-size: var(--terminal-btn-font-size);
-        line-height: var(--terminal-btn-line-height);
-
-        transition: transform var(--terminal-btn-hover-transition);
-
-        &:hover {
-            transform: scale(var(--terminal-btn-hover-scale));
-        }
-
-        &::after {
-            content: "";
-            position: absolute;
-
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-
-            font-size: var(--terminal-btn-symbol-font-size);
-            font-weight: var(--terminal-btn-symbol-font-weight);
-
-            opacity: 0;
-            pointer-events: none;
-
-            transition: opacity var(--terminal-btn-hover-transition);
-        }
-
-        &:hover::after {
-            opacity: 1;
-        }
-
-        &.close::after {
-            content: "×";
-            color: var(--terminal-btn-close-colour);
-        }
-
-        &.toggle-view::after {
-            content: "–";
-            color: var(--terminal-btn-toggle-colour);
-        }
-
-        &.float::after {
-            content: "+";
-            color: var(--terminal-btn-float-colour);
-        }
-    }
-}
-
-.window-title {
-    flex: 1;
-    margin-left: auto;
-    margin-right: auto;
-
-    text-align: center;
-
-    font-family: inherit;
-    font-weight: 700;
-    font-size: var(--terminal-header-font-size);
-
-    color: var(--term-title);
-
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }

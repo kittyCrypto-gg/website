@@ -38,6 +38,95 @@
             target: "unique-visits-count"
         });
     </script>
+    <script type="module">
+        import { WindowApi } from "/dist/window.js";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const windowDefinitions = {
+                kittyIntro: {
+                    selector: ".kitty-intro",
+                    options: {
+                        id: "kitty-intro",
+                        title: "Introduction",
+                        mountTarget: document.body
+                    }
+                },
+                // blogWrapper: {
+                //   selector: ".blog-wrapper",
+                //   options: {
+                //     id: "blog-wrapper",
+                //     title: "Blog Posts",
+                //     mountTarget: document.body
+                //   }
+                // },
+                commitsWrapper: {
+                    selector: ".commits-outer-container",
+                    options: {
+                        id: "commits-wrapper",
+                        title: "Source Code Tracker",
+                        mountTarget: document.body
+                    }
+                },
+                commentsWrapper: {
+                    selector: "#comments",
+                    options: {
+                        id: "comments-wrapper",
+                        title: "Comments",
+                        mountTarget: document.body
+                    }
+                },
+                frontendCommitsWrapper: {
+                    selector: "#frontend-commits-container",
+                    options: {
+                        id: "frontend-commits",
+                        title: "Front-end Commits"
+                    }
+                },
+                backendCommitsWrapper: {
+                    selector: "#backend-commits-container",
+                    options: {
+                        id: "backend-commits",
+                        title: "Back-end Commits"
+                    }
+                },
+                sitesILikeWrapper: {
+                    selector: "#sites-i-like",
+                    options: {
+                        id: "sites-i-like",
+                        title: "Sites I find Interesting",
+                        mountTarget: document.body
+                    }
+                },
+                myButtonWrapper: {
+                    selector: "#my-button",
+                    options: {
+                        id: "my-button",
+                        title: "My Button",
+                        mountTarget: document.body
+                    }
+                },
+                siteStatsWrapper: {
+                    selector: "#site-stats",
+                    options: {
+                        id: "site-stats",
+                        title: "Stats",
+                        mountTarget: document.body
+                    }
+                }
+            };
+
+            Object.values(windowDefinitions).forEach(({ selector, options }) => {
+                const element = document.querySelector(selector);
+
+                if (!(element instanceof HTMLElement)) {
+                    console.warn("Element not found for window mounting, skipping:", selector);
+                    return;
+                }
+
+                new WindowApi(options).makeWindow(element);
+            });
+        });
+    </script>
 </head>
 
 <body>
@@ -95,21 +184,21 @@
                     href="/cdn-cgi/l/email-protection#91faf8e5e5e8d1faf8e5e5e8f2e3e8e1e5febff6f6">Email me!</a>
                 </p>
             </div>
-            <div class="blog-wrapper">
+            <!-- <div class="blog-wrapper">
                 <a class="comments-header" href="./blog.html" style="display: block; text-align: left;">Blog
                     Posts</a>
                 <div class="blog-container"></div>
-            </div>
+            </div> -->
             <div class="commits-outer-container">
                 <a class="comments-header" style="display: block; text-align: left;"> Source Code Tracker </a>
                 <div class="commits-wrapper">
                     <div class="commits-row">
-                        <div class="commits-container">
+                        <div class="commits-container" id="frontend-commits-container">
                             <a class="comments-header" href="https://github.com/kittyCrypto-gg/website" target="_blank"
                                 rel="noopener noreferrer"> Front-end Commits </a>
                             <div id="github-commits-frontend" class="github-output-frame"></div>
                         </div>
-                        <div class="commits-container">
+                        <div class="commits-container" id="backend-commits-container">
                             <a class="comments-header" href="https://github.com/kittyCrypto-gg/server" target="_blank"
                                 rel="noopener noreferrer"> Back-end Commits </a>
                             <div id="github-commits-backend" class="github-output-frame"></div>
@@ -118,7 +207,7 @@
                 </div>
             </div>
             <!--</div>--><!--DEPRECATED-->
-            <div class="kc-88by31">
+            <div class="kc-88by31" id="sites-i-like">
                 <div class="comments-header">Sites I find Interesting</div>
                 <div class="kc-88by31__inner">
                     <div id="kc-88by31-grid" class="kc-88by31__grid">
@@ -173,7 +262,7 @@
                     </div>
                 </div>
             </div>
-            <div class="kc-88by31">
+            <div class="kc-88by31" id="my-button">
                 <div class="comments-header">My Button</div>
                 <div class="kc-88by31__inner">
                     <div id="kc-88by31-grid" class="kc-88by31__grid">
@@ -226,7 +315,7 @@
                 </div>
             </div>
         </div>
-        <div class="site-stats kc-88by31">
+        <div class="site-stats kc-88by31" id="site-stats">
             <div class="comments-header">Stats</div>
 
             <div class="site-stats__grid">

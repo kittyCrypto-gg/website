@@ -1,4 +1,5 @@
 import * as config from "./config.ts";
+import { WindowApi } from "./window.ts";
 
 type MobileDetectInstance = Readonly<{
     mobile: () => unknown;
@@ -106,7 +107,8 @@ async function checkMobile(): Promise<boolean> {
 
     if (!window.MobileDetect) {
         const script = document.createElement("script");
-        script.src = "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
+        script.src =
+            "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
         script.async = true;
         document.body.appendChild(script);
 
@@ -204,156 +206,6 @@ function firstExistingEl(ids: readonly string[]): HTMLElement | null {
         if (el) return el;
     }
     return null;
-}
-
-/**
- * @param {HTMLElement} windowWrapper - Terminal window wrapper.
- * @returns {void} Nothing.
- */
-function applyFloatingStyles(windowWrapper: HTMLElement): void {
-    const w = localStorage.getItem("terminal-width") || "50%";
-    const h = localStorage.getItem("terminal-height") || "";
-    const left = localStorage.getItem("terminal-x") || localStorage.getItem("term-icon-x") || "10px";
-    const top = localStorage.getItem("terminal-y") || localStorage.getItem("term-icon-y") || "10px";
-
-    Object.assign(windowWrapper.style, {
-        position: "absolute",
-        zIndex: "9999",
-        width: w,
-        height: h,
-        resize: "both",
-        overflow: "hidden",
-        left,
-        top
-    } satisfies Partial<CSSStyleDeclaration>);
-}
-
-/**
- * @param {HTMLElement} windowWrapper - Terminal window wrapper.
- * @returns {void} Nothing.
- */
-function applyDockedStyles(windowWrapper: HTMLElement): void {
-    Object.assign(windowWrapper.style, {
-        position: "relative",
-        zIndex: "",
-        width: "100%",
-        height: "",
-        resize: "",
-        overflow: "hidden",
-        left: "",
-        top: ""
-    } satisfies Partial<CSSStyleDeclaration>);
-}
-
-/**
- * @param {HTMLElement} windowWrapper - Terminal window wrapper.
- * @returns {void} Nothing.
- */
-function saveWindowSize(windowWrapper: HTMLElement): void {
-    localStorage.setItem("terminal-width", `${windowWrapper.offsetWidth}px`);
-    localStorage.setItem("terminal-height", `${windowWrapper.offsetHeight}px`);
-}
-
-/**
- * @returns {void} Nothing.
- */
-function makeIconDraggable(): void {
-    const iconEl = safeGetEl("term-icon");
-    if (!(iconEl instanceof HTMLImageElement)) return;
-
-    const icon = iconEl;
-
-    if (icon.dataset.dragWired === "true") return;
-    icon.dataset.dragWired = "true";
-
-    let isDragging = false;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    icon.addEventListener("mousedown", (e: MouseEvent) => {
-        isDragging = true;
-        offsetX = e.clientX - icon.offsetLeft;
-        offsetY = e.clientY - icon.offsetTop;
-        icon.style.cursor = "grabbing";
-    });
-
-    document.addEventListener("mousemove", (e: MouseEvent) => {
-        if (!isDragging) return;
-
-        const x = e.clientX - offsetX;
-        const y = e.clientY - offsetY;
-
-        icon.style.left = `${x}px`;
-        icon.style.top = `${y}px`;
-
-        localStorage.setItem("term-icon-x", icon.style.left);
-        localStorage.setItem("term-icon-y", icon.style.top);
-    });
-
-    document.addEventListener("mouseup", () => {
-        if (!isDragging) return;
-        isDragging = false;
-        icon.style.cursor = "grab";
-    });
-
-    const savedX = localStorage.getItem("term-icon-x");
-    const savedY = localStorage.getItem("term-icon-y");
-    if (savedX) icon.style.left = savedX;
-    if (savedY) icon.style.top = savedY;
-}
-
-/**
- * @param {HTMLElement} windowWrapper - Terminal window wrapper.
- * @param {() => void} fitNow - Fit callback.
- * @returns {void} Nothing.
- */
-function makeTermDragWPrnt(windowWrapper: HTMLElement, fitNow: () => void): void {
-    const header = windowWrapper.querySelector("#terminal-header");
-    if (!(header instanceof HTMLElement)) return;
-
-    if (header.dataset.dragWired === "true") return;
-    header.dataset.dragWired = "true";
-
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-
-    header.addEventListener("mousedown", (e: MouseEvent) => {
-        if (!windowWrapper.classList.contains("floating")) return;
-
-        isDragging = true;
-        startX = e.clientX - windowWrapper.offsetLeft;
-        startY = e.clientY - windowWrapper.offsetTop;
-        windowWrapper.style.cursor = "grabbing";
-        e.preventDefault();
-    });
-
-    document.addEventListener("mousemove", (e: MouseEvent) => {
-        if (!isDragging) return;
-
-        const x = e.clientX - startX;
-        const y = e.clientY - startY;
-
-        windowWrapper.style.left = `${x}px`;
-        windowWrapper.style.top = `${y}px`;
-        windowWrapper.style.transform = "none";
-
-        localStorage.setItem("terminal-x", windowWrapper.style.left);
-        localStorage.setItem("terminal-y", windowWrapper.style.top);
-
-        localStorage.setItem("term-icon-x", windowWrapper.style.left);
-        localStorage.setItem("term-icon-y", windowWrapper.style.top);
-    });
-
-    document.addEventListener("mouseup", () => {
-        if (!isDragging) return;
-
-        isDragging = false;
-        windowWrapper.style.cursor = "default";
-        saveWindowSize(windowWrapper);
-
-        raf2(fitNow);
-    });
 }
 
 /**
@@ -663,7 +515,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     const FitAddonNamespace = window.FitAddon;
     const FitAddonCtor = FitAddonNamespace?.FitAddon;
-    if (!FitAddonCtor) throw new Error("xterm fit addon failed to load (window.FitAddon.FitAddon missing)");
+    if (!FitAddonCtor) {
+        throw new Error("xterm fit addon failed to load (window.FitAddon.FitAddon missing)");
+    }
 
     const terminalWrapper = safeGetEl("terminal-wrapper");
     const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
@@ -680,57 +534,20 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     let lastWsNoticeAt = 0;
     let lastWsNoticeKey: string | null = null;
 
-    const icon = iconEl;
+    iconEl.src = "/images/terminal.svg";
+    iconEl.alt = "Terminal icon";
+    iconEl.title = "Double-click to open terminal";
 
-    const windowWrapper = document.createElement("div");
-    windowWrapper.id = "terminal-window";
-    windowWrapper.style.position = "relative";
-
-    const header = document.createElement("div");
-    header.id = "terminal-header";
-
-    const controls = document.createElement("div");
-    controls.classList.add("window-controls");
-
-    const closeBtn = document.createElement("span");
-    closeBtn.classList.add("btn", "close");
-    closeBtn.textContent = "🔴";
-
-    const toggleViewBtn = document.createElement("span");
-    toggleViewBtn.classList.add("btn", "toggle-view");
-    toggleViewBtn.textContent = "🟡";
-
-    const floatBtn = document.createElement("span");
-    floatBtn.classList.add("btn", "float");
-    floatBtn.textContent = "🟢";
-
-    const title = document.createElement("span");
-    title.classList.add("window-title");
-    title.textContent = "YuriGreen Terminal Emulator - /home/kitty/";
-
-    controls.appendChild(closeBtn);
-    controls.appendChild(toggleViewBtn);
-    controls.appendChild(floatBtn);
-    header.appendChild(controls);
-    header.appendChild(title);
+    terminalWrapper.innerHTML = "";
 
     const scrollArea = document.createElement("div");
     scrollArea.id = "terminal-scroll";
 
-    terminalWrapper.innerHTML = "";
     const termDiv = document.createElement("div");
     termDiv.id = "term";
-    terminalWrapper.appendChild(termDiv);
 
-    scrollArea.appendChild(terminalWrapper);
-    windowWrapper.appendChild(header);
-    windowWrapper.appendChild(scrollArea);
-
-    shellWrapper.insertBefore(windowWrapper, shellWrapper.firstChild);
-
-    icon.src = "/images/terminal.svg";
-    icon.alt = "Terminal icon";
-    icon.title = "Double-click to open terminal";
+    scrollArea.appendChild(termDiv);
+    terminalWrapper.appendChild(scrollArea);
 
     const isMobile = await checkMobile();
 
@@ -742,38 +559,22 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     const fitAddon = new FitAddonCtor();
     term.loadAddon(fitAddon);
-    term.open(termDiv);
 
     const followState: FollowState = { value: true };
-    const scrollCtl = attachScrollTracking(term, followState);
 
-    /**
-     * @param {string} trigger - What triggered the notice.
-     * @returns {void} Nothing.
-     */
-    const notifyWsUnreachable = (trigger: string): void => {
-        const nowMs = Date.now();
-        const throttleMs = 4000;
-        const key = trigger;
-
-        const tooSoon = nowMs - lastWsNoticeAt < throttleMs;
-        if (tooSoon && lastWsNoticeKey === key) return;
-
-        lastWsNoticeAt = nowMs;
-        lastWsNoticeKey = key;
-
-        term.writeln(`\r\n${wsUnreachableNoticeText(trigger)}`);
-        scrollCtl.forceFollowAndScroll();
-    };
-
+    let scrollCtl: ScrollTrackingController | null = null;
     let fitScheduled = false;
+    let terminalWindow: WindowApi | null = null;
 
     /**
      * @returns {void} Nothing.
      */
     const fitNow = (): void => {
-        if (windowWrapper.style.display === "none") return;
-        if (terminalWrapper.style.display === "none") return;
+        if (!terminalWindow) return;
+        if (!scrollCtl) return;
+        if (!term.element) return;
+        if (terminalWindow.isClosed()) return;
+        if (terminalWindow.isMinimised()) return;
 
         const rect = termDiv.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) return;
@@ -793,6 +594,40 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             fitScheduled = false;
             fitNow();
         });
+    };
+
+    terminalWindow = new WindowApi({
+        id: "terminal",
+        title: "YuriGreen Terminal Emulator - /home/kitty/",
+        launcher: iconEl,
+        closedLauncherDisplay: "inline-block",
+        onLayoutChange: scheduleFit,
+        showCloseButton: true
+    });
+
+    terminalWindow.makeWindow(shellWrapper);
+
+    term.open(termDiv);
+
+    scrollCtl = attachScrollTracking(term, followState);
+
+    /**
+     * @param {string} trigger - What triggered the notice.
+     * @returns {void} Nothing.
+     */
+    const notifyWsUnreachable = (trigger: string): void => {
+        const nowMs = Date.now();
+        const throttleMs = 4000;
+        const key = trigger;
+
+        const tooSoon = nowMs - lastWsNoticeAt < throttleMs;
+        if (tooSoon && lastWsNoticeKey === key) return;
+
+        lastWsNoticeAt = nowMs;
+        lastWsNoticeKey = key;
+
+        term.writeln(`\r\n${wsUnreachableNoticeText(trigger)}`);
+        scrollCtl?.forceFollowAndScroll();
     };
 
     let pendingResize: string | null = null;
@@ -865,6 +700,8 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
      */
     const connectWs = async (): Promise<void> => {
         if (reconnecting) return;
+        if (!scrollCtl) return;
+
         reconnecting = true;
 
         try {
@@ -915,136 +752,36 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     if (typeof term.onRender === "function") {
         term.onRender(() => {
-            scrollCtl.maybeScroll();
+            scrollCtl?.maybeScroll();
         });
     } else {
         const origWrite = term.write.bind(term);
         const origWriteln = term.writeln.bind(term);
 
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         (term as unknown as { write: (data: string, cb?: () => void) => void }).write = (
             data: string,
             cb?: () => void
         ) => {
             origWrite(data, cb);
-            raf2(() => scrollCtl.maybeScroll());
+            raf2(() => {
+                scrollCtl?.maybeScroll();
+            });
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         (term as unknown as { writeln: (data: string, cb?: () => void) => void }).writeln = (
             data: string,
             cb?: () => void
         ) => {
             origWriteln(data, cb);
-            raf2(() => scrollCtl.maybeScroll());
+            raf2(() => {
+                scrollCtl?.maybeScroll();
+            });
         };
     }
 
     const detachResizeHandlers = attachSafeResizeFitting(scheduleFit);
 
-    makeTermDragWPrnt(windowWrapper, fitNow);
-    makeIconDraggable();
-
-    if (localStorage.getItem("terminal-floating") === "true") {
-        windowWrapper.classList.add("floating");
-        applyFloatingStyles(windowWrapper);
-    } else {
-        applyDockedStyles(windowWrapper);
-    }
-
-    if (localStorage.getItem("terminal-closed") === "true") {
-        windowWrapper.style.display = "none";
-        icon.style.display = "inline-block";
-    } else {
-        icon.style.display = "none";
-    }
-
-    if (localStorage.getItem("terminal-minimised") === "true") {
-        terminalWrapper.style.display = "none";
-        floatBtn.classList.add("hidden");
-    } else {
-        terminalWrapper.style.display = "block";
-        floatBtn.classList.remove("hidden");
-    }
-
     scheduleFit();
-
-    closeBtn.addEventListener("click", () => {
-        windowWrapper.style.display = "none";
-        terminalWrapper.style.display = "block";
-
-        localStorage.setItem("terminal-closed", "true");
-        localStorage.removeItem("terminal-minimised");
-
-        icon.style.display = "inline-block";
-    });
-
-    toggleViewBtn.addEventListener("click", () => {
-        const isMinimised = terminalWrapper.style.display === "none";
-
-        if (isMinimised) {
-            terminalWrapper.style.display = "block";
-            floatBtn.classList.remove("hidden");
-            localStorage.removeItem("terminal-minimised");
-            scheduleFit();
-            return;
-        }
-
-        windowWrapper.classList.remove("floating");
-        applyDockedStyles(windowWrapper);
-        localStorage.removeItem("terminal-floating");
-
-        terminalWrapper.style.display = "none";
-        floatBtn.classList.add("hidden");
-        localStorage.setItem("terminal-minimised", "true");
-    });
-
-    floatBtn.addEventListener("click", () => {
-        const isFloating = windowWrapper.classList.toggle("floating");
-
-        if (isFloating) {
-            applyFloatingStyles(windowWrapper);
-            localStorage.setItem("terminal-floating", "true");
-            scheduleFit();
-            return;
-        }
-
-        applyDockedStyles(windowWrapper);
-        localStorage.removeItem("terminal-floating");
-        scheduleFit();
-    });
-
-    icon.addEventListener("dblclick", () => {
-        windowWrapper.style.display = "block";
-        terminalWrapper.style.display = "block";
-        icon.style.display = "none";
-
-        localStorage.removeItem("terminal-closed");
-        localStorage.removeItem("terminal-minimised");
-
-        floatBtn.classList.remove("hidden");
-
-        if (localStorage.getItem("terminal-floating") === "true") {
-            windowWrapper.classList.add("floating");
-            applyFloatingStyles(windowWrapper);
-        } else {
-            windowWrapper.classList.remove("floating");
-            applyDockedStyles(windowWrapper);
-        }
-
-        scheduleFit();
-    });
-
-    /**
-     * @returns {void} Nothing.
-     */
-    const onMouseUp = (): void => {
-        if (!windowWrapper.classList.contains("floating")) return;
-        saveWindowSize(windowWrapper);
-        scheduleFit();
-    };
-
-    document.addEventListener("mouseup", onMouseUp);
 
     return {
         term,
@@ -1053,10 +790,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(seq);
         },
-        // setWebUiTheme,
+        setWebUiTheme,
         dispose: (): void => {
             detachResizeHandlers();
-            document.removeEventListener("mouseup", onMouseUp);
 
             try {
                 ws?.close();
@@ -1064,6 +800,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
                 // ignore
             }
 
+            terminalWindow?.dispose();
             term.dispose();
         }
     };

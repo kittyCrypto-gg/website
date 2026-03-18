@@ -22,6 +22,98 @@
             target: "unique-visits-count"
         });
     </script>
+    <script type="module">
+        import { WindowApi } from "/dist/window.js";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const windowDefinitions = {
+                aboutMe: {
+                    selector: ".kitty-intro",
+                    options: {
+                        id: "about-me",
+                        title: "About Me",
+                        mountTarget: document.body
+                    }
+                },
+                socials: {
+                    selector: ".socials-segment",
+                    options: {
+                        id: "socials",
+                        title: "Find me elsewhere",
+                        mountTarget: document.body
+                    }
+                },
+                siteStats: {
+                    selector: ".site-stats",
+                    options: {
+                        id: "site-stats",
+                        title: "Stats",
+                        mountTarget: document.body
+                    }
+                }
+            };
+
+            Object.values(windowDefinitions).forEach(({ selector, options }) => {
+                const element = document.querySelector(selector);
+
+                if (!(element instanceof HTMLElement)) {
+                    console.warn("Element not found for window mounting, skipping:", selector);
+                    return;
+                }
+
+                new WindowApi(options).makeWindow(element);
+            });
+        });
+    </script>
+    <script type="module">
+        import { replaceTategaki, serialisNde } from "./dist/tategaki.js";
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const container = document.querySelector(".jp-about");
+
+            if (!(container instanceof HTMLElement)) {
+                console.warn("Missing .jp-about container for tategaki render");
+                return;
+            }
+
+            try {
+                const response = await fetch("./data/aboutme-jp.xml", {
+                    cache: "no-store"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ./data/aboutme-jp.xml (status ${response.status})`);
+                }
+
+                const xmlText = await response.text();
+                const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
+                const parseError = xmlDoc.querySelector("parsererror");
+
+                if (parseError) {
+                    throw new Error("Invalid XML in ./data/aboutme-jp.xml");
+                }
+
+                const tategakiNode = xmlDoc.querySelector("tategaki");
+
+                if (!(tategakiNode instanceof Element)) {
+                    throw new Error("Missing <tategaki> root in ./data/aboutme-jp.xml");
+                }
+
+                const tategakiXml = serialisNde(tategakiNode);
+
+                if (!tategakiXml) {
+                    throw new Error("Could not serialise <tategaki> node");
+                }
+
+                const rendered = replaceTategaki(tategakiXml);
+
+                container.innerHTML = rendered;
+                container.classList.add("jp-about--tategaki");
+            } catch (error) {
+                console.error("Failed to render aboutme-jp.xml", error);
+            }
+        });
+    </script>
     <title>Kitty Crypto's Page</title>
     <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
 </head>
@@ -39,7 +131,7 @@
             </aside>
             <nav id="main-menu"></nav>
             <div class="kitty-intro">
-                <header id="main-header">About Me</header>
+                <header id="main-header" class="comments-header">About Me</header>
                 <div class="profile-row">
                     <div class="pfp">
                         <img src="images/kitty.jpg" alt="Kitty Crypto" />
@@ -72,8 +164,7 @@
                     </p>
                 </div>
 
-                <div class="jp-about">
-                    ::tg::
+                <div class="jp-about" lang="ja">
                     <p>本名はキャサリン。でも、そう呼ぶ人はいません。</p>
                     <p>ここではみんな、私のことを「キティ」と呼びます。</p>
 
@@ -104,7 +195,6 @@
                     <p>訪れてくれたみニャさん、ありがとう。本当に。</p>
                     <p>ここを出るとき、コードに火花が残りますように。</p>
                     <p>説明できないときめきと、「マージ」する勇気も残りますように。</p>
-                    ::/tg::
                 </div>
             </div>
             <div class="socials-segment">

@@ -21,6 +21,8 @@
     --jp-about-scrollbar-height: 8px;
     --jp-about-scrollbar-radius: 4px;
     --jp-about-column-gap: 10px;
+    --jp-about-paragraph-gap: 1rem;
+    --jp-about-line-height: 1.8;
 
     --profile-row-padding-inline: 2rem;
     --profile-row-margin-block: 2rem;
@@ -61,10 +63,30 @@
 }
 
 /* =========================================
-    Module: About - Japanese vertical text strip
+    Module: About - Japanese text
 ========================================= */
 
 .jp-about {
+    border-top: var(--jp-about-border-width) solid var(--nav-border-colour);
+    padding: var(--jp-about-padding-block-start) 0 var(--jp-about-padding-block-end) 0;
+    margin-top: var(--jp-about-margin-top);
+
+    font-family: "Noto Serif JP", "Yu Mincho", serif;
+    color: var(--body-text-colour);
+}
+
+.jp-about p {
+    margin: 0 0 var(--jp-about-paragraph-gap);
+    white-space: normal;
+    line-height: var(--jp-about-line-height);
+    text-align: start;
+}
+
+.jp-about p:last-child {
+    margin-bottom: 0;
+}
+
+.jp-about--tategaki {
     display: flex;
     justify-content: flex-end;
     flex-direction: row-reverse;
@@ -73,12 +95,6 @@
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
-
-    border-top: var(--jp-about-border-width) solid var(--nav-border-colour);
-    padding: var(--jp-about-padding-block-start) 0 var(--jp-about-padding-block-end) 0;
-    margin-top: var(--jp-about-margin-top);
-
-    font-family: "Noto Serif JP", "Yu Mincho", serif;
 
     scrollbar-width: thin;
     scrollbar-color: var(--nav-border-colour) var(--frame-bg-colour);
@@ -97,7 +113,6 @@
         border-radius: var(--jp-about-scrollbar-radius);
     }
 
-    /* About-specific spacing for tategaki columns */
     .tategaki-container {
         display: inline-block;
         margin-left: 0;

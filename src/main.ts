@@ -312,14 +312,14 @@ document.addEventListener("DOMContentLoaded", () => {
         applyMobileTextScale(isMobile);
 
         const status = await fetchServerStatus(2000);
-        if (status.kind === "offline") {
-            document.getElementById("terminal-loading")?.style.setProperty("display", "none");
+        // if (status.kind === "offline") {
+        //     document.getElementById("terminal-loading")?.style.setProperty("display", "none");
 
-            await loadBanner({ serverOffline: true });
-            await scaleBannerToFit();
-            await setupTerminalWindow();
-            return;
-        }
+        //     await loadBanner({ serverOffline: true });
+        //     await scaleBannerToFit();
+        //     await setupTerminalWindow();
+        //     return;
+        // }
 
         const terminal = await setupTerminalModule()
             .then((mod) => {

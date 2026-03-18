@@ -1,0 +1,240 @@
+/* =========================================
+    Module: Window API
+========================================= */
+
+:root {
+    --window-radius: 8px;
+    --window-border-width: 1px;
+    --window-border-colour: rgba(0, 0, 0, 0.3);
+    --window-bg: var(--frame-bg-colour, #111);
+    --window-content-bg: var(--window-bg);
+
+    --window-header-height: 22px;
+    --window-header-pad-inline: 8px;
+    --window-header-font-size: 11px;
+    --window-header-z-index: 1;
+    --window-header-bg: var(--term-header-bg, #222);
+    --window-header-fg: var(--term-header-fg, #fff);
+    --window-header-top-border-radius: 10px;
+
+    --window-controls-gap: 6px;
+    --window-btn-font-size: 11px;
+    --window-btn-line-height: 1;
+    --window-btn-hover-scale: 1.2;
+    --window-btn-hover-transition: 0.2s ease;
+
+    --window-btn-symbol-font-size: 10px;
+    --window-btn-symbol-font-weight: 700;
+
+    --window-btn-close-colour: #8b0000;
+    --window-btn-minimise-colour: #b8860b;
+    --window-btn-float-colour: #006400;
+
+    --window-title-colour: inherit;
+    --window-title-font-weight: 700;
+    --window-title-font-family: inherit;
+
+    --window-z-index: 1000;
+    --window-left: 10px;
+    --window-top: 10px;
+    --window-width: 50%;
+    --window-height: auto;
+
+    --window-launcher-left: 10px;
+    --window-launcher-top: 10px;
+    --window-launcher-display: inline-block;
+    --window-launcher-z-index: 1000;
+}
+
+.window-frame {
+    display: inline-block;
+    position: relative;
+
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+
+    border-radius: var(--window-radius);
+    background: var(--window-bg);
+    box-shadow: var(--frame-box-shadow);
+    border: var(--window-border-width) solid var(--window-border-colour);
+
+    font-family: var(--window-title-font-family);
+}
+
+.window-frame.closed {
+    display: none;
+}
+
+.window-frame.floating {
+    position: fixed;
+    left: var(--window-left);
+    top: var(--window-top);
+    width: var(--window-width);
+    height: var(--window-height);
+    max-width: 100vw;
+    max-height: 100vh;
+    resize: both;
+    z-index: var(--window-z-index);
+}
+
+.window-frame.maximised {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    resize: none;
+    z-index: var(--window-z-index);
+}
+
+.window-header {
+    height: var(--window-header-height);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top-left-radius: var(--window-header-top-border-radius);
+    border-top-right-radius: var(--window-header-top-border-radius);
+
+    position: sticky;
+    top: 0;
+    z-index: var(--window-header-z-index);
+
+    background: var(--window-header-bg);
+    color: var(--window-header-fg);
+
+    padding: 0 var(--window-header-pad-inline);
+    font-size: var(--window-header-font-size);
+
+    user-select: none;
+    cursor: default;
+}
+
+.window-frame.floating .window-header,
+.window-frame.maximised .window-header {
+    cursor: grab;
+}
+
+.window-header.is-dragging {
+    cursor: grabbing;
+}
+
+.window-controls {
+    display: flex;
+    gap: var(--window-controls-gap);
+}
+
+.window-controls .btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+
+    position: relative;
+
+    cursor: pointer;
+    user-select: none;
+
+    font-size: var(--window-btn-font-size);
+    line-height: var(--window-btn-line-height);
+
+    transition: transform var(--window-btn-hover-transition);
+}
+
+.window-controls .btn:hover {
+    transform: scale(var(--window-btn-hover-scale));
+}
+
+.window-controls .btn::after {
+    content: "";
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    font-size: var(--window-btn-symbol-font-size);
+    font-weight: var(--window-btn-symbol-font-weight);
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition: opacity var(--window-btn-hover-transition);
+}
+
+.window-controls .btn:hover::after {
+    opacity: 1;
+}
+
+.window-controls .btn.close::after {
+    content: "×";
+    color: var(--window-btn-close-colour);
+}
+
+.window-controls .btn.minimise::after,
+.window-controls .btn.toggle-view::after {
+    content: "–";
+    color: var(--window-btn-minimise-colour);
+}
+
+.window-controls .btn.float::after {
+    content: "+";
+    color: var(--window-btn-float-colour);
+}
+
+.window-title {
+    flex: 1;
+    margin-left: auto;
+    margin-right: auto;
+
+    text-align: center;
+
+    font-family: var(--window-title-font-family);
+    font-weight: var(--window-title-font-weight);
+    font-size: var(--window-header-font-size);
+    color: var(--window-title-colour);
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.window-body {
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: var(--window-content-bg);
+}
+
+.window-frame.minimised .window-body {
+    display: none;
+}
+
+.window-frame.minimised .window-controls .btn.float {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.window-launcher {
+    display: none;
+    position: fixed;
+    left: var(--window-launcher-left);
+    top: var(--window-launcher-top);
+    z-index: var(--window-launcher-z-index);
+    cursor: grab;
+    touch-action: none;
+}
+
+.window-launcher[data-window-launcher-visible="true"] {
+    display: var(--window-launcher-display);
+}
+
+.window-launcher.is-dragging {
+    cursor: grabbing;
+}

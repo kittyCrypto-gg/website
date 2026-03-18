@@ -60,7 +60,7 @@
 
 /* Header styles */
 header {
-    background-color: var(--header-bg-colour);
+    /* background-color: var(--header-bg-colour); */
     color: var(--header-text-colour);
 
     padding: var(--layout-header-padding);
@@ -69,7 +69,7 @@ header {
     font-size: var(--layout-header-font-size);
     font-weight: 700;
 
-    box-shadow: var(--frame-box-shadow);
+    /* box-shadow: var(--frame-box-shadow); */
 }
 
 /* Menu container (nav) */
