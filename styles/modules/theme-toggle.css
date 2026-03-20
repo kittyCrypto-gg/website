@@ -11,11 +11,12 @@
     --theme-toggle-hover-scale: 1.1;
     --theme-toggle-bg-transition: 0.3s ease;
     --theme-toggle-transform-transition: 0.2s ease-in-out;
+    --theme-toggle-z-index: 2000;
 }
 
 /* Theme toggle button */
 .theme-toggle-button {
-    z-index: 9999;
+    z-index: var(--theme-toggle-z-index);
     position: fixed;
     bottom: var(--theme-toggle-offset);
     right: calc((100% - var(--frame-width)) / 2 + var(--theme-toggle-inline-offset));

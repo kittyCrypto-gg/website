@@ -3,8 +3,8 @@
 ========================================= */
 
 :root {
-    --read-aloud-menu-z-index: 2000;
-    --read-aloud-close-z-index: 3000;
+    --read-aloud-menu-z-index: 3000;
+    --read-aloud-close-z-index: 4000;
 
     --read-aloud-menu-radius: 15px;
     --read-aloud-menu-border-width: 1.5px;
