@@ -15,14 +15,8 @@
     --kb-sticky-bg: rgba(0, 106, 255, 0.14);
     --kb-sticky-border: rgba(0, 106, 255, 0.38);
 
-    /* Layout / motion tokens (kept equivalent, just made explicit) */
-    --kb-width: 100vw;
-
-    --kb-outer-pad-y: 8px;
-    --kb-outer-pad-x: 8px;
-
+    --kb-width: 100%;
     --kb-backdrop-blur: 12px;
-
     --kb-z-index: 2147483647;
 
     --kb-key-h: 40px;
@@ -38,13 +32,24 @@
     --kb-icon-size: calc(15px * var(--kc-text-scale));
     --kb-radius: 10px;
 
-    --kb-show-opacity: 1;
-    --kb-hide-opacity: 0;
+    --kb-toolbar-show-opacity: 1;
+    --kb-toolbar-hide-opacity: 0;
+    --kb-toolbar-hide-translate-y: calc(100% + env(safe-area-inset-bottom));
 
-    --kb-hide-translate-y: 110%;
+    --kb-toolbar-opacity-transition: 170ms ease;
+    --kb-toolbar-transform-transition: 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
-    --kb-opacity-transition: 160ms ease;
-    --kb-transform-transition: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    --kb-fn-show-opacity: 1;
+    --kb-fn-hide-opacity: 0;
+    --kb-fn-collapsed-scale: 0.92;
+    --kb-fn-roll-distance: 8px;
+    --kb-fn-open-extra-h: 2px;
+    --kb-fn-open-gap: 2px;
+
+    --kb-fn-max-height-transition: 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    --kb-fn-opacity-transition: 180ms ease;
+    --kb-fn-transform-transition: 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    --kb-fn-margin-transition: 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
     --kb-active-scale: 0.98;
 
@@ -54,7 +59,6 @@
     --kb-stacked-text-scale: 0.92;
     --kb-arrow-scale: 1.1;
 
-    /* Safe area */
     --kb-safe-area-bottom: env(safe-area-inset-bottom);
 }
 
@@ -80,13 +84,12 @@
     width: var(--kb-width);
     box-sizing: border-box;
 
-    padding:
-        var(--outer-pad-y, var(--kb-outer-pad-y)) var(--outer-pad-x, var(--kb-outer-pad-x)) calc(var(--outer-pad-y, var(--kb-outer-pad-y)) + var(--kb-safe-area-bottom));
+    padding: 0 0 var(--kb-safe-area-bottom);
 
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    justify-content: center;
+    justify-content: flex-end;
 
     background: var(--kb-toolbar-bg);
 
@@ -101,7 +104,6 @@
     -webkit-user-select: none;
     touch-action: manipulation;
 
-    /* Internal sizing knobs */
     --key-h: var(--kb-key-h);
     --key-w: var(--kb-key-w);
     --btn-gap: var(--kb-btn-gap);
@@ -114,31 +116,67 @@
     --icon-size: var(--kb-icon-size);
     --radius: var(--kb-radius);
 
-    opacity: var(--kb-show-opacity);
+    --fn-row-open-h: calc(var(--key-h) + var(--kb-fn-open-extra-h));
+
+    opacity: var(--kb-toolbar-show-opacity);
     transform: translate3d(0, 0, 0);
 
     transition:
-        opacity var(--kb-opacity-transition),
-        transform var(--kb-transform-transition);
+        opacity var(--kb-toolbar-opacity-transition),
+        transform var(--kb-toolbar-transform-transition);
 
     will-change: opacity, transform;
-    gap: var(--row-gap);
+    gap: 0;
+    overflow: hidden;
 
     &.kb-hidden {
-        opacity: var(--kb-hide-opacity);
-        transform: translate3d(0, var(--kb-hide-translate-y), 0);
+        opacity: var(--kb-toolbar-hide-opacity);
+        transform: translate3d(0, var(--kb-toolbar-hide-translate-y), 0);
         pointer-events: none;
     }
 
     & .fn-grid-wrap {
-        display: none;
         width: 100%;
         overflow: hidden;
+
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+
+        max-height: 0;
+        margin-bottom: 0;
+        opacity: var(--kb-fn-hide-opacity);
+
+        transform-origin: center top;
+        transform: translate3d(0, calc(var(--kb-fn-roll-distance) * -1), 0) scaleY(var(--kb-fn-collapsed-scale));
+
+        transition:
+            max-height var(--kb-fn-max-height-transition),
+            opacity var(--kb-fn-opacity-transition),
+            transform var(--kb-fn-transform-transition),
+            margin-bottom var(--kb-fn-margin-transition);
+
+        pointer-events: none;
     }
 
     &.fn-on .fn-grid-wrap {
-        display: flex;
-        justify-content: center;
+        max-height: var(--fn-row-open-h);
+        margin-bottom: var(--kb-fn-open-gap);
+        opacity: var(--kb-fn-show-opacity);
+        transform: translate3d(0, 0, 0) scaleY(1);
+        pointer-events: auto;
+    }
+
+    &.fn-exiting .fn-grid-wrap {
+        max-height: 0;
+        margin-bottom: 0;
+        opacity: var(--kb-fn-hide-opacity);
+        transform: translate3d(0, calc(var(--kb-fn-roll-distance) * -1), 0) scaleY(var(--kb-fn-collapsed-scale));
+        pointer-events: auto;
+    }
+
+    &.fn-exiting .fn-grid button {
+        pointer-events: none;
     }
 
     & .fn-grid {
@@ -150,6 +188,7 @@
 
         align-items: stretch;
         justify-content: start;
+        min-width: max-content;
 
         transform-origin: center top;
         will-change: transform;
@@ -163,6 +202,9 @@
 
         align-items: stretch;
         justify-content: center;
+
+        padding: var(--btn-gap);
+        box-sizing: border-box;
     }
 
     & button {
@@ -198,6 +240,11 @@
 
         white-space: nowrap;
         overflow: hidden;
+
+        transition:
+            background 140ms ease,
+            border-color 140ms ease,
+            transform 110ms ease;
 
         &:active {
             transform: scale(var(--kb-active-scale));
@@ -244,7 +291,6 @@
         padding: 0;
     }
 
-    /* Key placement */
     & .esc-key {
         grid-column: 1;
         grid-row: 1;

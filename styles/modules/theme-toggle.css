@@ -1,0 +1,56 @@
+/* =========================================
+    Module: Theme Toggle
+========================================= */
+
+:root {
+    --theme-toggle-offset: 20px;
+    --theme-toggle-inline-offset: 25px;
+    --theme-toggle-size: 50px;
+    --theme-toggle-font-size: calc(1.5rem * var(--kc-text-scale));
+    --theme-toggle-radius: 50%;
+    --theme-toggle-hover-scale: 1.1;
+    --theme-toggle-bg-transition: 0.3s ease;
+    --theme-toggle-transform-transition: 0.2s ease-in-out;
+}
+
+/* Theme toggle button */
+.theme-toggle-button {
+    z-index: 9999;
+    position: fixed;
+    bottom: var(--theme-toggle-offset);
+    right: calc((100% - var(--frame-width)) / 2 + var(--theme-toggle-inline-offset));
+
+    width: var(--theme-toggle-size);
+    height: var(--theme-toggle-size);
+
+    font-size: var(--theme-toggle-font-size);
+
+    background: var(--toggle-btn-bg-colour);
+    color: var(--toggle-btn-text-colour);
+
+    border: none;
+    border-radius: var(--theme-toggle-radius);
+
+    box-shadow: var(--frame-box-shadow);
+
+    cursor: pointer;
+
+    transition:
+        background var(--theme-toggle-bg-transition),
+        transform var(--theme-toggle-transform-transition);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        transform: scale(var(--theme-toggle-hover-scale));
+    }
+}
+
+body.dark-mode {
+    & .theme-toggle-button {
+        background: var(--toggle-btn-bg-colour);
+        color: var(--toggle-btn-text-colour);
+    }
+}

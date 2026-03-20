@@ -2,10 +2,20 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "tsc -p tsconfig.json"
+        "clean": "node -e \"import('node:fs').then(({ rmSync }) => rmSync('dist', { recursive: true, force: true }))\"",
+        "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
+        "build": "npm run clean && npm run typecheck && tsx build.mts"
     },
     "devDependencies": {
         "@types/node": "^25.2.3",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "esbuild": "^0.27.4",
+        "tsx": "^4.21.0",
         "typescript": "^5.9.3"
+    },
+    "dependencies": {
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4"
     }
 }

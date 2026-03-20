@@ -76,11 +76,19 @@ type WebSocketTransportOptions = Readonly<{
 
 type WebUiTheme = "dark" | "light";
 
+export const TERMINAL_READY_EVENT = "kc:terminal-ready";
+
+export type TerminalReadyDetail = Readonly<{
+    textarea: HTMLTextAreaElement;
+}>;
+
 export type TerminalModule = Readonly<{
     term: XtermTerminal;
     fitAddon: XtermFitAddon;
     sendSeq: (seq: string) => void;
     setWebUiTheme?: (theme: WebUiTheme) => void;
+    events: EventTarget;
+    isReady: () => boolean;
     dispose: () => void;
 }>;
 
@@ -94,6 +102,38 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 function nextFrame(): Promise<void> {
     return new Promise<void>((resolve) => {
         window.requestAnimationFrame(() => resolve());
+    });
+}
+
+/**
+ * @param {XtermTerminal} term - Xterm terminal instance.
+ * @returns {Promise<HTMLTextAreaElement>} Resolves when the helper textarea exists.
+ */
+async function waitForTerminalTextarea(term: XtermTerminal): Promise<HTMLTextAreaElement> {
+    const root = term.element;
+    if (!(root instanceof HTMLElement)) {
+        throw new Error("Terminal root element is not available");
+    }
+
+    const findTextarea = (): HTMLTextAreaElement | null => {
+        return root.querySelector<HTMLTextAreaElement>("textarea.xterm-helper-textarea")
+            || root.querySelector<HTMLTextAreaElement>("textarea")
+            || null;
+    };
+
+    const existing = findTextarea();
+    if (existing) return existing;
+
+    return await new Promise<HTMLTextAreaElement>((resolve) => {
+        const observer = new MutationObserver(() => {
+            const textarea = findTextarea();
+            if (!(textarea instanceof HTMLTextAreaElement)) return;
+
+            observer.disconnect();
+            resolve(textarea);
+        });
+
+        observer.observe(root, { childList: true, subtree: true });
     });
 }
 
@@ -530,6 +570,8 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     let ws: WebSocket | null = null;
     let reconnecting = false;
     let webUiThemePending: WebUiTheme | null = null;
+    const events = new EventTarget();
+    let ready = false;
 
     let lastWsNoticeAt = 0;
     let lastWsNoticeKey: string | null = null;
@@ -775,6 +817,21 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     scheduleFit();
 
+    void (async (): Promise<void> => {
+        try {
+            const textarea = await waitForTerminalTextarea(term);
+            await nextFrame();
+
+            ready = true;
+
+            events.dispatchEvent(new CustomEvent<TerminalReadyDetail>(TERMINAL_READY_EVENT, {
+                detail: { textarea }
+            }));
+        } catch (error: unknown) {
+            console.error("Failed to emit terminal ready event:", error);
+        }
+    })();
+
     return {
         term,
         fitAddon,
@@ -783,6 +840,8 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             ws.send(seq);
         },
         setWebUiTheme,
+        events,
+        isReady: (): boolean => ready,
         dispose: (): void => {
             detachResizeHandlers();
 

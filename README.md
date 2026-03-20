@@ -1,4 +1,4 @@
-# kittycrypto.gg – Frontend - ${V3.0012}
+# kittycrypto.gg - Frontend - ${V3.0012}
 
 The public-facing frontend of https://kittycrypto.gg 🐾
 
@@ -6,52 +6,49 @@ The public-facing frontend of https://kittycrypto.gg 🐾
 
 ## Overview
 
-This is the lightweight frontend layer for `kittycrypto.gg`, a cryptographically-aware, session-token-based platform.
+This is the frontend for `kittycrypto.gg`.
 
-It is built with **TypeScript**, **HTML**, and **CSS**, and compiles to browser-native ESM JavaScript.  
-The goal is still “simple on purpose”, but there is now a **build step** to produce the compiled output.
+It is built with **TypeScript**, **TSX**, **React**, **HTML**, and **CSS**, and compiled with **esbuild** into browser-ready **ES modules**. The codebase stays modular and close to the DOM, while using TSX where it makes UI generation cleaner and easier to maintain.
 
-There are no logins, no passwords, no Web2 fluff.  
+There are no logins, no passwords, and no Web2 fluff.  
 Users interact using **session tokens**, and the frontend reflects what the backend validates.
 
-This repo is also a personal playground for creative and technical experiments, but content hosting has changed (see “Stories and creative content”).
+This repo is also a personal playground for creative and technical experiments.
 
 ---
 
 ## Features
 
-- No frameworks, minimal dependencies
-- **TypeScript codebase** compiled to browser-native ES modules
+- TypeScript-first codebase with a lightweight runtime footprint
+- TSX-based UI generation in selected modules
+- React-powered rendering helpers for cleaner markup construction
+- esbuild bundling with browser-native ESM output
+- Code splitting for modular frontend delivery
 - Modern browser support without polyfills
 - Fully responsive design with light/dark theme toggle
 - Chat UI with real-time updates via Server-Sent Events (SSE)
-- Cryptographic avatar generation (spiral identicons)
-- Inline message editing modal (secure via session ownership)
+- Cryptographic avatar generation and visual identity components
+- Inline message editing modal secured through session ownership rules
 - Dynamic chapter reader and story selector
 - Reader mode and accessibility-friendly UI patterns
-- Terminal module powered by xterm.js (loaded at runtime)
+- Read Aloud support for reader content
+- Terminal module powered by xterm.js and loaded at runtime
 
 ---
 
-## Security Philosophy
+## Security philosophy
 
-This frontend assumes no authority, it simply reflects what the backend proves.
-
-- If your token is valid and your IP matches, you’re accepted.
-- If not, the UI doesn’t ask questions, it shows the result.
+- If your token is valid, you’re accepted.
 - No password inputs, no account forms, no personal data prompts.
 
-The logic lives server-side, where all authority flows from token possession and code execution.
+The logic lives server-side, where authority flows from token possession and code execution.
 
 ---
-
-## Development
-
-There is now a build step.
 
 ### Prerequisites
 
-- Node.js + npm
+- Node.js
+- npm
 
 ### Install
 
@@ -64,10 +61,6 @@ npm install
 ```bash
 npm run build
 ```
-
-This compiles TypeScript into JavaScript that the browser can load as ES modules.
-
-If you are serving locally, make sure you serve the compiled output (not the `.ts` files) and that your server returns real JS files for module requests (not an HTML fallback).
 
 ---
 
@@ -85,22 +78,12 @@ The frontend expects the backend to run at:
 
 ---
 
-## Stories and creative content
-
-Stories are **no longer hosted in this frontend repository**.
-
-They live on the backend and are excluded from this repo via `.gitignore`, so they are not uploaded to GitHub.
-
-This keeps the frontend repo focused on UI and client logic, while story content is served from the platform itself.
-
----
-
 ## Philosophy
 
 This frontend doesn’t protect the user, it shows the truth.
 
 If you hold a valid token, the UI treats you as legitimate.  
-If not, it doesn’t argue, it just doesn’t render privileged actions.
+If not, it doesn’t argue, it just doesn’t render all actions.
 
 Code is law.  
 The frontend renders the outcome.
@@ -118,17 +101,6 @@ of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+furnished to do so.
 
 ---

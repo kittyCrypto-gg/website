@@ -1,11 +1,10 @@
 import * as config from "./config.ts";
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
-import { setupTerminalModule } from "./terminal.ts";
+import * as Terminal from "./terminal.ts";
 import { setupReaderToggle } from "./readerMode.ts";
-import * as readAloud from "./readAloud.ts";
+import * as readAloud from "./readAloud.tsx";
 import { keyboardEmu } from "./keyboard.ts";
 import * as loader from "./loader.ts";
-import { loadBanner, scaleBannerToFit, setupTerminalWindow } from "./banner.ts";
 
 type TerminalModule = Readonly<{
     term: Readonly<{
@@ -22,8 +21,8 @@ type KeyboardEmuInstance = Readonly<{
 
 type KeyboardEmuCtor = new (
     isMobile: boolean,
-    htmlUrl: string,
-    cssUrl: string
+    htmlUrl?: string,
+    cssUrl?: string
 ) => Readonly<{
     install: (
         transport: Readonly<{ send: (payload: Readonly<{ seq: string }>) => void }>,
@@ -312,16 +311,8 @@ document.addEventListener("DOMContentLoaded", () => {
         applyMobileTextScale(isMobile);
 
         const status = await fetchServerStatus(2000);
-        // if (status.kind === "offline") {
-        //     document.getElementById("terminal-loading")?.style.setProperty("display", "none");
 
-        //     await loadBanner({ serverOffline: true });
-        //     await scaleBannerToFit();
-        //     await setupTerminalWindow();
-        //     return;
-        // }
-
-        const terminal = await setupTerminalModule()
+        const terminal = await Terminal.setupTerminalModule()
             .then((mod) => {
                 document.getElementById("terminal-loading")?.style.setProperty("display", "none");
                 return mod as TerminalModule;
@@ -338,11 +329,11 @@ document.addEventListener("DOMContentLoaded", () => {
             terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea") ||
             null;
 
-        const KeyboardEmu = keyboardEmu as unknown as KeyboardEmuCtor;
+        const KeyboardEmu = keyboardEmu as KeyboardEmuCtor;
 
         const keyboard: KeyboardEmuInstance | null =
             isMobile && xtermTextarea
-                ? await new KeyboardEmu(isMobile, "../keyboard.html", "../styles/modules/keyboard.css").install(
+                ? await new KeyboardEmu(isMobile).install(
                     { send: ({ seq }) => terminal.sendSeq(seq) },
                     xtermTextarea
                 )

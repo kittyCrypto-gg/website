@@ -1,4 +1,4 @@
-import { serialiseMixedContent as serialiseMxCnt } from "./mediaStyler.ts";
+import { serialiseMixedContent as serialiseMxCnt } from "./mediaStyler.tsx";
 
 /**
  * @param {string | null | undefined} value

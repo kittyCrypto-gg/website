@@ -1,4 +1,6 @@
+import type { ReactElement } from "react";
 import { smsEnterBounce } from "./physics.ts";
+import { render2Mkup } from "./reactHelpers.tsx";
 
 const themes: Record<string, unknown> = {};
 
@@ -7,6 +9,18 @@ type TooltipPortalOpenState = Readonly<{
     triggerEl: HTMLElement;
     portalEl: HTMLElement;
 }>;
+
+type HtmlBits = Readonly<{
+    __html: string;
+}>;
+
+/**
+ * @param {string} raw
+ * @returns {HtmlBits}
+ */
+function html(raw: string): HtmlBits {
+    return { __html: raw };
+}
 
 /**
  * @param {string} url - URL to themes JSON.
@@ -44,7 +58,7 @@ function esc(s: string | null | undefined): string {
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
+        .replaceAll("\"", "&quot;")
         .replaceAll("'", "&#39;");
 }
 
@@ -117,6 +131,49 @@ function mapRichContent(root: ParentNode, selector: string, escFn: Escaper): str
 }
 
 /**
+ * @param {{ logo: string; company: string; lines: string[]; disclaimers: string[] }} props
+ * @returns {ReactElement}
+ */
+function SignatureMarkup(props: {
+    logo: string;
+    company: string;
+    lines: string[];
+    disclaimers: string[];
+}): ReactElement {
+    return (
+        <>
+            <hr className="email-signature-sep" />
+            <div className="email-signature">
+                {props.logo && (
+                    <div className="email-signature-logo">
+                        <img
+                            src={props.logo}
+                            alt={props.company || "Company logo"}
+                            className="email-signature-logo-img"
+                        />
+                    </div>
+                )}
+
+                <div className="email-signature-text">
+                    <div dangerouslySetInnerHTML={html(props.lines.join("<br/>"))} />
+                    {props.disclaimers.length > 0 && (
+                        <div className="email-signature-disclaimer">
+                            {props.disclaimers.map((d, i) => (
+                                <div
+                                    key={`disc-${i}`}
+                                    className="email-signature-disclaimer-line"
+                                    dangerouslySetInnerHTML={html(d)}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}
+
+/**
  * @param {Element} sig - Signature element.
  * @param {Escaper} escFn - Escaper function.
  * @returns {string} A string representation of an email signature constructed from the provided signature element and escaped using the given escaper function.
@@ -124,11 +181,11 @@ function mapRichContent(root: ParentNode, selector: string, escFn: Escaper): str
 function parseSignature(sig: Element, escFn: Escaper): string {
     const t = (q: string): string => (sig.querySelector(q)?.textContent || "").trim();
 
-    const name = escFn(t("name"));
-    const company = escFn(t("company"));
-    const address = escFn(t("address"));
-    const telephone = escFn(t("telephone"));
-    const emailAddress = escFn(t("emailAddress"));
+    const name = t("name");
+    const company = t("company");
+    const address = t("address");
+    const telephone = t("telephone");
+    const emailAddress = t("emailAddress");
     const logo = (t("logo") || "").trim();
 
     const positions = mapRichContent(sig, "position", escFn);
@@ -146,45 +203,23 @@ function parseSignature(sig: Element, escFn: Escaper): string {
 
     if (!hasAny) return "";
 
-    const logoHtml = logo
-        ? `
-            <div class="email-signature-logo">
-                <img
-                    src="${logo}"
-                    alt="${company || "Company logo"}"
-                    class="email-signature-logo-img"
-                />
-            </div>
-        `
-        : "";
-
     const lines = [
-        name && `<strong class="email-signature-name">${name}</strong>`,
+        name && `<strong class="email-signature-name">${esc(name)}</strong>`,
         ...positions.map((p) => `<span class="email-signature-position">${p}</span>`),
-        company && `<span class="email-signature-company">${company}</span>`,
-        address && `<span class="email-signature-address">${address}</span>`,
-        telephone && `<span class="email-signature-telephone">Tel: ${telephone}</span>`,
-        emailAddress && `<span class="email-signature-email">Email: ${emailAddress}</span>`,
-    ].filter(Boolean);
+        company && `<span class="email-signature-company">${esc(company)}</span>`,
+        address && `<span class="email-signature-address">${esc(address)}</span>`,
+        telephone && `<span class="email-signature-telephone">Tel: ${esc(telephone)}</span>`,
+        emailAddress && `<span class="email-signature-email">Email: ${esc(emailAddress)}</span>`
+    ].filter(Boolean) as string[];
 
-    const disclaimerHtml = disclaimers.length
-        ? `
-            <div class="email-signature-disclaimer">
-                ${disclaimers.map((d) => `<div class="email-signature-disclaimer-line">${d}</div>`).join("")}
-            </div>
-        `
-        : "";
-
-    return `
-        <hr class="email-signature-sep" />
-        <div class="email-signature">
-            ${logoHtml}
-            <div class="email-signature-text">
-                ${lines.join("<br/>")}
-                ${disclaimerHtml}
-            </div>
-        </div>
-    `;
+    return render2Mkup(
+        <SignatureMarkup
+            logo={logo}
+            company={company}
+            lines={lines}
+            disclaimers={disclaimers}
+        />
+    );
 }
 
 type ReplaceSmsMessagesImpl = (htmlContent: string, cssHref?: string) => string;
@@ -212,6 +247,27 @@ type MediaStylerImplOverrides = Partial<{
 }>;
 
 /**
+ * @param {{ type: "in" | "out"; nickname: string; contentHtml: string; timestamp: string }} props
+ * @returns {ReactElement}
+ */
+function SmsMarkup(props: {
+    type: "in" | "out";
+    nickname: string;
+    contentHtml: string;
+    timestamp: string;
+}): ReactElement {
+    return (
+        <div className={`message-wrapper ${props.type} show`}>
+            <div className={`message ${props.type}`}>
+                <div className="nickname-strip">{props.nickname}</div>
+                <div className="message-text" dangerouslySetInnerHTML={html(props.contentHtml)} />
+                <div className={`timestamp ${props.type}`}>{props.timestamp}</div>
+            </div>
+        </div>
+    );
+}
+
+/**
  * @param {string} htmlContent - HTML content to transform.
  * @param {string} cssHref - Stylesheet href for SMS rendering.
  * @returns {string} Transformed HTML content with SMS messages replaced by styled HTML structures.
@@ -236,23 +292,84 @@ function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../style
         const msg = doc.querySelector("message");
         if (!msg) return block;
 
-        const nickname = esc(raw(msg, "nickname"));
+        const nickname = raw(msg, "nickname");
 
         const contentNode = getDirectChildByTag(msg, ["content"]);
-        const content = contentNode ? serialiseMixedContent(contentNode) : "";
+        const contentHtml = contentNode ? serialiseMixedContent(contentNode) : "";
 
-        const timestamp = esc(raw(msg, "timestamp"));
+        const timestamp = raw(msg, "timestamp");
 
-        return `
-            <div class="message-wrapper ${type} show">
-                <div class="message ${type}">
-                    <div class="nickname-strip">${nickname}</div>
-                    <div class="message-text">${content}</div>
-                    <div class="timestamp ${type}">${timestamp}</div>
-                </div>
-            </div>
-        `;
+        return render2Mkup(
+            <SmsMarkup
+                type={type}
+                nickname={nickname}
+                contentHtml={contentHtml}
+                timestamp={timestamp}
+            />
+        );
     });
+}
+
+/**
+ * @param {{ themeClass: string; recipientIp: string; fromNameHtml: string; fromAddr: string; toNameHtml: string; toAddr: string; subject: string; timestamp: string; contentHtml: string }} props
+ * @returns {ReactElement}
+ */
+function EmailMarkup(props: {
+    themeClass: string;
+    recipientIp: string;
+    fromNameHtml: string;
+    fromAddr: string;
+    toNameHtml: string;
+    toAddr: string;
+    subject: string;
+    timestamp: string;
+    contentHtml: string;
+}): ReactElement {
+    const className = props.themeClass ? `email-card ${props.themeClass}` : "email-card";
+
+    return (
+        <div className="email-wrapper show">
+            <div className={className} data-recipient-ip={props.recipientIp}>
+                <div className="email-header">
+                    <div className="email-meta">
+                        <div className="email-row">
+                            <span className="email-label">From</span>
+                            <span className="email-value">
+                                <span className="email-name" dangerouslySetInnerHTML={html(props.fromNameHtml)} />
+                                <span className="email-address">({props.fromAddr})</span>
+                            </span>
+                        </div>
+
+                        <div className="email-row">
+                            <span className="email-label">To</span>
+                            <span className="email-value">
+                                <span className="email-name" dangerouslySetInnerHTML={html(props.toNameHtml)} />
+                                <span className="email-address">({props.toAddr})</span>
+                            </span>
+                        </div>
+
+                        <div className="email-row email-subject-row">
+                            <span className="email-label">Subject</span>
+                            <span className="email-subject-text">{props.subject}</span>
+                            <span className="email-timestamp">{props.timestamp}</span>
+                        </div>
+                    </div>
+
+                    <div className="email-actions-bar" role="toolbar">
+                        <div className="email-actions">
+                            <button className="email-action" data-email-action="reply">↩️</button>
+                            <button className="email-action" data-email-action="forward">➡️</button>
+                            <button className="email-action" data-email-action="flag">🚩</button>
+                            <button className="email-action" data-email-action="archive">🗄️</button>
+                            <button className="email-action" data-email-action="delete">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="email-content" dangerouslySetInnerHTML={html(props.contentHtml)} />
+            </div>
+        </div>
+    );
 }
 
 /**
@@ -316,70 +433,39 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
         const fromNameEl = from?.querySelector("name");
         const toNameEl = to?.querySelector("name");
 
-        const fromName = fromNameEl
+        const fromNameHtml = fromNameEl
             ? serialiseMixedContent(fromNameEl)
             : esc(from ? raw(from, "name") : "");
 
-        const fromAddr = esc(from ? raw(from, "addr") : "");
+        const fromAddr = from ? raw(from, "addr") : "";
 
-        const toName = toNameEl
+        const toNameHtml = toNameEl
             ? serialiseMixedContent(toNameEl)
             : esc(to ? raw(to, "name") : "");
 
-        const toAddr = esc(to ? raw(to, "addr") : "");
+        const toAddr = to ? raw(to, "addr") : "";
 
         const themeClass = getTheme(toAddr);
 
         const recipientIp = raw(email, "toIp") || "";
-        const timestamp = esc(raw(email, "timestamp"));
-        const subject = esc(raw(email, "subject"));
+        const timestamp = raw(email, "timestamp");
+        const subject = raw(email, "subject");
 
         const contentHtml = buildContentHtml(email);
 
-        return `
-        <div class="email-wrapper show">
-            <div class="email-card${themeClass ? ` ${themeClass}` : ""}"
-                data-recipient-ip="${esc(recipientIp)}">
-            <div class="email-header">
-                <div class="email-meta">
-                <div class="email-row">
-                    <span class="email-label">From</span>
-                    <span class="email-value">
-                        <span class="email-name">${fromName}</span>
-                        <span class="email-address">(${fromAddr})</span>
-                    </span>
-                </div>
-
-                <div class="email-row">
-                    <span class="email-label">To</span>
-                    <span class="email-value">
-                        <span class="email-name">${toName}</span>
-                        <span class="email-address">(${toAddr})</span>
-                    </span>
-                </div>
-
-                <div class="email-row email-subject-row">
-                    <span class="email-label">Subject</span>
-                    <span class="email-subject-text">${subject}</span>
-                    <span class="email-timestamp">${timestamp}</span>
-                </div>
-                </div>
-
-                <div class="email-actions-bar" role="toolbar">
-                <div class="email-actions">
-                    <button class="email-action" data-email-action="reply">↩️</button>
-                    <button class="email-action" data-email-action="forward">➡️</button>
-                    <button class="email-action" data-email-action="flag">🚩</button>
-                    <button class="email-action" data-email-action="archive">🗄️</button>
-                    <button class="email-action" data-email-action="delete">🗑️</button>
-                </div>
-                </div>
-            </div>
-
-            <div class="email-content">${contentHtml}</div>
-            </div>
-        </div>
-        `;
+        return render2Mkup(
+            <EmailMarkup
+                themeClass={themeClass}
+                recipientIp={recipientIp}
+                fromNameHtml={fromNameHtml}
+                fromAddr={fromAddr}
+                toNameHtml={toNameHtml}
+                toAddr={toAddr}
+                subject={subject}
+                timestamp={timestamp}
+                contentHtml={contentHtml}
+            />
+        );
     });
 }
 
@@ -434,45 +520,36 @@ async function replaceSVGsImpl(root: Document | Element | string = document): Pr
 }
 
 /**
+ * @param {{ src: string; alt: string; }} props
+ * @returns {ReactElement}
+ */
+function ChapterImageMarkup(props: { src: string; alt: string }): ReactElement {
+    const safeUrl = esc(props.src.trim());
+    const safeAlt = esc(props.alt.trim());
+
+    return (
+        <div className="chapter-image-container">
+            <div
+                dangerouslySetInnerHTML={html(`
+          <img
+            src="${safeUrl}"
+            alt="${safeAlt}"
+            class="chapter-image"
+            loading="lazy"
+            onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
+          />
+        `)}
+            />
+        </div>
+    );
+}
+
+/**
  * @param {string} htmlContent
  * @returns {Promise<string>}
  */
 async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
     const re = /<chapter-image\b[^>]*?(?:\/>|>[\s\S]*?<\/chapter-image>)/gi;
-
-    /**
-     * @param {string} value
-     * @returns {string}
-     */
-    const escAttr = (value: string): string =>
-        (value || "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("\"", "&quot;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll("'", "&#39;");
-
-    /**
-     * @param {string} url
-     * @param {string} alt
-     * @returns {string}
-     */
-    const buildImageHtml = (url: string, alt: string): string => {
-        const safeUrl = escAttr(url.trim());
-        const safeAlt = escAttr(alt.trim());
-
-        return `
-            <div class="chapter-image-container">
-                <img
-                src="${safeUrl}"
-                alt="${safeAlt}"
-                class="chapter-image"
-                loading="lazy"
-                onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
-                />
-            </div>
-        `;
-    };
 
     return htmlContent.replace(re, (block: string) => {
         const doc = new DOMParser().parseFromString(`<root>${block}</root>`, "application/xml");
@@ -486,14 +563,13 @@ async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
         const altFromText = (imageEl.textContent || "").trim();
         const alt = altAttr || altFromText || "Chapter Image";
 
-        return buildImageHtml(url, alt);
+        return render2Mkup(<ChapterImageMarkup src={url} alt={alt} />);
     });
 }
 
 const TOOLTIP_PORTAL_ID = "tooltip-portal";
 
 let tooltipPortalInstalled = false;
-
 let tooltipPortalOpenState: TooltipPortalOpenState | null = null;
 
 function ensureTooltipPortalHost(): HTMLDivElement {
@@ -513,7 +589,6 @@ function parseCssTimeMs(raw: string): number {
     if (s.endsWith("s")) return Number.parseFloat(s) * 1000;
     return Number.parseFloat(s);
 }
-
 
 function getTooltipFadeMs(el: HTMLElement): number {
     const cssVar = getComputedStyle(el).getPropertyValue("--tooltip-fade-duration");
@@ -705,6 +780,25 @@ function ensureTooltipPortal(): void {
 }
 
 /**
+ * @param {{ triggerHtml: string; contentHtml: string; isTranslation: boolean }} props
+ * @returns {ReactElement}
+ */
+function TooltipMarkup(props: {
+    triggerHtml: string;
+    contentHtml: string;
+    isTranslation: boolean;
+}): ReactElement {
+    const contentClass = `tooltip-content${props.isTranslation ? " translation" : ""}`;
+
+    return (
+        <span className="tooltip">
+            <span className="tooltip-trigger" dangerouslySetInnerHTML={html(props.triggerHtml)} />
+            <span className={contentClass} dangerouslySetInnerHTML={html(props.contentHtml)} />
+        </span>
+    );
+}
+
+/**
  * @param {string} htmlContent - HTML content to transform.
  * @returns {Promise<string>} A promise that resolves to the
  * transformed HTML content with custom tooltip blocks replaced
@@ -756,14 +850,13 @@ async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
                 .join("")
             : esc(contentEl.textContent || "");
 
-        const contentClass = `tooltip-content${isTranslation ? " translation" : ""}`;
-
-        return `
-            <span class="tooltip">
-                <span class="tooltip-trigger">${triggerHtml}</span>
-                <span class="${contentClass}">${contentHtml}</span>
-            </span>
-        `;
+        return render2Mkup(
+            <TooltipMarkup
+                triggerHtml={triggerHtml}
+                contentHtml={contentHtml}
+                isTranslation={isTranslation}
+            />
+        );
     });
 }
 
@@ -878,4 +971,4 @@ class MediaStyler {
     }
 }
 
-export default MediaStyler; 
+export default MediaStyler;
