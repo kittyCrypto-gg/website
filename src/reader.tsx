@@ -128,8 +128,6 @@ window.buttons = {
     scrollUp: { icon: "⏫", action: "Scroll up" }
 };
 
-
-
 /**
  * @param {ReaderButtonDef} def
  * @returns {ReactElement}
@@ -848,13 +846,29 @@ function showTmpNotice(msg: string, timeout = 1000): void {
 }
 
 /**
+ * @param {Element | null} el
+ * @returns {boolean}
+ */
+function isVis(el: Element | null): boolean {
+    if (!el) return false;
+
+    const rect = el.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < window.innerHeight;
+}
+
+/**
  * @param {Document} root
  * @returns {void}
  */
 function syncCtrlDock(root: Document = document): void {
     const ctrls = root.querySelector(".reader-controls-top") as HTMLElement | null;
     const spacer = root.getElementById(READER_CTRL_SPACER_ID) as HTMLDivElement | null;
-    if (!ctrls || !spacer) return;
+    const marker = root.getElementById(READER_CTRL_FLOAT_MARKER_ID) as HTMLElement | null;
+    const bottomCtrls = root.querySelector(".reader-controls-bottom") as HTMLElement | null;
+    if (!ctrls || !spacer || !marker) return;
+
+    ctrlMarkerAbove = marker.getBoundingClientRect().bottom <= 0;
+    ctrlBottomSeen = isVis(bottomCtrls);
 
     const detached = ctrlMarkerAbove && !ctrlBottomSeen;
     const wasDetached = ctrls.classList.contains("is-detached");
@@ -984,8 +998,7 @@ function ctrlDetach(): void {
     spacer.insertAdjacentElement("afterend", marker);
 
     const markerObs = new IntersectionObserver(
-        ([entry]: IntersectionObserverEntry[]) => {
-            ctrlMarkerAbove = !entry.isIntersecting && entry.boundingClientRect.bottom <= 0;
+        () => {
             syncCtrlDock(document);
         },
         { threshold: 0 }
@@ -997,8 +1010,7 @@ function ctrlDetach(): void {
 
     if (bottomCtrls) {
         ctrlBottomObs = new IntersectionObserver(
-            ([entry]: IntersectionObserverEntry[]) => {
-                ctrlBottomSeen = entry.isIntersecting;
+            () => {
                 syncCtrlDock(document);
             },
             { threshold: 0 }
@@ -1009,6 +1021,7 @@ function ctrlDetach(): void {
 
     ctrlScrollFn = (): void => {
         syncTopScrollMode(document);
+        syncCtrlDock(document);
     };
 
     ctrlResizeFn = (): void => {
@@ -1692,7 +1705,7 @@ function restoreBkm(storyBase: string, chapter: number): void {
 
     const nextBkm = bkm.nextElementSibling as Element | null;
     if (nextBkm) {
-        const scrollY = nextBkm.getBoundingClientRect().top;
+        const scrollY = window.scrollY + nextBkm.getBoundingClientRect().top;
         window.scrollTo({ top: scrollY, behavior: "smooth" });
     }
 
