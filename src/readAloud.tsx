@@ -35,9 +35,16 @@ type SpeechResource = Readonly<{
   regionLocked: boolean;
 }>;
 
+type ReadAloudAudioTiming = Readonly<{
+  wordCount: number;
+  durationSeconds: number;
+  wordsPerSecond: number;
+}>;
+
 type ReadAloudBuffer = Readonly<{
   idx: number;
   audioData: ArrayBuffer;
+  timing: ReadAloudAudioTiming;
 }>;
 
 type ReadAloudSsmlToken = Readonly<{
@@ -1693,9 +1700,6 @@ class ReadAloudModule {
       return;
     }
 
-    await this.__updateMediaSession(plainText);
-    if (state.playbackToken !== playbackToken || state.paused) return;
-
     if (!state.speechKey || !state.serviceRegion) {
       window.alert("Please enter your Azure Speech API key. The region will be detected automatically, or you can set it with 🌍.");
       return;
@@ -1722,14 +1726,23 @@ class ReadAloudModule {
     if (state.currentPid) forceBookmark(state.currentPid);
 
     try {
-      let audioData: ArrayBuffer | null;
+      let bufferedChunk: ReadAloudBuffer | null;
 
       if (state.buffer && state.buffer.idx === idx) {
-        audioData = state.buffer.audioData;
+        bufferedChunk = state.buffer;
         state.buffer = null;
       } else {
-        audioData = await this.__bufferPAudio(idx, true, playbackToken);
+        bufferedChunk = await this.__bufferPAudio(idx, true, playbackToken);
       }
+
+      if (state.playbackToken !== playbackToken || state.paused) return;
+
+      if (!bufferedChunk) {
+        await this.__speakP(idx + 1);
+        return;
+      }
+
+      await this.__updateMediaSession(plainText, bufferedChunk.timing.wordsPerSecond);
 
       if (state.playbackToken !== playbackToken || state.paused) return;
 
@@ -1737,13 +1750,7 @@ class ReadAloudModule {
         void this.__bufferPAudio(idx + 1, false, playbackToken);
       }
 
-      if (!audioData) {
-        if (state.playbackToken !== playbackToken || state.paused) return;
-        await this.__speakP(idx + 1);
-        return;
-      }
-
-      await this.__playAudioBlob(audioData, playbackToken);
+      await this.__playAudioBlob(bufferedChunk.audioData, playbackToken);
 
       if (state.playbackToken !== playbackToken || state.paused) return;
       await this.__speakP(idx + 1);
@@ -1760,21 +1767,22 @@ class ReadAloudModule {
 
   /**
    * @param {string} plainText - Spoken paragraph text.
+   * @param {number} wordsPerSecond - Measured words per second for this audio chunk.
    * @returns {Promise<void>} Nothing.
    */
-  async __updateMediaSession(plainText: string): Promise<void> {
+  async __updateMediaSession(plainText: string, wordsPerSecond: number): Promise<void> {
     if (!("mediaSession" in navigator)) return;
 
-    const titleChunks = await this.__buildMSTitle(plainText, 60);
-    await this.__startMSloop(titleChunks);
+    const titleChunks = this.__buildMSTitle(plainText, 60);
+    await this.__startMSloop(titleChunks, wordsPerSecond);
   }
 
   /**
    * @param {string} plainText - Paragraph text.
    * @param {number} maxChars - Maximum characters per title chunk.
-   * @returns {Promise<readonly string[]>} Title chunks.
+   * @returns {readonly string[]} Title chunks.
    */
-  async __buildMSTitle(plainText: string, maxChars: number = 60): Promise<readonly string[]> {
+  __buildMSTitle(plainText: string, maxChars: number = 60): readonly string[] {
     const words = plainText.trim().split(/\s+/).filter(Boolean);
     if (!words.length) return [""];
 
@@ -1842,18 +1850,18 @@ class ReadAloudModule {
   }
 
   /**
- * @param {string} text - Text to count words in.
- * @returns {number} Word count.
- */
+   * @param {string} text - Text to count words in.
+   * @returns {number} Word count.
+   */
   __countWords(text: string): number {
     const words = text.trim().split(/\s+/).filter(Boolean);
     return words.length;
   }
 
   /**
-   * @returns {number} Current read speed in words per second.
+   * @returns {number} Estimated read speed in words per second.
    */
-  __getWordsPerSecond(): number {
+  __getEstimatedWordsPerSecond(): number {
     const state = window.readAloudState;
 
     const baseWordsPerSecondAt1x = 2.6;
@@ -1863,24 +1871,114 @@ class ReadAloudModule {
   }
 
   /**
+   * @param {ArrayBuffer} audioData - MP3 data.
+   * @returns {Promise<number>} Audio duration in seconds.
+   */
+  async __audioLength(audioData: ArrayBuffer): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+      const audioBlob = new Blob([audioData], { type: "audio/mp3" });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio();
+
+      let settled = false;
+
+      /**
+       * @returns {void} Nothing.
+       */
+      const cleanup = (): void => {
+        audio.onloadedmetadata = null;
+        audio.onerror = null;
+        audio.src = "";
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.preload = "metadata";
+
+      audio.onloadedmetadata = () => {
+        if (settled) return;
+        settled = true;
+
+        const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+        cleanup();
+
+        if (duration > 0) {
+          resolve(duration);
+          return;
+        }
+
+        reject(new Error("Invalid audio duration"));
+      };
+
+      audio.onerror = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error("Could not read audio duration"));
+      };
+
+      audio.src = audioUrl;
+      audio.load();
+    });
+  }
+
+  /**
+   * @param {string} plainText - Plain text used for synthesis.
+   * @param {ArrayBuffer} audioData - Generated MP3 data.
+   * @returns {Promise<ReadAloudAudioTiming>} Measured timing information.
+   */
+  async __audioTime(plainText: string, audioData: ArrayBuffer): Promise<ReadAloudAudioTiming> {
+    const wordCount = this.__countWords(plainText);
+    const fallbackWordsPerSecond = this.__getEstimatedWordsPerSecond();
+
+    if (wordCount <= 0) {
+      return {
+        wordCount: 0,
+        durationSeconds: 0,
+        wordsPerSecond: fallbackWordsPerSecond
+      };
+    }
+
+    let durationSeconds = wordCount / fallbackWordsPerSecond;
+
+    try {
+      const measuredDuration = await this.__audioLength(audioData);
+      if (Number.isFinite(measuredDuration) && measuredDuration > 0) {
+        durationSeconds = measuredDuration;
+      }
+    } catch {
+      // Fall back to the rate-based estimate.
+    }
+
+    const wordsPerSecond = durationSeconds > 0
+      ? wordCount / durationSeconds
+      : fallbackWordsPerSecond;
+
+    return {
+      wordCount,
+      durationSeconds,
+      wordsPerSecond: wordsPerSecond > 0 ? wordsPerSecond : fallbackWordsPerSecond
+    };
+  }
+
+  /**
    * @param {string} titleChunk - Title chunk currently being shown.
+   * @param {number} wordsPerSecond - Measured words per second for the paragraph audio.
    * @returns {number} Delay in milliseconds before the next chunk.
    */
-  __getMSChunkDelay(titleChunk: string): number {
+  __getMSChunkDelay(titleChunk: string, wordsPerSecond: number): number {
     const words = this.__countWords(titleChunk);
-    const wordsPerSecond = this.__getWordsPerSecond();
+    const safeWordsPerSecond = wordsPerSecond > 0 ? wordsPerSecond : this.__getEstimatedWordsPerSecond();
+    const delayMs = Math.round((Math.max(words, 1) / safeWordsPerSecond) * 1000);
 
-    const minDelayMs = 700;
-    const delayMs = Math.round((Math.max(words, 1) / wordsPerSecond) * 1000);
-
-    return Math.max(minDelayMs, delayMs);
+    return Math.max(120, delayMs);
   }
 
   /**
    * @param {readonly string[]} titleChunks - Title chunks.
+   * @param {number} wordsPerSecond - Measured words per second for the paragraph audio.
    * @returns {Promise<void>} Nothing.
    */
-  async __startMSloop(titleChunks: readonly string[]): Promise<void> {
+  async __startMSloop(titleChunks: readonly string[], wordsPerSecond: number): Promise<void> {
     if (!("mediaSession" in navigator)) return;
 
     await this.__stopMSloop();
@@ -1905,7 +2003,7 @@ class ReadAloudModule {
       chunkIndex += 1;
       if (chunkIndex >= titleChunks.length) return;
 
-      const stepDelayMs = this.__getMSChunkDelay(title);
+      const stepDelayMs = this.__getMSChunkDelay(title, wordsPerSecond);
 
       state.MSTimer = window.setTimeout(() => {
         void tick();
@@ -1919,13 +2017,13 @@ class ReadAloudModule {
    * @param {number} idx - Paragraph index.
    * @param {boolean} blocking - If true, return audioData. If false, cache into state.buffer.
    * @param {number | null} playbackToken - Playback invalidation token.
-   * @returns {Promise<ArrayBuffer | null>} Audio data or null if skipped.
+   * @returns {Promise<ReadAloudBuffer | null>} Audio chunk or null if skipped.
    */
   async __bufferPAudio(
     idx: number,
     blocking: boolean = false,
     playbackToken: number | null = null
-  ): Promise<ArrayBuffer | null> {
+  ): Promise<ReadAloudBuffer | null> {
     const state = window.readAloudState;
     if (idx >= state.paragraphs.length) return null;
 
@@ -1958,31 +2056,50 @@ class ReadAloudModule {
       synthesizer.close();
     };
 
-    return new Promise<ArrayBuffer | null>((resolve, reject) => {
+    return new Promise<ReadAloudBuffer | null>((resolve, reject) => {
       synthesizer.speakSsmlAsync(
         ssml,
         (result) => {
-          if (result.reason !== sdk.ResultReason.SynthesizingAudioCompleted) {
-            finishSynth();
-            reject(new Error(result.errorDetails || "Speech synthesis failed"));
-            return;
-          }
-
-          if (playbackToken !== null && state.playbackToken !== playbackToken) {
-            finishSynth();
-            resolve(null);
-            return;
-          }
-
-          if (!blocking) {
-            const canCache = playbackToken === null || state.playbackToken === playbackToken;
-            if (canCache && !state.paused) {
-              state.buffer = { idx, audioData: result.audioData };
+          void (async (): Promise<void> => {
+            if (result.reason !== sdk.ResultReason.SynthesizingAudioCompleted) {
+              finishSynth();
+              reject(new Error(result.errorDetails || "Speech synthesis failed"));
+              return;
             }
-          }
 
-          finishSynth();
-          resolve(result.audioData);
+            if (playbackToken !== null && state.playbackToken !== playbackToken) {
+              finishSynth();
+              resolve(null);
+              return;
+            }
+
+            const timing = await this.__audioTime(speech.plainText, result.audioData);
+
+            if (playbackToken !== null && state.playbackToken !== playbackToken) {
+              finishSynth();
+              resolve(null);
+              return;
+            }
+
+            const chunk: ReadAloudBuffer = {
+              idx,
+              audioData: result.audioData,
+              timing
+            };
+
+            if (!blocking) {
+              const canCache = playbackToken === null || state.playbackToken === playbackToken;
+              if (canCache && !state.paused) {
+                state.buffer = chunk;
+              }
+            }
+
+            finishSynth();
+            resolve(chunk);
+          })().catch((error: unknown) => {
+            finishSynth();
+            reject(error);
+          });
         },
         (error) => {
           finishSynth();
