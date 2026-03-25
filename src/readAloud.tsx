@@ -1842,11 +1842,45 @@ class ReadAloudModule {
   }
 
   /**
+ * @param {string} text - Text to count words in.
+ * @returns {number} Word count.
+ */
+  __countWords(text: string): number {
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    return words.length;
+  }
+
+  /**
+   * @returns {number} Current read speed in words per second.
+   */
+  __getWordsPerSecond(): number {
+    const state = window.readAloudState;
+
+    const baseWordsPerSecondAt1x = 2.6;
+    const effective = baseWordsPerSecondAt1x * state.speechRate;
+
+    return effective > 0 ? effective : baseWordsPerSecondAt1x;
+  }
+
+  /**
+   * @param {string} titleChunk - Title chunk currently being shown.
+   * @returns {number} Delay in milliseconds before the next chunk.
+   */
+  __getMSChunkDelay(titleChunk: string): number {
+    const words = this.__countWords(titleChunk);
+    const wordsPerSecond = this.__getWordsPerSecond();
+
+    const minDelayMs = 700;
+    const delayMs = Math.round((Math.max(words, 1) / wordsPerSecond) * 1000);
+
+    return Math.max(minDelayMs, delayMs);
+  }
+
+  /**
    * @param {readonly string[]} titleChunks - Title chunks.
-   * @param {number} stepDelayMs - Delay between title updates.
    * @returns {Promise<void>} Nothing.
    */
-  async __startMSloop(titleChunks: readonly string[], stepDelayMs: number = 2200): Promise<void> {
+  async __startMSloop(titleChunks: readonly string[]): Promise<void> {
     if (!("mediaSession" in navigator)) return;
 
     await this.__stopMSloop();
@@ -1870,6 +1904,8 @@ class ReadAloudModule {
 
       chunkIndex += 1;
       if (chunkIndex >= titleChunks.length) return;
+
+      const stepDelayMs = this.__getMSChunkDelay(title);
 
       state.MSTimer = window.setTimeout(() => {
         void tick();
