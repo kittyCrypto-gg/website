@@ -54,11 +54,11 @@ type ReadAloudState = {
   paused: boolean;
   pressed: boolean;
 
-  currentParagraphIndex: number;
-  currentParagraphId: string | null;
+  currentPIdx: number;
+  currentPid: string | null;
   paragraphs: HTMLElement[];
 
-  synthesizer: SpeechSynthesizer | null;
+  synthesiser: SpeechSynthesizer | null;
 
   lastSpokenText: string;
   voiceName: string;
@@ -77,6 +77,10 @@ type ReadAloudState = {
 
   apiKeyVisible: boolean;
   regionUiVisible: boolean;
+
+  MSTimer: number | null;
+  MStoken: number;
+  playbackToken: number;
 
   originalMenuDisplay?: string;
 };
@@ -263,7 +267,7 @@ function RaHelp(): ReactElement {
           For further help, see the <a href="https://learn.microsoft.com/en-gb/azure/ai-services/speech-service/" target="_blank" rel="noopener">official docs</a>.
         </p>
         <p className="modal-note">
-          <b>Note:</b> KittyCrypto.gg will <u>NOT</u> store your API key or region server-side. It is saved only in your browser's local storage.
+          <b>Note:</b> KittyCrypto.gg will <u>NOT</u> store your API key or region server-side. It is saved only in your browser&apos;s local storage.
           <br />
           See the full implementation on <a href="https://github.com/kittyCrypto-gg/website/blob/main/src/readAloud.tsx" target="_blank" rel="noopener">GitHub</a>.
         </p>
@@ -331,6 +335,7 @@ class ReadAloudModule {
   #READALOUD_META_ATTR = "data-readaloud";
   #regionResolvePromise: Promise<RegionResolveResult> | null = null;
   #customModalsById = new Map<string, Modal>();
+  #activeSynths = new Set<SpeechSynthesizer>();
   #elemsToIgnore = [
     ".reader-paragraph-num",
     ".bookmark-emoji",
@@ -405,10 +410,10 @@ class ReadAloudModule {
     window.readAloudState = {
       paused: true,
       pressed: false,
-      currentParagraphIndex: 0,
-      currentParagraphId: null,
+      currentPIdx: 0,
+      currentPid: null,
       paragraphs: [],
-      synthesizer: null,
+      synthesiser: null,
       lastSpokenText: "",
       voiceName: this.#VOICES[0].name,
       speechKey: "",
@@ -422,6 +427,9 @@ class ReadAloudModule {
       currentAudioUrl: null,
       apiKeyVisible: false,
       regionUiVisible: false,
+      MSTimer: null,
+      MStoken: 0,
+      playbackToken: 0,
       originalMenuDisplay: undefined
     };
 
@@ -535,7 +543,7 @@ class ReadAloudModule {
       ">": "&gt;",
       "&": "&amp;",
       "'": "&apos;",
-      '"': "&quot;"
+      "\"": "&quot;"
     }[c] ?? c));
   }
 
@@ -1025,6 +1033,18 @@ class ReadAloudModule {
   }
 
   /**
+   * @param {boolean} isPlaying - Whether playback is active.
+   * @returns {void} Nothing.
+   */
+  __setPlayPauseButton(isPlaying: boolean): void {
+    const btn = getEl("read-aloud-toggle-playpause");
+    if (!btn) return;
+
+    btn.textContent = isPlaying ? this.#buttons.pause.icon : this.#buttons.play.icon;
+    btn.title = isPlaying ? this.#buttons.pause.action : this.#buttons.play.action;
+  }
+
+  /**
    * @returns {void} Nothing.
    */
   showMenu(): void {
@@ -1160,7 +1180,7 @@ class ReadAloudModule {
 
     this.__toggleCnfg(
       !localStorage.getItem("readAloudConfigMenuHidden") ||
-      localStorage.getItem("readAloudConfigMenuHidden") === "false"
+        localStorage.getItem("readAloudConfigMenuHidden") === "false"
         ? true
         : window.readAloudState.configVisible
     );
@@ -1195,7 +1215,7 @@ class ReadAloudModule {
       const state = window.readAloudState;
 
       if (!state.paused) {
-        menuElements.playPauseBtn.textContent = this.#buttons.play.icon;
+        this.__setPlayPauseButton(false);
         await this.__pause();
         return;
       }
@@ -1207,7 +1227,7 @@ class ReadAloudModule {
       state.voiceName = voiceName;
 
       if (!speechKey) {
-        menuElements.playPauseBtn.textContent = this.#buttons.play.icon;
+        this.__setPlayPauseButton(false);
         window.alert("Please enter your Azure Speech API key.");
         return;
       }
@@ -1263,7 +1283,7 @@ class ReadAloudModule {
       }
 
       if (!resolved.region) {
-        menuElements.playPauseBtn.textContent = this.#buttons.play.icon;
+        this.__setPlayPauseButton(false);
 
         window.alert(
           resolved.reason === "rate_limited"
@@ -1285,7 +1305,7 @@ class ReadAloudModule {
         regionLocked: hasLockedRegion
       });
 
-      menuElements.playPauseBtn.textContent = this.#buttons.pause.icon;
+      this.__setPlayPauseButton(true);
 
       if (!state.paragraphs.length) {
         await this.__readAloud(speechKey, state.serviceRegion, voiceName);
@@ -1296,7 +1316,7 @@ class ReadAloudModule {
     });
 
     menuElements.stopBtn.addEventListener("click", async () => {
-      menuElements.playPauseBtn.textContent = this.#buttons.play.icon;
+      this.__setPlayPauseButton(false);
       await this.__clear();
     });
 
@@ -1369,7 +1389,7 @@ class ReadAloudModule {
       this.__saveSpeechRate(rate);
 
       const state = window.readAloudState;
-      const idx = state.currentParagraphIndex;
+      const idx = state.currentPIdx;
 
       await this.__clearBuffer(state, idx).catch((err: unknown) => {
         console.error("[Change Rate] Error clearing Read Aloud buffer:", err);
@@ -1386,7 +1406,7 @@ class ReadAloudModule {
       window.readAloudState.voiceName = voiceName;
 
       const state = window.readAloudState;
-      const idx = state.currentParagraphIndex;
+      const idx = state.currentPIdx;
 
       await this.__clearBuffer(state, idx).catch((err: unknown) => {
         console.error("[Change Voice] Error clearing Read Aloud buffer:", err);
@@ -1519,20 +1539,15 @@ class ReadAloudModule {
     const state = window.readAloudState;
     state.paused = true;
 
-    if (state.currentAudio) {
-      state.currentAudio.pause();
-      state.currentAudio.currentTime = 0;
-      state.currentAudio = null;
-    }
-
-    await this.__stopAsync();
+    await this.__stopAllPlayback();
 
     if (!state.paragraphs.length) return;
 
-    state.currentParagraphIndex = 0;
-    state.currentParagraphId = state.paragraphs[0] ? state.paragraphs[0].id : null;
-
+    state.currentPIdx = 0;
+    state.currentPid = state.paragraphs[0] ? state.paragraphs[0].id : null;
     state.paused = false;
+
+    this.__setPlayPauseButton(true);
     await this.__speakP(0);
   }
 
@@ -1553,8 +1568,7 @@ class ReadAloudModule {
 
     menu.style.display = "none";
 
-    const playPauseBtn = getEl("read-aloud-toggle-playpause");
-    if (playPauseBtn) playPauseBtn.textContent = this.#buttons.play.icon;
+    this.__setPlayPauseButton(false);
 
     window.readAloudState.pressed = false;
 
@@ -1605,8 +1619,8 @@ class ReadAloudModule {
     const startIdx = this.__startIndex(paragraphs, startFromId);
 
     window.readAloudState.paused = false;
-    window.readAloudState.currentParagraphIndex = startIdx;
-    window.readAloudState.currentParagraphId = paragraphs[startIdx] ? paragraphs[startIdx].id : null;
+    window.readAloudState.currentPIdx = startIdx;
+    window.readAloudState.currentPid = paragraphs[startIdx] ? paragraphs[startIdx].id : null;
     window.readAloudState.paragraphs = paragraphs;
     window.readAloudState.voiceName = voiceName;
     window.readAloudState.speechKey = speechKey;
@@ -1658,12 +1672,14 @@ class ReadAloudModule {
     const state = window.readAloudState;
     if (state.paused || idx >= state.paragraphs.length) return;
 
+    const playbackToken = state.playbackToken;
+
     if (
-      state.currentParagraphIndex !== undefined &&
-      state.currentParagraphIndex !== idx &&
-      state.paragraphs[state.currentParagraphIndex]
+      state.currentPIdx !== undefined &&
+      state.currentPIdx !== idx &&
+      state.paragraphs[state.currentPIdx]
     ) {
-      this.__FOHighlight(state.paragraphs[state.currentParagraphIndex]);
+      this.__FOHighlight(state.paragraphs[state.currentPIdx]);
     }
 
     const paragraph = state.paragraphs[idx] ?? null;
@@ -1672,50 +1688,38 @@ class ReadAloudModule {
 
     const plainText = this.__paragPlain(paragraph);
     if (!plainText) {
+      if (state.playbackToken !== playbackToken || state.paused) return;
       await this.__speakP(idx + 1);
       return;
     }
 
-    if ("mediaSession" in navigator) {
-      const params = new URLSearchParams(window.location.search);
-      const rawStory = params.get("story") || "";
-      const chapter = params.get("chapter") || "";
-
-      const storyName = decodeURIComponent(rawStory).split("/").pop() || "Unknown Story";
-      const chapterName = `Chapter ${chapter}`;
-      const artist = window.location.origin;
-
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: plainText.slice(0, 60),
-        artist,
-        album: storyName,
-        // @ts-ignore
-        track: chapterName,
-        artwork: []
-      });
-    }
+    await this.__updateMediaSession(plainText);
+    if (state.playbackToken !== playbackToken || state.paused) return;
 
     if (!state.speechKey || !state.serviceRegion) {
       window.alert("Please enter your Azure Speech API key. The region will be detected automatically, or you can set it with 🌍.");
       return;
     }
 
-    const sdk = window.SpeechSDK;
-    if (!sdk) {
-      window.alert("Speech SDK is not loaded. Please check your connection or script includes.");
+    try {
+      await this.__sdkReady();
+    } catch {
+      window.alert("Speech SDK could not be loaded. Please check your connection or script includes.");
       return;
     }
 
-    state.currentParagraphIndex = idx;
-    state.currentParagraphId = paragraph ? paragraph.id : null;
+    if (state.playbackToken !== playbackToken || state.paused) return;
+
+    state.currentPIdx = idx;
+    state.currentPid = paragraph ? paragraph.id : null;
     state.lastSpokenText = plainText;
 
     localStorage.setItem("readAloudAudioPosition", JSON.stringify({
-      paragraphId: state.currentParagraphId,
-      paragraphIndex: state.currentParagraphIndex
+      paragraphId: state.currentPid,
+      paragraphIndex: state.currentPIdx
     }));
 
-    if (state.currentParagraphId) forceBookmark(state.currentParagraphId);
+    if (state.currentPid) forceBookmark(state.currentPid);
 
     try {
       let audioData: ArrayBuffer | null;
@@ -1724,24 +1728,28 @@ class ReadAloudModule {
         audioData = state.buffer.audioData;
         state.buffer = null;
       } else {
-        audioData = await this.__bufferPAudio(idx, true);
+        audioData = await this.__bufferPAudio(idx, true, playbackToken);
       }
 
+      if (state.playbackToken !== playbackToken || state.paused) return;
+
       if (idx + 1 < state.paragraphs.length) {
-        void this.__bufferPAudio(idx + 1, false);
+        void this.__bufferPAudio(idx + 1, false, playbackToken);
       }
 
       if (!audioData) {
+        if (state.playbackToken !== playbackToken || state.paused) return;
         await this.__speakP(idx + 1);
         return;
       }
 
-      await this.__playAudioBlob(audioData);
+      await this.__playAudioBlob(audioData, playbackToken);
 
-      if (!state.paused) {
-        await this.__speakP(idx + 1);
-      }
-    } catch (_error: unknown) {
+      if (state.playbackToken !== playbackToken || state.paused) return;
+      await this.__speakP(idx + 1);
+    } catch {
+      if (state.playbackToken !== playbackToken) return;
+
       const handled = await this.__handleRuntimeSpeakFailure();
       if (!handled) {
         window.alert("Read Aloud stopped due to a connection issue.");
@@ -1751,11 +1759,137 @@ class ReadAloudModule {
   }
 
   /**
+   * @param {string} plainText - Spoken paragraph text.
+   * @returns {Promise<void>} Nothing.
+   */
+  async __updateMediaSession(plainText: string): Promise<void> {
+    if (!("mediaSession" in navigator)) return;
+
+    const titleChunks = await this.__buildMSTitle(plainText, 60);
+    await this.__startMSloop(titleChunks);
+  }
+
+  /**
+   * @param {string} plainText - Paragraph text.
+   * @param {number} maxChars - Maximum characters per title chunk.
+   * @returns {Promise<readonly string[]>} Title chunks.
+   */
+  async __buildMSTitle(plainText: string, maxChars: number = 60): Promise<readonly string[]> {
+    const words = plainText.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return [""];
+
+    const chunks: string[] = [];
+    let currentChunk = "";
+
+    for (const word of words) {
+      if (!currentChunk) {
+        currentChunk = word;
+        continue;
+      }
+
+      const nextChunk = `${currentChunk} ${word}`;
+      if (nextChunk.length <= maxChars) {
+        currentChunk = nextChunk;
+        continue;
+      }
+
+      chunks.push(currentChunk);
+      currentChunk = word;
+    }
+
+    if (currentChunk) chunks.push(currentChunk);
+
+    return chunks;
+  }
+
+  /**
+   * @param {string} title - Media session title.
+   * @returns {Promise<void>} Nothing.
+   */
+  async __setMSmeta(title: string): Promise<void> {
+    if (!("mediaSession" in navigator)) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const rawStory = params.get("story") || "";
+    const chapter = params.get("chapter") || "";
+
+    const storyName = decodeURIComponent(rawStory).split("/").pop() || "Unknown Story";
+    const chapterName = `Chapter ${chapter}`;
+    const artist = window.location.origin;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title,
+      artist,
+      album: storyName,
+      // @ts-ignore
+      track: chapterName,
+      artwork: []
+    });
+  }
+
+  /**
+   * @returns {Promise<void>} Nothing.
+   */
+  async __stopMSloop(): Promise<void> {
+    const state = window.readAloudState;
+
+    if (state.MSTimer !== null) {
+      window.clearTimeout(state.MSTimer);
+      state.MSTimer = null;
+    }
+
+    state.MStoken += 1;
+  }
+
+  /**
+   * @param {readonly string[]} titleChunks - Title chunks.
+   * @param {number} stepDelayMs - Delay between title updates.
+   * @returns {Promise<void>} Nothing.
+   */
+  async __startMSloop(titleChunks: readonly string[], stepDelayMs: number = 2200): Promise<void> {
+    if (!("mediaSession" in navigator)) return;
+
+    await this.__stopMSloop();
+
+    const state = window.readAloudState;
+    const loopToken = state.MStoken;
+
+    if (!titleChunks.length) {
+      await this.__setMSmeta("");
+      return;
+    }
+
+    let chunkIndex = 0;
+
+    const tick = async (): Promise<void> => {
+      if (state.MStoken !== loopToken) return;
+      if (state.paused) return;
+
+      const title = titleChunks[chunkIndex] || "";
+      await this.__setMSmeta(title);
+
+      chunkIndex += 1;
+      if (chunkIndex >= titleChunks.length) return;
+
+      state.MSTimer = window.setTimeout(() => {
+        void tick();
+      }, stepDelayMs);
+    };
+
+    await tick();
+  }
+
+  /**
    * @param {number} idx - Paragraph index.
    * @param {boolean} blocking - If true, return audioData. If false, cache into state.buffer.
+   * @param {number | null} playbackToken - Playback invalidation token.
    * @returns {Promise<ArrayBuffer | null>} Audio data or null if skipped.
    */
-  async __bufferPAudio(idx: number, blocking: boolean = false): Promise<ArrayBuffer | null> {
+  async __bufferPAudio(
+    idx: number,
+    blocking: boolean = false,
+    playbackToken: number | null = null
+  ): Promise<ArrayBuffer | null> {
     const state = window.readAloudState;
     if (idx >= state.paragraphs.length) return null;
 
@@ -1774,26 +1908,48 @@ class ReadAloudModule {
     );
 
     const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
+    state.synthesiser = synthesizer;
+    this.#activeSynths.add(synthesizer);
 
-    return new Promise<ArrayBuffer>((resolve, reject) => {
+    /**
+     * @returns {void} Nothing.
+     */
+    const finishSynth = (): void => {
+      this.#activeSynths.delete(synthesizer);
+      if (state.synthesiser === synthesizer) {
+        state.synthesiser = null;
+      }
+      synthesizer.close();
+    };
+
+    return new Promise<ArrayBuffer | null>((resolve, reject) => {
       synthesizer.speakSsmlAsync(
         ssml,
         (result) => {
-          synthesizer.close();
-
           if (result.reason !== sdk.ResultReason.SynthesizingAudioCompleted) {
+            finishSynth();
             reject(new Error(result.errorDetails || "Speech synthesis failed"));
             return;
           }
 
-          if (!blocking) {
-            window.readAloudState.buffer = { idx, audioData: result.audioData };
+          if (playbackToken !== null && state.playbackToken !== playbackToken) {
+            finishSynth();
+            resolve(null);
+            return;
           }
 
+          if (!blocking) {
+            const canCache = playbackToken === null || state.playbackToken === playbackToken;
+            if (canCache && !state.paused) {
+              state.buffer = { idx, audioData: result.audioData };
+            }
+          }
+
+          finishSynth();
           resolve(result.audioData);
         },
         (error) => {
-          synthesizer.close();
+          finishSynth();
           reject(error);
         }
       );
@@ -1802,11 +1958,18 @@ class ReadAloudModule {
 
   /**
    * @param {ArrayBuffer} audioData - MP3 data.
+   * @param {number} playbackToken - Playback invalidation token.
    * @returns {Promise<void>} Resolves when playback ends.
    */
-  async __playAudioBlob(audioData: ArrayBuffer): Promise<void> {
+  async __playAudioBlob(audioData: ArrayBuffer, playbackToken: number): Promise<void> {
+    const state = window.readAloudState;
+    if (state.playbackToken !== playbackToken || state.paused) return;
+
     return new Promise<void>((resolve, reject) => {
-      const state = window.readAloudState;
+      if (state.playbackToken !== playbackToken || state.paused) {
+        resolve();
+        return;
+      }
 
       const audioBlob = new Blob([audioData], { type: "audio/mp3" });
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -1821,6 +1984,10 @@ class ReadAloudModule {
        * @returns {void} Nothing.
        */
       const cleanup = (): void => {
+        audio.onpause = null;
+        audio.onended = null;
+        audio.onerror = null;
+
         if (state.currentAudio === audio) state.currentAudio = null;
 
         if (state.currentAudioUrl === audioUrl) {
@@ -1833,6 +2000,10 @@ class ReadAloudModule {
       };
 
       audio.onpause = () => {
+        const isCurrentAudio = state.currentAudio === audio;
+        const samePlayback = state.playbackToken === playbackToken;
+        if (!isCurrentAudio || !samePlayback) return;
+
         const wasInterrupted = !audio.ended && !state.paused;
         if (wasInterrupted) void this.__pause();
       };
@@ -1861,28 +2032,35 @@ class ReadAloudModule {
   }
 
   /**
+   * @returns {Promise<void>} Resolves after invalidating and stopping all read aloud playback.
+   */
+  async __stopAllPlayback(): Promise<void> {
+    const state = window.readAloudState;
+    state.paused = true;
+    state.playbackToken += 1;
+    state.buffer = null;
+
+    await this.__stopAsync();
+    await this.__stopMSloop();
+  }
+
+  /**
    * @returns {Promise<void>} Resolves when paused and state saved.
    */
   async __pause(): Promise<void> {
     const state = window.readAloudState;
     state.paused = true;
 
-    if (state.currentAudio) state.currentAudio.pause();
+    this.__FOHighlight(state.paragraphs[state.currentPIdx]);
 
-    this.__FOHighlight(state.paragraphs[state.currentParagraphIndex]);
-
-    await this.__stopAsync();
+    await this.__stopAllPlayback();
 
     localStorage.setItem("readAloudAudioPosition", JSON.stringify({
-      paragraphId: state.currentParagraphId,
-      paragraphIndex: state.currentParagraphIndex
+      paragraphId: state.currentPid,
+      paragraphIndex: state.currentPIdx
     }));
 
-    const playPauseBtn = getEl("read-aloud-toggle-playpause");
-    if (!playPauseBtn) return;
-
-    playPauseBtn.textContent = this.#buttons.play.icon;
-    playPauseBtn.title = this.#buttons.play.action;
+    this.__setPlayPauseButton(false);
   }
 
   /**
@@ -1892,7 +2070,7 @@ class ReadAloudModule {
     const state = window.readAloudState;
     state.paused = false;
 
-    const idx = state.currentParagraphIndex || 0;
+    const idx = state.currentPIdx || 0;
     await this.__speakP(idx);
   }
 
@@ -1902,29 +2080,26 @@ class ReadAloudModule {
   async __clear(): Promise<void> {
     const state = window.readAloudState;
 
-    this.__FOHighlight(state.paragraphs[state.currentParagraphIndex]);
+    this.__FOHighlight(state.paragraphs[state.currentPIdx]);
 
-    state.currentParagraphIndex = 0;
-    state.currentParagraphId = state.paragraphs[0] ? state.paragraphs[0].id : null;
+    state.currentPIdx = 0;
+    state.currentPid = state.paragraphs[0] ? state.paragraphs[0].id : null;
     state.paused = true;
 
-    if (state.currentAudio) {
-      state.currentAudio.pause();
-      state.currentAudio.currentTime = 0;
-      state.currentAudio = null;
-    }
-
-    await this.__stopAsync();
+    await this.__stopAllPlayback();
     localStorage.removeItem("readAloudAudioPosition");
   }
 
   /**
-   * @returns {Promise<void>} Resolves after stopping any active synthesizer/audio.
+   * @returns {Promise<void>} Resolves after stopping any active synthesiser/audio.
    */
   async __stopAsync(): Promise<void> {
     const state = window.readAloudState;
 
     if (state.currentAudio) {
+      state.currentAudio.onpause = null;
+      state.currentAudio.onended = null;
+      state.currentAudio.onerror = null;
       state.currentAudio.pause();
       state.currentAudio.currentTime = 0;
       state.currentAudio = null;
@@ -1935,22 +2110,73 @@ class ReadAloudModule {
       state.currentAudioUrl = null;
     }
 
-    const synth = state.synthesizer;
-    if (synth?.stopSpeakingAsync) {
-      await new Promise<void>((resolve) => {
-        synth.stopSpeakingAsync?.(() => {
-          synth.close();
-          state.synthesizer = null;
-          resolve();
-        });
-      });
+    const activeSynths = Array.from(this.#activeSynths);
+    this.#activeSynths.clear();
+
+    if (!activeSynths.length) {
+      state.synthesiser = null;
       return;
     }
 
-    if (synth) {
-      synth.close();
-      state.synthesizer = null;
+    await Promise.all(activeSynths.map(async (synth) => {
+      await new Promise<void>((resolve) => {
+        /**
+         * @returns {void} Nothing.
+         */
+        const finish = (): void => {
+          if (state.synthesiser === synth) {
+            state.synthesiser = null;
+          }
+          synth.close();
+          resolve();
+        };
+
+        if (synth.stopSpeakingAsync) {
+          synth.stopSpeakingAsync(finish);
+          return;
+        }
+
+        finish();
+      });
+    }));
+  }
+
+  /**
+   * @param {number} idx - Paragraph index to switch to.
+   * @returns {Promise<void>} Resolves after switching paragraph.
+   */
+  async __changeParagraph(idx: number): Promise<void> {
+    const state = window.readAloudState;
+    if (!state.paragraphs.length) return;
+    if (idx < 0 || idx >= state.paragraphs.length) return;
+
+    const wasPaused = state.paused;
+
+    this.__FOHighlight(state.paragraphs[state.currentPIdx]);
+
+    await this.__stopAllPlayback();
+
+    state.currentPIdx = idx;
+    state.currentPid = state.paragraphs[idx].id;
+
+    localStorage.setItem("readAloudAudioPosition", JSON.stringify({
+      paragraphId: state.currentPid,
+      paragraphIndex: state.currentPIdx
+    }));
+
+    this.__highlightP(state.paragraphs[idx]);
+    this.__scrollToP(state.paragraphs[idx]);
+
+    if (state.currentPid) forceBookmark(state.currentPid);
+
+    if (wasPaused) {
+      this.__setPlayPauseButton(false);
+      return;
     }
+
+    state.paused = false;
+    this.__setPlayPauseButton(true);
+    await this.__speakP(idx);
   }
 
   /**
@@ -2001,28 +2227,11 @@ class ReadAloudModule {
     const state = window.readAloudState;
     if (!state.paragraphs.length) return;
 
-    this.__FOHighlight(state.paragraphs[state.currentParagraphIndex]);
+    const idx = state.currentPIdx < state.paragraphs.length - 1
+      ? state.currentPIdx + 1
+      : 0;
 
-    if (state.currentAudio) {
-      state.currentAudio.pause();
-      state.currentAudio.currentTime = 0;
-      state.currentAudio = null;
-    }
-
-    await this.__stopAsync();
-    state.paused = true;
-
-    let idx = state.currentParagraphIndex;
-    idx = idx < state.paragraphs.length - 1 ? idx + 1 : 0;
-
-    state.currentParagraphIndex = idx;
-    state.currentParagraphId = state.paragraphs[idx].id;
-
-    this.__highlightP(state.paragraphs[idx]);
-    this.__scrollToP(state.paragraphs[idx]);
-
-    state.paused = false;
-    await this.__clearBuffer(state, idx);
+    await this.__changeParagraph(idx);
   }
 
   /**
@@ -2032,28 +2241,11 @@ class ReadAloudModule {
     const state = window.readAloudState;
     if (!state.paragraphs.length) return;
 
-    this.__FOHighlight(state.paragraphs[state.currentParagraphIndex]);
+    const idx = state.currentPIdx > 0
+      ? state.currentPIdx - 1
+      : state.paragraphs.length - 1;
 
-    if (state.currentAudio) {
-      state.currentAudio.pause();
-      state.currentAudio.currentTime = 0;
-      state.currentAudio = null;
-    }
-
-    await this.__stopAsync();
-    state.paused = true;
-
-    let idx = state.currentParagraphIndex;
-    idx = idx > 0 ? idx - 1 : state.paragraphs.length - 1;
-
-    state.currentParagraphIndex = idx;
-    state.currentParagraphId = state.paragraphs[idx].id;
-
-    this.__highlightP(state.paragraphs[idx]);
-    this.__scrollToP(state.paragraphs[idx]);
-
-    state.paused = false;
-    await this.__clearBuffer(state, idx);
+    await this.__changeParagraph(idx);
   }
 
   /**
@@ -2069,41 +2261,7 @@ class ReadAloudModule {
     const idx = paragraphNumber;
     if (idx < 0 || idx >= state.paragraphs.length) return;
 
-    const wasPlaying = !state.paused;
-
-    this.__FOHighlight(state.paragraphs[state.currentParagraphIndex]);
-
-    if (state.currentAudio) {
-      state.currentAudio.pause();
-      state.currentAudio.currentTime = 0;
-      state.currentAudio = null;
-    }
-
-    await this.__stopAsync();
-    state.buffer = null;
-
-    state.currentParagraphIndex = idx;
-    state.currentParagraphId = state.paragraphs[idx].id;
-
-    localStorage.setItem("readAloudAudioPosition", JSON.stringify({
-      paragraphId: state.currentParagraphId,
-      paragraphIndex: state.currentParagraphIndex
-    }));
-
-    this.__highlightP(state.paragraphs[idx]);
-    this.__scrollToP(state.paragraphs[idx]);
-
-    if (state.currentParagraphId) forceBookmark(state.currentParagraphId);
-
-    if (!wasPlaying) {
-      state.paused = true;
-      const playPauseBtn = getEl("read-aloud-toggle-playpause");
-      if (playPauseBtn) playPauseBtn.textContent = this.#buttons.play.icon;
-      return;
-    }
-
-    state.paused = false;
-    await this.__speakP(idx);
+    await this.__changeParagraph(idx);
   }
 
   /**
@@ -2113,13 +2271,13 @@ class ReadAloudModule {
    */
   async __clearBuffer(state: ReadAloudState, idx: number | null | undefined): Promise<void> {
     const pausedState = state.paused;
-    state.buffer = null;
-    await this.__stopAsync();
+    await this.__stopAllPlayback();
     state.paused = pausedState;
 
     if (state.paused) return;
 
-    const nextIdx = idx == null ? (state.currentParagraphIndex ?? 0) : idx;
+    const nextIdx = idx == null ? (state.currentPIdx ?? 0) : idx;
+    this.__setPlayPauseButton(true);
     await this.__speakP(nextIdx);
   }
 
@@ -2218,8 +2376,8 @@ class ReadAloudModule {
     if (paragraphs.length <= 0) return;
 
     window.readAloudState.paragraphs = paragraphs;
-    window.readAloudState.currentParagraphIndex = 0;
-    window.readAloudState.currentParagraphId = paragraphs[0]?.id || null;
+    window.readAloudState.currentPIdx = 0;
+    window.readAloudState.currentPid = paragraphs[0]?.id || null;
   }
 }
 
