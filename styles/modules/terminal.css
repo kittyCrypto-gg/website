@@ -17,11 +17,11 @@
 
     --terminal-header-height: 22px;
     --terminal-header-pad-inline: 8px;
-    --terminal-header-font-size: calc(11px * var(--kc-text-scale));
+    --terminal-header-font-size: calc(11px / calc(var(--kc-text-scale) * 1.2));
     --terminal-header-z-index: 1;
 
     --terminal-controls-gap: 6px;
-    --terminal-btn-font-size: calc(11px * var(--kc-text-scale));
+    --terminal-btn-font-size: calc(11px / calc(var(--kc-text-scale) * 1.2));
     --terminal-btn-line-height: 1;
     --terminal-btn-hover-scale: 1.2;
     --terminal-btn-hover-transition: 0.2s ease;

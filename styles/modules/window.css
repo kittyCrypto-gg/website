@@ -11,19 +11,19 @@
 
     --window-header-height: 22px;
     --window-header-pad-inline: 8px;
-    --window-header-font-size: 11px;
+    --window-header-font-size: calc(11px / calc(var(--kc-text-scale) * 1.2));
     --window-header-z-index: 1;
     --window-header-bg: var(--term-header-bg, #222);
     --window-header-fg: var(--term-header-fg, #fff);
     --window-header-top-border-radius: 10px;
 
     --window-controls-gap: 6px;
-    --window-btn-font-size: 11px;
+    --window-btn-font-size: calc(11px / calc(var(--kc-text-scale) * 1.2));
     --window-btn-line-height: 1;
     --window-btn-hover-scale: 1.2;
     --window-btn-hover-transition: 0.2s ease;
 
-    --window-btn-symbol-font-size: 10px;
+    --window-btn-symbol-font-size: calc(10px * var(--kc-text-scale));
     --window-btn-symbol-font-weight: 700;
 
     --window-btn-close-colour: #8b0000;
