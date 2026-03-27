@@ -147,16 +147,16 @@ function formatLocalDateTime(value: Date): string {
 
 /**
  * @param {Date} value - Date instance in the browser's local timezone.
- * @returns {string} GMT offset in "GMT+HH:MM" or "GMT-HH:MM" format.
+ * @returns {string} UTC offset in "UTC+HH:MM" or "UTC-HH:MM" format.
  */
-function formatGmtOffset(value: Date): string {
+function formatUtcOffset(value: Date): string {
     const totalMinutes = -value.getTimezoneOffset();
     const sign = totalMinutes >= 0 ? "+" : "-";
     const absoluteMinutes = Math.abs(totalMinutes);
     const hours = padDatePart(Math.floor(absoluteMinutes / 60));
     const minutes = padDatePart(absoluteMinutes % 60);
 
-    return `GMT${sign}${hours}:${minutes}`;
+    return `UTC${sign}${hours}:${minutes}`;
 }
 
 /**
@@ -183,18 +183,18 @@ function formatPresenceTimestamp(value: string): string {
 }
 
 /**
- * @returns {{ currentDateTime: string; gmtOffset: string; isoDateTime: string }} Current local clock details.
+ * @returns {{ currentDateTime: string; utcOffset: string; isoDateTime: string }} Current local clock details.
  */
 function getCurrentLocalClock(): {
     currentDateTime: string;
-    gmtOffset: string;
+    utcOffset: string;
     isoDateTime: string;
 } {
     const now = new Date();
 
     return {
         currentDateTime: formatLocalDateTime(now),
-        gmtOffset: formatGmtOffset(now),
+        utcOffset: formatUtcOffset(now),
         isoDateTime: now.toISOString()
     };
 }
@@ -296,7 +296,7 @@ function PresencePill(presentation: PresencePresentation): JSX.Element {
 }
 
 /**
- * @returns {JSX.Element} Secondary hero showing the current local clock and GMT offset.
+ * @returns {JSX.Element} Secondary hero showing the current local clock and UTC offset.
  */
 function PresenceLocalTimeHero(): JSX.Element {
     const localClock = getCurrentLocalClock();
@@ -308,7 +308,7 @@ function PresenceLocalTimeHero(): JSX.Element {
                 <div className="presence-panel__headline presence-panel__headline--clock">
                     <time dateTime={localClock.isoDateTime}>{localClock.currentDateTime}</time>
                 </div>
-                <p className="presence-panel__subline">{localClock.gmtOffset}</p>
+                <p className="presence-panel__subline">{localClock.utcOffset}</p>
             </div>
         </section>
     );
