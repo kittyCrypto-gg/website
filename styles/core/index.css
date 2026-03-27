@@ -19,6 +19,10 @@
 
     --kitty-intro-text-align: justify;
     --kitty-intro-text-align-last: left;
+
+    --intro-status-gap: 16px;
+    --intro-min-width: 780px;
+    --intro-status-stack-threshold: 1146px;
 }
 
 .kitty-intro {
@@ -56,7 +60,122 @@
     }
 }
 
-/* Dark mode support (kept for equivalence, even though values are variable-driven) */
+.intro-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--intro-status-gap);
+    width: 100%;
+    min-width: 0;
+    container-type: inline-size;
+}
+
+.intro-status-row__intro {
+    flex: 1 1 var(--intro-min-width);
+    min-width: min(100%, var(--intro-min-width));
+}
+
+.intro-status-row__intro .kitty-intro {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.intro-status-row__status {
+    flex: 0 0 auto;
+    min-width: 0;
+    align-self: stretch;
+}
+
+#presence-window-wrapper.kc-88by31 {
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+
+    padding: 0;
+    margin: var(--kitty-intro-margin-block) 0;
+
+    background-color: var(--frame-bg-colour);
+    border-radius: 12px;
+    box-shadow: var(--frame-box-shadow);
+
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#presence-window-wrapper.window-frame {
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+}
+
+#presence-window-wrapper .window-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: auto;
+    padding: 0;
+}
+
+#presence-window-wrapper .presence-window {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 100%;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+#presence-window-wrapper .presence-window__mount {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 100%;
+    width: auto;
+}
+
+@container (max-width: 1146px) {
+    .intro-status-row__status {
+        flex: 1 1 100%;
+        width: 100%;
+        align-self: auto;
+    }
+
+    #presence-window-wrapper.kc-88by31 {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    #presence-window-wrapper.window-frame {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        height: auto;
+    }
+
+    #presence-window-wrapper .window-body {
+        width: 100%;
+    }
+
+    #presence-window-wrapper .presence-window {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        min-height: 0;
+    }
+
+    #presence-window-wrapper .presence-window__mount {
+        width: 100%;
+        min-height: 0;
+    }
+}
+
+/* Dark mode support */
 .dark-mode {
     .kitty-intro {
         background-color: var(--frame-bg-colour);

@@ -1,3 +1,8 @@
+type InitialFloatingPosition = Readonly<{
+    x: string;
+    y: string;
+}>;
+
 type WindowApiOptions = Readonly<{
     id?: string;
     title?: string;
@@ -8,9 +13,12 @@ type WindowApiOptions = Readonly<{
     onLayoutChange?: (() => void) | null;
     closedLauncherDisplay?: string;
     initialFloating?: boolean;
+    initialFloatingPosition?: InitialFloatingPosition;
     initialClosed?: boolean;
     initialMinimised?: boolean;
     showCloseButton?: boolean;
+    showMinimiseButton?: boolean;
+    showFloatButton?: boolean;
 }>;
 
 type MutableWindowState = {
@@ -102,7 +110,7 @@ export class WindowApi {
     /**
      * Creates a new window controller instance and loads any previously persisted state.
      *
-     * @param {WindowApiOptions} [options={}] Runtime configuration for window behaviour, mounting, launcher handling, floating host handling, and initial state.
+     * @param {WindowApiOptions} [options={}] Runtime configuration for window behaviour, mounting, launcher handling, floating host handling, button visibility, floating spawn position, and initial state.
      * @returns {void}
      */
     public constructor(options: WindowApiOptions = {}) {
@@ -464,22 +472,59 @@ export class WindowApi {
     }
 
     /**
+     * Resolves whether the initial default state should be floating when no persisted state exists.
+     *
+     * Passing an explicit floating spawn position makes the initial default floating unless
+     * initialFloating was explicitly provided.
+     *
+     * @returns {boolean} True when the default state should start floating.
+     */
+    private resolveFloating(): boolean {
+        if (typeof this.options.initialFloating === "boolean") {
+            return this.options.initialFloating;
+        }
+
+        return this.options.initialFloatingPosition !== undefined;
+    }
+
+    /**
+     * Resolves the initial x position used when no persisted state exists.
+     *
+     * @returns {string} The default x position.
+     */
+    private resolveInitialX(): string {
+        return this.options.initialFloatingPosition?.x ?? "10px";
+    }
+
+    /**
+     * Resolves the initial y position used when no persisted state exists.
+     *
+     * @returns {string} The default y position.
+     */
+    private resolveInitialY(): string {
+        return this.options.initialFloatingPosition?.y ?? "10px";
+    }
+
+    /**
      * Creates the default window state used when no persisted state is available.
      *
      * @returns {MutableWindowState} A fresh default state object.
      */
     private createDefaultState(): MutableWindowState {
+        const initialX = this.resolveInitialX();
+        const initialY = this.resolveInitialY();
+
         return {
-            floating: this.options.initialFloating ?? false,
+            floating: this.resolveFloating(),
             minimised: this.options.initialMinimised ?? false,
             closed: this.options.initialClosed ?? false,
             maximised: false,
-            x: "10px",
-            y: "10px",
+            x: initialX,
+            y: initialY,
             width: "50%",
             height: "",
-            launcherX: "10px",
-            launcherY: "10px",
+            launcherX: initialX,
+            launcherY: initialY,
             restoreX: "",
             restoreY: "",
             restoreWidth: "",
@@ -568,6 +613,26 @@ export class WindowApi {
      */
     private readString(value: unknown, fallback: string): string {
         return typeof value === "string" ? value : fallback;
+    }
+
+    /**
+     * Resolves whether a given header control button should be rendered.
+     *
+     * All buttons are shown by default and only hidden when explicitly disabled.
+     *
+     * @param {WindowButtonRole} role The semantic role of the button.
+     * @returns {boolean} True when the button should be shown.
+     */
+    private shouldShowButton(role: WindowButtonRole): boolean {
+        if (role === "close") {
+            return this.options.showCloseButton ?? true;
+        }
+
+        if (role === "minimise") {
+            return this.options.showMinimiseButton ?? true;
+        }
+
+        return this.options.showFloatButton ?? true;
     }
 
     /**
@@ -801,11 +866,15 @@ export class WindowApi {
         const controls = document.createElement("div");
         controls.className = "window-controls";
 
-        const closeButton = this.options.showCloseButton
+        const closeButton = this.shouldShowButton("close")
             ? this.createControlButton("close", "🔴", "Close")
             : null;
-        const minimiseButton = this.createControlButton("minimise", "🟡", "Minimise / restore");
-        const floatButton = this.createControlButton("float", "🟢", "Float / dock");
+        const minimiseButton = this.shouldShowButton("minimise")
+            ? this.createControlButton("minimise", "🟡", "Minimise / restore")
+            : null;
+        const floatButton = this.shouldShowButton("float")
+            ? this.createControlButton("float", "🟢", "Float / dock")
+            : null;
 
         const title = document.createElement("span");
         title.id = `${this.windowId}-title`;
@@ -824,8 +893,13 @@ export class WindowApi {
             controls.appendChild(closeButton);
         }
 
-        controls.appendChild(minimiseButton);
-        controls.appendChild(floatButton);
+        if (minimiseButton) {
+            controls.appendChild(minimiseButton);
+        }
+
+        if (floatButton) {
+            controls.appendChild(floatButton);
+        }
 
         header.appendChild(controls);
         header.appendChild(title);
@@ -948,6 +1022,9 @@ export class WindowApi {
      * Seeds the initial frame and launcher positions from the element's current layout
      * when no stored state exists yet.
      *
+     * A configured floating spawn position is preserved and only width and height are
+     * taken from the current layout in that case.
+     *
      * @returns {void}
      */
     private seedInitialPositionsFromCurrentLayout(): void {
@@ -957,10 +1034,18 @@ export class WindowApi {
         const rect = this.frameEl.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) return;
 
-        this.state.x = `${rect.left}px`;
-        this.state.y = `${rect.top}px`;
+        const shouldPreserveConfiguredFloatingPosition =
+            this.state.floating && this.options.initialFloatingPosition !== undefined;
+
         this.state.width = `${rect.width}px`;
         this.state.height = `${rect.height}px`;
+
+        if (shouldPreserveConfiguredFloatingPosition) {
+            return;
+        }
+
+        this.state.x = `${rect.left}px`;
+        this.state.y = `${rect.top}px`;
         this.state.launcherX = `${rect.left}px`;
         this.state.launcherY = `${rect.top}px`;
     }
@@ -991,9 +1076,7 @@ export class WindowApi {
      * @returns {void}
      */
     private wireControls(): void {
-        if (!this.headerEl || !this.minimiseButtonEl || !this.floatButtonEl) {
-            return;
-        }
+        if (!this.headerEl) return;
 
         const onClose = (event: MouseEvent): void => {
             event.stopPropagation();
@@ -1025,8 +1108,8 @@ export class WindowApi {
         };
 
         this.closeButtonEl?.addEventListener("click", onClose);
-        this.minimiseButtonEl.addEventListener("click", onMinimise);
-        this.floatButtonEl.addEventListener("click", onFloat);
+        this.minimiseButtonEl?.addEventListener("click", onMinimise);
+        this.floatButtonEl?.addEventListener("click", onFloat);
         this.headerEl.addEventListener("dblclick", onHeaderDoubleClick);
 
         this.cleanupFns.push(() => {

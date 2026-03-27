@@ -16,6 +16,7 @@
 @import url("./modules/terminal.css");
 @import url("./modules/menu.css");
 @import url("./modules/theme-toggle.css");
+@import url("./modules/presence.css");
 @import url("./modules/window.css");
 
 @import url("./modules/chat.css");
