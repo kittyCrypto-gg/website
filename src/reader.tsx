@@ -245,6 +245,7 @@ function ReaderCtrls(): ReactElement {
                 <button className="btn-prev">{window.buttons.prevChapter.icon}</button>
                 <input
                     className="chapter-display"
+                    id="reader-chapter-display-top"
                     type="text"
                     value="1"
                     readOnly
@@ -258,6 +259,7 @@ function ReaderCtrls(): ReactElement {
                 />
                 <input
                     className="chapter-input"
+                    id="reader-chapter-input-top"
                     type="number"
                     min="0"
                     style={{ width: "2ch", textAlign: "center" }}
@@ -1073,6 +1075,11 @@ function injectNav(): void {
     navBottom.classList.add("reader-controls-bottom");
     navBottom.appendChild(render2Frag(<ReaderCtrls />));
 
+    navBottom.querySelectorAll<HTMLInputElement>
+    (".chapter-input, .chapter-display").forEach((input) => {
+        input.id = input.id.replace("-top", "-bottom");
+    });
+
     const scrollBtn = navBottom.querySelector(".btn-scroll-down") as HTMLButtonElement | null;
     if (scrollBtn) {
         setButtonIcon(scrollBtn, window.buttons.scrollUp.icon);
@@ -1186,6 +1193,7 @@ async function populatePicker(root: Document = document): Promise<void> {
 
         const select = root.createElement("select");
         select.className = "story-selector";
+        select.setAttribute("id", "reader-story-selector");
         select.innerHTML = render2Mkup(<option value="">Select a story...</option>);
 
         Object.keys(stories).forEach((name) => {

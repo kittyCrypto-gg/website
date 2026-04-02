@@ -27,6 +27,7 @@
     --reader-nav-btn-radius: 8px;
 
     --reader-nav-crossed-slash-colour: red;
+    --reader-nav-crossed-slash-width: var(--reader-nav-icon-size);
     --reader-nav-crossed-slash-height: 2px;
     --reader-nav-crossed-slash-rotate: 45deg;
 
@@ -257,7 +258,7 @@
                 top: 50%;
                 left: 50%;
 
-                width: 100%;
+                width: var(--reader-nav-crossed-slash-width);
                 height: var(--reader-nav-crossed-slash-height);
 
                 background: var(--reader-nav-crossed-slash-colour);
@@ -269,7 +270,7 @@
             }
         }
 
-        &:hover {
+        &:hover:not(:disabled) {
             transform: scale(var(--reader-nav-btn-hover-scale));
         }
     }

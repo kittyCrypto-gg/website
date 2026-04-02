@@ -122,6 +122,7 @@ async function waitForTerminalTextarea(term: XtermTerminal): Promise<HTMLTextAre
     };
 
     const existing = findTextarea();
+    existing?.setAttribute("id", "terminal-helper-textarea");
     if (existing) return existing;
 
     return await new Promise<HTMLTextAreaElement>((resolve) => {
