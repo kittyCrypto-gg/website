@@ -3,27 +3,65 @@
 ========================================= */
 
 :root {
-    --kc-88by31-outer-width: 90%;
-    --kc-88by31-outer-margin-block: 2rem;
+    --kc-88by31-outer-width: min(90%, calc(100vw - 2rem));
+    --kc-88by31-outer-margin-block: clamp(1.25rem, 3vw, 2rem);
     --kc-88by31-outer-margin-inline: auto;
-    --kc-88by31-outer-padding: 1.5rem;
+    --kc-88by31-outer-padding: clamp(1rem, 2vw, 1.5rem);
 
     --kc-88by31-outer-radius: 12px;
     --kc-88by31-outer-border-width: 1.5px;
 
-    --kc-88by31-inner-width: 90%;
-    --kc-88by31-inner-padding-inline: 20px;
+    --kc-88by31-inner-width: min(90%, 100%);
+    --kc-88by31-inner-padding-inline: clamp(0.75rem, 2vw, 1.25rem);
 
     --kc-88by31-button-width: 88px;
     --kc-88by31-button-height: 31px;
 
-    --kc-88by31-grid-gap: 14px;
-    --kc-88by31-max-width: 1200px;
+    --kc-88by31-grid-gap: clamp(0.625rem, 1.8vw, 0.875rem);
+    --kc-88by31-max-width: min(75rem, calc(100vw - 2rem));
 
     --kc-88by31-button-hover-scale: 1.1;
     --kc-88by31-button-hover-transition: 0.2s;
 }
 
+/* =========================================
+    Window shell for wrapped 88x31 panels
+========================================= */
+.kc-88by31-shell {
+    width: var(--kc-88by31-outer-width);
+    max-width: var(--kc-88by31-max-width);
+    margin: var(--kc-88by31-outer-margin-block) var(--kc-88by31-outer-margin-inline);
+    padding: 0;
+
+    box-sizing: border-box;
+    overflow: hidden;
+
+    color: var(--body-text-colour);
+    background-color: var(--frame-bg-colour);
+
+    border: var(--kc-88by31-outer-border-width) solid var(--frame-border-light);
+    border-radius: var(--kc-88by31-outer-radius);
+    box-shadow: var(--frame-box-shadow);
+
+    text-align: left;
+
+    .window-body {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+        min-width: 0;
+        width: 100%;
+        padding: 0;
+
+        > .kc-88by31 {
+            width: 100%;
+            max-width: 100%;
+            min-inline-size: 0;
+        }
+    }
+}
+
+/* Default direct-use card */
 .kc-88by31 {
     width: var(--kc-88by31-outer-width);
     max-width: var(--kc-88by31-max-width);
@@ -42,9 +80,22 @@
     text-align: left;
 }
 
+/* Content-mode override only when inside the new shell */
+.kc-88by31-shell > .window-body > .kc-88by31 {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: var(--kc-88by31-outer-padding);
+
+    background-color: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
 .kc-88by31__inner {
     width: var(--kc-88by31-inner-width);
-    max-width: var(--kc-88by31-max-width);
+    max-width: min(var(--kc-88by31-max-width), 100%);
     margin: 0 auto;
     padding: 0 var(--kc-88by31-inner-padding-inline);
 
@@ -64,27 +115,22 @@
     box-sizing: border-box;
 }
 
-/* JS can inject anchors, divs, whatever, as direct children */
-.kc-88by31__grid>* {
+.kc-88by31__grid > * {
     width: var(--kc-88by31-button-width);
     height: var(--kc-88by31-button-height);
 
     display: block;
     box-sizing: border-box;
+    transition: transform var(--kc-88by31-button-hover-transition);
 }
 
-/* If you inject <img> inside <a>, keep it tidy */
+.kc-88by31__grid > *:hover {
+    transform: scale(var(--kc-88by31-button-hover-scale));
+}
+
 .kc-88by31__grid img {
     width: 100%;
     height: 100%;
     display: block;
     cursor: pointer;
-}
-
-.kc-88by31__grid>* {
-    transition: transform var(--kc-88by31-button-hover-transition);
-}
-
-.kc-88by31__grid>*:hover {
-    transform: scale(var(--kc-88by31-button-hover-scale));
 }

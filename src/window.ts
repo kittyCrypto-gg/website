@@ -1,23 +1,32 @@
+type InitialFloatingPosition = Readonly<{
+    x: string;
+    y: string;
+}>;
+
 type WindowApiOptions = Readonly<{
     id?: string;
     title?: string;
     launcher?: HTMLElement | null;
+    launcherSrc?: string;
     mountTarget?: HTMLElement | null;
-    floatingMountTarget?: HTMLElement | null;
+    floatMntTrgt?: HTMLElement | null;
     insertAtStart?: boolean;
     onLayoutChange?: (() => void) | null;
-    closedLauncherDisplay?: string;
-    initialFloating?: boolean;
-    initialClosed?: boolean;
-    initialMinimised?: boolean;
-    showCloseButton?: boolean;
+    closedLnchrDis?: string;
+    initFloat?: boolean;
+    initFloatPos?: InitialFloatingPosition;
+    initClosed?: boolean;
+    initMini?: boolean;
+    showCloseBttn?: boolean;
+    showMiniBttn?: boolean;
+    showFloatBttn?: boolean;
 }>;
 
 type MutableWindowState = {
-    floating: boolean;
-    minimised: boolean;
+    float: boolean;
+    mini: boolean;
     closed: boolean;
-    maximised: boolean;
+    maxi: boolean;
     x: string;
     y: string;
     width: string;
@@ -26,14 +35,14 @@ type MutableWindowState = {
     launcherY: string;
     restoreX: string;
     restoreY: string;
-    restoreWidth: string;
-    restoreHeight: string;
-    restoreFloating: boolean;
+    restrWidth: string;
+    restrHeight: string;
+    restrFloat: boolean;
 };
 
 type WindowButtonRole = "close" | "minimise" | "float";
 
-type FrameStyleSnapshot = Readonly<{
+type FrameStyle = Readonly<{
     display: string;
     position: string;
     left: string;
@@ -50,11 +59,36 @@ type FrameStyleSnapshot = Readonly<{
     paddingLeft: string;
 }>;
 
-type FramePaddingSnapshot = Readonly<{
+type FramePadding = Readonly<{
     top: string;
     right: string;
     bottom: string;
     left: string;
+}>;
+
+type ContentLayout = Readonly<{
+    display: string;
+    flexDirection: string;
+    flexWrap: string;
+    justifyContent: string;
+    alignItems: string;
+    alignContent: string;
+    justifyItems: string;
+    justifySelf: string;
+    placeItems: string;
+    placeContent: string;
+    placeSelf: string;
+    gap: string;
+    rowGap: string;
+    columnGap: string;
+    gridTemplateColumns: string;
+    gridTemplateRows: string;
+    gridAutoFlow: string;
+    gridAutoColumns: string;
+    gridAutoRows: string;
+    overflow: string;
+    overflowX: string;
+    overflowY: string;
 }>;
 
 /**
@@ -64,6 +98,7 @@ type FramePaddingSnapshot = Readonly<{
  */
 export class WindowApi {
     private static zIndexCounter = 1000;
+    private static readonly launcherSize = 48;
 
     private readonly options: WindowApiOptions;
     private readonly windowId: string;
@@ -74,6 +109,7 @@ export class WindowApi {
     private frameEl: HTMLElement | null = null;
     private headerEl: HTMLDivElement | null = null;
     private bodyEl: HTMLDivElement | null = null;
+    private contentRootEl: HTMLDivElement | null = null;
 
     private closeButtonEl: HTMLButtonElement | null = null;
     private minimiseButtonEl: HTMLButtonElement | null = null;
@@ -85,11 +121,12 @@ export class WindowApi {
     private launcherOriginalParent: HTMLElement | null = null;
     private launcherOriginalNextSibling: ChildNode | null = null;
 
-    private originalParent: HTMLElement | null = null;
-    private originalNextSibling: ChildNode | null = null;
+    private ogParent: HTMLElement | null = null;
+    private ogNxtSibling: ChildNode | null = null;
     private originalContentNodes: ChildNode[] = [];
-    private frameStyleSnapshot: FrameStyleSnapshot | null = null;
-    private framePaddingSnapshot: FramePaddingSnapshot | null = null;
+    private frameStyle: FrameStyle | null = null;
+    private framePadding: FramePadding | null = null;
+    private contentLayout: ContentLayout | null = null;
 
     private dockedPlaceholderEl: Comment | null = null;
     private isMountedInFloatingHost = false;
@@ -102,7 +139,7 @@ export class WindowApi {
     /**
      * Creates a new window controller instance and loads any previously persisted state.
      *
-     * @param {WindowApiOptions} [options={}] Runtime configuration for window behaviour, mounting, launcher handling, floating host handling, and initial state.
+     * @param {WindowApiOptions} [options={}] Runtime configuration for window behaviour, mounting, launcher handling, floating host handling, button visibility, floating spawn position, and initial state.
      * @returns {void}
      */
     public constructor(options: WindowApiOptions = {}) {
@@ -114,7 +151,8 @@ export class WindowApi {
 
     /**
      * Turns the supplied element into a managed window by building its header,
-     * wiring controls and events, and applying the current state.
+     * wrapping its original content into a generic content root, wiring controls and events,
+     * and applying the current state.
      *
      * Calling this more than once on the same instance is a no-op.
      *
@@ -130,28 +168,29 @@ export class WindowApi {
         }
 
         this.frameEl = element;
-        this.originalParent = element.parentElement;
-        this.originalNextSibling = element.nextSibling;
-        this.frameStyleSnapshot = this.captureFrameInlineStyles(element);
-        this.framePaddingSnapshot = this.captureFramePaddingStyles(element);
+        this.ogParent = element.parentElement;
+        this.ogNxtSibling = element.nextSibling;
+        this.frameStyle = this.captureFrStl(element);
+        this.framePadding = this.captureFrPaddStl(element);
+        this.contentLayout = this.captureContLaytStl(element);
 
         this.ensureLauncher();
-        this.extractLauncherFromFrameIfNeeded();
-        this.mountFrameIfNeeded();
-        this.buildWindowStructure();
-        this.seedInitialPositionsFromCurrentLayout();
+        this.extractLauncher();
+        this.mntFrame();
+        this.buildWindow();
+        this.seedPos();
         this.wireControls();
-        this.wireFrameDragging();
+        this.wireFrameDrag();
         this.wireLauncher();
         this.wireFrameFocus();
-        this.wireViewportResize();
-        this.observeFloatingResize();
+        this.wireViewportRzs();
+        this.observeFloatRzs();
 
         element.dataset.windowApiMounted = "true";
         element.dataset.windowId = this.windowId;
 
         this.applyState();
-        this.queueLayoutChange();
+        this.qLaytChng();
 
         return this;
     }
@@ -163,7 +202,7 @@ export class WindowApi {
      */
     public open(): void {
         this.state.closed = false;
-        this.state.minimised = false;
+        this.state.mini = false;
         this.persistState();
         this.applyState();
     }
@@ -174,8 +213,9 @@ export class WindowApi {
      * @returns {void}
      */
     public close(): void {
+        this.captureLaunchrPos();
         this.state.closed = true;
-        this.state.minimised = false;
+        this.state.mini = false;
         this.persistState();
         this.applyState();
     }
@@ -189,18 +229,18 @@ export class WindowApi {
      * @returns {void}
      */
     public minimise(): void {
-        if (this.state.minimised) return;
+        if (this.state.mini) return;
 
-        if (this.state.maximised) {
-            this.restoreBoundsFromSnapshot();
-            this.state.maximised = false;
+        if (this.state.maxi) {
+            this.restoreBnds();
+            this.state.maxi = false;
         }
 
-        if (this.state.floating) {
-            this.state.floating = false;
+        if (this.state.float) {
+            this.state.float = false;
         }
 
-        this.state.minimised = true;
+        this.state.mini = true;
         this.persistState();
         this.applyState();
     }
@@ -211,9 +251,9 @@ export class WindowApi {
      * @returns {void}
      */
     public restore(): void {
-        if (!this.state.minimised) return;
+        if (!this.state.mini) return;
 
-        this.state.minimised = false;
+        this.state.mini = false;
         this.persistState();
         this.applyState();
     }
@@ -228,25 +268,25 @@ export class WindowApi {
      */
     public toggleFloating(): void {
         if (!this.frameEl) return;
-        if (this.state.minimised) return;
+        if (this.state.mini) return;
 
-        if (this.state.floating) {
-            if (this.state.maximised) {
-                this.restoreBoundsFromSnapshot();
-                this.state.maximised = false;
+        if (this.state.float) {
+            if (this.state.maxi) {
+                this.restoreBnds();
+                this.state.maxi = false;
             }
 
-            this.state.floating = false;
+            this.state.float = false;
             this.persistState();
             this.applyState();
             return;
         }
 
         if (!this.hadStoredState) {
-            this.captureCurrentBounds();
+            this.captureBounds();
         }
 
-        this.state.floating = true;
+        this.state.float = true;
         this.persistState();
         this.applyState();
     }
@@ -261,19 +301,19 @@ export class WindowApi {
      */
     public toggleMaximised(): void {
         if (!this.frameEl) return;
-        if (this.state.minimised) return;
+        if (this.state.mini) return;
 
-        if (this.state.floating && this.state.maximised) {
-            this.restoreBoundsFromSnapshot();
-            this.state.maximised = false;
+        if (this.state.float && this.state.maxi) {
+            this.restoreBnds();
+            this.state.maxi = false;
             this.persistState();
             this.applyState();
             return;
         }
 
-        this.saveBoundsSnapshot();
-        this.state.floating = true;
-        this.state.maximised = true;
+        this.saveBndsSnp();
+        this.state.float = true;
+        this.state.maxi = true;
         this.persistState();
         this.applyState();
     }
@@ -293,7 +333,7 @@ export class WindowApi {
      * @returns {boolean} True when the window is minimised.
      */
     public isMinimised(): boolean {
-        return this.state.minimised;
+        return this.state.mini;
     }
 
     /**
@@ -302,7 +342,7 @@ export class WindowApi {
      * @returns {boolean} True when the window is floating.
      */
     public isFloating(): boolean {
-        return this.state.floating;
+        return this.state.float;
     }
 
     /**
@@ -341,11 +381,11 @@ export class WindowApi {
             this.resizeObserver = null;
         }
 
-        this.restoreFrameToDockedHost();
+        this.restoreFrame();
 
-        if (this.frameEl && this.bodyEl) {
-            while (this.bodyEl.firstChild) {
-                this.frameEl.appendChild(this.bodyEl.firstChild);
+        if (this.frameEl && this.contentRootEl) {
+            while (this.contentRootEl.firstChild) {
+                this.frameEl.appendChild(this.contentRootEl.firstChild);
             }
         }
 
@@ -363,18 +403,11 @@ export class WindowApi {
 
             this.frameEl.classList.remove("window-frame", "floating", "maximised", "minimised", "closed");
 
-            this.restoreFrameInlineStyles();
-
-            if (this.bodyEl) {
-                this.bodyEl.style.paddingTop = "";
-                this.bodyEl.style.paddingRight = "";
-                this.bodyEl.style.paddingBottom = "";
-                this.bodyEl.style.paddingLeft = "";
-            }
-
-            this.headerEl?.style.removeProperty("margin-top");
-            this.headerEl?.style.removeProperty("margin-left");
-            this.headerEl?.style.removeProperty("margin-right");
+            this.clearMiniFr();
+            this.clearMiniBod();
+            this.clearMntFr();
+            this.clearMntBod();
+            this.restoreFrameStl();
         }
 
         if (this.ownsLauncher) {
@@ -396,6 +429,8 @@ export class WindowApi {
             this.launcherEl.style.removeProperty("--window-launcher-left");
             this.launcherEl.style.removeProperty("--window-launcher-top");
             this.launcherEl.style.removeProperty("--window-launcher-display");
+            this.launcherEl.style.width = "";
+            this.launcherEl.style.height = "";
             this.launcherEl.style.left = "";
             this.launcherEl.style.top = "";
         }
@@ -403,6 +438,7 @@ export class WindowApi {
         this.frameEl = null;
         this.headerEl = null;
         this.bodyEl = null;
+        this.contentRootEl = null;
         this.closeButtonEl = null;
         this.minimiseButtonEl = null;
         this.floatButtonEl = null;
@@ -464,27 +500,64 @@ export class WindowApi {
     }
 
     /**
+     * Resolves whether the initial default state should be floating when no persisted state exists.
+     *
+     * Passing an explicit floating spawn position makes the initial default floating unless
+     * initialFloating was explicitly provided.
+     *
+     * @returns {boolean} True when the default state should start floating.
+     */
+    private resolveFloating(): boolean {
+        if (typeof this.options.initFloat === "boolean") {
+            return this.options.initFloat;
+        }
+
+        return this.options.initFloatPos !== undefined;
+    }
+
+    /**
+     * Resolves the initial x position used when no persisted state exists.
+     *
+     * @returns {string} The default x position.
+     */
+    private resolveInitialX(): string {
+        return this.options.initFloatPos?.x ?? "10px";
+    }
+
+    /**
+     * Resolves the initial y position used when no persisted state exists.
+     *
+     * @returns {string} The default y position.
+     */
+    private resolveInitialY(): string {
+        return this.options.initFloatPos?.y ?? "10px";
+    }
+
+    /**
      * Creates the default window state used when no persisted state is available.
      *
      * @returns {MutableWindowState} A fresh default state object.
      */
-    private createDefaultState(): MutableWindowState {
+    private createInitState(): MutableWindowState {
+        const initialX = this.resolveInitialX();
+        const initialY = this.resolveInitialY();
+
         return {
-            floating: this.options.initialFloating ?? false,
-            minimised: this.options.initialMinimised ?? false,
-            closed: this.options.initialClosed ?? false,
-            maximised: false,
-            x: "10px",
-            y: "10px",
+            float: this.resolveFloating(),
+            mini: this.options.initMini ?? false,
+            closed: this.options.initClosed ?? false,
+            maxi: false,
+            x: initialX,
+            y: initialY,
             width: "50%",
             height: "",
-            launcherX: "10px",
-            launcherY: "10px",
+            launcherX: initialX,
+            launcherY: initialY,
             restoreX: "",
             restoreY: "",
-            restoreWidth: "",
-            restoreHeight: "",
-            restoreFloating: false
+            restrWidth: "",
+            restrHeight: "",
+            restrFloat: false
         };
     }
 
@@ -496,7 +569,7 @@ export class WindowApi {
      * @returns {MutableWindowState} The restored or default window state.
      */
     private readState(): MutableWindowState {
-        const fallback = this.createDefaultState();
+        const fallback = this.createInitState();
 
         let parsedUnknown: unknown = null;
 
@@ -514,10 +587,10 @@ export class WindowApi {
         const parsed = parsedUnknown;
 
         return {
-            floating: this.readBoolean(parsed.floating, fallback.floating),
-            minimised: this.readBoolean(parsed.minimised, fallback.minimised),
+            float: this.readBoolean(parsed.floating, fallback.float),
+            mini: this.readBoolean(parsed.minimised, fallback.mini),
             closed: this.readBoolean(parsed.closed, fallback.closed),
-            maximised: this.readBoolean(parsed.maximised, fallback.maximised),
+            maxi: this.readBoolean(parsed.maximised, fallback.maxi),
             x: this.readString(parsed.x, fallback.x),
             y: this.readString(parsed.y, fallback.y),
             width: this.readString(parsed.width, fallback.width),
@@ -526,9 +599,9 @@ export class WindowApi {
             launcherY: this.readString(parsed.launcherY, fallback.launcherY),
             restoreX: this.readString(parsed.restoreX, fallback.restoreX),
             restoreY: this.readString(parsed.restoreY, fallback.restoreY),
-            restoreWidth: this.readString(parsed.restoreWidth, fallback.restoreWidth),
-            restoreHeight: this.readString(parsed.restoreHeight, fallback.restoreHeight),
-            restoreFloating: this.readBoolean(parsed.restoreFloating, fallback.restoreFloating)
+            restrWidth: this.readString(parsed.restoreWidth, fallback.restrWidth),
+            restrHeight: this.readString(parsed.restoreHeight, fallback.restrHeight),
+            restrFloat: this.readBoolean(parsed.restoreFloating, fallback.restrFloat)
         };
     }
 
@@ -571,12 +644,32 @@ export class WindowApi {
     }
 
     /**
+     * Resolves whether a given header control button should be rendered.
+     *
+     * All buttons are shown by default and only hidden when explicitly disabled.
+     *
+     * @param {WindowButtonRole} role The semantic role of the button.
+     * @returns {boolean} True when the button should be shown.
+     */
+    private shouldShowBttn(role: WindowButtonRole): boolean {
+        if (role === "close") {
+            return this.options.showCloseBttn ?? true;
+        }
+
+        if (role === "minimise") {
+            return this.options.showMiniBttn ?? true;
+        }
+
+        return this.options.showFloatBttn ?? true;
+    }
+
+    /**
      * Captures the current inline frame styles that this class may later overwrite.
      *
      * @param {HTMLElement} element The frame element whose inline styles should be captured.
-     * @returns {FrameStyleSnapshot} A snapshot of restorable inline style values.
+     * @returns {FrameStyle} A snapshot of restorable inline style values.
      */
-    private captureFrameInlineStyles(element: HTMLElement): FrameStyleSnapshot {
+    private captureFrStl(element: HTMLElement): FrameStyle {
         return {
             display: element.style.display,
             position: element.style.position,
@@ -596,12 +689,12 @@ export class WindowApi {
     }
 
     /**
-     * Captures the frame's computed padding values for later header alignment.
+     * Captures the frame's computed padding values so they can be moved into the generated content root.
      *
      * @param {HTMLElement} element The frame element whose computed padding should be captured.
-     * @returns {FramePaddingSnapshot} A snapshot of computed padding values.
+     * @returns {FramePadding} A snapshot of computed padding values.
      */
-    private captureFramePaddingStyles(element: HTMLElement): FramePaddingSnapshot {
+    private captureFrPaddStl(element: HTMLElement): FramePadding {
         const computed = window.getComputedStyle(element);
 
         return {
@@ -613,29 +706,67 @@ export class WindowApi {
     }
 
     /**
+     * Captures the layout model of the original frame so the generated content root can mimic it.
+     *
+     * This lets the outer frame become a generic window shell while the inner generated wrapper
+     * preserves the element's original flex or grid behaviour for its original children.
+     *
+     * @param {HTMLElement} element The original frame element.
+     * @returns {ContentLayout} The captured layout values.
+     */
+    private captureContLaytStl(element: HTMLElement): ContentLayout {
+        const computed = window.getComputedStyle(element);
+
+        return {
+            display: computed.display,
+            flexDirection: computed.flexDirection,
+            flexWrap: computed.flexWrap,
+            justifyContent: computed.justifyContent,
+            alignItems: computed.alignItems,
+            alignContent: computed.alignContent,
+            justifyItems: computed.justifyItems,
+            justifySelf: computed.justifySelf,
+            placeItems: computed.placeItems,
+            placeContent: computed.placeContent,
+            placeSelf: computed.placeSelf,
+            gap: computed.gap,
+            rowGap: computed.rowGap,
+            columnGap: computed.columnGap,
+            gridTemplateColumns: computed.gridTemplateColumns,
+            gridTemplateRows: computed.gridTemplateRows,
+            gridAutoFlow: computed.gridAutoFlow,
+            gridAutoColumns: computed.gridAutoColumns,
+            gridAutoRows: computed.gridAutoRows,
+            overflow: computed.overflow,
+            overflowX: computed.overflowX,
+            overflowY: computed.overflowY
+        };
+    }
+
+    /**
      * Restores the frame's previously captured inline styles and clears custom CSS variables
      * used while the frame is floating.
      *
      * @returns {void}
      */
-    private restoreFrameInlineStyles(): void {
-        if (!this.frameEl || !this.frameStyleSnapshot) return;
+    private restoreFrameStl(): void {
+        if (!this.frameEl || !this.frameStyle) return;
 
-        this.frameEl.style.display = this.frameStyleSnapshot.display;
-        this.frameEl.style.position = this.frameStyleSnapshot.position;
-        this.frameEl.style.left = this.frameStyleSnapshot.left;
-        this.frameEl.style.top = this.frameStyleSnapshot.top;
-        this.frameEl.style.width = this.frameStyleSnapshot.width;
-        this.frameEl.style.height = this.frameStyleSnapshot.height;
-        this.frameEl.style.maxWidth = this.frameStyleSnapshot.maxWidth;
-        this.frameEl.style.maxHeight = this.frameStyleSnapshot.maxHeight;
+        this.frameEl.style.display = this.frameStyle.display;
+        this.frameEl.style.position = this.frameStyle.position;
+        this.frameEl.style.left = this.frameStyle.left;
+        this.frameEl.style.top = this.frameStyle.top;
+        this.frameEl.style.width = this.frameStyle.width;
+        this.frameEl.style.height = this.frameStyle.height;
+        this.frameEl.style.maxWidth = this.frameStyle.maxWidth;
+        this.frameEl.style.maxHeight = this.frameStyle.maxHeight;
         (this.frameEl.style as CSSStyleDeclaration & { resize?: string }).resize =
-            this.frameStyleSnapshot.resize;
-        this.frameEl.style.zIndex = this.frameStyleSnapshot.zIndex;
-        this.frameEl.style.paddingTop = this.frameStyleSnapshot.paddingTop;
-        this.frameEl.style.paddingRight = this.frameStyleSnapshot.paddingRight;
-        this.frameEl.style.paddingBottom = this.frameStyleSnapshot.paddingBottom;
-        this.frameEl.style.paddingLeft = this.frameStyleSnapshot.paddingLeft;
+            this.frameStyle.resize;
+        this.frameEl.style.zIndex = this.frameStyle.zIndex;
+        this.frameEl.style.paddingTop = this.frameStyle.paddingTop;
+        this.frameEl.style.paddingRight = this.frameStyle.paddingRight;
+        this.frameEl.style.paddingBottom = this.frameStyle.paddingBottom;
+        this.frameEl.style.paddingLeft = this.frameStyle.paddingLeft;
 
         this.frameEl.style.removeProperty("--window-left");
         this.frameEl.style.removeProperty("--window-top");
@@ -660,7 +791,7 @@ export class WindowApi {
         }
 
         const launcher = document.createElement("img");
-        launcher.src = "/images/binary.svg";
+        launcher.src = this.options.launcherSrc ?? "/images/file.svg";
         launcher.alt = `${this.options.title ?? this.windowId} icon`;
         launcher.title = `Double-click to open ${this.options.title ?? this.windowId}`;
         launcher.draggable = false;
@@ -677,7 +808,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private extractLauncherFromFrameIfNeeded(): void {
+    private extractLauncher(): void {
         if (!this.frameEl || !this.launcherEl) return;
         if (!this.frameEl.contains(this.launcherEl)) return;
         if (this.ownsLauncher) return;
@@ -692,7 +823,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private mountFrameIfNeeded(): void {
+    private mntFrame(): void {
         if (!this.frameEl) return;
         if (this.frameEl.parentElement) return;
 
@@ -711,8 +842,8 @@ export class WindowApi {
      *
      * @returns {HTMLElement} The floating mount target.
      */
-    private getFloatingMountTarget(): HTMLElement {
-        return this.options.floatingMountTarget ?? document.body;
+    private getFloatMntTrgt(): HTMLElement {
+        return this.options.floatMntTrgt ?? document.body;
     }
 
     /**
@@ -721,10 +852,10 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private moveFrameToFloatingHost(): void {
+    private moveFr2FloatHost(): void {
         if (!this.frameEl) return;
 
-        const floatingHost = this.getFloatingMountTarget();
+        const floatingHost = this.getFloatMntTrgt();
         const currentParent = this.frameEl.parentElement;
 
         if (currentParent === floatingHost) {
@@ -752,7 +883,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private restoreFrameToDockedHost(): void {
+    private restoreFrame(): void {
         if (!this.frameEl) return;
 
         if (this.dockedPlaceholderEl?.parentNode) {
@@ -763,7 +894,7 @@ export class WindowApi {
             return;
         }
 
-        const dockedParent = this.originalParent ?? this.options.mountTarget ?? null;
+        const dockedParent = this.ogParent ?? this.options.mountTarget ?? null;
         if (!dockedParent) return;
 
         if (this.frameEl.parentElement === dockedParent) {
@@ -771,8 +902,8 @@ export class WindowApi {
             return;
         }
 
-        if (this.originalNextSibling && this.originalNextSibling.parentNode === dockedParent) {
-            dockedParent.insertBefore(this.frameEl, this.originalNextSibling);
+        if (this.ogNxtSibling && this.ogNxtSibling.parentNode === dockedParent) {
+            dockedParent.insertBefore(this.frameEl, this.ogNxtSibling);
         } else {
             dockedParent.appendChild(this.frameEl);
         }
@@ -782,12 +913,13 @@ export class WindowApi {
 
     /**
      * Builds the runtime window structure by creating a header, controls, title,
-     * and body wrapper, then moving the frame's original child nodes into the body.
+     * a generated content root, and a body wrapper, then moving the frame's original
+     * child nodes into that content root.
      *
      * @returns {void}
      * @throws {Error} Thrown when called without a frame element.
      */
-    private buildWindowStructure(): void {
+    private buildWindow(): void {
         if (!this.frameEl) {
             throw new Error("Cannot build window without a content element");
         }
@@ -801,11 +933,15 @@ export class WindowApi {
         const controls = document.createElement("div");
         controls.className = "window-controls";
 
-        const closeButton = this.options.showCloseButton
-            ? this.createControlButton("close", "🔴", "Close")
+        const closeButton = this.shouldShowBttn("close")
+            ? this.createCtrlBttn("close", "Close")
             : null;
-        const minimiseButton = this.createControlButton("minimise", "🟡", "Minimise / restore");
-        const floatButton = this.createControlButton("float", "🟢", "Float / dock");
+        const minimiseButton = this.shouldShowBttn("minimise")
+            ? this.createCtrlBttn("minimise", "Minimise / restore")
+            : null;
+        const floatButton = this.shouldShowBttn("float")
+            ? this.createCtrlBttn("float", "Float / dock")
+            : null;
 
         const title = document.createElement("span");
         title.id = `${this.windowId}-title`;
@@ -816,116 +952,262 @@ export class WindowApi {
         body.id = `${this.windowId}-body`;
         body.className = "window-body";
 
+        const contentRoot = document.createElement("div");
+        contentRoot.className = "window-content-root";
+        contentRoot.dataset.windowContentRoot = "true";
+
         for (const node of this.originalContentNodes) {
-            body.appendChild(node);
+            contentRoot.appendChild(node);
         }
 
         if (closeButton) {
             controls.appendChild(closeButton);
         }
 
-        controls.appendChild(minimiseButton);
-        controls.appendChild(floatButton);
+        if (minimiseButton) {
+            controls.appendChild(minimiseButton);
+        }
+
+        if (floatButton) {
+            controls.appendChild(floatButton);
+        }
 
         header.appendChild(controls);
         header.appendChild(title);
+        body.appendChild(contentRoot);
 
         this.frameEl.appendChild(header);
         this.frameEl.appendChild(body);
 
         this.headerEl = header;
         this.bodyEl = body;
+        this.contentRootEl = contentRoot;
         this.closeButtonEl = closeButton;
         this.minimiseButtonEl = minimiseButton;
         this.floatButtonEl = floatButton;
         this.titleEl = title;
 
-        this.applyHeaderEdgeBleed();
+        this.applyCntRootLayt();
     }
 
     /**
-     * Applies negative margins to the header so it visually spans the padded edges of the frame.
+     * Applies the original frame's layout model to the generated content root so it
+     * behaves like the original container used to behave for its children.
      *
      * @returns {void}
      */
-    private applyHeaderEdgeBleed(): void {
-        if (!this.headerEl || !this.framePaddingSnapshot) return;
+    private applyCntRootLayt(): void {
+        if (!this.contentRootEl || !this.contentLayout) return;
 
-        this.headerEl.style.marginTop = `calc(-1 * ${this.framePaddingSnapshot.top})`;
-        this.headerEl.style.marginLeft = `calc(-1 * ${this.framePaddingSnapshot.left})`;
-        this.headerEl.style.marginRight = `calc(-1 * ${this.framePaddingSnapshot.right})`;
+        this.contentRootEl.style.display = this.contentLayout.display;
+        this.contentRootEl.style.flexDirection = this.contentLayout.flexDirection;
+        this.contentRootEl.style.flexWrap = this.contentLayout.flexWrap;
+        this.contentRootEl.style.justifyContent = this.contentLayout.justifyContent;
+        this.contentRootEl.style.alignItems = this.contentLayout.alignItems;
+        this.contentRootEl.style.alignContent = this.contentLayout.alignContent;
+        this.contentRootEl.style.justifyItems = this.contentLayout.justifyItems;
+        this.contentRootEl.style.justifySelf = this.contentLayout.justifySelf;
+        this.contentRootEl.style.placeItems = this.contentLayout.placeItems;
+        this.contentRootEl.style.placeContent = this.contentLayout.placeContent;
+        this.contentRootEl.style.placeSelf = this.contentLayout.placeSelf;
+        this.contentRootEl.style.gap = this.contentLayout.gap;
+        this.contentRootEl.style.rowGap = this.contentLayout.rowGap;
+        this.contentRootEl.style.columnGap = this.contentLayout.columnGap;
+        this.contentRootEl.style.gridTemplateColumns = this.contentLayout.gridTemplateColumns;
+        this.contentRootEl.style.gridTemplateRows = this.contentLayout.gridTemplateRows;
+        this.contentRootEl.style.gridAutoFlow = this.contentLayout.gridAutoFlow;
+        this.contentRootEl.style.gridAutoColumns = this.contentLayout.gridAutoColumns;
+        this.contentRootEl.style.gridAutoRows = this.contentLayout.gridAutoRows;
+        this.contentRootEl.style.overflow = this.contentLayout.overflow;
+        this.contentRootEl.style.overflowX = this.contentLayout.overflowX;
+        this.contentRootEl.style.overflowY = this.contentLayout.overflowY;
     }
 
     /**
-     * Clears the header's negative margins that were applied for edge bleed.
+     * Forces the mounted frame into a generic shell layout so original container-level
+     * display and spacing rules do not interfere with the window header and body.
      *
      * @returns {void}
      */
-    private clearHeaderEdgeBleed(): void {
-        if (!this.headerEl) return;
+    private applyMntFrLayt(): void {
+        if (!this.frameEl) return;
 
-        this.headerEl.style.marginTop = "0px";
-        this.headerEl.style.marginLeft = "0px";
-        this.headerEl.style.marginRight = "0px";
+        this.frameEl.style.setProperty("display", "flex", "important");
+        this.frameEl.style.setProperty("flex-direction", "column", "important");
+        this.frameEl.style.setProperty("align-items", "stretch", "important");
+        this.frameEl.style.setProperty("justify-content", "flex-start", "important");
+        this.frameEl.style.setProperty("gap", "0px", "important");
     }
 
     /**
-     * Reconfigures frame and body padding so the frame provides no padding while floating,
-     * and the body receives the original content padding instead.
+     * Clears the forced mounted frame layout rules.
      *
      * @returns {void}
      */
-    private applyFloatingPaddingLayout(): void {
-        if (!this.frameEl || !this.bodyEl || !this.framePaddingSnapshot) return;
+    private clearMntFr(): void {
+        if (!this.frameEl) return;
 
-        this.clearHeaderEdgeBleed();
-
-        this.frameEl.style.paddingTop = "0px";
-        this.frameEl.style.paddingRight = "0px";
-        this.frameEl.style.paddingBottom = "0px";
-        this.frameEl.style.paddingLeft = "0px";
-
-        this.bodyEl.style.paddingTop = this.framePaddingSnapshot.top;
-        this.bodyEl.style.paddingRight = this.framePaddingSnapshot.right;
-        this.bodyEl.style.paddingBottom = this.framePaddingSnapshot.bottom;
-        this.bodyEl.style.paddingLeft = this.framePaddingSnapshot.left;
+        this.frameEl.style.removeProperty("display");
+        this.frameEl.style.removeProperty("flex-direction");
+        this.frameEl.style.removeProperty("align-items");
+        this.frameEl.style.removeProperty("justify-content");
+        this.frameEl.style.removeProperty("gap");
     }
 
     /**
-     * Restores the original docked padding layout where the frame provides the padding
-     * and the header uses edge bleed to visually align with the frame edges.
+     * Moves the original frame padding into the generated content root so the window
+     * header sits flush while the content keeps its spacing.
      *
      * @returns {void}
      */
-    private restoreDockedPaddingLayout(): void {
-        if (!this.frameEl || !this.bodyEl) return;
+    private applyMntCntLayt(): void {
+        if (!this.frameEl || !this.bodyEl || !this.contentRootEl || !this.framePadding) return;
 
-        this.frameEl.style.paddingTop = "";
-        this.frameEl.style.paddingRight = "";
-        this.frameEl.style.paddingBottom = "";
-        this.frameEl.style.paddingLeft = "";
+        this.frameEl.style.setProperty("padding-top", "0px", "important");
+        this.frameEl.style.setProperty("padding-right", "0px", "important");
+        this.frameEl.style.setProperty("padding-bottom", "0px", "important");
+        this.frameEl.style.setProperty("padding-left", "0px", "important");
+
+        this.bodyEl.style.paddingTop = "0px";
+        this.bodyEl.style.paddingRight = "0px";
+        this.bodyEl.style.paddingBottom = "0px";
+        this.bodyEl.style.paddingLeft = "0px";
+
+        this.contentRootEl.style.paddingTop = this.framePadding.top;
+        this.contentRootEl.style.paddingRight = this.framePadding.right;
+        this.contentRootEl.style.paddingBottom = this.framePadding.bottom;
+        this.contentRootEl.style.paddingLeft = this.framePadding.left;
+    }
+
+    /**
+     * Clears the generated content padding layout rules.
+     *
+     * @returns {void}
+     */
+    private clearMntBod(): void {
+        if (!this.contentRootEl || !this.bodyEl || !this.frameEl) return;
+
+        this.frameEl.style.removeProperty("padding-top");
+        this.frameEl.style.removeProperty("padding-right");
+        this.frameEl.style.removeProperty("padding-bottom");
+        this.frameEl.style.removeProperty("padding-left");
 
         this.bodyEl.style.paddingTop = "";
         this.bodyEl.style.paddingRight = "";
         this.bodyEl.style.paddingBottom = "";
         this.bodyEl.style.paddingLeft = "";
 
-        this.applyHeaderEdgeBleed();
+        this.contentRootEl.style.paddingTop = "";
+        this.contentRootEl.style.paddingRight = "";
+        this.contentRootEl.style.paddingBottom = "";
+        this.contentRootEl.style.paddingLeft = "";
+    }
+
+    /**
+     * Measures the current visible height of the header area.
+     *
+     * The value is based on the real rendered height at the moment the window is minimised.
+     *
+     * @returns {number} The measured header height in pixels.
+     */
+    private getHdrH(): number {
+        if (!this.headerEl) return 0;
+
+        const headerHeight = this.headerEl.getBoundingClientRect().height;
+        return Math.max(0, Math.ceil(headerHeight));
+    }
+
+    /**
+     * Forces the window frame itself to the measured header height so only the title bar remains visible.
+     *
+     * These inline declarations are applied with !important so they win over any authored CSS.
+     *
+     * @returns {void}
+     */
+    private applyMiniFrLayt(): void {
+        if (!this.frameEl) return;
+
+        const headerHeight = this.getHdrH();
+        const minimisedHeight = `${headerHeight}px`;
+
+        this.frameEl.style.setProperty("height", minimisedHeight, "important");
+        this.frameEl.style.setProperty("min-height", minimisedHeight, "important");
+        this.frameEl.style.setProperty("max-height", minimisedHeight, "important");
+        this.frameEl.style.setProperty("block-size", minimisedHeight, "important");
+        this.frameEl.style.setProperty("min-block-size", minimisedHeight, "important");
+        this.frameEl.style.setProperty("max-block-size", minimisedHeight, "important");
+        this.frameEl.style.setProperty("overflow", "hidden", "important");
+    }
+
+    /**
+     * Removes the forced minimised frame rules so the window can size normally again.
+     *
+     * @returns {void}
+     */
+    private clearMiniFr(): void {
+        if (!this.frameEl) return;
+
+        this.frameEl.style.removeProperty("height");
+        this.frameEl.style.removeProperty("min-height");
+        this.frameEl.style.removeProperty("max-height");
+        this.frameEl.style.removeProperty("block-size");
+        this.frameEl.style.removeProperty("min-block-size");
+        this.frameEl.style.removeProperty("max-block-size");
+        this.frameEl.style.removeProperty("overflow");
+    }
+
+    /**
+     * Forces the window body into a fully collapsed state so only the header remains visible.
+     *
+     * These inline declarations are applied with !important so they win over any authored CSS.
+     *
+     * @returns {void}
+     */
+    private applyMiniBodLayt(): void {
+        if (!this.bodyEl) return;
+
+        this.bodyEl.style.setProperty("display", "block", "important");
+        this.bodyEl.style.setProperty("height", "0px", "important");
+        this.bodyEl.style.setProperty("min-height", "0px", "important");
+        this.bodyEl.style.setProperty("max-height", "0px", "important");
+        this.bodyEl.style.setProperty("block-size", "0px", "important");
+        this.bodyEl.style.setProperty("min-block-size", "0px", "important");
+        this.bodyEl.style.setProperty("max-block-size", "0px", "important");
+        this.bodyEl.style.setProperty("flex", "0 0 0px", "important");
+        this.bodyEl.style.setProperty("overflow", "hidden", "important");
+        this.bodyEl.style.setProperty("padding-top", "0px", "important");
+        this.bodyEl.style.setProperty("padding-bottom", "0px", "important");
+    }
+
+    /**
+     * Removes the forced minimised body rules so the window content can size normally again.
+     *
+     * @returns {void}
+     */
+    private clearMiniBod(): void {
+        if (!this.bodyEl) return;
+
+        this.bodyEl.style.removeProperty("display");
+        this.bodyEl.style.removeProperty("height");
+        this.bodyEl.style.removeProperty("min-height");
+        this.bodyEl.style.removeProperty("max-height");
+        this.bodyEl.style.removeProperty("block-size");
+        this.bodyEl.style.removeProperty("min-block-size");
+        this.bodyEl.style.removeProperty("max-block-size");
+        this.bodyEl.style.removeProperty("flex");
+        this.bodyEl.style.removeProperty("overflow");
+        this.bodyEl.style.removeProperty("padding-top");
+        this.bodyEl.style.removeProperty("padding-bottom");
     }
 
     /**
      * Creates a header control button for a specific window action.
      *
      * @param {WindowButtonRole} role The semantic role of the button.
-     * @param {string} emoji The button text content.
      * @param {string} label The accessible label and tooltip text.
      * @returns {HTMLButtonElement} The created control button.
      */
-    private createControlButton(
-        role: WindowButtonRole,
-        emoji: string,
-        label: string
-    ): HTMLButtonElement {
+    private createCtrlBttn(role: WindowButtonRole, label: string): HTMLButtonElement {
         const button = document.createElement("button");
         const classes = ["btn", role];
 
@@ -937,30 +1219,70 @@ export class WindowApi {
         button.id = `${this.windowId}-btn-${role}`;
         button.className = classes.join(" ");
         button.dataset.windowRole = role;
-        button.textContent = emoji;
         button.title = label;
         button.setAttribute("aria-label", label);
 
+        const icon = this.createCtrlBttnIco(role);
+        button.appendChild(icon);
+
         return button;
+    }
+
+    /**
+     * Creates the circular SVG icon used inside a window control button.
+     *
+     * @param {WindowButtonRole} role The semantic role of the button.
+     * @returns {SVGSVGElement} The SVG icon element.
+     */
+    private createCtrlBttnIco(role: WindowButtonRole): SVGSVGElement {
+        const svgNamespace = "http://www.w3.org/2000/svg";
+
+        const svg = document.createElementNS(svgNamespace, "svg");
+        svg.setAttribute("viewBox", "0 0 12 12");
+        svg.setAttribute("width", "1em");
+        svg.setAttribute("height", "1em");
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
+
+        const circle = document.createElementNS(svgNamespace, "circle");
+        circle.setAttribute("cx", "6");
+        circle.setAttribute("cy", "6");
+        circle.setAttribute("r", "5");
+        circle.style.fill = `var(--window-btn-${role}-fill)`;
+
+        svg.appendChild(circle);
+
+        return svg;
     }
 
     /**
      * Seeds the initial frame and launcher positions from the element's current layout
      * when no stored state exists yet.
      *
+     * A configured floating spawn position is preserved and only width and height are
+     * taken from the current layout in that case.
+     *
      * @returns {void}
      */
-    private seedInitialPositionsFromCurrentLayout(): void {
+    private seedPos(): void {
         if (!this.frameEl) return;
         if (this.hadStoredState) return;
 
         const rect = this.frameEl.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) return;
 
-        this.state.x = `${rect.left}px`;
-        this.state.y = `${rect.top}px`;
+        const shouldPreserveConfiguredFloatingPosition =
+            this.state.float && this.options.initFloatPos !== undefined;
+
         this.state.width = `${rect.width}px`;
         this.state.height = `${rect.height}px`;
+
+        if (shouldPreserveConfiguredFloatingPosition) {
+            return;
+        }
+
+        this.state.x = `${rect.left}px`;
+        this.state.y = `${rect.top}px`;
         this.state.launcherX = `${rect.left}px`;
         this.state.launcherY = `${rect.top}px`;
     }
@@ -973,7 +1295,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private captureCurrentBounds(): void {
+    private captureBounds(): void {
         if (!this.frameEl) return;
 
         const rect = this.frameEl.getBoundingClientRect();
@@ -986,14 +1308,52 @@ export class WindowApi {
     }
 
     /**
+     * Captures the launcher position from the close control, falling back to the frame origin.
+     *
+     * @returns {void}
+     */
+    private captureLaunchrPos(): void {
+        const anchor = this.getClseAnchorPos();
+
+        this.state.launcherX = `${anchor.left}px`;
+        this.state.launcherY = `${anchor.top}px`;
+    }
+
+    /**
+     * Resolves the screen position that should be used for the closed launcher.
+     *
+     * The close button's top-left corner is preferred so the icon appears where the user
+     * last interacted. If that cannot be measured, the frame's top-left corner is used,
+     * followed by the previously stored launcher position.
+     *
+     * @returns {{ left: number; top: number }} The clamped launcher anchor position.
+     */
+    private getClseAnchorPos(): { left: number; top: number } {
+        const closeButtonRect = this.closeButtonEl?.getBoundingClientRect();
+
+        if (closeButtonRect && closeButtonRect.width > 0 && closeButtonRect.height > 0) {
+            return this.clampLnchrPos(closeButtonRect.left, closeButtonRect.top);
+        }
+
+        const frameRect = this.frameEl?.getBoundingClientRect();
+
+        if (frameRect && frameRect.width > 0 && frameRect.height > 0) {
+            return this.clampLnchrPos(frameRect.left, frameRect.top);
+        }
+
+        return this.clampLnchrPos(
+            this.parsePxVal(this.state.launcherX, 10),
+            this.parsePxVal(this.state.launcherY, 10)
+        );
+    }
+
+    /**
      * Wires the header control buttons and header double-click behaviour.
      *
      * @returns {void}
      */
     private wireControls(): void {
-        if (!this.headerEl || !this.minimiseButtonEl || !this.floatButtonEl) {
-            return;
-        }
+        if (!this.headerEl) return;
 
         const onClose = (event: MouseEvent): void => {
             event.stopPropagation();
@@ -1003,7 +1363,7 @@ export class WindowApi {
         const onMinimise = (event: MouseEvent): void => {
             event.stopPropagation();
 
-            if (this.state.minimised) {
+            if (this.state.mini) {
                 this.restore();
                 return;
             }
@@ -1025,8 +1385,8 @@ export class WindowApi {
         };
 
         this.closeButtonEl?.addEventListener("click", onClose);
-        this.minimiseButtonEl.addEventListener("click", onMinimise);
-        this.floatButtonEl.addEventListener("click", onFloat);
+        this.minimiseButtonEl?.addEventListener("click", onMinimise);
+        this.floatButtonEl?.addEventListener("click", onFloat);
         this.headerEl.addEventListener("dblclick", onHeaderDoubleClick);
 
         this.cleanupFns.push(() => {
@@ -1042,7 +1402,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private wireFrameDragging(): void {
+    private wireFrameDrag(): void {
         if (!this.headerEl || !this.frameEl) return;
 
         let dragging = false;
@@ -1052,8 +1412,8 @@ export class WindowApi {
         const onPointerDown = (event: PointerEvent): void => {
             if (event.button !== 0) return;
             if (!this.frameEl) return;
-            if (!this.state.floating) return;
-            if (this.state.maximised) return;
+            if (!this.state.float) return;
+            if (this.state.maxi) return;
 
             const target = event.target;
             if (target instanceof HTMLElement && target.closest("button")) return;
@@ -1065,7 +1425,7 @@ export class WindowApi {
             offsetY = event.clientY - rect.top;
 
             this.headerEl?.classList.add("is-dragging");
-            this.bringToFront();
+            this.bring2Front();
             event.preventDefault();
             event.stopPropagation();
         };
@@ -1075,13 +1435,13 @@ export class WindowApi {
 
             const unclampedLeft = event.clientX - offsetX;
             const unclampedTop = event.clientY - offsetY;
-            const next = this.clampPosition(unclampedLeft, unclampedTop);
+            const next = this.clampPos(unclampedLeft, unclampedTop);
 
             this.state.x = `${next.left}px`;
             this.state.y = `${next.top}px`;
 
-            this.applyFloatingGeometry();
-            this.syncLauncherToFrame();
+            this.applyFloatGeo();
+            this.syncLnchr2Fr();
         };
 
         const onPointerUp = (): void => {
@@ -1090,7 +1450,7 @@ export class WindowApi {
             dragging = false;
             this.headerEl?.classList.remove("is-dragging");
             this.persistState();
-            this.queueLayoutChange();
+            this.qLaytChng();
         };
 
         this.headerEl.addEventListener("pointerdown", onPointerDown);
@@ -1114,12 +1474,19 @@ export class WindowApi {
         if (!launcher) return;
 
         launcher.classList.add("window-launcher");
+        launcher.style.width = `${WindowApi.launcherSize}px`;
+        launcher.style.height = `${WindowApi.launcherSize}px`;
+
+        if (launcher instanceof HTMLImageElement) {
+            launcher.style.objectFit = "contain";
+        }
+
         launcher.style.setProperty(
             "--window-launcher-display",
-            this.options.closedLauncherDisplay ?? "inline-block"
+            this.options.closedLnchrDis ?? "inline-block"
         );
 
-        this.applyLauncherPosition();
+        this.applyLnchrPos();
 
         let dragging = false;
         let offsetX = 0;
@@ -1146,12 +1513,12 @@ export class WindowApi {
         const onPointerMove = (event: PointerEvent): void => {
             if (!dragging) return;
 
-            const next = this.clampLauncherPosition(event.clientX - offsetX, event.clientY - offsetY);
+            const next = this.clampLnchrPos(event.clientX - offsetX, event.clientY - offsetY);
 
             this.state.launcherX = `${next.left}px`;
             this.state.launcherY = `${next.top}px`;
 
-            this.applyLauncherPosition();
+            this.applyLnchrPos();
             this.persistState();
         };
 
@@ -1184,8 +1551,8 @@ export class WindowApi {
         if (!this.frameEl) return;
 
         const onPointerDown = (): void => {
-            if (!this.state.floating) return;
-            this.bringToFront();
+            if (!this.state.float) return;
+            this.bring2Front();
         };
 
         this.frameEl.addEventListener("pointerdown", onPointerDown);
@@ -1200,23 +1567,23 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private wireViewportResize(): void {
+    private wireViewportRzs(): void {
         const onResize = (): void => {
             if (!this.frameEl) return;
-            if (!this.state.floating) return;
-            if (this.state.maximised) return;
+            if (!this.state.float) return;
+            if (this.state.maxi) return;
 
-            const next = this.clampPosition(
-                this.parsePixelValue(this.state.x, 10),
-                this.parsePixelValue(this.state.y, 10)
+            const next = this.clampPos(
+                this.parsePxVal(this.state.x, 10),
+                this.parsePxVal(this.state.y, 10)
             );
 
             this.state.x = `${next.left}px`;
             this.state.y = `${next.top}px`;
 
             this.persistState();
-            this.applyFloatingGeometry();
-            this.queueLayoutChange();
+            this.applyFloatGeo();
+            this.qLaytChng();
         };
 
         window.addEventListener("resize", onResize);
@@ -1231,19 +1598,19 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private observeFloatingResize(): void {
+    private observeFloatRzs(): void {
         if (typeof ResizeObserver === "undefined" || !this.frameEl) return;
 
         this.resizeObserver = new ResizeObserver(() => {
             if (!this.frameEl) return;
-            if (!this.state.floating) return;
-            if (this.state.maximised) return;
+            if (!this.state.float) return;
+            if (this.state.maxi) return;
 
             this.state.width = `${this.frameEl.offsetWidth}px`;
             this.state.height = `${this.frameEl.offsetHeight}px`;
 
             this.persistState();
-            this.queueLayoutChange();
+            this.qLaytChng();
         });
 
         this.resizeObserver.observe(this.frameEl);
@@ -1254,9 +1621,9 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private bringToFront(): void {
+    private bring2Front(): void {
         if (!this.frameEl) return;
-        if (!this.state.floating) return;
+        if (!this.state.float) return;
 
         WindowApi.zIndexCounter += 1;
         this.frameEl.style.zIndex = String(WindowApi.zIndexCounter);
@@ -1272,45 +1639,44 @@ export class WindowApi {
     private applyState(): void {
         if (!this.frameEl) return;
 
-        if (this.state.maximised) {
-            this.state.floating = true;
+        if (this.state.maxi) {
+            this.state.float = true;
         }
 
-        this.frameEl.classList.toggle("floating", this.state.floating);
-        this.frameEl.classList.toggle("maximised", this.state.maximised);
-        this.frameEl.classList.toggle("minimised", this.state.minimised);
+        this.frameEl.classList.add("window-frame");
+        this.frameEl.classList.toggle("floating", this.state.float);
+        this.frameEl.classList.toggle("maximised", this.state.maxi);
+        this.frameEl.classList.toggle("minimised", this.state.mini);
         this.frameEl.classList.toggle("closed", this.state.closed);
 
-        this.frameEl.dataset.windowFloating = String(this.state.floating);
-        this.frameEl.dataset.windowMaximised = String(this.state.maximised);
-        this.frameEl.dataset.windowMinimised = String(this.state.minimised);
+        this.frameEl.dataset.windowFloating = String(this.state.float);
+        this.frameEl.dataset.windowMaximised = String(this.state.maxi);
+        this.frameEl.dataset.windowMinimised = String(this.state.mini);
         this.frameEl.dataset.windowClosed = String(this.state.closed);
 
         if (this.state.closed) {
             this.frameEl.style.display = "none";
-            this.showLauncher();
-            this.queueLayoutChange();
+            this.showLnchr();
+            this.qLaytChng();
             return;
         }
 
-        this.hideLauncher();
-        this.frameEl.style.display = this.frameStyleSnapshot?.display ?? "";
+        this.hideLnchr();
+        this.frameEl.style.display = this.frameStyle?.display ?? "";
+        this.applyMntFrLayt();
+        this.applyMntCntLayt();
 
-        if (this.state.floating) {
-            this.moveFrameToFloatingHost();
-            this.frameEl.classList.add("window-frame");
-            this.applyFloatingPaddingLayout();
-            this.applyFloatingGeometry();
-            this.bringToFront();
+        if (this.state.float) {
+            this.moveFr2FloatHost();
+            this.applyFloatGeo();
+            this.bring2Front();
         } else {
-            this.restoreFrameToDockedHost();
-            this.frameEl.classList.remove("window-frame");
-            this.restoreDockedPaddingLayout();
-            this.clearFloatingGeometry();
+            this.restoreFrame();
+            this.clearFloatGeo();
         }
 
-        this.applyBodyVisibility();
-        this.queueLayoutChange();
+        this.applyBodVis();
+        this.qLaytChng();
     }
 
     /**
@@ -1318,11 +1684,11 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private applyFloatingGeometry(): void {
+    private applyFloatGeo(): void {
         if (!this.frameEl) return;
-        if (!this.state.floating) return;
+        if (!this.state.float) return;
 
-        if (this.state.maximised) {
+        if (this.state.maxi) {
             this.frameEl.style.position = "fixed";
             this.frameEl.style.left = "0px";
             this.frameEl.style.top = "0px";
@@ -1358,19 +1724,19 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private clearFloatingGeometry(): void {
-        if (!this.frameEl || !this.frameStyleSnapshot) return;
+    private clearFloatGeo(): void {
+        if (!this.frameEl || !this.frameStyle) return;
 
-        this.frameEl.style.position = this.frameStyleSnapshot.position;
-        this.frameEl.style.left = this.frameStyleSnapshot.left;
-        this.frameEl.style.top = this.frameStyleSnapshot.top;
-        this.frameEl.style.width = this.frameStyleSnapshot.width;
-        this.frameEl.style.height = this.frameStyleSnapshot.height;
-        this.frameEl.style.maxWidth = this.frameStyleSnapshot.maxWidth;
-        this.frameEl.style.maxHeight = this.frameStyleSnapshot.maxHeight;
+        this.frameEl.style.position = this.frameStyle.position;
+        this.frameEl.style.left = this.frameStyle.left;
+        this.frameEl.style.top = this.frameStyle.top;
+        this.frameEl.style.width = this.frameStyle.width;
+        this.frameEl.style.height = this.frameStyle.height;
+        this.frameEl.style.maxWidth = this.frameStyle.maxWidth;
+        this.frameEl.style.maxHeight = this.frameStyle.maxHeight;
         (this.frameEl.style as CSSStyleDeclaration & { resize?: string }).resize =
-            this.frameStyleSnapshot.resize;
-        this.frameEl.style.zIndex = this.frameStyleSnapshot.zIndex;
+            this.frameStyle.resize;
+        this.frameEl.style.zIndex = this.frameStyle.zIndex;
     }
 
     /**
@@ -1378,34 +1744,40 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private applyBodyVisibility(): void {
+    private applyBodVis(): void {
         if (!this.bodyEl) return;
 
-        this.bodyEl.style.display = this.state.minimised ? "none" : "";
+        if (this.state.mini) {
+            this.applyMiniFrLayt();
+            this.applyMiniBodLayt();
+
+            if (this.floatButtonEl) {
+                this.floatButtonEl.hidden = true;
+            }
+
+            return;
+        }
+
+        this.clearMiniFr();
+        this.clearMiniBod();
 
         if (this.floatButtonEl) {
-            this.floatButtonEl.hidden = this.state.minimised;
+            this.floatButtonEl.hidden = false;
         }
     }
 
     /**
-     * Makes the launcher visible and synchronises its position to the frame's current bounds.
+     * Makes the launcher visible using its already captured position.
      *
      * @returns {void}
      */
-    private showLauncher(): void {
+    private showLnchr(): void {
         const launcher = this.launcherEl;
         if (!launcher) return;
 
-        if (this.frameEl) {
-            const rect = this.frameEl.getBoundingClientRect();
-            this.state.launcherX = `${rect.left}px`;
-            this.state.launcherY = `${rect.top}px`;
-        }
-
         launcher.classList.add("window-launcher");
         launcher.setAttribute("data-window-launcher-visible", "true");
-        this.applyLauncherPosition();
+        this.applyLnchrPos();
     }
 
     /**
@@ -1413,7 +1785,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private hideLauncher(): void {
+    private hideLnchr(): void {
         const launcher = this.launcherEl;
         if (!launcher) return;
 
@@ -1426,7 +1798,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private applyLauncherPosition(): void {
+    private applyLnchrPos(): void {
         const launcher = this.launcherEl;
         if (!launcher) return;
 
@@ -1441,16 +1813,16 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private syncLauncherToFrame(): void {
+    private syncLnchr2Fr(): void {
         if (!this.frameEl || !this.launcherEl) return;
-        if (!this.state.floating) return;
+        if (!this.state.float) return;
 
         const rect = this.frameEl.getBoundingClientRect();
 
         this.state.launcherX = `${rect.left}px`;
         this.state.launcherY = `${rect.top}px`;
 
-        this.applyLauncherPosition();
+        this.applyLnchrPos();
         this.persistState();
     }
 
@@ -1459,16 +1831,16 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private saveBoundsSnapshot(): void {
+    private saveBndsSnp(): void {
         if (!this.frameEl) return;
 
         const rect = this.frameEl.getBoundingClientRect();
 
         this.state.restoreX = `${rect.left}px`;
         this.state.restoreY = `${rect.top}px`;
-        this.state.restoreWidth = `${rect.width}px`;
-        this.state.restoreHeight = `${rect.height}px`;
-        this.state.restoreFloating = this.state.floating;
+        this.state.restrWidth = `${rect.width}px`;
+        this.state.restrHeight = `${rect.height}px`;
+        this.state.restrFloat = this.state.float;
     }
 
     /**
@@ -1476,12 +1848,12 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private restoreBoundsFromSnapshot(): void {
+    private restoreBnds(): void {
         this.state.x = this.state.restoreX || this.state.x;
         this.state.y = this.state.restoreY || this.state.y;
-        this.state.width = this.state.restoreWidth || this.state.width;
-        this.state.height = this.state.restoreHeight || this.state.height;
-        this.state.floating = this.state.restoreFloating;
+        this.state.width = this.state.restrWidth || this.state.width;
+        this.state.height = this.state.restrHeight || this.state.height;
+        this.state.float = this.state.restrFloat;
     }
 
     /**
@@ -1491,7 +1863,7 @@ export class WindowApi {
      * @param {number} top The requested top position in pixels.
      * @returns {{ left: number; top: number }} The clamped position.
      */
-    private clampPosition(left: number, top: number): { left: number; top: number } {
+    private clampPos(left: number, top: number): { left: number; top: number } {
         if (!this.frameEl) {
             return { left, top };
         }
@@ -1515,14 +1887,17 @@ export class WindowApi {
      * @param {number} top The requested top position in pixels.
      * @returns {{ left: number; top: number }} The clamped position.
      */
-    private clampLauncherPosition(left: number, top: number): { left: number; top: number } {
+    private clampLnchrPos(left: number, top: number): { left: number; top: number } {
         const launcher = this.launcherEl;
-        if (!launcher) {
-            return { left, top };
-        }
 
-        const launcherWidth = Math.max(0, Math.min(launcher.offsetWidth, window.innerWidth));
-        const launcherHeight = Math.max(0, Math.min(launcher.offsetHeight, window.innerHeight));
+        const launcherWidth = Math.max(
+            0,
+            Math.min(launcher?.offsetWidth || WindowApi.launcherSize, window.innerWidth)
+        );
+        const launcherHeight = Math.max(
+            0,
+            Math.min(launcher?.offsetHeight || WindowApi.launcherSize, window.innerHeight)
+        );
 
         const maxLeft = Math.max(0, window.innerWidth - launcherWidth);
         const maxTop = Math.max(0, window.innerHeight - launcherHeight);
@@ -1542,7 +1917,7 @@ export class WindowApi {
      * @param {number} fallback The fallback number to use when parsing fails.
      * @returns {number} The parsed numeric value or the fallback.
      */
-    private parsePixelValue(value: string, fallback: number): number {
+    private parsePxVal(value: string, fallback: number): number {
         const parsed = Number.parseFloat(value);
         return Number.isFinite(parsed) ? parsed : fallback;
     }
@@ -1553,7 +1928,7 @@ export class WindowApi {
      *
      * @returns {void}
      */
-    private queueLayoutChange(): void {
+    private qLaytChng(): void {
         const callback = this.options.onLayoutChange;
         if (!callback) return;
         if (this.layoutQueued) return;

@@ -14,10 +14,17 @@
 
     --reader-controls-detached-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 
-    /* Chapter navigation buttons */
-    --reader-nav-btn-font-size: calc(1.5rem * var(--kc-text-scale));
-    --reader-nav-btn-padding-inline: 4px;
+    /* Chapter navigation layout */
+    --reader-nav-gap: 0.32rem;
+    --reader-nav-btn-hover-scale: 1.14;
+
+    --reader-nav-btn-font-size: calc(1.2rem * var(--kc-text-scale));
+    --reader-nav-btn-size: calc(2rem * var(--kc-text-scale));
+    --reader-nav-icon-size: 2rem;
+
+    --reader-nav-btn-padding-inline: 0;
     --reader-nav-btn-disabled-opacity: 0.4;
+    --reader-nav-btn-radius: 8px;
 
     --reader-nav-crossed-slash-colour: red;
     --reader-nav-crossed-slash-height: 2px;
@@ -28,18 +35,23 @@
     --reader-font-controls-margin-top: 0.5em;
 
     --reader-font-btn-font-size: calc(1.3rem * var(--kc-text-scale));
-    --reader-font-btn-padding: 5px;
-    --reader-font-btn-hover-scale: 1.2;
+    --reader-font-btn-size: calc(3rem * var(--kc-text-scale));
+    --reader-font-btn-icon-size: 2rem;
+
+    --reader-font-btn-padding: 0;
+    --reader-font-btn-hover-scale: 1.12;
+    --reader-font-btn-radius: 8px;
 
     /* Chapter inputs */
-    --reader-chapter-input-width: 2ch;
+    --reader-chapter-control-width: calc(2.6ch + 0.6rem);
+    --reader-chapter-total-width: calc(2.6ch + 0.6rem);
     --reader-chapter-input-font-size: calc(1rem * var(--kc-text-scale));
     --reader-chapter-input-font-weight: 700;
 
-    --reader-chapter-input-padding-block: 2px;
-    --reader-chapter-input-padding-inline: 4px;
+    --reader-chapter-input-padding-block: 0;
+    --reader-chapter-input-padding-inline: 0.3rem;
 
-    --reader-chapter-input-radius: 4px;
+    --reader-chapter-input-radius: 6px;
 
     /* Story picker */
     --reader-story-picker-margin-block: 15px;
@@ -119,9 +131,25 @@
     --reader-404-font-size: calc(1.2rem * var(--kc-text-scale));
 }
 
+.kc-mobile {
+    --reader-nav-icon-size: calc(2rem / (var(--kc-text-scale) * 1.5));
+    --reader-font-btn-icon-size: calc(2rem / (var(--kc-text-scale) * 2));
+}
+
 /* =========================================
     Reader controls (top bar)
 ========================================= */
+
+.reader-controls-top,
+.reader-controls-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+    box-sizing: border-box;
+}
 
 .reader-controls-top {
     background: var(--frame-bg-colour);
@@ -139,18 +167,26 @@
         top: 0;
         left: 50%;
         transform: translateX(-50%);
-
-        width: var(--frame-width);
-        max-width: var(--reader-controls-detached-max-width);
-
+        border-radius: 10px;
+        width: fit-content;
+        max-width: min(var(--reader-controls-detached-max-width), calc(100vw - 1rem));
+        border: var(--kc-88by31-outer-border-width) solid var(--frame-border-light);
         z-index: var(--reader-controls-detached-z-index);
-
         background: rgba(var(--frame-bg-colour-rgb), var(--reader-controls-detached-bg-alpha));
         opacity: var(--reader-controls-detached-opacity);
-
         box-shadow:
             var(--reader-controls-detached-shadow),
             var(--frame-box-shadow);
+        overflow: visible;
+        white-space: normal;
+
+        .chapter-navigation,
+        .font-controls {
+            flex-wrap: wrap;
+            width: fit-content;
+            max-width: 100%;
+            justify-content: center;
+        }
     }
 }
 
@@ -159,20 +195,56 @@
 ========================================= */
 
 .chapter-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    width: max-content;
+    max-width: none;
+
+    gap: var(--reader-nav-gap);
+
     button {
         all: unset;
+        box-sizing: border-box;
+
+        inline-size: var(--reader-nav-btn-size);
+        block-size: var(--reader-nav-btn-size);
+
         font-size: var(--reader-nav-btn-font-size);
-        cursor: pointer;
         line-height: 1;
 
         color: var(--body-text-colour);
+        cursor: pointer;
 
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+
         padding: 0 var(--reader-nav-btn-padding-inline);
+        border-radius: var(--reader-nav-btn-radius);
+
+        vertical-align: middle;
+        transform-origin: center center;
+
+        transition:
+            transform var(--reader-controls-transition),
+            opacity var(--reader-controls-transition);
 
         &:disabled {
             opacity: var(--reader-nav-btn-disabled-opacity);
             cursor: not-allowed;
+        }
+
+        svg {
+            display: block;
+            width: var(--reader-nav-icon-size);
+            height: var(--reader-nav-icon-size);
+            min-width: var(--reader-nav-icon-size);
+            min-height: var(--reader-nav-icon-size);
+            overflow: visible;
+            flex: 0 0 auto;
         }
 
         &.menu-crossed {
@@ -196,6 +268,10 @@
                 pointer-events: none;
             }
         }
+
+        &:hover {
+            transform: scale(var(--reader-nav-btn-hover-scale));
+        }
     }
 }
 
@@ -215,19 +291,48 @@
 .font-controls {
     display: flex;
     justify-content: center;
-
-    gap: var(--reader-font-controls-gap);
+    align-items: center;
+    align-self: center;
+    flex-wrap: nowrap;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
     margin-top: var(--reader-font-controls-margin-top);
 
+    gap: var(--reader-font-controls-gap);
+
     button {
-        background: none;
-        border: none;
+        all: unset;
+        box-sizing: border-box;
+
+        inline-size: var(--reader-font-btn-size);
+        block-size: var(--reader-font-btn-size);
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
 
         font-size: var(--reader-font-btn-font-size);
+        line-height: 1;
         cursor: pointer;
 
         padding: var(--reader-font-btn-padding);
+        border-radius: var(--reader-font-btn-radius);
         color: var(--body-text-colour);
+
+        transform-origin: center center;
+        transition: transform var(--reader-controls-transition);
+
+        svg {
+            display: block;
+            width: var(--reader-font-btn-icon-size) !important;
+            height: var(--reader-font-btn-icon-size) !important;
+            min-width: var(--reader-font-btn-icon-size) !important;
+            min-height: var(--reader-font-btn-icon-size) !important;
+            flex: 0 0 auto;
+            overflow: visible;
+        }
 
         &:hover {
             transform: scale(var(--reader-font-btn-hover-scale));
@@ -248,11 +353,19 @@
 ========================================= */
 
 :is(.chapter-display, .chapter-input) {
-    width: var(--reader-chapter-input-width);
+    box-sizing: border-box;
+
+    inline-size: var(--reader-chapter-control-width) !important;
+    block-size: var(--reader-nav-btn-size);
+
+    min-inline-size: 0;
+
     text-align: center;
+    vertical-align: middle;
 
     font-weight: var(--reader-chapter-input-font-weight);
     font-size: var(--reader-chapter-input-font-size);
+    line-height: 1;
 
     padding: var(--reader-chapter-input-padding-block) var(--reader-chapter-input-padding-inline);
 
@@ -284,15 +397,28 @@
 
 /* END button */
 .chapter-end {
-    width: var(--reader-chapter-input-width);
+    all: unset;
+    box-sizing: border-box;
+
+    inline-size: var(--reader-chapter-total-width) !important;
+    block-size: var(--reader-nav-btn-size);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+
     text-align: center;
+    vertical-align: middle;
 
     font-weight: var(--reader-chapter-input-font-weight);
     font-size: var(--reader-chapter-input-font-size);
+    line-height: 1;
 
     padding: var(--reader-chapter-input-padding-block) var(--reader-chapter-input-padding-inline);
 
     border: none;
+    border-radius: var(--reader-chapter-input-radius);
 
     background: transparent;
     color: var(--body-text-colour);
@@ -304,7 +430,9 @@
         color: var(--chat-input-text-colour);
     }
 
+    .chapter-display[readonly],
     .chapter-end {
+        background: transparent;
         color: var(--body-text-colour);
     }
 }
@@ -325,8 +453,7 @@
     border: var(--reader-story-selector-border-width) solid var(--nav-border-colour);
     border-radius: var(--reader-story-selector-radius);
 
-    padding:
-        var(--reader-story-selector-padding-block) var(--reader-story-selector-padding-inline);
+    padding: var(--reader-story-selector-padding-block) var(--reader-story-selector-padding-inline);
 
     font-size: var(--reader-story-selector-font-size);
     font-weight: var(--reader-story-selector-font-weight);
@@ -522,9 +649,6 @@
 
 #reader.reader-show-paragraph-numbers {
     .reader-bookmark {
-        --reader-para-num-col-width: var(--reader-para-num-col-width);
-        --reader-para-num-gap: var(--reader-para-num-gap);
-
         display: grid;
         grid-template-columns: var(--reader-para-num-col-width) 1fr;
         column-gap: var(--reader-para-num-gap);

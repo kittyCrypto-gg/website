@@ -9,11 +9,22 @@
     --base-page-padding: 0;
 
     --base-border-width-thin: 1px;
-    --base-inline-gap: 0.5em;
+    --base-inline-gap: clamp(0.35em, 0.3em + 0.25vw, 0.5em);
 
     --emoticon-line-height: 1;
     --blink-duration: 6s;
-    --kc-text-scale: 1;
+
+    @property --kc-text-scale {
+        syntax: "<number>";
+        inherits: true;
+        initial-value: 1;
+    }
+
+    --segment-header-font-size: calc(clamp(1.2rem, 1.1rem + 0.5vw, 1.4rem) * var(--kc-text-scale));
+    --segment-header-font-weight: 700;
+    --segment-header-margin-bottom: clamp(0.5rem, 1.2vw, 0.625rem);
+    --segment-header-padding-bottom: clamp(0.3rem, 0.8vw, 0.375rem);
+    --segment-header-border-width: 2px;
 }
 
 /* General styles */
@@ -29,7 +40,7 @@ body {
     justify-content: center;
     align-items: flex-start;
 
-    height: var(--body-height);
+    min-height: var(--body-height, 100dvh);
 }
 
 /*Twitter link footer block*/
@@ -47,6 +58,16 @@ body {
         color: var(--menu-button-text-colour);
         text-decoration: underline;
     }
+}
+
+.segment-header {
+    font-size: var(--segment-header-font-size);
+    font-weight: var(--segment-header-font-weight);
+    margin-bottom: var(--segment-header-margin-bottom);
+    padding-bottom: var(--segment-header-padding-bottom);
+    border-bottom: var(--segment-header-border-width) solid var(--nav-border-colour);
+    color: var(--header-text-colour);
+    text-align: left;
 }
 
 /* Emoticons (including blinking variant)*/

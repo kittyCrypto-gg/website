@@ -20,6 +20,7 @@
     --banner-blue: #00c0ff;
     --banner-teal: #00c8c8;
     --banner-teal-bright: #00e0e0;
+    --banner-lilac: #c2a8ff;
 
     /* Terminal Window */
     --term-bg: linear-gradient(to bottom, #1b1b1b, #0e0e0e);

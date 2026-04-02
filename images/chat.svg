@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="Green chat bubble icon" viewBox="16 40 224 181.27">
+    <path d="M48 40h160c17.7 0 32 14.3 32 32v88c0 17.7-14.3 32-32 32H112l-44 28c-5.3 3.4-12-.4-12-6.7V192H48c-17.7 0-32-14.3-32-32V72c0-17.7 14.3-32 32-32z" fill="#25D366"/>
+
+    <rect x="52" y="78" width="120" height="10" rx="5" fill="#FFFFFF" opacity="0.95"/>
+    <rect x="52" y="102" width="150" height="10" rx="5" fill="#FFFFFF" opacity="0.95"/>
+    <rect x="52" y="126" width="132" height="10" rx="5" fill="#FFFFFF" opacity="0.95"/>
+    <rect x="52" y="150" width="92" height="10" rx="5" fill="#FFFFFF" opacity="0.95"/>
+</svg>

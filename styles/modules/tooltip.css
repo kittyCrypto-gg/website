@@ -1,10 +1,10 @@
 /* =========================================
-    Module: Tooltip (hardcoded tokens extracted)
+    Module: Tooltip
 ========================================= */
 
 :root {
     /* Trigger */
-    --tt-trigger-padding: 2px;
+    --tt-trigger-padding: 0.125rem;
     --tt-trigger-transition-bg: 0.2s;
     --tt-focus-outline-width: 2px;
     --tt-focus-outline-offset: 2px;
@@ -13,26 +13,26 @@
     --tt-trigger-dark-bg-mix: 80%;
 
     /* Positioning */
-    --tt-anchor-offset-bottom: 8px;
+    --tt-anchor-offset-bottom: clamp(0.375rem, 1.2vw, 0.5rem);
 
     /* Content motion */
-    --tt-hidden-translate-y: 6px;
+    --tt-hidden-translate-y: clamp(0.25rem, 1vw, 0.375rem);
     --tt-hidden-scale: 0.98;
     --tt-show-translate-y: 0;
     --tt-show-scale: 1;
 
     /* Content border + arrow */
     --tt-content-border-width: 1px;
-    --tt-arrow-border-width: 6px;
+    --tt-arrow-border-width: clamp(0.3125rem, 1vw, 0.375rem);
 
     /* Typography (scaled) */
-    --tt-content-font-size: calc(0.95em * var(--kc-text-scale));
+    --tt-content-font-size: calc(clamp(0.9em, 0.88em + 0.15vw, 0.95em) * var(--kc-text-scale));
     --tt-content-line-height: 1.4;
     --tt-bold-weight: 600;
 
     /* Portal sizing */
     --tt-portal-max-width-fallback: 36ch;
-    --tt-portal-side-padding: 16px;
+    --tt-portal-side-padding: clamp(0.75rem, 2.5vw, 1rem);
 }
 
 /* =========================================
@@ -80,11 +80,17 @@
         box-shadow: var(--tooltip-shadow);
 
         padding: var(--tooltip-padding);
-        max-width: var(--tooltip-max-width);
-        width: max-content;
+        max-width: min(var(--tooltip-max-width, var(--tt-portal-max-width-fallback)),
+                calc(100vw - (var(--tt-portal-side-padding) * 2)));
+        width: auto;
+        box-sizing: border-box;
 
         font-size: var(--tt-content-font-size);
         line-height: var(--tt-content-line-height);
+
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
 
         z-index: var(--tooltip-z-index);
 
@@ -171,14 +177,22 @@
 
 #tooltip-portal {
     position: fixed;
-    inset: 0;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
     z-index: var(--tooltip-z-index);
     pointer-events: none;
+    overflow: visible;
 
     .tooltip.portal {
         position: fixed;
         left: 0;
         top: 0;
+        display: block;
+        max-width: calc(100vw - (var(--tt-portal-side-padding) * 2));
+        box-sizing: border-box;
+        pointer-events: auto;
 
         .tooltip-content {
             --tt-hidden-transform: translateY(var(--tt-hidden-translate-y)) scale(var(--tt-hidden-scale));
@@ -188,14 +202,15 @@
             left: 0;
             top: 0;
             bottom: auto;
-            display: inline-block;
+            display: block;
+            box-sizing: border-box;
 
             white-space: normal;
-            overflow-wrap: break-word;
-            word-break: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
 
             max-width: min(var(--tooltip-max-width, var(--tt-portal-max-width-fallback)),
-                    calc(100vw - var(--tt-portal-side-padding)));
+                    calc(100vw - (var(--tt-portal-side-padding) * 2)));
 
             width: auto;
         }

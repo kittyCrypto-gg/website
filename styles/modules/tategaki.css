@@ -3,13 +3,13 @@
 ========================================= */
 
 :root {
-    --tategaki-margin-inline: 10px;
+    --tategaki-margin-inline: clamp(0.375rem, 1.5vw, 0.625rem);
     --tategaki-border-width: 2px;
     --tategaki-border-colour: transparent;
 
-    --tategaki-padding-inline-start: 5px;
-    --tategaki-svg-offset-inline-start: 5px;
-    --tategaki-svg-offset-block-end: 5px;
+    --tategaki-padding-inline-start: clamp(0.25rem, 1vw, 0.3125rem);
+    --tategaki-svg-offset-inline-start: clamp(0.25rem, 1vw, 0.3125rem);
+    --tategaki-svg-offset-block-end: clamp(0.25rem, 1vw, 0.3125rem);
 }
 
 .tategaki-container {

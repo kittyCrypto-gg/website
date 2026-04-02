@@ -3,7 +3,7 @@
 ========================================= */
 
 :root {
-    --chapter-image-margin-block: 20px;
+    --chapter-image-margin-block: clamp(1rem, 2vw, 1.25rem);
     --chapter-image-radius: 8px;
 
     --chapter-image-border-width: 2px;
@@ -11,12 +11,12 @@
     --chapter-image-zoom-scale: 2;
     --chapter-image-transition: 0.3s ease;
 
-    --image-nav-offset: 15px;
-    --image-nav-gap: 5px;
+    --image-nav-offset: clamp(0.75rem, 1.5vw, 0.9375rem);
+    --image-nav-gap: clamp(0.25rem, 0.75vw, 0.3125rem);
     --image-nav-z-index: 10;
     --image-nav-fade: 0.3s ease;
 
-    --image-nav-button-font-size: calc(2.5rem * var(--kc-text-scale));
+    --image-nav-button-font-size: calc(clamp(2rem, 1.5rem + 1vw, 2.5rem) * var(--kc-text-scale));
     --image-nav-button-hover-scale: 1.1;
     --image-nav-button-active-scale: 0.95;
     --image-nav-button-transition: 0.1s;
@@ -39,6 +39,7 @@
 
 .chapter-image {
     max-width: 100%;
+    height: auto;
 
     border: var(--chapter-image-border-width) solid var(--body-text-colour);
     border-radius: var(--chapter-image-radius);
@@ -72,8 +73,8 @@
 
 .image-nav {
     position: absolute;
-    bottom: var(--image-nav-offset);
-    right: var(--image-nav-offset);
+    inset-block-end: var(--image-nav-offset);
+    inset-inline-end: var(--image-nav-offset);
 
     display: none;
     flex-direction: column;
@@ -84,13 +85,11 @@
     opacity: 0;
     transition: opacity var(--image-nav-fade);
 
-    /* Show overlay when image is zoomed */
-    .chapter-image.active+& {
+    &.active {
         display: flex;
         opacity: 1;
     }
 
-    /* Transparent buttons with padding for usability */
     & button {
         all: unset;
 
@@ -119,6 +118,7 @@
         }
     }
 }
+
 /* Ensure transparency in dark mode too */
 .dark-mode {
     & .image-nav {

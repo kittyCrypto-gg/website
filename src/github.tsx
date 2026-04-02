@@ -1,7 +1,7 @@
 import { drawTriangularIdenticon } from "./commitIdenticon.ts";
 import { Clusteriser } from "./clusterise.ts";
+import MediaStyler from "./mediaStyler.tsx";
 import { render2Frag } from "./reactHelpers.tsx";
-import React from "react";
 import type { JSX } from "react";
 
 declare global {
@@ -50,6 +50,14 @@ interface GithubCommitsApiItem {
     parents: { sha: string; url: string; html_url: string }[];
 }
 
+type SplitCommitMessage = Readonly<{
+    summary: string;
+    description: string;
+}>;
+
+const mediaStyler = new MediaStyler();
+const NO_COMMIT_DESCRIPTION_MESSAGE = "No description given for this commit.";
+
 /**
  * @param {GithubCommitsApiResponse} value - JSON payload from the GitHub commits API.
  * @returns {value is GithubCommitsApiItem[]} True if the value is an array, indicating it is a valid GitHub commits API response. This type guard function checks if the provided value is an array, which is the expected format for the GitHub commits API response. It does not perform deep validation of the array contents, but it serves as a preliminary check to ensure that the data structure is consistent with what the API should return.
@@ -82,13 +90,74 @@ function extractCommitFields(item: GithubCommitsApiItem): GithubCommit {
 }
 
 /**
- * @param {GithubCommit} commit
+ * @param {string} raw - Raw string to escape for HTML.
+ * @returns {string} Escaped string safe for HTML insertion.
+ */
+function escapeHtml(raw: string): string {
+    return raw
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+/**
+ * @param {string} message - Full Git commit message.
+ * @returns {SplitCommitMessage} Commit summary and description.
+ */
+function splitCommitMessage(message: string): SplitCommitMessage {
+    const lines = message.replace(/\r\n?/g, "\n").split("\n");
+    const summary = (lines.shift() || "").trim();
+    const description = lines.join("\n").trim();
+
+    return {
+        summary: summary || message.trim(),
+        description
+    };
+}
+
+/**
+ * @param {string} description - Commit description or fallback tooltip text.
+ * @returns {string} Escaped tooltip HTML content.
+ */
+function buildTooltipContentHtml(description: string): string {
+    return escapeHtml(description).replace(/\n/g, "<br />");
+}
+
+/**
+ * @param {string} message - Full Git commit message.
+ * @returns {Promise<string>} HTML for the commit message with tooltip support.
+ */
+async function buildCommitMessageHtml(message: string): Promise<string> {
+    const { summary, description } = splitCommitMessage(message);
+    const safeSummary = escapeHtml(summary);
+    const tooltipContent = description || NO_COMMIT_DESCRIPTION_MESSAGE;
+    const tooltipContentHtml = buildTooltipContentHtml(tooltipContent);
+
+    const tooltipMarkup = `
+        <tooltip>
+            <span class="commit-message-summary" tabindex="0">${safeSummary}</span>
+            <content html="true">${tooltipContentHtml}</content>
+        </tooltip>
+    `.trim();
+
+    return mediaStyler.replaceTooltips(tooltipMarkup);
+}
+
+/**
+ * @param {{ commit: GithubCommit; messageHtml: string }} props
  * @returns {JSX.Element}
  */
-function CommitBody(commit: GithubCommit): JSX.Element {
+function CommitBody(props: { commit: GithubCommit; messageHtml: string }): JSX.Element {
+    const { commit, messageHtml } = props;
+
     return (
         <div className="commit-content">
-            <div className="commit-message">{commit.message}</div>
+            <div
+                className="commit-message"
+                dangerouslySetInnerHTML={{ __html: messageHtml }}
+            />
 
             <div className="commit-meta">
                 <span>
@@ -113,13 +182,15 @@ function CommitBody(commit: GithubCommit): JSX.Element {
 
 /**
  * @param {GithubCommit} commit
- * @returns {HTMLDivElement}
+ * @returns {Promise<HTMLDivElement>}
  */
-function buildCommitEl(commit: GithubCommit): HTMLDivElement {
+async function buildCommitEl(commit: GithubCommit): Promise<HTMLDivElement> {
+    const messageHtml = await buildCommitMessageHtml(commit.message);
+
     const frag = render2Frag(
         <div className="commit-block">
             <div className="commit-identicon" />
-            <CommitBody {...commit} />
+            <CommitBody commit={commit} messageHtml={messageHtml} />
         </div>
     );
 
@@ -177,7 +248,7 @@ async function renderCommits(
     container.innerHTML = "";
 
     for (const commit of commits) {
-        const block = buildCommitEl(commit);
+        const block = await buildCommitEl(commit);
         const identicon = await drawTriangularIdenticon(commit.sha, 36);
 
         const identiconWrap = block.querySelector(".commit-identicon");

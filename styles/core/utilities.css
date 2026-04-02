@@ -3,15 +3,19 @@
 ========================================= */
 
 :root {
-  --kc-badge-snippet-gap: 10px;
-  --kc-badge-snippet-margin-top: 14px;
+  --kc-badge-snippet-gap: clamp(0.5rem, 1.2vw, 0.625rem);
+  --kc-badge-snippet-margin-top: clamp(0.75rem, 1.5vw, 0.875rem);
 
   /* Hint label */
-  --kc-badge-snippet-hint-padding: 10px 12px;
-  --kc-badge-snippet-hint-radius: 10px;
+  --kc-badge-snippet-hint-padding-block: clamp(0.625rem, 1.2vw, 0.75rem);
+  --kc-badge-snippet-hint-padding-inline: clamp(0.75rem, 1.5vw, 0.875rem);
+  --kc-badge-snippet-hint-padding:
+    var(--kc-badge-snippet-hint-padding-block) var(--kc-badge-snippet-hint-padding-inline);
+
+  --kc-badge-snippet-hint-radius: clamp(0.5rem, 0.42rem + 0.3vw, 0.625rem);
   --kc-badge-snippet-hint-border-width: 1px;
 
-  --kc-badge-snippet-label-font-size: 0.9rem;
+  --kc-badge-snippet-label-font-size: clamp(0.875rem, 0.84rem + 0.2vw, 0.9rem);
   --kc-badge-snippet-label-line-height: 1.35;
 
   --kc-badge-snippet-label-font:
@@ -33,12 +37,18 @@
 
   /* Code block shared (textarea + pre) */
   --kc-badge-snippet-textarea-width: 100%;
-  --kc-badge-snippet-textarea-min-height: 6.5rem;
-  --kc-badge-snippet-textarea-padding: 10px 12px;
-  --kc-badge-snippet-textarea-radius: 10px;
-  --kc-badge-snippet-textarea-border-width: 1px;
+  --kc-badge-snippet-textarea-min-height: clamp(5.75rem, 5.2rem + 1.2vw, 6.5rem);
 
-  --kc-badge-snippet-code-font-size: 0.85rem;
+  --kc-badge-snippet-textarea-padding-block: clamp(0.625rem, 1.2vw, 0.75rem);
+  --kc-badge-snippet-textarea-padding-inline: clamp(0.75rem, 1.5vw, 0.875rem);
+  --kc-badge-snippet-textarea-padding:
+    var(--kc-badge-snippet-textarea-padding-block) var(--kc-badge-snippet-textarea-padding-inline);
+
+  --kc-badge-snippet-textarea-radius: clamp(0.5rem, 0.42rem + 0.3vw, 0.625rem);
+  --kc-badge-snippet-textarea-border-width: 1px;
+  --kc-badge-snippet-textarea-shadow: none;
+
+  --kc-badge-snippet-code-font-size: clamp(0.8rem, 0.77rem + 0.2vw, 0.85rem);
   --kc-badge-snippet-code-line-height: 1.3;
 
   --kc-badge-snippet-code-font:
@@ -69,8 +79,12 @@
   --kc-badge-snippet-code-bg-end: var(--body-bg-colour);
 
   /* Copy button */
-  --kc-badge-snippet-btn-padding: 8px 12px;
-  --kc-badge-snippet-btn-radius: 10px;
+  --kc-badge-snippet-btn-padding-block: clamp(0.5rem, 1vw, 0.625rem);
+  --kc-badge-snippet-btn-padding-inline: clamp(0.75rem, 1.5vw, 0.875rem);
+  --kc-badge-snippet-btn-padding:
+    var(--kc-badge-snippet-btn-padding-block) var(--kc-badge-snippet-btn-padding-inline);
+
+  --kc-badge-snippet-btn-radius: clamp(0.5rem, 0.42rem + 0.3vw, 0.625rem);
   --kc-badge-snippet-btn-border-width: 1px;
 
   --kc-badge-snippet-btn-bg: var(--menu-button-bg-colour);
@@ -79,10 +93,13 @@
   --kc-badge-snippet-btn-border: var(--nav-border-colour);
 
   --kc-badge-snippet-btn-font-weight: 600;
-  --kc-badge-snippet-btn-letter-spacing: 0.2px;
+  --kc-badge-snippet-btn-letter-spacing: 0.0125rem;
 
   --kc-badge-snippet-focus-outline: 2px solid var(--accent);
   --kc-badge-snippet-focus-outline-offset: 2px;
+
+  --kc-badge-snippet-scrollbar-size: clamp(0.5rem, 1vw, 0.625rem);
+  --kc-badge-snippet-scrollbar-thumb-border: clamp(0.125rem, 0.2vw, 0.1875rem);
 
   --kc-badge-snippet-transition: 0.2s;
 }
@@ -222,8 +239,8 @@
   }
 
   &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: var(--kc-badge-snippet-scrollbar-size);
+    height: var(--kc-badge-snippet-scrollbar-size);
   }
 
   &::-webkit-scrollbar-track {
@@ -233,7 +250,7 @@
   &::-webkit-scrollbar-thumb {
     background: rgba(var(--frame-bg-colour-rgb), 0.35);
     border-radius: 999px;
-    border: 3px solid transparent;
+    border: var(--kc-badge-snippet-scrollbar-thumb-border) solid transparent;
     background-clip: padding-box;
   }
 

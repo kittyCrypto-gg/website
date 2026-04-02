@@ -1,5 +1,5 @@
-export const BACKEND_URL = 'https://srv.kittycrypto.gg';
-export const RSS_BACKEND_URL = 'https://rss.kittycrypto.gg/rss/kittycrypto';
+export const BACKEND_URL = "https://srv.kittycrypto.gg";
+export const RSS_BACKEND_URL = "https://rss.kittycrypto.gg/rss/kittycrypto";
 
 if (!BACKEND_URL) {
     throw new Error("PUBLIC_BACKEND_URL is not defined");
@@ -8,6 +8,9 @@ if (!BACKEND_URL) {
 if (!RSS_BACKEND_URL) {
     throw new Error("RSS_BACKEND_URL is not defined");
 }
+
+export const manifestUrl = `${BACKEND_URL}/website/manifest`;
+export const ManifestUpdUrl = `${BACKEND_URL}/website/manifest/update`;
 
 export const chatURL = `${BACKEND_URL}/chat`;
 export const chatStreamURL = `${BACKEND_URL}/chat/stream`;
@@ -21,3 +24,4 @@ export const storiesURL = `${BACKEND_URL}/stories`;
 export const statusEndpointUrl = `${BACKEND_URL}/status`;
 export const statsEndpoint = `${BACKEND_URL}/visits/stats`;
 export const logVisitEndpoint = `${BACKEND_URL}/visits/log`;
+export const presenceEndpoint = `${BACKEND_URL}/presence`;

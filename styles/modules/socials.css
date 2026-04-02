@@ -4,35 +4,35 @@
 
 :root {
     --socials-segment-width: 90%;
-    --socials-segment-margin-block: 2rem;
+    --socials-segment-margin-block: clamp(1.5rem, 4vw, 2rem);
     --socials-segment-margin-inline: auto;
-    --socials-segment-padding: 1.5rem;
+    --socials-segment-padding: clamp(1rem, 3vw, 1.5rem);
 
     --socials-segment-radius: 12px;
     --socials-segment-border-width: 1.5px;
 
     --socials-grid-columns: 2;
-    --socials-grid-gap: 16px;
+    --socials-grid-gap: clamp(0.75rem, 2vw, 1rem);
 
-    --socials-card-padding-block: 14px;
-    --socials-card-padding-inline: 16px;
+    --socials-card-padding-block: clamp(0.75rem, 2vw, 0.875rem);
+    --socials-card-padding-inline: clamp(0.875rem, 2.4vw, 1rem);
     --socials-card-radius: 10px;
     --socials-card-border-width: 1px;
 
-    --socials-card-icon-size: 32px;
-    --socials-card-gap: 14px;
+    --socials-card-icon-size: clamp(1.5rem, 4vw, 2rem);
+    --socials-card-gap: clamp(0.75rem, 2vw, 0.875rem);
 
-    --socials-card-min-height: 72px;
+    --socials-card-min-height: clamp(3.75rem, 8vw, 4.5rem);
 
-    --socials-title-font-size: calc(1rem * var(--kc-text-scale));
+    --socials-title-font-size: calc(clamp(0.95rem, 0.92rem + 0.2vw, 1rem) * var(--kc-text-scale));
     --socials-title-font-weight: 700;
     --socials-title-line-height: 1.2;
 
-    --socials-url-font-size: calc(0.92rem * var(--kc-text-scale));
+    --socials-url-font-size: calc(clamp(0.85rem, 0.82rem + 0.15vw, 0.92rem) * var(--kc-text-scale));
     --socials-url-line-height: 1.4;
     --socials-url-opacity: 0.82;
 
-    --socials-card-hover-translate: -1px;
+    --socials-card-hover-translate: -0.0625rem;
     --socials-card-transition: 0.2s ease-in-out;
 
     --socials-card-bg: var(--chatroom-bg-colour);
@@ -196,7 +196,7 @@
 }
 
 /* Responsive collapse */
-@media (max-width: 700px) {
+@media (max-width: 43.75rem) {
     .socials-segment__grid {
         grid-template-columns: 1fr;
     }

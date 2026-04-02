@@ -6,6 +6,7 @@ import { replaceSsmlAuthoring } from "./ssml.ts";
 import MediaStyler from "./mediaStyler.tsx";
 import * as config from "./config.ts";
 import { render2Frag, render2Mkup } from "./reactHelpers.tsx";
+import * as icons from "./icons.tsx";
 
 void recreateSingleton;
 
@@ -29,7 +30,7 @@ type ReaderButtonKey =
     | "scrollUp";
 
 interface ReaderButtonDef {
-    icon: string;
+    icon: icons.ReaderIcon;
     action: string;
 }
 
@@ -115,23 +116,21 @@ window.readerRoot = document.getElementById("reader");
 window.storyPickerRoot = document.getElementById("story-picker");
 
 window.buttons = {
-    toggleParagraphNumbers: { icon: "🔢", action: "Toggle paragraph numbers" },
-    clearBookmark: { icon: "↩️", action: "Clear bookmark for this chapter" },
-    prevChapter: { icon: "⏪", action: "Previous chapter" },
-    jumpToChapter: { icon: "🆗", action: "Jump to chapter" },
-    nextChapter: { icon: "⏩", action: "Next chapter" },
-    scrollDown: { icon: "⏬", action: "Scroll down" },
-    showInfo: { icon: "ℹ️", action: "Show navigation info" },
-    decreaseFont: { icon: "➖", action: "Decrease font size" },
-    resetFont: { icon: "🔁", action: "Reset font size" },
-    increaseFont: { icon: "➕", action: "Increase font size" },
-    scrollUp: { icon: "⏫", action: "Scroll up" }
+    toggleParagraphNumbers: { icon: icons.MakeToggleParagraphNumbersIcon(), action: "Toggle paragraph numbers" },
+    clearBookmark: { icon: icons.MakeClearBookmarkIcon(), action: "Clear bookmark for this chapter" },
+    prevChapter: { icon: icons.MakePrevChapterIcon(), action: "Previous chapter" },
+    jumpToChapter: { icon: icons.MakeJumpToChapterIcon(), action: "Jump to chapter" },
+    nextChapter: { icon: icons.MakePrevChapterIcon(180), action: "Next chapter" },
+    scrollDown: { icon: icons.MakePrevChapterIcon(270), action: "Scroll down" },
+    showInfo: { icon: icons.MakeShowInfoIcon(), action: "Show navigation info" },
+    decreaseFont: { icon: icons.MakeDecreaseFontIcon(), action: "Decrease font size" },
+    resetFont: { icon: icons.MakeResetFontIcon(), action: "Reset font size" },
+    increaseFont: { icon: icons.MakeIncreaseFontIcon(), action: "Increase font size" },
+    scrollUp: { icon: icons.MakePrevChapterIcon(90), action: "Scroll up" }
 };
 
-
-
 /**
- * @param {ReaderButtonDef} def
+ * @param {ReaderButtonDef}
  * @returns {ReactElement}
  */
 function InfoLine(def: ReaderButtonDef): ReactElement {
@@ -141,6 +140,20 @@ function InfoLine(def: ReaderButtonDef): ReactElement {
             <span className="kc-info-text">{def.action}</span>
         </li>
     );
+}
+
+/**
+ * @param {HTMLButtonElement} button
+ * @param {icons.ReaderIcon} icon
+ * @returns {void}
+ */
+function setButtonIcon(button: HTMLButtonElement, icon: icons.ReaderIcon): void {
+    if (typeof icon === "string") {
+        button.replaceChildren(document.createTextNode(icon));
+        return;
+    }
+
+    button.replaceChildren(render2Frag(icon));
 }
 
 /**
@@ -848,13 +861,29 @@ function showTmpNotice(msg: string, timeout = 1000): void {
 }
 
 /**
+ * @param {Element | null} el
+ * @returns {boolean}
+ */
+function isVis(el: Element | null): boolean {
+    if (!el) return false;
+
+    const rect = el.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < window.innerHeight;
+}
+
+/**
  * @param {Document} root
  * @returns {void}
  */
 function syncCtrlDock(root: Document = document): void {
     const ctrls = root.querySelector(".reader-controls-top") as HTMLElement | null;
     const spacer = root.getElementById(READER_CTRL_SPACER_ID) as HTMLDivElement | null;
-    if (!ctrls || !spacer) return;
+    const marker = root.getElementById(READER_CTRL_FLOAT_MARKER_ID) as HTMLElement | null;
+    const bottomCtrls = root.querySelector(".reader-controls-bottom") as HTMLElement | null;
+    if (!ctrls || !spacer || !marker) return;
+
+    ctrlMarkerAbove = marker.getBoundingClientRect().bottom <= 0;
+    ctrlBottomSeen = isVis(bottomCtrls);
 
     const detached = ctrlMarkerAbove && !ctrlBottomSeen;
     const wasDetached = ctrls.classList.contains("is-detached");
@@ -894,7 +923,7 @@ function setTopScrollMode(mode: "down" | "up", root: Document = document): void 
     const icon = isUp ? window.buttons.scrollUp.icon : window.buttons.scrollDown.icon;
     const action = isUp ? window.buttons.scrollUp.action : window.buttons.scrollDown.action;
 
-    btn.textContent = icon;
+    setButtonIcon(btn, icon);
     btn.title = action;
     btn.setAttribute("aria-label", action);
     btn.classList.toggle("btn-scroll-up", isUp);
@@ -984,8 +1013,7 @@ function ctrlDetach(): void {
     spacer.insertAdjacentElement("afterend", marker);
 
     const markerObs = new IntersectionObserver(
-        ([entry]: IntersectionObserverEntry[]) => {
-            ctrlMarkerAbove = !entry.isIntersecting && entry.boundingClientRect.bottom <= 0;
+        () => {
             syncCtrlDock(document);
         },
         { threshold: 0 }
@@ -997,8 +1025,7 @@ function ctrlDetach(): void {
 
     if (bottomCtrls) {
         ctrlBottomObs = new IntersectionObserver(
-            ([entry]: IntersectionObserverEntry[]) => {
-                ctrlBottomSeen = entry.isIntersecting;
+            () => {
                 syncCtrlDock(document);
             },
             { threshold: 0 }
@@ -1009,6 +1036,7 @@ function ctrlDetach(): void {
 
     ctrlScrollFn = (): void => {
         syncTopScrollMode(document);
+        syncCtrlDock(document);
     };
 
     ctrlResizeFn = (): void => {
@@ -1047,7 +1075,7 @@ function injectNav(): void {
 
     const scrollBtn = navBottom.querySelector(".btn-scroll-down") as HTMLButtonElement | null;
     if (scrollBtn) {
-        scrollBtn.textContent = window.buttons.scrollUp.icon;
+        setButtonIcon(scrollBtn, window.buttons.scrollUp.icon);
         scrollBtn.title = window.buttons.scrollUp.action;
         scrollBtn.setAttribute("aria-label", window.buttons.scrollUp.action);
         scrollBtn.classList.remove("btn-scroll-down");
@@ -1379,7 +1407,9 @@ export function activateImageNavigation(root: Document = document): void {
 
     root.querySelectorAll(".chapter-image-container").forEach((containerEl) => {
         const container = containerEl as HTMLElement;
-        const image = container.querySelector(".chapter-image") as HTMLImageElement;
+        const image = container.querySelector(".chapter-image");
+
+        if (!(image instanceof HTMLImageElement)) return;
 
         const navOverlay = document.createElement("div");
         navOverlay.classList.add("image-nav");
@@ -1399,6 +1429,13 @@ export function activateImageNavigation(root: Document = document): void {
         };
 
         /**
+         * @returns {void}
+         */
+        const syncNavOverlay = (): void => {
+            navOverlay.classList.toggle("active", image.classList.contains("active"));
+        };
+
+        /**
          * @param {() => void} onHold
          * @returns {void}
          */
@@ -1410,11 +1447,13 @@ export function activateImageNavigation(root: Document = document): void {
                 root.removeEventListener("mouseup", stopHold);
                 root.removeEventListener("touchend", stopHold);
                 root.removeEventListener("mouseleave", stopHold);
+                root.removeEventListener("touchcancel", stopHold);
             };
 
             root.addEventListener("mouseup", stopHold);
             root.addEventListener("touchend", stopHold);
             root.addEventListener("mouseleave", stopHold);
+            root.addEventListener("touchcancel", stopHold);
             onHold();
         };
 
@@ -1484,16 +1523,16 @@ export function activateImageNavigation(root: Document = document): void {
          * @returns {void}
          */
         const toggleZoom = (): void => {
-            if (image.classList.contains("active")) {
-                image.classList.remove("active");
-                navOverlay.classList.remove("active");
-            } else {
-                image.classList.add("active");
-                navOverlay.classList.add("active");
-            }
+            image.classList.toggle("active");
+            syncNavOverlay();
         };
 
         image.addEventListener("click", toggleZoom);
+
+        container.addEventListener("mouseenter", () => {
+            if (!image.classList.contains("active")) return;
+            navOverlay.classList.add("active");
+        });
 
         container.addEventListener("mouseleave", () => {
             navOverlay.classList.remove("active");
@@ -1568,6 +1607,10 @@ export function activateImageNavigation(root: Document = document): void {
         );
 
         image.addEventListener("touchend", () => {
+            isSwiping = false;
+        });
+
+        image.addEventListener("touchcancel", () => {
             isSwiping = false;
         });
     }
@@ -1692,7 +1735,7 @@ function restoreBkm(storyBase: string, chapter: number): void {
 
     const nextBkm = bkm.nextElementSibling as Element | null;
     if (nextBkm) {
-        const scrollY = nextBkm.getBoundingClientRect().top;
+        const scrollY = window.scrollY + nextBkm.getBoundingClientRect().top;
         window.scrollTo({ top: scrollY, behavior: "smooth" });
     }
 
@@ -1758,10 +1801,13 @@ function bootReader(): void {
         const target = e.target as Element | null;
         if (!target) return;
 
+        const button = target.closest("button");
+        if (!(button instanceof HTMLButtonElement)) return;
+
         const bkms = Array.from(document.querySelectorAll(".reader-bookmark"));
         if (!bkms.length) return;
 
-        if (target.classList.contains("btn-scroll-down")) {
+        if (button.classList.contains("btn-scroll-down")) {
             const bottomCtrls = document.querySelector(".reader-controls-bottom") as Element | null;
             if (!bottomCtrls) return;
 
@@ -1769,7 +1815,7 @@ function bootReader(): void {
             return;
         }
 
-        if (target.classList.contains("btn-scroll-up")) {
+        if (button.classList.contains("btn-scroll-up")) {
             const anchor = window.readerTopAnchor || document.body.firstElementChild || document.body;
 
             (anchor as Element).scrollIntoView({

@@ -1,0 +1,462 @@
+/* =========================================
+    Module: Presence Viewer
+========================================= */
+
+:root {
+    --presence-panel-padding: clamp(1rem, 2.4vw, 1.5rem);
+    --presence-panel-radius: 16px;
+    --presence-panel-border-width: 1px;
+
+    --presence-panel-section-gap: clamp(0.95rem, 2vw, 1.45rem);
+    --presence-panel-surface-radius: 14px;
+    --presence-panel-surface-border-width: 1px;
+
+    --presence-panel-hero-padding:
+        clamp(0.5rem, 1.4vw, 0.625rem) clamp(0.75rem, 2vw, 0.9rem) clamp(0.5rem, 1.4vw, 0.625rem) clamp(0.5rem, 1.4vw, 0.625rem);
+    --presence-panel-metric-padding:
+        clamp(0.875rem, 2vw, 1.05rem) clamp(0.9rem, 2.2vw, 1.1rem);
+
+    --presence-panel-eyebrow-font-size: calc(0.76rem * var(--kc-text-scale));
+    --presence-panel-eyebrow-letter-spacing: 0.08em;
+
+    --presence-panel-headline-font-size: calc(clamp(1.18rem, 1rem + 0.8vw, 1.42rem) * var(--kc-text-scale));
+    --presence-panel-headline-font-weight: 700;
+    --presence-panel-headline-line-height: 1.18;
+    --presence-panel-headline-letter-spacing: -0.02em;
+
+    --presence-panel-subline-font-size: calc(clamp(0.72rem, 0.68rem + 0.2vw, 0.78rem) * var(--kc-text-scale));
+    --presence-panel-subline-line-height: 1.75;
+    --presence-panel-subline-font-family: "JetBrains Mono", "Fira Code", "IBM Plex Mono", monospace;
+    --presence-panel-subline-letter-spacing: 0.04em;
+    --presence-panel-subline-colour: color-mix(in srgb, var(--presence-panel-accent) 55%, var(--presence-panel-muted-colour));
+    --presence-panel-subline-max-width: 58ch;
+
+    --presence-panel-pill-font-size: calc(clamp(0.78rem, 0.74rem + 0.2vw, 0.84rem) * var(--kc-text-scale));
+    --presence-panel-pill-padding: clamp(0.4rem, 1.2vw, 0.48rem) clamp(0.7rem, 2vw, 0.82rem);
+    --presence-panel-pill-gap: clamp(0.35rem, 1vw, 0.45rem);
+    --presence-panel-pill-emoji-font-size: 0.98em;
+    --presence-panel-pill-emoji-translate-y: -0.02em;
+
+    --presence-panel-metric-label-font-size: calc(0.76rem * var(--kc-text-scale));
+    --presence-panel-metric-label-margin-bottom: 0.34rem;
+    --presence-panel-metric-value-font-size: calc(clamp(0.95rem, 0.92rem + 0.2vw, 1rem) * var(--kc-text-scale));
+    --presence-panel-metric-value-line-height: 1.5;
+    --presence-panel-metric-stacked-gap: 0.35rem;
+
+    --presence-panel-background: var(--frame-bg-colour);
+    --presence-panel-border-colour: color-mix(in srgb, var(--nav-border-colour) 18%, transparent);
+
+    --presence-panel-surface-background: color-mix(in srgb, var(--chatroom-bg-colour) 92%, var(--frame-bg-colour));
+    --presence-panel-surface-background-alt: color-mix(in srgb, var(--chatroom-bg-colour) 86%, var(--frame-bg-colour));
+    --presence-panel-surface-border-colour: color-mix(in srgb, var(--nav-border-colour) 15%, transparent);
+
+    --presence-panel-text-colour: var(--body-text-colour);
+    --presence-panel-strong-colour: var(--header-text-colour);
+    --presence-panel-muted-colour: var(--timestamp-colour);
+
+    --presence-panel-pill-background: color-mix(in srgb, var(--nav-bg-colour) 82%, transparent);
+    --presence-panel-pill-text-colour: var(--menu-button-text-colour);
+    --presence-panel-pill-border-colour: color-mix(in srgb, var(--nav-border-colour) 18%, transparent);
+
+    --presence-panel-accent: var(--nav-border-colour);
+    --presence-panel-accent-soft: color-mix(in srgb, var(--presence-panel-accent) 12%, transparent);
+    --presence-panel-accent-wash: color-mix(in srgb, var(--presence-panel-accent) 7%, transparent);
+
+    --presence-panel-hero-label-font-size: calc(0.68rem * var(--kc-text-scale));
+    --presence-panel-hero-label-letter-spacing: 0.22em;
+    --presence-panel-hero-label-font-family: "JetBrains Mono", "Fira Code", "IBM Plex Mono", monospace;
+    --presence-panel-hero-label-colour: var(--presence-panel-accent);
+    --presence-panel-hero-label-margin-bottom: 0.15rem;
+    --presence-panel-hero-copy-gap: clamp(0.55rem, 1.5vw, 0.72rem);
+
+    --presence-panel-clock-headline-font-size: calc(clamp(1rem, 0.92rem + 0.5vw, 1.18rem) * var(--kc-text-scale));
+    --presence-panel-clock-headline-letter-spacing: -0.03em;
+    --presence-panel-clock-headline-font-family: "JetBrains Mono", "Fira Code", "IBM Plex Mono", monospace;
+    --presence-panel-clock-orb-top: -20%;
+    --presence-panel-clock-orb-right: -4%;
+    --presence-panel-clock-orb-size: clamp(5rem, 12vw, 7rem);
+    --presence-panel-clock-orb-radius: 999px;
+
+    --presence-panel-subline-pill-padding: clamp(0.35rem, 1vw, 0.42rem) clamp(0.6rem, 1.8vw, 0.72rem);
+    --presence-panel-subline-pill-margin-top: 0.5rem;
+    --presence-panel-subline-pill-margin-right: 0.5rem;
+    --presence-panel-subline-pill-line-height: 1.55;
+    --presence-panel-subline-pill-letter-spacing: 0.035em;
+    --presence-panel-subline-pill-font-size: calc(clamp(0.72rem, 0.68rem + 0.2vw, 0.78rem) * var(--kc-text-scale));
+    --presence-panel-subline-pill-font-family: "JetBrains Mono", "Fira Code", "IBM Plex Mono", monospace;
+    --presence-panel-subline-pill-colour: color-mix(in srgb, var(--presence-panel-accent) 58%, var(--presence-panel-muted-colour));
+
+    --presence-panel-mobile-padding: 1.1rem;
+    --presence-panel-mobile-section-gap: 0.95rem;
+    --presence-panel-mobile-hero-padding: 1rem;
+    --presence-panel-mobile-metric-padding: 0.88rem 0.92rem;
+    --presence-panel-mobile-pill-padding: 0.44rem 0.72rem;
+    --presence-panel-mobile-headline-font-size: calc(1.22rem * var(--kc-text-scale));
+    --presence-panel-mobile-subline-font-size: calc(0.74rem * var(--kc-text-scale));
+
+    --presence-window-min-width: clamp(18rem, 32vw, 21.875rem);
+}
+
+.presence-window {
+    width: 100%;
+    box-sizing: border-box;
+    height: auto !important;
+    min-width: min(100%, var(--presence-window-min-width));
+
+    .presence-panel {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: var(--presence-panel-section-gap);
+
+        width: 100%;
+        padding: var(--presence-panel-padding);
+        box-sizing: border-box;
+        overflow: hidden;
+
+        color: var(--presence-panel-text-colour);
+        background:
+            radial-gradient(circle at top right, var(--presence-panel-accent-wash), transparent 32%),
+            linear-gradient(180deg,
+                color-mix(in srgb, var(--presence-panel-background) 92%, white 8%) 0%,
+                var(--presence-panel-background) 100%);
+
+        /* border: var(--presence-panel-border-width) solid var(--presence-panel-border-colour); */
+        /* border-radius: var(--presence-panel-radius); */
+        /* box-shadow: var(--frame-box-shadow); */
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--presence-panel-accent), transparent 72%);
+            pointer-events: none;
+        }
+
+        &[data-presence-tone="online"] {
+            --presence-panel-accent: var(--chat-send-btn-bg-colour);
+        }
+
+        &[data-presence-tone="afk"] {
+            --presence-panel-accent: color-mix(in srgb, var(--pending-indicator-colour) 72%, var(--menu-button-text-colour));
+        }
+
+        &[data-presence-tone="terminal-afk"] {
+            --presence-panel-accent: var(--edit-modal-btn-cancel-bg-colour);
+        }
+
+        &[data-presence-tone="writing"] {
+            --presence-panel-accent: color-mix(in srgb, var(--banner-blue) 58%, var(--header-text-colour));
+        }
+
+        &[data-presence-tone="active"] {
+            --presence-panel-accent: var(--banner-blue);
+        }
+
+        &[data-presence-tone="offline"] {
+            --presence-panel-accent: var(--timestamp-colour);
+        }
+
+        :is(.presence-panel__hero, .presence-panel__metric) {
+            box-sizing: border-box;
+            border: var(--presence-panel-surface-border-width) solid var(--presence-panel-surface-border-colour);
+            border-radius: var(--presence-panel-surface-radius);
+            padding-left: var(--presence-panel-padding);
+            padding-top: var(--presence-panel-padding);
+            padding-bottom: var(--presence-panel-padding);
+        }
+
+        :is(.presence-panel__metric-label) {
+            display: block;
+            margin: 0 0 var(--presence-panel-metric-label-margin-bottom);
+            font-size: var(--presence-panel-metric-label-font-size);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--presence-panel-muted-colour);
+        }
+
+        :is(.presence-panel__metric-value) {
+            margin: 0;
+            font-size: var(--presence-panel-metric-value-font-size);
+            line-height: var(--presence-panel-metric-value-line-height);
+            color: var(--presence-panel-text-colour);
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        &__eyebrow {
+            margin: 0;
+            font-size: var(--presence-panel-eyebrow-font-size);
+            font-weight: 700;
+            letter-spacing: var(--presence-panel-eyebrow-letter-spacing);
+            text-transform: uppercase;
+            color: var(--presence-panel-muted-colour);
+        }
+
+        &__pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--presence-panel-pill-gap);
+
+            align-self: center;
+            width: max-content;
+            max-width: 100%;
+            inline-size: max-content;
+            max-inline-size: 100%;
+            flex: 0 0 auto;
+            padding: var(--presence-panel-pill-padding);
+            margin: 0;
+
+            font-size: var(--presence-panel-pill-font-size);
+            font-weight: 700;
+            line-height: 1;
+            color: var(--presence-panel-pill-text-colour);
+            white-space: nowrap;
+
+            background:
+                linear-gradient(180deg,
+                    color-mix(in srgb, var(--presence-panel-accent) 11%, var(--presence-panel-pill-background)),
+                    var(--presence-panel-pill-background));
+            border: 1px solid color-mix(in srgb, var(--presence-panel-accent) 24%, var(--presence-panel-pill-border-colour));
+            border-radius: 999px;
+            box-shadow:
+                inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
+                0 1px 1px color-mix(in srgb, black 4%, transparent);
+
+            &-emoji,
+            &-label {
+                line-height: 1;
+            }
+
+            &-emoji {
+                font-size: var(--presence-panel-pill-emoji-font-size);
+                transform: translateY(var(--presence-panel-pill-emoji-translate-y));
+            }
+
+            &-label {
+                white-space: nowrap;
+            }
+        }
+
+        &__hero {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            min-width: 0;
+            padding: var(--presence-panel-hero-padding);
+            background:
+                linear-gradient(135deg,
+                    color-mix(in srgb, var(--presence-panel-accent) 9%, var(--presence-panel-surface-background)) 0%,
+                    var(--presence-panel-surface-background) 38%);
+
+            &::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, transparent, color-mix(in srgb, black 2%, transparent));
+                pointer-events: none;
+            }
+
+            &-copy {
+                position: relative;
+                z-index: 1;
+                display: flex;
+                flex-direction: column;
+                gap: var(--presence-panel-hero-copy-gap);
+                min-width: 0;
+                width: 100%;
+            }
+        }
+
+        &__hero-label {
+            display: inline-block;
+            margin: 0 0 var(--presence-panel-hero-label-margin-bottom);
+            font-size: var(--presence-panel-hero-label-font-size);
+            font-family: var(--presence-panel-hero-label-font-family);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: var(--presence-panel-hero-label-letter-spacing);
+            text-transform: uppercase;
+            color: var(--presence-panel-hero-label-colour);
+            opacity: 1;
+        }
+
+        &__headline {
+            margin: 0;
+            font-size: var(--presence-panel-headline-font-size);
+            font-weight: var(--presence-panel-headline-font-weight);
+            line-height: var(--presence-panel-headline-line-height);
+            letter-spacing: var(--presence-panel-headline-letter-spacing);
+            color: var(--presence-panel-strong-colour);
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        &__subline {
+            margin: 0;
+            max-width: var(--presence-panel-subline-max-width);
+            font-size: var(--presence-panel-subline-font-size);
+            line-height: var(--presence-panel-subline-line-height);
+            font-family: var(--presence-panel-subline-font-family);
+            letter-spacing: var(--presence-panel-subline-letter-spacing);
+            text-transform: uppercase;
+            color: var(--presence-panel-subline-colour);
+            opacity: 0.95;
+        }
+
+        &__grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--presence-panel-section-gap);
+            margin: 0;
+            padding: 0;
+        }
+
+        &__metric {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            min-height: 0;
+            margin: 0;
+            padding: var(--presence-panel-metric-padding);
+            background: var(--presence-panel-surface-background-alt);
+
+            &-label {
+                margin: 0 0 var(--presence-panel-metric-label-margin-bottom);
+            }
+
+            &-value {
+                &--emphasised {
+                    font-weight: 700;
+                    color: var(--presence-panel-strong-colour);
+                }
+
+                &--stacked {
+                    display: grid;
+                    gap: var(--presence-panel-metric-stacked-gap);
+                }
+            }
+        }
+
+        &--loading {
+            .presence-panel__hero {
+                background:
+                    linear-gradient(135deg,
+                        color-mix(in srgb, var(--banner-blue) 8%, var(--presence-panel-surface-background)) 0%,
+                        var(--presence-panel-surface-background) 38%);
+            }
+        }
+
+        &--error {
+            --presence-panel-accent: var(--edit-modal-btn-cancel-bg-colour);
+
+            :is(.presence-panel__hero, .presence-panel__metric) {
+                border-color: color-mix(in srgb, var(--edit-modal-btn-cancel-bg-colour) 24%, var(--presence-panel-surface-border-colour));
+            }
+
+            .presence-panel__pill {
+                background:
+                    linear-gradient(180deg,
+                        color-mix(in srgb, var(--edit-modal-btn-cancel-bg-colour) 12%, var(--presence-panel-pill-background)),
+                        var(--presence-panel-pill-background));
+            }
+        }
+    }
+
+    .stats-segment.presence-panel__pill {
+        display: inline-flex;
+        align-self: center;
+        justify-content: center;
+        width: max-content;
+        max-width: 100%;
+        inline-size: max-content;
+        max-inline-size: 100%;
+        flex: 0 0 auto;
+    }
+
+    @media (max-width: 41.1875rem) {
+        .presence-panel {
+            --presence-panel-padding: var(--presence-panel-mobile-padding);
+            --presence-panel-section-gap: var(--presence-panel-mobile-section-gap);
+            --presence-panel-hero-padding: var(--presence-panel-mobile-hero-padding);
+            --presence-panel-metric-padding: var(--presence-panel-mobile-metric-padding);
+
+            &__pill {
+                padding: var(--presence-panel-mobile-pill-padding);
+            }
+
+            &__headline {
+                font-size: var(--presence-panel-mobile-headline-font-size);
+            }
+
+            &__subline {
+                font-size: var(--presence-panel-mobile-subline-font-size);
+            }
+
+            &__grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    }
+
+    .presence-panel__hero--clock {
+        position: relative;
+        overflow: hidden;
+        background:
+            linear-gradient(135deg,
+                color-mix(in srgb, var(--presence-panel-accent) 13%, var(--presence-panel-surface-background)) 0%,
+                var(--presence-panel-surface-background) 42%);
+    }
+
+    .presence-panel__hero--clock::before {
+        content: "";
+        position: absolute;
+        top: var(--presence-panel-clock-orb-top);
+        right: var(--presence-panel-clock-orb-right);
+        width: var(--presence-panel-clock-orb-size);
+        height: var(--presence-panel-clock-orb-size);
+        border-radius: var(--presence-panel-clock-orb-radius);
+        background: radial-gradient(circle,
+                color-mix(in srgb, var(--presence-panel-accent) 16%, transparent) 0%,
+                transparent 72%);
+        pointer-events: none;
+    }
+
+    .presence-panel__headline--clock {
+        font-size: var(--presence-panel-clock-headline-font-size);
+        letter-spacing: var(--presence-panel-clock-headline-letter-spacing);
+        font-family: var(--presence-panel-clock-headline-font-family);
+        color: color-mix(in srgb, var(--presence-panel-strong-colour) 86%, var(--presence-panel-accent));
+    }
+
+    .presence-panel__subline {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        max-width: 100%;
+        margin: 0;
+        margin-top: var(--presence-panel-subline-pill-margin-top);
+        margin-right: var(--presence-panel-subline-pill-margin-right);
+        padding: var(--presence-panel-subline-pill-padding);
+
+        font-size: var(--presence-panel-subline-pill-font-size);
+        line-height: var(--presence-panel-subline-pill-line-height);
+        font-family: var(--presence-panel-subline-pill-font-family);
+        letter-spacing: var(--presence-panel-subline-pill-letter-spacing);
+        color: var(--presence-panel-subline-pill-colour);
+
+        background: linear-gradient(180deg,
+                color-mix(in srgb, var(--presence-panel-accent) 9%, var(--presence-panel-surface-background-alt)),
+                color-mix(in srgb, var(--presence-panel-accent) 4%, var(--presence-panel-surface-background-alt)));
+        border: 1px solid color-mix(in srgb, var(--presence-panel-accent) 18%, var(--presence-panel-surface-border-colour));
+        border-radius: 999px;
+        box-shadow: inset 0 1px 0 color-mix(in srgb, white 20%, transparent);
+
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+}

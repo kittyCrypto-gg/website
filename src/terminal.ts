@@ -642,9 +642,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         id: "terminal",
         title: "YuriGreen Terminal Emulator - /home/kitty/",
         launcher: iconEl,
-        closedLauncherDisplay: "inline-block",
+        closedLnchrDis: "inline-block",
         onLayoutChange: scheduleFit,
-        showCloseButton: true
+        showCloseBttn: true
     });
 
     terminalWindow.makeWindow(shellWrapper);

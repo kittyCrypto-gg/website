@@ -519,26 +519,58 @@ async function replaceSVGsImpl(root: Document | Element | string = document): Pr
     }
 }
 
+const CHAPTER_IMAGE_FALLBACK_SRC = "/images/fallback-image.png";
+const CHAPTER_IMAGE_FALLBACK_ALT = "Image not found";
+const CHAPTER_IMAGE_FALLBACK_SIZE_PX = 256;
+
+let chapterImageFallbackInstalled = false;
+
+/**
+ * @param {HTMLImageElement} image
+ * @returns {void}
+ */
+function applyChapterImageFallback(image: HTMLImageElement): void {
+    if (image.dataset.fallbackApplied === "true") return;
+
+    const currentSrc = image.getAttribute("src") || image.currentSrc || "";
+    if (currentSrc.includes(CHAPTER_IMAGE_FALLBACK_SRC)) return;
+
+    image.dataset.fallbackApplied = "true";
+    image.src = CHAPTER_IMAGE_FALLBACK_SRC;
+    image.alt = CHAPTER_IMAGE_FALLBACK_ALT;
+    image.width = CHAPTER_IMAGE_FALLBACK_SIZE_PX;
+    image.setAttribute("width", `${CHAPTER_IMAGE_FALLBACK_SIZE_PX}`);
+    image.style.width = `${CHAPTER_IMAGE_FALLBACK_SIZE_PX}px`;
+}
+
+/**
+ * @returns {void}
+ */
+function ensureChapterImageFallbackHandling(): void {
+    if (chapterImageFallbackInstalled) return;
+    chapterImageFallbackInstalled = true;
+
+    document.addEventListener("error", (event: Event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLImageElement)) return;
+        if (!target.classList.contains("chapter-image")) return;
+
+        applyChapterImageFallback(target);
+    }, true);
+}
+
 /**
  * @param {{ src: string; alt: string; }} props
  * @returns {ReactElement}
  */
 function ChapterImageMarkup(props: { src: string; alt: string }): ReactElement {
-    const safeUrl = esc(props.src.trim());
-    const safeAlt = esc(props.alt.trim());
-
     return (
         <div className="chapter-image-container">
-            <div
-                dangerouslySetInnerHTML={html(`
-          <img
-            src="${safeUrl}"
-            alt="${safeAlt}"
-            class="chapter-image"
-            loading="lazy"
-            onerror="this.onerror=null; this.src='/path/to/fallback-image.png'; this.alt='Image not found';"
-          />
-        `)}
+            <img
+                src={props.src.trim()}
+                alt={props.alt.trim()}
+                className="chapter-image"
+                loading="lazy"
             />
         </div>
     );
@@ -549,6 +581,8 @@ function ChapterImageMarkup(props: { src: string; alt: string }): ReactElement {
  * @returns {Promise<string>}
  */
 async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
+    ensureChapterImageFallbackHandling();
+
     const re = /<chapter-image\b[^>]*?(?:\/>|>[\s\S]*?<\/chapter-image>)/gi;
 
     return htmlContent.replace(re, (block: string) => {
@@ -578,6 +612,14 @@ function ensureTooltipPortalHost(): HTMLDivElement {
 
     const host = document.createElement("div");
     host.id = TOOLTIP_PORTAL_ID;
+    host.style.position = "fixed";
+    host.style.left = "0";
+    host.style.top = "0";
+    host.style.width = "0";
+    host.style.height = "0";
+    host.style.pointerEvents = "none";
+    host.style.overflow = "visible";
+    host.style.zIndex = "9999";
     document.body.appendChild(host);
     return host;
 }
@@ -603,17 +645,26 @@ function getTooltipFadeMs(el: HTMLElement): number {
 function positionTooltipPortal(triggerEl: HTMLElement, portalEl: HTMLElement): void {
     const gap = 8;
     const pad = 8;
+    const maxWidth = Math.max(0, window.innerWidth - (pad * 2));
 
     const triggerRect = triggerEl.getBoundingClientRect();
 
     portalEl.classList.remove("below");
+    portalEl.style.position = "fixed";
     portalEl.style.left = "0px";
     portalEl.style.top = "0px";
+    portalEl.style.maxWidth = `${maxWidth}px`;
+    portalEl.style.boxSizing = "border-box";
+    portalEl.style.pointerEvents = "auto";
+    portalEl.style.overflowWrap = "anywhere";
+    portalEl.style.wordBreak = "break-word";
+    portalEl.style.whiteSpace = "normal";
 
     const portalRect = portalEl.getBoundingClientRect();
 
-    let left = triggerRect.left + triggerRect.width / 2 - portalRect.width / 2;
-    left = Math.max(pad, Math.min(left, window.innerWidth - portalRect.width - pad));
+    let left = triggerRect.left + (triggerRect.width / 2) - (portalRect.width / 2);
+    const maxLeft = Math.max(pad, window.innerWidth - portalRect.width - pad);
+    left = Math.max(pad, Math.min(left, maxLeft));
 
     let top = triggerRect.top - portalRect.height - gap;
     const shouldFlipBelow = top < pad;
@@ -686,14 +737,31 @@ function openTooltipPortal(triggerEl: HTMLElement): void {
 
     const portalWrapper = document.createElement("span");
     portalWrapper.className = "tooltip portal";
+    portalWrapper.style.position = "fixed";
+    portalWrapper.style.display = "block";
+    portalWrapper.style.maxWidth = `${Math.max(0, window.innerWidth - 16)}px`;
+    portalWrapper.style.boxSizing = "border-box";
+    portalWrapper.style.pointerEvents = "auto";
 
     const portalContent = content.cloneNode(true) as HTMLElement;
+    portalContent.style.maxWidth = "100%";
+    portalContent.style.boxSizing = "border-box";
+    portalContent.style.whiteSpace = "normal";
+    portalContent.style.overflowWrap = "anywhere";
+    portalContent.style.wordBreak = "break-word";
+
     portalWrapper.appendChild(portalContent);
 
     wrapper.classList.add("portal-active");
     portalHost.appendChild(portalWrapper);
 
     positionTooltipPortal(triggerEl, portalWrapper);
+    
+    const viewport = window.visualViewport;
+    if (viewport) {
+        portalWrapper.style.maxWidth = `${Math.max(0, viewport.width - 16)}px`;
+        positionTooltipPortal(triggerEl, portalWrapper);
+    }
 
     tooltipPortalOpenState = {
         wrapperEl: wrapper,
@@ -805,6 +873,7 @@ function TooltipMarkup(props: {
  * by styled HTML structures.
  */
 async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
+
     ensureTooltipPortal();
     const re = /<tooltip\b[^>]*>[\s\S]*?<\/tooltip>/gi;
 

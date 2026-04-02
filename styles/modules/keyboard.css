@@ -19,18 +19,18 @@
     --kb-backdrop-blur: 12px;
     --kb-z-index: 2147483647;
 
-    --kb-key-h: 40px;
-    --kb-key-w: 44px;
+    --kb-key-h: clamp(2.25rem, 2rem + 0.8vw, 2.5rem);
+    --kb-key-w: clamp(2.5rem, 2.15rem + 0.9vw, 2.75rem);
 
-    --kb-btn-gap: 8px;
-    --kb-row-gap: 2px;
+    --kb-btn-gap: clamp(0.375rem, 1vw, 0.5rem);
+    --kb-row-gap: 0.125rem;
 
-    --kb-btn-pad-x: 12px;
-    --kb-btn-inner-gap: 6px;
+    --kb-btn-pad-x: clamp(0.5rem, 1.6vw, 0.75rem);
+    --kb-btn-inner-gap: clamp(0.25rem, 0.8vw, 0.375rem);
 
-    --kb-font-size: calc(13px * var(--kc-text-scale));
-    --kb-icon-size: calc(15px * var(--kc-text-scale));
-    --kb-radius: 10px;
+    --kb-font-size: calc(clamp(0.75rem, 0.72rem + 0.18vw, 0.8125rem) * var(--kc-text-scale));
+    --kb-icon-size: calc(clamp(0.85rem, 0.8rem + 0.22vw, 0.9375rem) * var(--kc-text-scale));
+    --kb-radius: clamp(0.5rem, 1.4vw, 0.625rem);
 
     --kb-toolbar-show-opacity: 1;
     --kb-toolbar-hide-opacity: 0;
@@ -42,9 +42,9 @@
     --kb-fn-show-opacity: 1;
     --kb-fn-hide-opacity: 0;
     --kb-fn-collapsed-scale: 0.92;
-    --kb-fn-roll-distance: 8px;
-    --kb-fn-open-extra-h: 2px;
-    --kb-fn-open-gap: 2px;
+    --kb-fn-roll-distance: clamp(0.375rem, 1vw, 0.5rem);
+    --kb-fn-open-extra-h: 0.125rem;
+    --kb-fn-open-gap: 0.125rem;
 
     --kb-fn-max-height-transition: 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
     --kb-fn-opacity-transition: 180ms ease;
@@ -53,8 +53,8 @@
 
     --kb-active-scale: 0.98;
 
-    --kb-stacked-gap: 2px;
-    --kb-stacked-pad-y: 2px;
+    --kb-stacked-gap: 0.125rem;
+    --kb-stacked-pad-y: 0.125rem;
 
     --kb-stacked-text-scale: 0.92;
     --kb-arrow-scale: 1.1;

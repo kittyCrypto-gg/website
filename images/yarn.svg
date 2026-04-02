@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="Red ball of yarn" viewBox="54 44 155.51 193">
+    <defs>
+        <clipPath id="ballClip">
+        <circle cx="128" cy="118" r="72"/>
+        </clipPath>
+    </defs>
+
+    <circle cx="128" cy="118" r="72" fill="#c62828"/>
+    <circle cx="104" cy="94" r="18" fill="#ef5350" opacity="0.35"/>
+
+    <g clip-path="url(#ballClip)" fill="none" stroke="#8e1b1b" stroke-width="6" stroke-linecap="round" opacity="0.9">
+        <path d="M62 112c18-20 44-30 66-30 28 0 48 10 66 30"/>
+        <path d="M60 130c24-12 44-18 68-18 30 0 48 8 70 20"/>
+        <path d="M66 148c22-6 38-8 60-8 28 0 48 6 64 14"/>
+        <path d="M82 64c16 18 22 36 22 56 0 24-8 44-24 68"/>
+        <path d="M112 52c10 20 14 40 14 62 0 28-6 50-16 76"/>
+        <path d="M144 54c-8 20-12 40-12 62 0 26 6 50 18 78"/>
+        <path d="M174 64c-14 16-24 34-26 54-4 28 6 52 18 72"/>
+        <path d="M74 82c22 10 38 22 54 40 14 16 24 34 30 56"/>
+        <path d="M178 88c-22 8-38 20-52 38-14 18-24 38-28 58"/>
+    </g>
+
+    <circle cx="128" cy="118" r="72" fill="none" stroke="#7f1515" stroke-width="4"/>
+
+    <path d="M171 174c20 10 31 26 35 43 2 10-2 17-10 17-11 0-16-11-14-21 2-9 8-17 14-24" fill="none" stroke="#8e1b1b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

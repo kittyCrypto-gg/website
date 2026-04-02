@@ -11,9 +11,9 @@
     /* Frame */
     --frame-bg-colour: initial;
     --frame-bg-colour-rgb: 0, 0, 0;
-    --frame-width: 95%;
+    --frame-width: min(95%, calc(100vw - 2rem));
     --frame-border-light: initial;
-    --frame-padding: 20px;
+    --frame-padding: clamp(1rem, 2vw, 1.25rem);
     --frame-box-shadow: initial;
 
     /* Banner */
@@ -106,9 +106,11 @@
     --tooltip-border-colour: var(--nav-border-colour);
     --tooltip-shadow: var(--frame-box-shadow);
 
-    --tooltip-padding: 10px 14px;
-    --tooltip-radius: 8px;
-    --tooltip-max-width: 280px;
+    --tooltip-padding-block: clamp(0.5rem, 1vw, 0.625rem);
+    --tooltip-padding-inline: clamp(0.75rem, 1.4vw, 0.875rem);
+    --tooltip-padding: var(--tooltip-padding-block) var(--tooltip-padding-inline);
+    --tooltip-radius: clamp(0.375rem, 0.3rem + 0.2vw, 0.5rem);
+    --tooltip-max-width: min(17.5rem, 85vw);
 
     --tooltip-z-index: 3000;
     --tooltip-fade-duration: 0.18s;

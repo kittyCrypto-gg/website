@@ -3,24 +3,22 @@
 ========================================= */
 
 :root {
-    --menu-padding: 15px;
-    --menu-gap: 15px;
+    --menu-padding: clamp(0.75rem, 2vw, 0.9375rem);
+    --menu-gap: clamp(0.75rem, 2vw, 0.9375rem);
     --menu-border-width: 2px;
-
-    --menu-button-padding-block: 10px;
-    --menu-button-padding-inline: 15px;
+    --menu-button-padding-block: clamp(0.55rem, 1.5vw, 0.625rem);
+    --menu-button-padding-inline: clamp(0.75rem, 2vw, 0.9375rem);
     --menu-button-radius: 8px;
-    --menu-button-font-size: calc(1rem * var(--kc-text-scale));
+    --menu-button-font-size: calc(clamp(0.95rem, 0.9rem + 0.25vw, 3rem) * var(--kc-text-scale));
     --menu-button-font-weight: 700;
-
     --menu-button-hover-scale: 1.1;
     --menu-button-bg-transition: 0.3s;
     --menu-button-transform-transition: 0.2s;
-
+    --menu-button-icon-size: 1em;
+    --menu-button-icon-gap: 0.5rem;
     --menu-crossed-line-height: 2px;
     --menu-crossed-line-colour: red;
     --menu-crossed-line-rotation: 45deg;
-
     --menu-eye-opacity: 0.5;
 }
 
@@ -48,6 +46,12 @@ nav {
 /* Menu buttons */
 .menu-button {
     flex: 1 1 0;
+    min-width: max-content;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--menu-button-icon-gap);
 
     text-decoration: none;
 
@@ -65,11 +69,38 @@ nav {
     font-weight: var(--menu-button-font-weight);
 
     text-align: center;
+    white-space: nowrap;
 
     &:hover {
         background-color: var(--menu-button-hover-bg-colour);
         transform: scale(var(--menu-button-hover-scale));
     }
+}
+
+.menu-button--with-icon {
+    padding-inline: calc(var(--menu-button-padding-inline) - 0.05rem) var(--menu-button-padding-inline);
+}
+
+.menu-button-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--menu-button-icon-size);
+    block-size: var(--menu-button-icon-size);
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
+.menu-button-icon {
+    inline-size: 100%;
+    block-size: 100%;
+    display: block;
+    flex: 0 0 auto;
+}
+
+.menu-button-text {
+    display: inline-block;
+    min-width: 0;
 }
 
 button {

@@ -22,6 +22,7 @@
     --banner-teal: #33dede;
     --banner-teal-bright: #33f2f2;
     --banner-background: transparent;
+    --banner-lilac: #8f6ad9;
 
     /* Header */
     --header-bg-colour: #b2ebf2;
@@ -87,4 +88,13 @@
     --edit-modal-btn-save-hover-colour: #388e3c;
     --edit-modal-btn-cancel-bg-colour: #d32f2f;
     --edit-modal-btn-cancel-hover-colour: #b71c1c;
+
+    --decreaseFont-icon-colour: var(--banner-lilac);
+    --increaseFont-icon-colour: var(--decreaseFont-icon-colour);
+    --resetFont-icon-colour: var(--decreaseFont-icon-colour);
+    --togglePnum-icon-colour: var(--banner-blue);
+    --clearBookmark-icon-colour: var(--banner-blue);
+    --prevChapter-icon-colour: var(--banner-blue);
+    --jumpToChapter-icon-colour: var(--banner-blue);
+    --showInfo-icon-colour: var(--banner-blue);
 }

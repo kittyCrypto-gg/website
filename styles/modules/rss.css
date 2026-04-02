@@ -5,46 +5,47 @@
 :root {
     --rss-border-width: 1.5px;
 
-    --rss-wrapper-margin-block: 40px;
+    --rss-wrapper-margin-block: clamp(1.5rem, 5vw, 2.5rem);
     --rss-wrapper-width: 90%;
 
     --rss-blog-radius: 15px;
-    --rss-blog-padding-block: 30px;
-    --rss-blog-padding-inline: 32px;
+    --rss-blog-padding-block: clamp(1.25rem, 4vw, 1.875rem);
+    --rss-blog-padding-inline: clamp(1rem, 4vw, 2rem);
 
-    --rss-container-gap: 0px;
+    --rss-container-gap: 0;
 
     --rss-scroll-behaviour: smooth;
 
-    --rss-title-font-size: calc(1.1rem * var(--kc-text-scale));
+    --rss-title-font-size: calc(clamp(1rem, 0.96rem + 0.2vw, 1.1rem) * var(--kc-text-scale));
     --rss-title-font-weight: 700;
-    --rss-title-margin-block-end: 2px;
+    --rss-title-margin-block-end: 0.125rem;
     --rss-title-line-height: 1.12;
 
     --rss-date-font-size: calc(0.99em * var(--kc-text-scale));
     --rss-date-font-weight: 400;
-    --rss-date-margin-inline-start: 18px;
+    --rss-date-margin-inline-start: clamp(0.625rem, 2vw, 1.125rem);
     --rss-date-opacity: 0.65;
 
     --rss-meta-font-size: calc(0.95em * var(--kc-text-scale));
     --rss-meta-font-weight: 500;
-    --rss-meta-margin-block-start: 4px;
-    --rss-meta-margin-block-end: 10px;
-    --rss-meta-gap: 10px;
+    --rss-meta-margin-block-start: 0.25rem;
+    --rss-meta-margin-block-end: clamp(0.5rem, 1.8vw, 0.625rem);
+    --rss-meta-gap: clamp(0.5rem, 1.8vw, 0.625rem);
 
     --rss-tag-font-size: calc(0.92em * var(--kc-text-scale));
 
     --rss-pill-radius: 5px;
-    --rss-pill-padding-block: 2px;
-    --rss-pill-padding-inline: 8px;
-    --rss-pill-margin-inline-end: 2px;
+    --rss-pill-padding-block: 0.125rem;
+    --rss-pill-padding-inline: clamp(0.4rem, 1.5vw, 0.5rem);
+    --rss-pill-margin-inline-end: 0.125rem;
     --rss-pill-font-size: calc(0.9em * var(--kc-text-scale));
     --rss-pill-font-weight: 500;
 
-    --rss-summary-font-size: calc(1.05em * var(--kc-text-scale));
-    --rss-summary-gap: 8px;
-    --rss-summary-padding-inline-start: 2px;
+    --rss-summary-font-size: calc(clamp(1em, 1rem + 0.2vw, 1.05em) * var(--kc-text-scale));
+    --rss-summary-gap: clamp(0.375rem, 1.2vw, 0.5rem);
+    --rss-summary-padding-inline-start: 0.125rem;
     --rss-summary-radius: 4px;
+    --rss-summary-margin-block-end: 0.5rem;
     --rss-summary-transition-bg: 0.17s;
     --rss-summary-transition-color: 0.2s;
 
@@ -54,24 +55,24 @@
     --rss-content-line-height: 1.74;
     --rss-content-transition: 0.38s cubic-bezier(0.36, 1.63, 0.41, 0.88);
 
-    --rss-posts-wrapper-max-width: 900px;
-    --rss-posts-wrapper-padding-inline: 20px;
+    --rss-posts-wrapper-max-width: clamp(42rem, 86vw, 56.25rem);
+    --rss-posts-wrapper-padding-inline: clamp(0.75rem, 2.5vw, 1.25rem);
 
-    --rss-post-gap: 6px;
-    --rss-post-padding-block: 18px;
-    --rss-post-padding-inline: 20px;
+    --rss-post-gap: clamp(0.25rem, 1vw, 0.375rem);
+    --rss-post-padding-block: clamp(0.875rem, 2.5vw, 1.125rem);
+    --rss-post-padding-inline: clamp(1rem, 3vw, 1.25rem);
     --rss-post-radius: 10px;
-    --rss-post-margin-block-end: 22px;
+    --rss-post-margin-block-end: clamp(1rem, 3vw, 1.375rem);
     --rss-post-bg-transition: 0.3s;
 
     --rss-post-even-mix: 85%;
     --rss-post-even-mix-target: black;
 
-    --rss-image-max-width: 420px;
+    --rss-image-max-width: clamp(16rem, 48vw, 26.25rem);
     --rss-image-radius: 8px;
     --rss-image-margin-block: 1rem;
 
-    --rss-post-link-margin-top: 6px;
+    --rss-post-link-margin-top: 0.375rem;
     --rss-post-link-font-size: calc(1em * var(--kc-text-scale));
     --rss-post-link-font-weight: 600;
     --rss-post-link-transition: 0.2s;
@@ -119,7 +120,7 @@
 
     scroll-behavior: var(--rss-scroll-behaviour);
 
-    >.blog-container {
+    > .blog-container {
         display: flex;
         flex-direction: column;
         gap: var(--rss-container-gap);
@@ -202,7 +203,7 @@
 
     color: var(--body-text-colour);
 
-    margin-bottom: 8px;
+    margin-bottom: var(--rss-summary-margin-block-end);
 
     text-align: left;
     cursor: pointer;
@@ -284,9 +285,11 @@
     transition: background var(--rss-post-bg-transition);
 
     &:nth-child(even) {
-        background-color: color-mix(in srgb,
-                var(--chatroom-bg-colour) var(--rss-post-even-mix),
-                var(--rss-post-even-mix-target));
+        background-color: color-mix(
+            in srgb,
+            var(--chatroom-bg-colour) var(--rss-post-even-mix),
+            var(--rss-post-even-mix-target)
+        );
     }
 
     &:hover,

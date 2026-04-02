@@ -5,6 +5,10 @@ import { setupReaderToggle } from "./readerMode.ts";
 import * as readAloud from "./readAloud.tsx";
 import { keyboardEmu } from "./keyboard.ts";
 import * as loader from "./loader.ts";
+import { createMenu } from "./menu.tsx";
+import { createHeader } from "./header.ts";
+import { createFooter } from "./footer.ts";
+import { fetchUiData } from "./uiFetch.ts";
 
 type TerminalModule = Readonly<{
     term: Readonly<{
@@ -28,17 +32,6 @@ type KeyboardEmuCtor = new (
         transport: Readonly<{ send: (payload: Readonly<{ seq: string }>) => void }>,
         inputEl: HTMLTextAreaElement
     ) => Promise<KeyboardEmuInstance>;
-}>;
-
-type MainJson = Readonly<{
-    headScripts?: readonly string[];
-    headerInjections?: readonly string[];
-    mainMenu: Record<string, string>;
-    header: string;
-    footer: string;
-    themeToggle: Readonly<{ dark: string; light: string; title?: string }>;
-    readerModeToggle: Readonly<{ enable: string; disable: string; title?: string }>;
-    readAloudToggle: Readonly<{ enable: string; disable: string; title?: string }>;
 }>;
 
 type CookieValue = string | null;
@@ -463,12 +456,13 @@ function initBadgSnptCpy(): void {
  */
 async function initialiseUI(): Promise<void> {
     try {
-        const response = await fetch("../data/main.json");
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        const data = await fetchUiData();
 
-        const data = (await response.json()) as MainJson;
+        await Promise.all([
+            createMenu(data, document),
+            createHeader(data, document),
+            createFooter(data, document)
+        ]);
 
         if (data.headerInjections && data.headerInjections.length > 0) {
             applyHeaderInjections(document, data.headerInjections);
@@ -488,38 +482,13 @@ async function initialiseUI(): Promise<void> {
             });
         }
 
-        const menu = document.getElementById("main-menu");
-        if (!menu) throw new Error("Element #main-menu not found!");
-
-        for (const [text, link] of Object.entries(data.mainMenu)) {
-            const linkId = makeStableId("kc-main-menu_", text);
-
-            removeExistingById(linkId, document);
-
-            const button = document.createElement("a");
-            button.id = linkId;
-            button.href = link;
-            button.textContent = text;
-            button.classList.add("menu-button");
-            menu.appendChild(button);
-        }
-
-        const header = document.getElementById("main-header");
-        if (!header) throw new Error("Element #main-header not found!");
-        if (!header.textContent?.trim()) header.textContent = data.header;
-
-        const footer = document.getElementById("main-footer");
-        if (!footer) throw new Error("Element #main-footer not found!");
-        const currentYear = new Date().getFullYear();
-        footer.textContent = data.footer.replace("${year}", String(currentYear));
-
         const themeToggle = recreateSingleton("theme-toggle", () => document.createElement("button"), document);
         themeToggle.classList.add("theme-toggle-button");
         document.body.appendChild(themeToggle);
 
         /**
-         * @param {"dark" | "light"} theme - Theme to apply.
-         * @param {boolean} persist - Whether to persist to cookie.
+         * @param {"dark" | "light"} theme Theme to apply.
+         * @param {boolean} persist Whether to persist to cookie.
          * @returns {void} Nothing.
          */
         const applyTheme = (theme: "dark" | "light", persist: boolean = false): void => {

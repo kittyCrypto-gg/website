@@ -1,11 +1,29 @@
 {
   "mainMenu": {
-    "🏠Main": "./",
-    "❓About": "./about",
-    "📚Stories": "./reader",
-    "📖Guestbook": "./guestbook",
-    "💬Chat": "./chat",
-    "🧶Blog": "./blog"
+    "Main": {
+      "href": "./",
+      "icon": "/images/home.svg"
+    },
+    "About": {
+      "href": "./about",
+      "icon": "/images/info.svg"
+    },
+    "Stories": {
+      "href": "./reader",
+      "icon": "/images/bookshelf.svg"
+    },
+    "Guestbook": {
+      "href": "./guestbook",
+      "icon": "/images/book.svg"
+    },
+    "Chat": {
+      "href": "./chat",
+      "icon": "/images/chat.svg"
+    },
+    "Blog": {
+      "href": "./blog",
+      "icon": "/images/yarn.svg"
+    }
   },
   "header": "${pageTitle}",
   "footer": "Kitty's website is open-source. 2024 - ${year}",

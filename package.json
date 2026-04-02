@@ -4,7 +4,7 @@
     "scripts": {
         "clean": "node -e \"import('node:fs').then(({ rmSync }) => rmSync('dist', { recursive: true, force: true }))\"",
         "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
-        "build": "npm run clean && npm run typecheck && tsx build.mts"
+        "build": "tsx build.mts"
     },
     "devDependencies": {
         "@types/node": "^25.2.3",
@@ -15,6 +15,7 @@
         "typescript": "^5.9.3"
     },
     "dependencies": {
+        "dotenv": "^17.3.1",
         "react": "^19.2.4",
         "react-dom": "^19.2.4"
     }
