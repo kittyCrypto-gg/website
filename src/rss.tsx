@@ -1,20 +1,29 @@
+import React from "react";
 import { Clusteriser } from "./clusterise.ts";
-import * as config from "./config.ts";
+import * as cfg from "./config.ts";
+import { render2Frag, render2Mkup } from "./reactHelpers.tsx";
+import { CalCtrl, type CalHasArg, type CalSel } from "./calendar.tsx";
+
+declare global {
+    namespace JSX {
+        interface Element extends React.ReactElement { }
+        interface IntrinsicElements {
+            [elemName: string]: Record<string, unknown>;
+        }
+    }
+}
 
 declare const marked: {
-    /**
-     * @param {string} markdown
-     * @returns {string}
-     */
     parse: (markdown: string) => string;
 };
 
-type BlogWrapperResult = Readonly<{
-    scrollBox: HTMLDivElement | null;
-    blogContainer: HTMLDivElement;
+type WrapRs = Readonly<{
+    scr: HTMLDivElement | null;
+    box: HTMLDivElement;
+    cal: HTMLDivElement | null;
 }>;
 
-type RssPost = Readonly<{
+type RssItm = Readonly<{
     title: string;
     description: string;
     content: string;
@@ -23,422 +32,620 @@ type RssPost = Readonly<{
     guid: string;
 }>;
 
-let blogClusteriser: Clusteriser | null = null;
+type Pst = Readonly<{
+    ttl: string;
+    dsc: string;
+    cnt: string;
+    pub: string;
+    ath: string;
+    gid: string;
+    dt: Date;
+    yr: number;
+    mo: number;
+    dy: number;
+}>;
+
+let blogClstr: Clusteriser | null = null;
+let calCtl: CalCtrl | null = null;
+let allPsts: readonly Pst[] = [];
 
 /**
  * @returns {boolean}
  */
-function isBlogPath(): boolean {
+function isBlogPth(): boolean {
     return window.location.pathname.toLowerCase().includes("blog");
 }
 
 /**
- * On the blog page, ensure the surrounding containers do not clamp height/overflow.
  * @returns {void}
  */
-function applyBlogPageLayoutHints(): void {
-    if (!isBlogPath()) return;
+function aplyBlogLyt(): void {
+    const sels = [".frame", ".frame-content", "#main-content", ".blog-wrapper", ".blog-container"];
 
-    const frame = document.querySelector(".frame");
-    if (frame instanceof HTMLElement) {
-        frame.style.height = "auto";
-        frame.style.maxHeight = "none";
-        frame.style.overflow = "visible";
-    }
+    sels.forEach((sel) => {
+        const el = document.querySelector(sel);
+        if (!(el instanceof HTMLElement)) return;
 
-    const frameContent = document.querySelector(".frame-content");
-    if (frameContent instanceof HTMLElement) {
-        frameContent.style.height = "auto";
-        frameContent.style.maxHeight = "none";
-        frameContent.style.overflow = "visible";
-    }
-
-    const mainContent = document.querySelector("#main-content");
-    if (mainContent instanceof HTMLElement) {
-        mainContent.style.height = "auto";
-        mainContent.style.maxHeight = "none";
-        mainContent.style.overflow = "visible";
-    }
-
-    const blogWrapper = document.querySelector(".blog-wrapper");
-    if (blogWrapper instanceof HTMLElement) {
-        blogWrapper.style.height = "auto";
-        blogWrapper.style.maxHeight = "none";
-        blogWrapper.style.overflow = "visible";
-    }
-
-    const blogContainer = document.querySelector(".blog-container");
-    if (blogContainer instanceof HTMLElement) {
-        blogContainer.style.height = "auto";
-        blogContainer.style.maxHeight = "none";
-        blogContainer.style.overflow = "visible";
-    }
+        el.style.height = "auto";
+        el.style.maxHeight = "none";
+        el.style.overflow = "visible";
+    });
 }
 
 /**
- * Ensure .blog-container is inside .rss-scroll-2, creating/wrapping as needed.
- * @returns {BlogWrapperResult | null}
+ * @returns {HTMLDivElement | null}
  */
-function ensureBlogScrollWrapper(): BlogWrapperResult | null {
-    if (isBlogPath()) {
-        const blogContainer = document.querySelector(".blog-container");
-        if (!(blogContainer instanceof HTMLDivElement)) return null;
-        return { scrollBox: null, blogContainer };
+function ensCalSlot(): HTMLDivElement | null {
+    const slot = document.getElementById("kc-blog-cal-filter");
+    return slot instanceof HTMLDivElement ? slot : null;
+}
+
+/**
+ * @returns {WrapRs | null}
+ */
+function ensBlogWrap(): WrapRs | null {
+    if (isBlogPth()) {
+        const box = document.querySelector(".blog-container");
+        if (!(box instanceof HTMLDivElement)) return null;
+
+        const cal = ensCalSlot();
+
+        return {
+            scr: null,
+            box,
+            cal
+        };
     }
 
-    const wrapper = document.querySelector(".blog-wrapper");
-    if (!(wrapper instanceof HTMLElement)) return null;
+    const wrap = document.querySelector(".blog-wrapper");
+    if (!(wrap instanceof HTMLElement)) return null;
 
-    let scrollBox: Element | null = wrapper.querySelector(".rss-scroll-2");
-    let blogContainer: Element | null = wrapper.querySelector(".blog-container");
+    let scr: Element | null = wrap.querySelector(".rss-scroll-2");
+    let box: Element | null = wrap.querySelector(".blog-container");
 
-    if (!(blogContainer instanceof HTMLDivElement)) {
-        const created = document.createElement("div");
-        created.className = "blog-container";
-        blogContainer = created;
+    if (!(box instanceof HTMLDivElement)) {
+        const nxt = document.createElement("div");
+        nxt.className = "blog-container";
+        box = nxt;
     }
 
-    if (!(scrollBox instanceof HTMLDivElement)) {
-        const created = document.createElement("div");
-        created.className = "rss-scroll-2";
-        created.appendChild(blogContainer);
-        scrollBox = created;
+    if (!(scr instanceof HTMLDivElement)) {
+        const nxt = document.createElement("div");
+        nxt.className = "rss-scroll-2";
+        nxt.appendChild(box);
+        scr = nxt;
 
-        Array.from(wrapper.children).forEach((child) => {
-            if (child === scrollBox) return;
-            if (!(child instanceof Element)) return;
-            if (!child.classList.contains("blog-container")) return;
-            wrapper.removeChild(child);
+        Array.from(wrap.children).forEach((chd) => {
+            if (chd === scr) return;
+            if (!(chd instanceof Element)) return;
+            if (!chd.classList.contains("blog-container")) return;
+            wrap.removeChild(chd);
         });
 
-        const hdr = wrapper.querySelector(".comments-header");
-        const afterHdr = hdr?.nextSibling ?? null;
+        const hdr = wrap.querySelector(".comments-header");
+        const aft = hdr?.nextSibling ?? null;
 
-        if (afterHdr) wrapper.insertBefore(scrollBox, afterHdr);
-        else wrapper.appendChild(scrollBox);
+        if (aft) wrap.insertBefore(scr, aft);
+        else wrap.appendChild(scr);
     }
 
-    if (!scrollBox.contains(blogContainer)) scrollBox.appendChild(blogContainer);
+    if (!scr.contains(box)) scr.appendChild(box);
 
-    if (!(scrollBox instanceof HTMLDivElement) || !(blogContainer instanceof HTMLDivElement)) return null;
+    if (!(scr instanceof HTMLDivElement) || !(box instanceof HTMLDivElement)) return null;
 
-    return { scrollBox, blogContainer };
+    return {
+        scr,
+        box,
+        cal: null
+    };
 }
 
 /**
  * @returns {void}
  */
-function adjustBlogScrollHeight(): void {
-    const result = ensureBlogScrollWrapper();
-    const scrollBox = result?.scrollBox ?? null;
-    if (!scrollBox) return;
+function adjScrHgt(): void {
+    const rs = ensBlogWrap();
+    const scr = rs?.scr ?? null;
+    if (!scr) return;
 
-    const posts = Array.from(scrollBox.querySelectorAll<HTMLElement>(".rss-post-block"));
-    if (posts.length === 0) return;
+    const psts = Array.from(scr.querySelectorAll<HTMLElement>(".rss-post-block"));
+    if (psts.length === 0) return;
 
-    const scrollTop = scrollBox.scrollTop;
-    let firstIndex = 0;
+    const top = scr.scrollTop;
+    let fstIx = 0;
 
-    for (let i = 0; i < posts.length; i += 1) {
-        if ((posts[i]?.offsetTop ?? 0) <= scrollTop) {
-            firstIndex = i;
+    for (let i = 0; i < psts.length; i += 1) {
+        if ((psts[i]?.offsetTop ?? 0) <= top) {
+            fstIx = i;
             continue;
         }
         break;
     }
 
-    const secondIndex = firstIndex + 1 < posts.length ? firstIndex + 1 : firstIndex;
+    const sndIx = fstIx + 1 < psts.length ? fstIx + 1 : fstIx;
+    const fstH = psts[fstIx]?.offsetHeight ?? 0;
+    const sndH = psts[sndIx]?.offsetHeight ?? 0;
 
-    const firstHeight = posts[firstIndex]?.offsetHeight ?? 0;
-    const secondHeight = posts[secondIndex]?.offsetHeight ?? 0;
-
-    scrollBox.style.maxHeight =
-        firstIndex === secondIndex ? `${firstHeight}px` : `${firstHeight + secondHeight}px`;
+    scr.style.maxHeight = fstIx === sndIx ? `${fstH}px` : `${fstH + sndH}px`;
 }
 
 /**
  * @returns {void}
  */
-function setupDynamicScrollBox(): void {
-    const result = ensureBlogScrollWrapper();
-    const scrollBox = result?.scrollBox ?? null;
-    if (!scrollBox) return;
+function setDynScr(): void {
+    const rs = ensBlogWrap();
+    const scr = rs?.scr ?? null;
+    if (!scr) return;
 
-    scrollBox.addEventListener("transitionend", () => adjustBlogScrollHeight(), true);
-    scrollBox.addEventListener("scroll", () => adjustBlogScrollHeight(), { passive: true });
-    window.addEventListener("resize", () => adjustBlogScrollHeight());
+    scr.addEventListener("transitionend", () => adjScrHgt(), true);
+    scr.addEventListener("scroll", () => adjScrHgt(), { passive: true });
+    window.addEventListener("resize", () => adjScrHgt());
 }
 
 /**
  * @returns {void}
  */
-function triggerAdjustOnToggles(): void {
+function trgAdjOnTgl(): void {
     const blog = document.querySelector(".blog-container");
     if (!(blog instanceof HTMLElement)) return;
 
     blog.addEventListener("click", (ev) => {
-        const t = ev.target;
-        if (!(t instanceof Element)) return;
-        if (!t.closest(".rss-post-toggle")) return;
+        const trg = ev.target;
+        if (!(trg instanceof Element)) return;
+        if (!trg.closest(".rss-post-toggle")) return;
 
-        window.setTimeout(() => adjustBlogScrollHeight(), 350);
+        window.setTimeout(() => adjScrHgt(), 350);
     });
 }
 
 /**
  * @param {string} xml
- * @returns {RssPost[]}
+ * @returns {RssItm[]}
  */
-function parseRSS(xml: string): RssPost[] {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, "application/xml");
+function prsRss(xml: string): RssItm[] {
+    const prs = new DOMParser();
+    const doc = prs.parseFromString(xml, "application/xml");
 
-    return Array.from(doc.querySelectorAll("item")).map((item) => {
-        const contentTags = item.getElementsByTagName("content:encoded");
-        const contentEncoded = (contentTags.length ? (contentTags[0]?.textContent ?? "") : "").trim();
+    return Array.from(doc.querySelectorAll("item")).map((itm) => {
+        const cntTags = itm.getElementsByTagName("content:encoded");
+        const cnt = (cntTags.length ? (cntTags[0]?.textContent ?? "") : "").trim();
 
         return {
-            title: (item.querySelector("title")?.textContent ?? "").trim(),
-            description: (item.querySelector("description")?.textContent ?? "").trim(),
-            content: contentEncoded,
-            pubDate: (item.querySelector("pubDate")?.textContent ?? "").trim(),
-            author: ((item.querySelector("author")?.textContent ?? "Kitty").trim() || "Kitty"),
-            guid: (item.querySelector("guid")?.textContent ?? "").trim()
+            title: (itm.querySelector("title")?.textContent ?? "").trim(),
+            description: (itm.querySelector("description")?.textContent ?? "").trim(),
+            content: cnt,
+            pubDate: (itm.querySelector("pubDate")?.textContent ?? "").trim(),
+            author: ((itm.querySelector("author")?.textContent ?? "Kitty").trim() || "Kitty"),
+            guid: (itm.querySelector("guid")?.textContent ?? "").trim()
         };
     });
 }
 
 /**
- * @param {string} dateStr
- * @returns {string}
+ * @param {string} pub
+ * @returns {Date}
  */
-function formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return "";
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}.${m}.${day}`;
+function mkDt(pub: string): Date {
+    const dt = new Date(pub);
+    return Number.isNaN(dt.getTime()) ? new Date(0) : dt;
 }
 
 /**
- * @param {RssPost} post
- * @returns {string}
+ * @param {RssItm[]} itms
+ * @returns {Pst[]}
  */
-function renderPost(post: RssPost): string {
-    const contentHtml = marked.parse(post.content);
-    const expanded = isBlogPath();
+function mkPsts(itms: RssItm[]): Pst[] {
+    return itms
+        .map((itm) => {
+            const dt = mkDt(itm.pubDate);
 
-    const arrow = expanded ? "🔽" : "▶️";
-    const ariaExpanded = expanded ? "true" : "false";
-    const contentClass = expanded ? "rss-post-content content-expanded" : "rss-post-content content-collapsed";
-    const contentStyle = expanded ? "overflow: visible; max-height: none;" : "overflow: hidden; max-height: 0;";
-
-    return `
-        <div class="rss-post-block">
-        <div class="rss-post-toggle" ${expanded ? "" : 'tabindex="0" role="button"'} aria-expanded="${ariaExpanded}">
-            <div class="rss-post-header">
-            <span class="summary-arrow">${arrow}</span>
-            <span class="rss-post-title">${post.title}</span>
-            <span class="rss-post-date">${formatDate(post.pubDate)}</span>
-            </div>
-            <div class="rss-post-meta"><span class="rss-post-author">By: ${post.author}</span></div>
-            <div class="rss-post-summary summary-collapsed">
-            <span class="summary-text">${post.description}</span>
-            </div>
-        </div>
-        <div class="${contentClass}" style="${contentStyle}">${contentHtml}</div>
-        </div>
-    `;
+            return {
+                ttl: itm.title,
+                dsc: itm.description,
+                cnt: itm.content,
+                pub: itm.pubDate,
+                ath: itm.author,
+                gid: itm.guid,
+                dt,
+                yr: dt.getFullYear(),
+                mo: dt.getMonth() + 1,
+                dy: dt.getDate()
+            };
+        })
+        .sort((a, b) => b.dt.getTime() - a.dt.getTime());
 }
 
 /**
- * @param {HTMLElement} postDiv
+ * @param {string} pub
+ * @returns {string}
+ */
+function fmtDt(pub: string): string {
+    const dt = mkDt(pub);
+    if (dt.getTime() === 0) return "";
+
+    const yr = dt.getFullYear();
+    const mo = String(dt.getMonth() + 1).padStart(2, "0");
+    const dy = String(dt.getDate()).padStart(2, "0");
+
+    return `${yr}.${mo}.${dy}`;
+}
+
+/**
+ * @param {Pst} pst
+ * @param {boolean} exp
+ * @returns {JSX.Element}
+ */
+function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Element {
+    const cnt = { __html: marked.parse(pst.cnt) };
+    const arr = exp ? "🔽" : "▶️";
+    const expd = exp ? "true" : "false";
+    const cls = exp ? "rss-post-content content-expanded" : "rss-post-content content-collapsed";
+
+    return (
+        <article className="rss-post-block" data-pub={pst.pub} data-gid={pst.gid}>
+            <div
+                className="rss-post-toggle"
+                {...(exp ? {} : { tabIndex: 0, role: "button" })}
+                aria-expanded={expd}
+            >
+                <div className="rss-post-header">
+                    <span className="summary-arrow">{arr}</span>
+                    <span className="rss-post-title">{pst.ttl}</span>
+                    <span className="rss-post-date">{fmtDt(pst.pub)}</span>
+                </div>
+
+                <div className="rss-post-meta">
+                    <span className="rss-post-author">By: {pst.ath}</span>
+                </div>
+
+                <div className="rss-post-summary summary-collapsed">
+                    <span className="summary-text">{pst.dsc}</span>
+                </div>
+            </div>
+
+            <div className={cls} dangerouslySetInnerHTML={cnt} />
+        </article>
+    );
+}
+
+/**
+ * @param {string} ttl
+ * @param {string} body
+ * @returns {JSX.Element}
+ */
+function EmptyBlk({ ttl, body }: Readonly<{ ttl: string; body: string }>): JSX.Element {
+    return (
+        <section className="rss-empty" aria-live="polite">
+            <div className="rss-empty__ttl">{ttl}</div>
+            <p className="rss-empty__txt">{body}</p>
+        </section>
+    );
+}
+
+/**
+ * @param {HTMLElement} pstDiv
  * @returns {void}
  */
-function configurePostLinks(postDiv: HTMLElement): void {
-    Array.from(postDiv.querySelectorAll<HTMLAnchorElement>("a[href]")).forEach((link) => {
-        if (link.dataset.rssNewTab === "1") return;
-        link.dataset.rssNewTab = "1";
+function cfgPstLks(pstDiv: HTMLElement): void {
+    Array.from(pstDiv.querySelectorAll<HTMLAnchorElement>("a[href]")).forEach((lnk) => {
+        if (lnk.dataset.rssNewTab === "1") return;
 
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
+        lnk.dataset.rssNewTab = "1";
+        lnk.target = "_blank";
+        lnk.rel = "noopener noreferrer";
 
-        link.addEventListener("click", (ev) => {
+        lnk.addEventListener("click", (ev) => {
             ev.stopPropagation();
         });
     });
 }
 
 /**
- * Force a post open and remove interactivity (blog page only).
- * @param {HTMLElement} postDiv
+ * @param {HTMLElement} pstDiv
  * @returns {void}
  */
-function lockPostExpanded(postDiv: HTMLElement): void {
-    const toggleDiv = postDiv.querySelector(".rss-post-toggle");
-    if (!(toggleDiv instanceof HTMLElement)) return;
+function atchTgl(pstDiv: HTMLElement): void {
+    const tgl = pstDiv.querySelector(".rss-post-toggle");
+    if (!(tgl instanceof HTMLElement)) return;
 
-    const headerDiv = toggleDiv.querySelector(".rss-post-header");
-    if (headerDiv instanceof HTMLElement) {
-        const arrowSpan = headerDiv.querySelector(".summary-arrow");
-        if (arrowSpan instanceof HTMLElement) arrowSpan.textContent = "🔽";
-    }
+    const hdr = tgl.querySelector(".rss-post-header");
+    if (!(hdr instanceof HTMLElement)) return;
 
-    toggleDiv.setAttribute("aria-expanded", "true");
-    toggleDiv.removeAttribute("role");
-    toggleDiv.removeAttribute("tabindex");
-    toggleDiv.style.cursor = "default";
+    const arr = hdr.querySelector(".summary-arrow");
+    if (!(arr instanceof HTMLElement)) return;
 
-    const contentEl = postDiv.querySelector(".rss-post-content");
-    if (!(contentEl instanceof HTMLElement)) return;
+    const cntEl = pstDiv.querySelector(".rss-post-content");
+    if (!(cntEl instanceof HTMLElement)) return;
 
-    contentEl.classList.add("content-expanded");
-    contentEl.classList.remove("content-collapsed");
-    contentEl.style.maxHeight = "none";
-    contentEl.style.overflow = "visible";
+    const cnt = cntEl;
+    const tglRef = tgl;
+    const arrRef = arr;
 
-    configurePostLinks(postDiv);
-}
-
-/**
- * Attach toggle logic to a post element
- * @param {HTMLElement} postDiv
- * @returns {void}
- */
-function attachToggleLogic(postDiv: HTMLElement): void {
-    const toggleDiv = postDiv.querySelector(".rss-post-toggle");
-    if (!(toggleDiv instanceof HTMLElement)) return;
-
-    const headerDiv = toggleDiv.querySelector(".rss-post-header");
-    if (!(headerDiv instanceof HTMLElement)) return;
-
-    const arrowSpan = headerDiv.querySelector(".summary-arrow");
-    if (!(arrowSpan instanceof HTMLElement)) return;
-
-    const contentEl = postDiv.querySelector(".rss-post-content");
-    if (!(contentEl instanceof HTMLElement)) return;
-
-    const contentDiv: HTMLElement = contentEl;
-    const toggleRef: HTMLElement = toggleDiv;
-    const arrowRef: HTMLElement = arrowSpan;
-
-    configurePostLinks(postDiv);
+    cfgPstLks(pstDiv);
 
     /**
      * @returns {void}
      */
-    function togglePost(): void {
-        const expanded = contentDiv.classList.toggle("content-expanded");
-        contentDiv.classList.toggle("content-collapsed", !expanded);
-        toggleRef.setAttribute("aria-expanded", expanded ? "true" : "false");
+    function tglPst(): void {
+        const expd = cnt.classList.toggle("content-expanded");
+        cnt.classList.toggle("content-collapsed", !expd);
+        tglRef.setAttribute("aria-expanded", expd ? "true" : "false");
 
-        if (expanded) {
-            arrowRef.textContent = "🔽";
-            contentDiv.style.maxHeight = `${contentDiv.scrollHeight}px`;
-        } else {
-            arrowRef.textContent = "▶️";
-            contentDiv.style.maxHeight = "0px";
+        if (expd) {
+            arrRef.textContent = "🔽";
+            cnt.style.maxHeight = `${cnt.scrollHeight}px`;
+            return;
         }
 
-        toggleRef.blur();
+        arrRef.textContent = "▶️";
+        cnt.style.maxHeight = "0px";
+        tglRef.blur();
     }
 
-    toggleRef.addEventListener("click", (ev) => {
-        const clickPath = ev.composedPath();
-        const clickedAnchor = clickPath.find((node) => node instanceof HTMLAnchorElement);
-        if (clickedAnchor) return;
+    tglRef.addEventListener("click", (ev) => {
+        const pth = ev.composedPath();
+        const hitA = pth.find((nd) => nd instanceof HTMLAnchorElement);
+        if (hitA) return;
 
-        togglePost();
+        tglPst();
     });
 
-    toggleRef.addEventListener("keydown", (e) => {
-        if (e.key !== "Enter" && e.key !== " ") return;
-        e.preventDefault();
-        togglePost();
+    tglRef.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+
+        ev.preventDefault();
+        tglPst();
     });
 
-    contentDiv.addEventListener("click", (ev) => {
-        if (!contentDiv.classList.contains("content-expanded")) return;
+    cnt.addEventListener("click", (ev) => {
+        if (!cnt.classList.contains("content-expanded")) return;
 
-        const clickPath = ev.composedPath();
-        const clickedInteractive = clickPath.find((node) =>
-            node instanceof HTMLAnchorElement ||
-            node instanceof HTMLButtonElement ||
-            node instanceof HTMLInputElement ||
-            node instanceof HTMLTextAreaElement ||
-            node instanceof HTMLSelectElement ||
-            node instanceof HTMLLabelElement
+        const pth = ev.composedPath();
+        const hitCtl = pth.find((nd) =>
+            nd instanceof HTMLAnchorElement ||
+            nd instanceof HTMLButtonElement ||
+            nd instanceof HTMLInputElement ||
+            nd instanceof HTMLTextAreaElement ||
+            nd instanceof HTMLSelectElement ||
+            nd instanceof HTMLLabelElement
         );
-        if (clickedInteractive) return;
 
-        togglePost();
+        if (hitCtl) return;
+        tglPst();
     });
 }
 
 /**
- * @param {HTMLElement} container
+ * @param {HTMLElement} box
  * @returns {void}
  */
-function attachAllToggles(container: HTMLElement): void {
-    const posts = Array.from(container.querySelectorAll<HTMLElement>(".rss-post-block"));
-    if (posts.length === 0) return;
+function atchAllTgl(box: HTMLElement): void {
+    const psts = Array.from(box.querySelectorAll<HTMLElement>(".rss-post-block"));
+    if (psts.length === 0) return;
 
-    if (isBlogPath()) {
-        posts.forEach((postDiv) => lockPostExpanded(postDiv));
+    psts.forEach((pst) => atchTgl(pst));
+}
+
+/**
+ * @param {readonly Pst[]} psts
+ * @returns {number[]}
+ */
+function mkYrOpts(psts: readonly Pst[]): number[] {
+    const nowYr = new Date().getFullYear();
+    const src = new Set<number>([nowYr]);
+
+    psts.forEach((pst) => {
+        if (Number.isNaN(pst.yr)) return;
+        src.add(pst.yr);
+    });
+
+    return Array.from(src).sort((a, b) => b - a);
+}
+
+/**
+ * @param {Pst} pst
+ * @param {CalSel} sel
+ * @returns {boolean}
+ */
+function mtchPst(pst: Pst, sel: CalSel): boolean {
+    const yrOk = sel.yrs.size === 0 || sel.yrs.has(pst.yr);
+    const moOk = sel.mos.size === 0 || sel.mos.has(pst.mo);
+    const dyOk = sel.dys.size === 0 || sel.dys.has(pst.dy);
+
+    return yrOk && moOk && dyOk;
+}
+
+/**
+ * @param {readonly Pst[]} psts
+ * @returns {(arg: CalHasArg) => boolean}
+ */
+function mkHasFn(psts: readonly Pst[]): (arg: CalHasArg) => boolean {
+    return ({ lvl, val, sel, ctx }: CalHasArg): boolean => {
+        return psts.some((pst) => {
+            const yrOk =
+                lvl === "yr"
+                    ? pst.yr === val
+                    : ctx.yr !== undefined
+                        ? pst.yr === ctx.yr
+                        : sel.yrs.size === 0 || sel.yrs.has(pst.yr);
+
+            const moOk =
+                lvl === "mo"
+                    ? pst.mo === val
+                    : ctx.mo !== undefined
+                        ? pst.mo === ctx.mo
+                        : sel.mos.size === 0 || sel.mos.has(pst.mo);
+
+            const dyOk =
+                lvl === "dy"
+                    ? ctx.dy !== undefined
+                        ? pst.dy === ctx.dy
+                        : pst.dy === val
+                    : sel.dys.size === 0 || sel.dys.has(pst.dy);
+
+            return yrOk && moOk && dyOk;
+        });
+    };
+}
+
+/**
+ * @param {HTMLDivElement} box
+ * @param {readonly Pst[]} psts
+ * @param {CalSel} sel
+ * @returns {void}
+ */
+function rndBlog(box: HTMLDivElement, psts: readonly Pst[], sel: CalSel): void {
+    const vis = psts.filter((pst) => mtchPst(pst, sel));
+
+    if (vis.length === 0) {
+        const frag = render2Frag(
+            <EmptyBlk
+                ttl="No posts for this date selection"
+                body="Try adding another year, month, or day, or clear the filters to widen the range."
+            />
+        );
+
+        box.replaceChildren(frag);
+        aplyBlogLyt();
         return;
     }
 
-    posts.forEach((postDiv) => attachToggleLogic(postDiv));
+    const frag = render2Frag(
+        <>
+            {vis.map((pst) => (
+                <PstCard
+                    key={pst.gid || `${pst.pub}-${pst.ttl}`}
+                    pst={pst}
+                    exp={false}
+                />
+            ))}
+        </>
+    );
+
+    box.replaceChildren(frag);
+    atchAllTgl(box);
+    aplyBlogLyt();
+}
+
+/**
+ * @param {HTMLDivElement} slot
+ * @param {HTMLDivElement} box
+ * @param {readonly Pst[]} psts
+ * @returns {void}
+ */
+function mntCal(slot: HTMLDivElement, box: HTMLDivElement, psts: readonly Pst[]): void {
+    const yrs = mkYrOpts(psts);
+    const has = mkHasFn(psts);
+
+    if (calCtl) {
+        calCtl.destroy();
+        calCtl = null;
+    }
+
+    calCtl = new CalCtrl({
+        host: slot,
+        ttl: "Browse by date",
+        yrs,
+        has,
+        onChg: (sel) => {
+            rndBlog(box, psts, sel);
+        }
+    });
+
+    calCtl.init();
+}
+
+/**
+ * @param {HTMLDivElement} box
+ * @param {readonly Pst[]} psts
+ * @returns {void}
+ */
+function rndStd(box: HTMLDivElement, psts: readonly Pst[]): void {
+    const rows = psts.map((pst) => render2Mkup(<PstCard pst={pst} exp={false} />));
+
+    if (!blogClstr) {
+        blogClstr = new Clusteriser(box);
+        void blogClstr.init().then(() => {
+            blogClstr?.update(rows);
+            window.requestAnimationFrame(() => {
+                atchAllTgl(box);
+                trgAdjOnTgl();
+                setDynScr();
+                window.setTimeout(() => adjScrHgt(), 100);
+            });
+        });
+        return;
+    }
+
+    blogClstr.update(rows);
+
+    window.requestAnimationFrame(() => {
+        atchAllTgl(box);
+        trgAdjOnTgl();
+        setDynScr();
+        window.setTimeout(() => adjScrHgt(), 100);
+    });
+}
+
+/**
+ * @param {HTMLDivElement} box
+ * @param {unknown} err
+ * @returns {void}
+ */
+function rndErr(box: HTMLDivElement, err: unknown): void {
+    console.error(err);
+
+    const frag = render2Frag(
+        <EmptyBlk
+            ttl="The blog feed could not be loaded"
+            body="Please refresh the page or try again in a moment."
+        />
+    );
+
+    box.replaceChildren(frag);
+    aplyBlogLyt();
 }
 
 /**
  * @returns {Promise<void>}
  */
 async function loadBlogFeed(): Promise<void> {
-    const result = ensureBlogScrollWrapper();
-    if (!result) return;
+    const rs = ensBlogWrap();
+    if (!rs) return;
 
-    const { blogContainer: container } = result;
-    container.innerHTML = "";
+    const { box, cal } = rs;
+    box.innerHTML = "";
 
-    const response = await fetch(`${config.RSS_BACKEND_URL}`);
-    if (!response.ok) {
-        throw new Error(`RSS fetch error: ${response.status} ${response.statusText}`);
-    }
-
-    const xmlText = await response.text();
-    const posts = parseRSS(xmlText);
-    const rows = posts.map((post) => renderPost(post));
-    const blogPage = isBlogPath();
-
-    if (blogPage) {
-        container.innerHTML = rows.join("");
-    }
-
-    if (!blogPage) {
-        if (!blogClusteriser) {
-            blogClusteriser = new Clusteriser(container);
-            await blogClusteriser.init();
+    try {
+        const rsp = await fetch(`${cfg.RSS_BACKEND_URL}`);
+        if (!rsp.ok) {
+            throw new Error(`RSS fetch error: ${rsp.status} ${rsp.statusText}`);
         }
-        blogClusteriser.update(rows);
-    }
 
-    window.requestAnimationFrame(() => {
-        attachAllToggles(container);
+        const xml = await rsp.text();
+        allPsts = mkPsts(prsRss(xml));
 
-        if (blogPage) {
-            applyBlogPageLayoutHints();
+        if (cal instanceof HTMLDivElement) {
+            mntCal(cal, box, allPsts);
             return;
         }
 
-        triggerAdjustOnToggles();
-        setupDynamicScrollBox();
-        window.setTimeout(() => adjustBlogScrollHeight(), 100);
-    });
+        if (isBlogPth()) {
+            rndBlog(box, allPsts, {
+                yrs: new Set<number>(),
+                mos: new Set<number>(),
+                dys: new Set<number>()
+            });
+            return;
+        }
+
+        rndStd(box, allPsts);
+    } catch (err: unknown) {
+        rndErr(box, err);
+    }
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    applyBlogPageLayoutHints();
+    aplyBlogLyt();
     void loadBlogFeed();
 });

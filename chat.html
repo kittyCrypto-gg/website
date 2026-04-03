@@ -14,22 +14,22 @@
 <body>
     <div class="frame frame-chat">
         <div class="frame-content">
-            <aside id="banner-wrapper" role="presentation" aria-hidden="true">
-                <img id="term-icon" />
+            <aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
                 <div id="terminal-wrapper">
                     <div id="terminal-loading">Loading terminal...</div>
                     <div id="terminal"></div>
-                    <div id="banner"></div>
                 </div>
             </aside>
             <nav id="main-menu"></nav>
             <header id="main-header">Kitty Crypto Chat</header>
             <main id="main-content">
-                <div id="chatroom"></div>
-                <div class="chat-inputs">
-                    <input type="text" id="nickname" placeholder="Enter your nickname">
-                    <input type="text" id="message" placeholder="Type your message here">
-                    <button id="send-button">Send</button>
+                <div id="chat-window">
+                    <div id="chatroom"></div>
+                    <div class="chat-inputs">
+                        <input type="text" id="nickname" placeholder="Enter your nickname">
+                        <input type="text" id="message" placeholder="Type your message here">
+                        <button id="send-button">Send</button>
+                    </div>
                 </div>
             </main>
         </div>

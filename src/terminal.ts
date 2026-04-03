@@ -1,5 +1,4 @@
 import * as config from "./config.ts";
-import { WindowApi } from "./window.ts";
 
 type MobileDetectInstance = Readonly<{
     mobile: () => unknown;
@@ -265,6 +264,29 @@ function attachSafeResizeFitting(fitNow: () => void): () => void {
     return (): void => {
         window.removeEventListener("resize", onResize);
         if (vv && onVVResize) vv.removeEventListener("resize", onVVResize);
+    };
+}
+
+/**
+ * @param {HTMLElement} observedEl - Element whose size changes should trigger a fit.
+ * @param {() => void} fitNow - Fit callback.
+ * @returns {() => void} Detach function.
+ */
+function attachTerminalResizeObserver(observedEl: HTMLElement, fitNow: () => void): () => void {
+    if (typeof ResizeObserver === "undefined") {
+        return (): void => {
+            // Nothing to detach.
+        };
+    }
+
+    const observer = new ResizeObserver(() => {
+        raf2(fitNow);
+    });
+
+    observer.observe(observedEl);
+
+    return (): void => {
+        observer.disconnect();
     };
 }
 
@@ -562,11 +584,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     const terminalWrapper = safeGetEl("terminal-wrapper");
     const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
-    const iconEl = safeGetEl("term-icon");
 
     if (!terminalWrapper) throw new Error("Missing element: #terminal-wrapper");
     if (!shellWrapper) throw new Error("Missing element: #shell-wrapper or #banner-wrapper");
-    if (!(iconEl instanceof HTMLImageElement)) throw new Error("Missing element: #term-icon");
 
     let ws: WebSocket | null = null;
     let reconnecting = false;
@@ -576,10 +596,6 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     let lastWsNoticeAt = 0;
     let lastWsNoticeKey: string | null = null;
-
-    iconEl.src = "/images/terminal.svg";
-    iconEl.alt = "Terminal icon";
-    iconEl.title = "Double-click to open terminal";
 
     terminalWrapper.innerHTML = "";
 
@@ -607,17 +623,13 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     let scrollCtl: ScrollTrackingController | null = null;
     let fitScheduled = false;
-    let terminalWindow: WindowApi | null = null;
 
     /**
      * @returns {void} Nothing.
      */
     const fitNow = (): void => {
-        if (!terminalWindow) return;
         if (!scrollCtl) return;
         if (!term.element) return;
-        if (terminalWindow.isClosed()) return;
-        if (terminalWindow.isMinimised()) return;
 
         const rect = termDiv.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) return;
@@ -638,17 +650,6 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             fitNow();
         });
     };
-
-    terminalWindow = new WindowApi({
-        id: "terminal",
-        title: "YuriGreen Terminal Emulator - /home/kitty/",
-        launcher: iconEl,
-        closedLnchrDis: "inline-block",
-        onLayoutChange: scheduleFit,
-        showCloseBttn: true
-    });
-
-    terminalWindow.makeWindow(shellWrapper);
 
     term.open(termDiv);
 
@@ -815,6 +816,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     }
 
     const detachResizeHandlers = attachSafeResizeFitting(scheduleFit);
+    const detachResizeObserver = attachTerminalResizeObserver(shellWrapper, scheduleFit);
 
     scheduleFit();
 
@@ -845,6 +847,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         isReady: (): boolean => ready,
         dispose: (): void => {
             detachResizeHandlers();
+            detachResizeObserver();
 
             try {
                 ws?.close();
@@ -852,7 +855,6 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
                 // ignore
             }
 
-            terminalWindow?.dispose();
             term.dispose();
         }
     };

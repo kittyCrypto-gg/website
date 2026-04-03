@@ -1,379 +1,593 @@
 import {
-  activateImageNavigation,
-  getParams,
-  injectBookmarksIntoHTML,
-  readerIsFullyLoaded
+	activateImageNavigation,
+	getParams,
+	injectBookmarksIntoHTML,
+	readerIsFullyLoaded
 } from "./reader.tsx";
 
 type ChapterImageInfo = Readonly<{
-  src: string;
-  alt: string;
-  hasContainer: boolean;
+	src: string;
+	alt: string;
+	hasContainer: boolean;
 }>;
 
 type ReadabilityParseResult = Readonly<{
-  content?: string;
+	content?: string;
 }> | null;
 
 type ReadabilityInstance = Readonly<{
-  parse: () => ReadabilityParseResult;
+	parse: () => ReadabilityParseResult;
 }>;
 
 type ReadabilityConstructor = new (doc: Document) => ReadabilityInstance;
 
-declare global {
-  interface Window {
-    Readability?: ReadabilityConstructor;
-  }
+type ReaderModeKeepTarget = string | Element | null | undefined;
 
-  interface HTMLElement {
-    __readerListener?: boolean;
-  }
+export type ReaderModeOptions = Readonly<{
+	keep?: readonly ReaderModeKeepTarget[];
+	focus?: ReaderModeKeepTarget;
+}>;
+
+declare global {
+	interface Window {
+		Readability?: ReadabilityConstructor;
+	}
+
+	interface HTMLElement {
+		__readerListener?: boolean;
+	}
 }
 
 class ReaderToggle {
-  readerActive: boolean = false;
-  originalNodeClone: Node | null = null;
-  readerToggle: HTMLElement;
-  enableText: string = "";
-  disableText: string = "";
-
-  /**
-   * @param {HTMLElement} readerToggle - The toggle element used to enable/disable reader mode.
-   */
-  constructor(readerToggle: HTMLElement) {
-    this.readerToggle = readerToggle;
-    this.enableText = readerToggle.getAttribute("data-enable") || "";
-    this.disableText = readerToggle.getAttribute("data-disable") || "";
-    this.handleToggleClick = this.handleToggleClick.bind(this);
-  }
-
-  static async setup(): Promise<boolean> {
-    if (document.readyState === "loading") {
-      await new Promise<void>((resolve) =>
-        document.addEventListener("DOMContentLoaded", () => resolve(), { once: true })
-      );
-    }
-
-    let readerToggle = document.getElementById("reader-toggle");
-
-    if (!readerToggle) {
-      readerToggle = await new Promise<HTMLElement>((resolve) => {
-        const observer = new MutationObserver(() => {
-          const el = document.getElementById("reader-toggle");
-          if (!el) return;
-          observer.disconnect();
-          resolve(el);
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-      });
-    }
-
-    if (!readerToggle) return false;
-
-    const instance = new ReaderToggle(readerToggle);
-    instance.syncButtonState();
-
-    if (!readerToggle.__readerListener) {
-      readerToggle.addEventListener("click", instance.handleToggleClick);
-      readerToggle.__readerListener = true;
-    }
-
-    if (window.location.search.includes("reader=true")) {
-      await readerIsFullyLoaded();
-      await instance.enableReaderMode();
-    }
-
-    return true;
-  }
-
-  syncButtonState(): void {
-    if (document.body.classList.contains("reader-mode")) {
-      this.readerToggle.textContent = this.disableText;
-      this.readerToggle.classList.add("active");
-      return;
-    }
-
-    this.readerToggle.textContent = this.enableText;
-    this.readerToggle.classList.remove("active");
-  }
-
-  /**
-   * @param {unknown} doc - Document clone to sanitise for Readability parsing.
-   * @returns {void} Removes tooltip behaviour for reader mode.
-   * - Normal tooltips: unwrap trigger, drop tooltip content.
-   * - Translation tooltips: unwrap translation content, drop trigger.
-   */
-  parseTooltips(doc: unknown): void {
-    if (!(doc instanceof Document)) return;
-
-    const renderedTooltips = Array.from(doc.querySelectorAll<HTMLElement>(".tooltip"));
-    for (const tooltip of renderedTooltips) {
-      const translationContent = tooltip.querySelector<HTMLElement>(".tooltip-content.translation");
-      if (translationContent && (translationContent.textContent || "").trim()) {
-        const frag = doc.createDocumentFragment();
-        for (const n of Array.from(translationContent.childNodes)) {
-          frag.appendChild(n.cloneNode(true));
-        }
-        tooltip.replaceWith(frag);
-        continue;
-      }
-
-      const trigger = tooltip.querySelector<HTMLElement>(".tooltip-trigger");
-      if (!trigger) {
-        tooltip.remove();
-        continue;
-      }
-
-      const frag = doc.createDocumentFragment();
-      for (const n of Array.from(trigger.childNodes)) {
-        frag.appendChild(n.cloneNode(true));
-      }
-
-      tooltip.replaceWith(frag);
-    }
-
-    const rawTooltips = Array.from(doc.getElementsByTagName("tooltip"));
-    for (const tooltip of rawTooltips) {
-      const contentEl = Array.from(tooltip.children).find((n) => n.tagName.toLowerCase() === "content") as Element | undefined;
-
-      if (!contentEl) {
-        tooltip.remove();
-        continue;
-      }
-
-      const translationAttr = (contentEl.getAttribute("translation") || "").trim().toLowerCase();
-      if (translationAttr === "true") {
-        const nodes = Array.from(contentEl.childNodes);
-        if (nodes.length === 0 || (contentEl.textContent || "").trim() === "") {
-          tooltip.remove();
-          continue;
-        }
-
-        const frag = doc.createDocumentFragment();
-        for (const n of nodes) {
-          frag.appendChild(n.cloneNode(true));
-        }
-
-        tooltip.replaceWith(frag);
-        continue;
-      }
-
-      const triggerNodes = Array.from(tooltip.childNodes).filter((n) => n !== contentEl);
-      if (triggerNodes.length === 0) {
-        tooltip.remove();
-        continue;
-      }
-
-      const frag = doc.createDocumentFragment();
-      for (const n of triggerNodes) {
-        frag.appendChild(n.cloneNode(true));
-      }
-
-      tooltip.replaceWith(frag);
-    }
-  }
-
-  /**
-   * @param {Document | Element} root - Root node to scan for chapter images.
-   * @returns {ChapterImageInfo[]}
-   */
-  storeChapterImages(root: Document | Element = document): ChapterImageInfo[] {
-    return Array.from(root.querySelectorAll<HTMLImageElement>("img.chapter-image")).map((img) => ({
-      src: img.currentSrc || img.src,
-      alt: img.alt,
-      hasContainer: !!img.closest(".chapter-image-container")
-    }));
-  }
-
-  async ensureReadabilityLoaded(): Promise<void> {
-    if (window.Readability) return;
-
-    await new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.min.js";
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load Readability"));
-      document.head.appendChild(script);
-    });
-  }
-
-  /**
-   * @param {unknown} list - Stored image metadata list.
-   * @param {Document | Element} root - Root element where images should be restored.
-   * @returns {void}
-   */
-  restoreChapterImages(list: unknown, root: Document | Element): void {
-    if (!Array.isArray(list) || !root) return;
-    const imgs = root.querySelectorAll<HTMLImageElement>("img");
-
-    (list as ReadonlyArray<ChapterImageInfo>).forEach(({ src, alt, hasContainer }) => {
-      const img = Array.from(imgs).find((i) => (i.currentSrc || i.src) === src && i.alt === alt);
-      if (!img) return;
-
-      img.classList.add("chapter-image");
-
-      if (hasContainer && !img.closest(".chapter-image-container")) {
-        const wrapper =
-          (root as unknown as { createElement?: (tag: string) => HTMLElement }).createElement?.("div") ||
-          document.createElement("div");
-        wrapper.className = "chapter-image-container";
-        img.replaceWith(wrapper);
-        wrapper.appendChild(img);
-      }
-    });
-
-    activateImageNavigation(root as Document);
-  }
-
-  /**
-   * @param {unknown} doc - Document clone to sanitise for Readability parsing.
-   * @returns {void} Keeps only From/To/Subject and the email body (without signature) for reader mode.
-   */
-  parseEmails(doc: unknown): void {
-    if (!(doc instanceof Document)) return;
-
-    const cards = Array.from(doc.querySelectorAll<HTMLElement>(".email-card"));
-    if (cards.length === 0) return;
-
-    const getLabel = (row: Element): string =>
-      (row.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
-
-    const getNameFor = (card: Element, labelLower: string): string => {
-      const rows = Array.from(card.querySelectorAll<HTMLElement>(".email-row"));
-      const row = rows.find((r) => getLabel(r) === labelLower);
-      if (!row) return "";
-
-      const nameEl = row.querySelector<HTMLElement>(".email-name") || row.querySelector<HTMLElement>(".email-value");
-      return (nameEl?.textContent || "").trim();
-    };
-
-    const getSubject = (card: Element): string =>
-      (card.querySelector<HTMLElement>(".email-subject-text")?.textContent || "").trim();
-
-    const splitParagraphs = (text: string): string[] => {
-      const t = (text || "").replace(/\r\n?/g, "\n");
-      return t
-        .split(/\n+/g)
-        .map((p) => p.replace(/\s+/g, " ").trim())
-        .filter(Boolean);
-    };
-
-    for (const card of cards) {
-      const fromName = getNameFor(card, "from");
-      const toName = getNameFor(card, "to");
-      const subject = getSubject(card);
-
-      const contentClone = card.querySelector<HTMLElement>(".email-content")?.cloneNode(true) as HTMLElement | null;
-      if (contentClone) {
-        contentClone.querySelectorAll(".email-signature, .email-signature-sep").forEach((n) => n.remove());
-      }
-
-      const bodyRaw = contentClone ? (contentClone.innerText || contentClone.textContent || "") : "";
-      const bodyParas = splitParagraphs(bodyRaw);
-
-      const replacement = doc.createElement("div");
-      replacement.className = "reader-email";
-
-      const addLine = (label: string, value: string): void => {
-        if (!value) return;
-        const p = doc.createElement("p");
-        p.textContent = `${label}: ${value}`;
-        replacement.appendChild(p);
-      };
-
-      addLine("From", fromName);
-      addLine("To", toName);
-      addLine("Subject", subject);
-
-      for (const para of bodyParas) {
-        const p = doc.createElement("p");
-        p.textContent = para;
-        replacement.appendChild(p);
-      }
-
-      const wrapper = card.closest<HTMLElement>(".email-wrapper") ?? card;
-      wrapper.replaceWith(replacement);
-    }
-
-    doc.querySelectorAll(".email-actions-bar").forEach((n) => n.remove());
-  }
-
-  /**
-   * @returns {Promise<void>} Enables reader mode by parsing the current document with Readability.
-   */
-  async enableReaderMode(): Promise<void> {
-    const imgArray = this.storeChapterImages(document);
-    const { storyPath, chapter } = getParams();
-
-    await this.ensureReadabilityLoaded();
-
-    const articleElem = document.querySelector<HTMLElement>("article#reader, main, article");
-    if (!articleElem) {
-      alert("No article found for reader mode.");
-      return;
-    }
-
-    if (!this.originalNodeClone) this.originalNodeClone = articleElem.cloneNode(true);
-
-    const docClone = document.cloneNode(true) as Document;
-    this.parseTooltips(docClone);
-    this.parseEmails(docClone);
-
-    const reader = new (window.Readability as ReadabilityConstructor)(docClone);
-    const parsed = reader.parse();
-    if (!(parsed && parsed.content)) return;
-
-    const parser = new DOMParser();
-    const parsedDoc = parser.parseFromString(parsed.content, "text/html");
-
-    const htmlContent = storyPath
-      ? await injectBookmarksIntoHTML(parsedDoc.body.innerHTML, storyPath, chapter)
-      : parsedDoc.body.innerHTML;
-
-    articleElem.innerHTML = htmlContent;
-    this.restoreChapterImages(imgArray, articleElem);
-
-    const articleObj = document.getElementById("reader");
-    if (articleObj) articleObj.classList.add("reader-container");
-
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has("reader")) {
-      url.searchParams.set("reader", "true");
-      window.history.pushState({}, "", url);
-    }
-
-    document.body.classList.add("reader-mode");
-    this.readerToggle.textContent = this.disableText;
-    this.readerToggle.classList.add("active");
-    this.readerActive = true;
-  }
-
-  async __hardSoftReload(): Promise<void> {
-    const url = new URL(window.location.href);
-    url.searchParams.set("_", Date.now().toString());
-    window.location.replace(url.toString());
-  }
-
-  async disableReaderMode(): Promise<void> {
-    document.body.classList.remove("reader-mode");
-
-    const url = new URL(window.location.href);
-    url.searchParams.delete("reader");
-    window.history.replaceState({}, "", url);
-
-    await this.__hardSoftReload();
-  }
-
-  async handleToggleClick(): Promise<void> {
-    if (this.readerActive) {
-      await this.disableReaderMode();
-      return;
-    }
-
-    await this.enableReaderMode();
-  }
+	readerActive: boolean = false;
+	originalNodeClone: Node | null = null;
+	readerToggle: HTMLElement;
+	enableText: string = "";
+	disableText: string = "";
+	options: ReaderModeOptions;
+
+	/**
+	 * @param {HTMLElement} readerToggle - The toggle element used to enable/disable reader mode.
+	 * @param {ReaderModeOptions} [options={}] - Reader mode keep/focus configuration.
+	 * @returns {void}
+	 */
+	constructor(readerToggle: HTMLElement, options: ReaderModeOptions = {}) {
+		this.readerToggle = readerToggle;
+		this.enableText = readerToggle.getAttribute("data-enable") || "";
+		this.disableText = readerToggle.getAttribute("data-disable") || "";
+		this.options = options;
+		this.handleToggleClick = this.handleToggleClick.bind(this);
+	}
+
+	/**
+	 * @param {ReaderModeOptions} [options={}] - Reader mode keep/focus configuration.
+	 * @returns {Promise<boolean>} True when the toggle was found and initialised.
+	 */
+	static async setup(options: ReaderModeOptions = {}): Promise<boolean> {
+		if (document.readyState === "loading") {
+			await new Promise<void>((resolve) =>
+				document.addEventListener("DOMContentLoaded", () => resolve(), { once: true })
+			);
+		}
+
+		let readerToggle = document.getElementById("reader-toggle");
+
+		if (!readerToggle) {
+			readerToggle = await new Promise<HTMLElement>((resolve) => {
+				const observer = new MutationObserver(() => {
+					const el = document.getElementById("reader-toggle");
+					if (!el) return;
+					observer.disconnect();
+					resolve(el);
+				});
+
+				observer.observe(document.body, { childList: true, subtree: true });
+			});
+		}
+
+		if (!readerToggle) return false;
+
+		const instance = new ReaderToggle(readerToggle, options);
+		instance.syncButtonState();
+
+		if (!readerToggle.__readerListener) {
+			readerToggle.addEventListener("click", instance.handleToggleClick);
+			readerToggle.__readerListener = true;
+		}
+
+		if (window.location.search.includes("reader=true")) {
+			await readerIsFullyLoaded();
+
+			window.requestAnimationFrame(() => {
+				window.requestAnimationFrame(() => {
+					void instance.enableReaderMode();
+				});
+			});
+		}
+
+		return true;
+	}
+
+	/**
+	 * @returns {void}
+	 */
+	syncButtonState(): void {
+		if (document.body.classList.contains("reader-mode")) {
+			this.readerToggle.textContent = this.disableText;
+			this.readerToggle.classList.add("active");
+			return;
+		}
+
+		this.readerToggle.textContent = this.enableText;
+		this.readerToggle.classList.remove("active");
+	}
+
+	/**
+	 * @param {ReaderModeKeepTarget} target - Selector or element to resolve.
+	 * @param {ParentNode} [root=document] - Root used for selector lookup.
+	 * @returns {Element[]} Resolved elements.
+	 */
+	resolveTarget(target: ReaderModeKeepTarget, root: ParentNode = document): Element[] {
+		if (!target) return [];
+
+		if (typeof target === "string") {
+			return Array.from(root.querySelectorAll(target));
+		}
+
+		if (target instanceof Element) {
+			return [target];
+		}
+
+		return [];
+	}
+
+	/**
+	 * @param {HTMLElement} fallback - Fallback focus root.
+	 * @returns {Element} Focus root for reader mode.
+	 */
+	resolveFocusRoot(fallback: HTMLElement): Element {
+		const resolved = this.resolveTarget(this.options.focus);
+		return resolved[0] ?? fallback;
+	}
+
+	/**
+	 * @param {Element} focusRoot - Main reading surface.
+	 * @returns {Element[]} Elements whose subtrees should remain visible.
+	 */
+	collectKeepRoots(focusRoot: Element): Element[] {
+		const collected = new Set<Element>();
+
+		collected.add(this.readerToggle);
+		collected.add(focusRoot);
+
+		const extraKeeps = this.options.keep ?? [];
+		for (const keepTarget of extraKeeps) {
+			for (const el of this.resolveTarget(keepTarget)) {
+				collected.add(el);
+			}
+		}
+
+		return Array.from(collected).filter((el) => el.isConnected);
+	}
+
+	/**
+	 * @param {Element} el - Element to hide.
+	 * @returns {void}
+	 */
+	hideElement(el: Element): void {
+		if (!(el instanceof HTMLElement)) return;
+
+		el.dataset.readerModeHidden = "true";
+		el.style.setProperty("display", "none", "important");
+	}
+
+	/**
+	 * @param {Element} focusRoot - Root content element that should lose its window chrome.
+	 * @returns {void}
+	 */
+	unframeManagedWindow(focusRoot: Element): void {
+		const frame = focusRoot.closest<HTMLElement>(
+			".window-frame, [data-window-id], [data-window-api-mounted='true']"
+		);
+
+		if (!frame) return;
+
+		const header = frame.querySelector<HTMLElement>(":scope > .window-header");
+		const body = frame.querySelector<HTMLElement>(":scope > .window-body");
+
+		if (header) {
+			header.dataset.readerModeHidden = "true";
+			header.style.setProperty("display", "none", "important");
+		}
+
+		frame.dataset.readerModeUnframed = "true";
+		frame.style.setProperty("display", "contents", "important");
+		frame.style.setProperty("background", "transparent", "important");
+		frame.style.setProperty("border", "0", "important");
+		frame.style.setProperty("box-shadow", "none", "important");
+		frame.style.setProperty("padding", "0", "important");
+		frame.style.setProperty("margin", "0", "important");
+		frame.style.setProperty("inline-size", "auto", "important");
+		frame.style.setProperty("block-size", "auto", "important");
+		frame.style.setProperty("width", "auto", "important");
+		frame.style.setProperty("height", "auto", "important");
+		frame.style.setProperty("max-width", "none", "important");
+		frame.style.setProperty("max-height", "none", "important");
+		frame.style.setProperty("min-width", "0", "important");
+		frame.style.setProperty("min-height", "0", "important");
+		frame.style.setProperty("position", "static", "important");
+		frame.style.setProperty("left", "auto", "important");
+		frame.style.setProperty("top", "auto", "important");
+		frame.style.setProperty("overflow", "visible", "important");
+		frame.style.setProperty("resize", "none", "important");
+		frame.style.setProperty("z-index", "auto", "important");
+
+		if (body) {
+			body.dataset.readerModeUnframed = "true";
+			body.style.setProperty("display", "contents", "important");
+			body.style.setProperty("padding", "0", "important");
+			body.style.setProperty("margin", "0", "important");
+			body.style.setProperty("overflow", "visible", "important");
+			body.style.setProperty("height", "auto", "important");
+			body.style.setProperty("max-height", "none", "important");
+			body.style.setProperty("min-height", "0", "important");
+			body.style.setProperty("flex", "0 1 auto", "important");
+		}
+	}
+
+	/**
+	 * @param {readonly Element[]} keepRoots - Roots whose full subtrees must stay visible.
+	 * @returns {void}
+	 */
+	hideEverythingExcept(keepRoots: readonly Element[]): void {
+		const keepRootSet = new Set<Element>(keepRoots);
+		const keepAncestorSet = new Set<Element>();
+
+		for (const keepRoot of keepRoots) {
+			let cur: Element | null = keepRoot;
+			while (cur && cur !== document.body) {
+				keepAncestorSet.add(cur);
+				cur = cur.parentElement;
+			}
+		}
+
+		/**
+		 * @param {Element} container - Current container to walk.
+		 * @returns {void}
+		 */
+		const visit = (container: Element): void => {
+			for (const child of Array.from(container.children)) {
+				if (keepRootSet.has(child)) {
+					continue;
+				}
+
+				if (keepAncestorSet.has(child)) {
+					visit(child);
+					continue;
+				}
+
+				this.hideElement(child);
+			}
+		};
+
+		visit(document.body);
+	}
+
+	/**
+	 * @param {Element} focusRoot - Primary reading root to keep and unframe.
+	 * @param {readonly Element[]} keepRoots - Additional keep roots.
+	 * @returns {void}
+	 */
+	applyReaderShell(focusRoot: Element, keepRoots: readonly Element[]): void {
+		this.unframeManagedWindow(focusRoot);
+		this.hideEverythingExcept(keepRoots);
+	}
+
+	/**
+	 * @param {unknown} doc - Document clone to sanitise for Readability parsing.
+	 * @returns {void} Removes tooltip behaviour for reader mode.
+	 * - Normal tooltips: unwrap trigger, drop tooltip content.
+	 * - Translation tooltips: unwrap translation content, drop trigger.
+	 */
+	parseTooltips(doc: unknown): void {
+		if (!(doc instanceof Document)) return;
+
+		const renderedTooltips = Array.from(doc.querySelectorAll<HTMLElement>(".tooltip"));
+		for (const tooltip of renderedTooltips) {
+			const translationContent = tooltip.querySelector<HTMLElement>(".tooltip-content.translation");
+			if (translationContent && (translationContent.textContent || "").trim()) {
+				const frag = doc.createDocumentFragment();
+				for (const n of Array.from(translationContent.childNodes)) {
+					frag.appendChild(n.cloneNode(true));
+				}
+				tooltip.replaceWith(frag);
+				continue;
+			}
+
+			const trigger = tooltip.querySelector<HTMLElement>(".tooltip-trigger");
+			if (!trigger) {
+				tooltip.remove();
+				continue;
+			}
+
+			const frag = doc.createDocumentFragment();
+			for (const n of Array.from(trigger.childNodes)) {
+				frag.appendChild(n.cloneNode(true));
+			}
+
+			tooltip.replaceWith(frag);
+		}
+
+		const rawTooltips = Array.from(doc.getElementsByTagName("tooltip"));
+		for (const tooltip of rawTooltips) {
+			const contentEl = Array.from(tooltip.children).find(
+				(n) => n.tagName.toLowerCase() === "content"
+			) as Element | undefined;
+
+			if (!contentEl) {
+				tooltip.remove();
+				continue;
+			}
+
+			const translationAttr = (contentEl.getAttribute("translation") || "").trim().toLowerCase();
+			if (translationAttr === "true") {
+				const nodes = Array.from(contentEl.childNodes);
+				if (nodes.length === 0 || (contentEl.textContent || "").trim() === "") {
+					tooltip.remove();
+					continue;
+				}
+
+				const frag = doc.createDocumentFragment();
+				for (const n of nodes) {
+					frag.appendChild(n.cloneNode(true));
+				}
+
+				tooltip.replaceWith(frag);
+				continue;
+			}
+
+			const triggerNodes = Array.from(tooltip.childNodes).filter((n) => n !== contentEl);
+			if (triggerNodes.length === 0) {
+				tooltip.remove();
+				continue;
+			}
+
+			const frag = doc.createDocumentFragment();
+			for (const n of triggerNodes) {
+				frag.appendChild(n.cloneNode(true));
+			}
+
+			tooltip.replaceWith(frag);
+		}
+	}
+
+	/**
+	 * @param {Document | Element} root - Root node to scan for chapter images.
+	 * @returns {ChapterImageInfo[]}
+	 */
+	storeChapterImages(root: Document | Element = document): ChapterImageInfo[] {
+		return Array.from(root.querySelectorAll<HTMLImageElement>("img.chapter-image")).map((img) => ({
+			src: img.currentSrc || img.src,
+			alt: img.alt,
+			hasContainer: !!img.closest(".chapter-image-container")
+		}));
+	}
+
+	/**
+	 * @returns {Promise<void>}
+	 */
+	async ensureReadabilityLoaded(): Promise<void> {
+		if (window.Readability) return;
+
+		await new Promise<void>((resolve, reject) => {
+			const script = document.createElement("script");
+			script.src = "https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.min.js";
+			script.onload = () => resolve();
+			script.onerror = () => reject(new Error("Failed to load Readability"));
+			document.head.appendChild(script);
+		});
+	}
+
+	/**
+	 * @param {unknown} list - Stored image metadata list.
+	 * @param {Document | Element} root - Root element where images should be restored.
+	 * @returns {void}
+	 */
+	restoreChapterImages(list: unknown, root: Document | Element): void {
+		if (!Array.isArray(list) || !root) return;
+		const imgs = root.querySelectorAll<HTMLImageElement>("img");
+
+		(list as ReadonlyArray<ChapterImageInfo>).forEach(({ src, alt, hasContainer }) => {
+			const img = Array.from(imgs).find((i) => (i.currentSrc || i.src) === src && i.alt === alt);
+			if (!img) return;
+
+			img.classList.add("chapter-image");
+
+			if (hasContainer && !img.closest(".chapter-image-container")) {
+				const wrapper =
+					(root as unknown as { createElement?: (tag: string) => HTMLElement }).createElement?.("div") ||
+					document.createElement("div");
+				wrapper.className = "chapter-image-container";
+				img.replaceWith(wrapper);
+				wrapper.appendChild(img);
+			}
+		});
+
+		activateImageNavigation(document);
+	}
+
+	/**
+	 * @param {unknown} doc - Document clone to sanitise for Readability parsing.
+	 * @returns {void} Keeps only From/To/Subject and the email body (without signature) for reader mode.
+	 */
+	parseEmails(doc: unknown): void {
+		if (!(doc instanceof Document)) return;
+
+		const cards = Array.from(doc.querySelectorAll<HTMLElement>(".email-card"));
+		if (cards.length === 0) return;
+
+		const getLabel = (row: Element): string =>
+			(row.querySelector(".email-label")?.textContent || "").trim().toLowerCase();
+
+		const getNameFor = (card: Element, labelLower: string): string => {
+			const rows = Array.from(card.querySelectorAll<HTMLElement>(".email-row"));
+			const row = rows.find((r) => getLabel(r) === labelLower);
+			if (!row) return "";
+
+			const nameEl = row.querySelector<HTMLElement>(".email-name")
+				|| row.querySelector<HTMLElement>(".email-value");
+			return (nameEl?.textContent || "").trim();
+		};
+
+		const getSubject = (card: Element): string =>
+			(card.querySelector<HTMLElement>(".email-subject-text")?.textContent || "").trim();
+
+		const splitParagraphs = (text: string): string[] => {
+			const t = (text || "").replace(/\r\n?/g, "\n");
+			return t
+				.split(/\n+/g)
+				.map((p) => p.replace(/\s+/g, " ").trim())
+				.filter(Boolean);
+		};
+
+		for (const card of cards) {
+			const fromName = getNameFor(card, "from");
+			const toName = getNameFor(card, "to");
+			const subject = getSubject(card);
+
+			const contentClone = card.querySelector<HTMLElement>(".email-content")?.cloneNode(true) as HTMLElement | null;
+			if (contentClone) {
+				contentClone.querySelectorAll(".email-signature, .email-signature-sep").forEach((n) => n.remove());
+			}
+
+			const bodyRaw = contentClone ? (contentClone.innerText || contentClone.textContent || "") : "";
+			const bodyParas = splitParagraphs(bodyRaw);
+
+			const replacement = doc.createElement("div");
+			replacement.className = "reader-email";
+
+			const addLine = (label: string, value: string): void => {
+				if (!value) return;
+				const p = doc.createElement("p");
+				p.textContent = `${label}: ${value}`;
+				replacement.appendChild(p);
+			};
+
+			addLine("From", fromName);
+			addLine("To", toName);
+			addLine("Subject", subject);
+
+			for (const para of bodyParas) {
+				const p = doc.createElement("p");
+				p.textContent = para;
+				replacement.appendChild(p);
+			}
+
+			const wrapper = card.closest<HTMLElement>(".email-wrapper") ?? card;
+			wrapper.replaceWith(replacement);
+		}
+
+		doc.querySelectorAll(".email-actions-bar").forEach((n) => n.remove());
+	}
+
+	/**
+	 * @returns {Promise<void>} Enables reader mode by parsing the current document with Readability.
+	 */
+	async enableReaderMode(): Promise<void> {
+		if (this.readerActive) return;
+
+		const imgArray = this.storeChapterImages(document);
+		const { storyPath, chapter } = getParams();
+
+		await this.ensureReadabilityLoaded();
+
+		const articleElem = document.querySelector<HTMLElement>("article#reader, main article, article");
+		if (!articleElem) {
+			alert("No article found for reader mode.");
+			return;
+		}
+
+		if (!this.originalNodeClone) {
+			this.originalNodeClone = articleElem.cloneNode(true);
+		}
+
+		const docClone = document.cloneNode(true) as Document;
+		this.parseTooltips(docClone);
+		this.parseEmails(docClone);
+
+		const ReadabilityCtor = window.Readability;
+		if (!ReadabilityCtor) return;
+
+		const reader = new ReadabilityCtor(docClone);
+		const parsed = reader.parse();
+		if (!(parsed && parsed.content)) return;
+
+		const parser = new DOMParser();
+		const parsedDoc = parser.parseFromString(parsed.content, "text/html");
+
+		const htmlContent = storyPath
+			? await injectBookmarksIntoHTML(parsedDoc.body.innerHTML, storyPath, chapter)
+			: parsedDoc.body.innerHTML;
+
+		articleElem.innerHTML = htmlContent;
+		this.restoreChapterImages(imgArray, articleElem);
+
+		const articleObj = document.getElementById("reader");
+		if (articleObj) {
+			articleObj.classList.add("reader-container");
+		}
+
+		const focusRoot = this.resolveFocusRoot(articleElem);
+		const keepRoots = this.collectKeepRoots(focusRoot);
+
+		document.body.classList.add("reader-mode");
+		this.applyReaderShell(focusRoot, keepRoots);
+
+		const url = new URL(window.location.href);
+		if (!url.searchParams.has("reader")) {
+			url.searchParams.set("reader", "true");
+			window.history.pushState({}, "", url);
+		}
+
+		this.readerToggle.textContent = this.disableText;
+		this.readerToggle.classList.add("active");
+		this.readerActive = true;
+	}
+
+	/**
+	 * @returns {Promise<void>}
+	 */
+	async __hardSoftReload(): Promise<void> {
+		const url = new URL(window.location.href);
+		url.searchParams.set("_", Date.now().toString());
+		window.location.replace(url.toString());
+	}
+
+	/**
+	 * @returns {Promise<void>}
+	 */
+	async disableReaderMode(): Promise<void> {
+		document.body.classList.remove("reader-mode");
+		this.readerActive = false;
+
+		const url = new URL(window.location.href);
+		url.searchParams.delete("reader");
+		window.history.replaceState({}, "", url);
+
+		await this.__hardSoftReload();
+	}
+
+	/**
+	 * @returns {Promise<void>}
+	 */
+	async handleToggleClick(): Promise<void> {
+		if (this.readerActive) {
+			await this.disableReaderMode();
+			return;
+		}
+
+		await this.enableReaderMode();
+	}
 }
 
 export const setupReaderToggle = ReaderToggle.setup;

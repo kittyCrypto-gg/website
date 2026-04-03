@@ -23,49 +23,6 @@
         });
     </script>
     <script type="module">
-        import { WindowApi } from "/dist/window.js";
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const windowDefinitions = {
-                aboutMe: {
-                    selector: ".kitty-intro",
-                    options: {
-                        id: "about-me",
-                        title: "About Me",
-                        mountTarget: document.body
-                    }
-                },
-                socials: {
-                    selector: ".socials-segment",
-                    options: {
-                        id: "socials",
-                        title: "Find me elsewhere",
-                        mountTarget: document.body
-                    }
-                },
-                siteStats: {
-                    selector: ".site-stats",
-                    options: {
-                        id: "site-stats",
-                        title: "Stats",
-                        mountTarget: document.body
-                    }
-                }
-            };
-
-            Object.values(windowDefinitions).forEach(({ selector, options }) => {
-                const element = document.querySelector(selector);
-
-                if (!(element instanceof HTMLElement)) {
-                    console.warn("Element not found for window mounting, skipping:", selector);
-                    return;
-                }
-
-                new WindowApi(options).makeWindow(element);
-            });
-        });
-    </script>
-    <script type="module">
         import { replaceTategaki, serialisNde } from "./dist/tategaki.js";
 
         document.addEventListener("DOMContentLoaded", async () => {
@@ -121,16 +78,14 @@
 <body>
     <div class="frame">
         <div class="frame-content">
-            <aside id="banner-wrapper" role="presentation" aria-hidden="true">
-                <img id="term-icon" />
+            <aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
                 <div id="terminal-wrapper">
                     <div id="terminal-loading">Loading terminal...</div>
                     <div id="terminal"></div>
-                    <div id="banner"></div>
                 </div>
             </aside>
             <nav id="main-menu"></nav>
-            <div class="kitty-intro">
+            <div class="kitty-intro" id ="kitty-about">
                 <header id="main-header" class="comments-header">About Me</header>
                 <div class="profile-row">
                     <div class="pfp">
@@ -198,11 +153,11 @@
                 </div>
             </div>
             <div class="socials-segment">
-                <div class="comments-header">Find me elsewhere</div>
+                <div class="segment-header">Find me around the webz</div>
                 <div class="socials-segment__grid"></div>
             </div>
             <div class="site-stats kc-88by31">
-                <div class="comments-header">Stats</div>
+                <div class="segment-header">Stats</div>
 
                 <div class="site-stats__grid">
                     <div class="site-stats__item">

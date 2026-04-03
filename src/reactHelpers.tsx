@@ -22,3 +22,14 @@ export function render2Frag(node: ReactNode): DocumentFragment {
     tpl.innerHTML = render2Mkup(node);
     return tpl.content.cloneNode(true) as DocumentFragment;
 }
+
+/**
+ * 
+ * @param {cycles} number
+ * @returns void
+ */
+export async function waitForDomPaint(cycles = 2): Promise<void> {
+    for (let i = 0; i < cycles; i += 1) {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
+}

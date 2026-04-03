@@ -39,133 +39,20 @@
             target: "unique-visits-count"
         });
     </script>
-    <script type="module" id="window-initialiser">
-        import { WindowApi } from "/dist/window.js";
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const windowDefinitions = {
-                kittyIntro: {
-                    selector: "#kitty-intro-wrapper",
-                    options: {
-                        id: "kitty-intro",
-                        title: "Introduction",
-                        mountTarget: document.body,
-                        launcherSrc: "/images/about.svg"
-                    }
-                },
-                // blogWrapper: {
-                //   selector: ".blog-wrapper",
-                //   options: {
-                //     id: "blog-wrapper",
-                //     title: "Blog Posts",
-                //     mountTarget: document.body
-                //   }
-                // },
-                commitsWrapper: {
-                    selector: "#commits-outer-shell",
-                    options: {
-                        id: "commits-wrapper",
-                        title: "Source Code Tracker",
-                        mountTarget: document.body,
-                        launcherSrc: "/images/factory.svg"
-                    }
-                },
-                frontendCommitsWrapper: {
-                    selector: "#frontend-commits-window",
-                    options: {
-                        id: "frontend-commits",
-                        title: "Front-end Commits",
-                        launcherSrc: "/images/template.svg"
-                    }
-                },
-                backendCommitsWrapper: {
-                    selector: "#backend-commits-window",
-                    options: {
-                        id: "backend-commits",
-                        title: "Back-end Commits",
-                        launcherSrc: "/images/electronics.svg"
-                    }
-                },
-                sitesILikeWrapper: {
-                    selector: "#sites-i-like",
-                    options: {
-                        id: "sites-i-like",
-                        title: "Sites I find Interesting",
-                        mountTarget: document.body,
-                        launcherSrc: "/images/mind_map.svg"
-                    }
-                },
-                myButtonWrapper: {
-                    selector: "#my-button",
-                    options: {
-                        id: "my-button",
-                        title: "My Button",
-                        mountTarget: document.body,
-                        launcherSrc: "/images/share.svg"
-                    }
-                },
-                commentsWrapper: {
-                    selector: "#comments",
-                    options: {
-                        id: "comments-wrapper",
-                        title: "Comments",
-                        mountTarget: document.body,
-                        launcherSrc: "/images/comments.svg"
-                    }
-                },
-                siteStatsWrapper: {
-                    selector: "#site-stats",
-                    options: {
-                        id: "site-stats",
-                        title: "Stats",
-                        mountTarget: document.body,
-                        launcherSrc: "/images/display.svg"
-                    }
-                },
-                presenceWindow: {
-                    selector: "#presence-window-wrapper",
-                    forceFreshStateOnLoad: true,
-                    options: {
-                        id: "presence-window",
-                        title: "Status",
-                        mountTarget: document.body,
-                        launcherSrc: "/images/miku.svg"
-                    }
-                }
-            };
-
-            Object.values(windowDefinitions).forEach(({ selector, options, forceFreshStateOnLoad }) => {
-                const element = document.querySelector(selector);
-
-                if (!(element instanceof HTMLElement)) {
-                    console.warn("Element not found for window mounting, skipping:", selector);
-                    return;
-                }
-
-                if (forceFreshStateOnLoad && options.id) {
-                    window.localStorage.removeItem(`window-api:${options.id}:state`);
-                }
-
-                new WindowApi(options).makeWindow(element);
-            });
-        });
-    </script>
 </head>
 
 <body>
     <div class="frame">
         <div class="frame-content">
             <aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
-                <img id="term-icon" />
                 <div id="terminal-wrapper">
                     <div id="terminal-loading">Loading terminal...</div>
                     <div id="terminal"></div>
-                    <div id="banner"></div>
                 </div>
             </aside>
 
             <nav id="main-menu"></nav>
-            <header id="main-header">Kitty Crypto's Website!</header>
+            <header id="main-header">Kitty's Website!</header>
 
             <div class="intro-status-row">
                 <div id="kitty-intro-wrapper" class="intro-status-row__intro-shell">

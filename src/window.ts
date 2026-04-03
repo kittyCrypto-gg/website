@@ -1,3 +1,6 @@
+import { isObjectRecord } from "./helpers.ts";
+import { waitForDomPaint } from "./reactHelpers.tsx";
+
 type InitialFloatingPosition = Readonly<{
     x: string;
     y: string;
@@ -96,7 +99,7 @@ type ContentLayout = Readonly<{
  * launcher integration, floating and maximised modes, nested-window support,
  * and cleanup support.
  */
-export class WindowApi {
+class WindowMaker {
     private static zIndexCounter = 1000;
     private static readonly launcherSize = 48;
 
@@ -150,6 +153,45 @@ export class WindowApi {
     }
 
     /**
+     * @param {unknown} target Raw mount target from JSON.
+     * @returns {HTMLElement | null} Resolved target element, or null when not found.
+     */
+    public static resolveMountTarget(target: unknown): HTMLElement | null {
+        if (typeof target !== "string") {
+            return null;
+        }
+
+        const selector = target.trim();
+
+        if (!selector) {
+            return null;
+        }
+
+        if (selector === "body") {
+            return document.body;
+        }
+
+        if (selector === "html") {
+            return document.documentElement;
+        }
+
+        const element = document.querySelector(selector);
+        return element instanceof HTMLElement ? element : null;
+    }
+
+    /**
+     * @param {string} windowId Window id to normalise for storage keys.
+     * @returns {string} Sanitised window id.
+     */
+    public static sanitiseWindowId(windowId: string): string {
+        return windowId
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9_-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+    }
+
+    /**
      * Turns the supplied element into a managed window by building its header,
      * wrapping its original content into a generic content root, wiring controls and events,
      * and applying the current state.
@@ -158,7 +200,7 @@ export class WindowApi {
      *
      * @param {HTMLElement} element The DOM element to manage as a window frame.
      * @returns {this} The current instance for chaining.
-     * @throws {Error} Thrown when the element is already mounted by another WindowApi instance.
+     * @throws {Error} Thrown when the element is already mounted by another window instance.
      */
     public makeWindow(element: HTMLElement): this {
         if (this.frameEl) return this;
@@ -487,7 +529,7 @@ export class WindowApi {
      */
     private resolveWindowId(id: string | undefined): string {
         if (!id || id.trim().length === 0) {
-            return `window-${WindowApi.nextId()}`;
+            return `window-${WindowMaker.nextId()}`;
         }
 
         const sanitised = id
@@ -496,7 +538,7 @@ export class WindowApi {
             .replace(/[^a-z0-9_-]+/g, "-")
             .replace(/^-+|-+$/g, "");
 
-        return sanitised.length > 0 ? sanitised : `window-${WindowApi.nextId()}`;
+        return sanitised.length > 0 ? sanitised : `window-${WindowMaker.nextId()}`;
     }
 
     /**
@@ -582,7 +624,7 @@ export class WindowApi {
             return fallback;
         }
 
-        if (!WindowApi.isRecord(parsedUnknown)) return fallback;
+        if (!WindowMaker.isRecord(parsedUnknown)) return fallback;
 
         const parsed = parsedUnknown;
 
@@ -1474,8 +1516,8 @@ export class WindowApi {
         if (!launcher) return;
 
         launcher.classList.add("window-launcher");
-        launcher.style.width = `${WindowApi.launcherSize}px`;
-        launcher.style.height = `${WindowApi.launcherSize}px`;
+        launcher.style.width = `${WindowMaker.launcherSize}px`;
+        launcher.style.height = `${WindowMaker.launcherSize}px`;
 
         if (launcher instanceof HTMLImageElement) {
             launcher.style.objectFit = "contain";
@@ -1625,9 +1667,9 @@ export class WindowApi {
         if (!this.frameEl) return;
         if (!this.state.float) return;
 
-        WindowApi.zIndexCounter += 1;
-        this.frameEl.style.zIndex = String(WindowApi.zIndexCounter);
-        this.frameEl.style.setProperty("--window-z-index", String(WindowApi.zIndexCounter));
+        WindowMaker.zIndexCounter += 1;
+        this.frameEl.style.zIndex = String(WindowMaker.zIndexCounter);
+        this.frameEl.style.setProperty("--window-z-index", String(WindowMaker.zIndexCounter));
     }
 
     /**
@@ -1892,11 +1934,11 @@ export class WindowApi {
 
         const launcherWidth = Math.max(
             0,
-            Math.min(launcher?.offsetWidth || WindowApi.launcherSize, window.innerWidth)
+            Math.min(launcher?.offsetWidth || WindowMaker.launcherSize, window.innerWidth)
         );
         const launcherHeight = Math.max(
             0,
-            Math.min(launcher?.offsetHeight || WindowApi.launcherSize, window.innerHeight)
+            Math.min(launcher?.offsetHeight || WindowMaker.launcherSize, window.innerHeight)
         );
 
         const maxLeft = Math.max(0, window.innerWidth - launcherWidth);
@@ -1941,5 +1983,95 @@ export class WindowApi {
                 callback();
             });
         });
+    }
+}
+
+/**
+ * @param {unknown} windowDefinitions Raw window definitions from configuration.
+ * @returns {Promise<void>} Resolves after all eligible windows have been processed.
+ */
+export async function instantiateWindows(windowDefinitions: unknown): Promise<void> {
+    await waitForDomPaint();
+
+    if (!isObjectRecord(windowDefinitions)) return;
+
+    const defs = Object.values(windowDefinitions);
+
+    for (const definitionUnknown of defs) {
+        if (!isObjectRecord(definitionUnknown)) {
+            continue;
+        }
+
+        const selector = typeof definitionUnknown.selector === "string"
+            ? definitionUnknown.selector
+            : "";
+
+        if (!selector) {
+            continue;
+        }
+
+        const retry = definitionUnknown.retry === true;
+        const rawRetryCount = typeof definitionUnknown.noOfRetries === "number"
+            ? definitionUnknown.noOfRetries
+            : 0;
+
+        const maxRetries = retry ? rawRetryCount : 0;
+        let attempt = 0;
+        let element: HTMLElement | null = null;
+
+        element = document.querySelector(selector) as HTMLElement | null;
+
+        if (!(element instanceof HTMLElement)) {
+            continue;
+        }
+
+        if (element.dataset.windowApiMounted === "true") {
+            continue;
+        }
+
+        const optionsUnknown = definitionUnknown.options;
+
+        if (!isObjectRecord(optionsUnknown)) {
+            console.warn("Window definition missing options, skipping:", selector);
+            continue;
+        }
+
+        const mountTarget = WindowMaker.resolveMountTarget(optionsUnknown.mountTarget);
+        const floatMntTrgt = WindowMaker.resolveMountTarget(optionsUnknown.floatMntTrgt);
+
+        if (optionsUnknown.mountTarget !== undefined && mountTarget === null) {
+            console.warn("Mount target not found for window, using WindowMaker default:", optionsUnknown.mountTarget);
+        }
+
+        if (optionsUnknown.floatMntTrgt !== undefined && floatMntTrgt === null) {
+            console.warn(
+                "Floating mount target not found for window, using WindowMaker default:",
+                optionsUnknown.floatMntTrgt
+            );
+        }
+
+        const options: WindowApiOptions = {
+            ...(optionsUnknown as WindowApiOptions),
+            mountTarget,
+            floatMntTrgt
+        };
+
+        if (definitionUnknown.forceFreshStateOnLoad === true && typeof options.id === "string" && options.id.trim()) {
+            const storageId = WindowMaker.sanitiseWindowId(options.id);
+
+            if (storageId) {
+                try {
+                    window.localStorage.removeItem(`window-api:${storageId}:state`);
+                } catch {
+                    // Ignore storage failures.
+                }
+            }
+        }
+
+        try {
+            new WindowMaker(options).makeWindow(element);
+        } catch (error: unknown) {
+            console.warn("Window mounting failed, skipping:", selector, error);
+        }
     }
 }

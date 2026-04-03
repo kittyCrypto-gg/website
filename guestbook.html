@@ -18,7 +18,7 @@
         });
     </script>
 
-    <title>Kitty Crypto Guestbook</title>
+    <title>Kitty's Guestbook</title>
     <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
     <meta name="description" content="Leave a message in Kitty Crypto's guestbook." />
 </head>
@@ -26,12 +26,10 @@
 <body>
     <div class="frame">
         <div class="frame-content">
-            <aside id="banner-wrapper" role="presentation" aria-hidden="true">
-                <img id="term-icon" />
+            <aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
                 <div id="terminal-wrapper">
                     <div id="terminal-loading">Loading terminal...</div>
                     <div id="terminal"></div>
-                    <div id="banner"></div>
                 </div>
             </aside>
 
@@ -40,7 +38,7 @@
 
             <div id="main-content">
                 <div id="comments" class="comments-container">
-                    <div class="comments-header">Leave your comment!</div>
+                    <div class="segment-header">Leave your comment!</div>
 
                     <div class="comment-input">
                         <div class="comment-row comment-meta-row">
@@ -69,13 +67,13 @@
                         </div>
                     </div>
 
-                    <div class="comments-header">Visitor Comments</div>
+                    <div class="segment-header">Visitor Comments</div>
                     <div id="comments-box" class="comments-box">
                         <!-- Comments will be dynamically inserted here -->
                     </div>
                 </div>
                 <div class="site-stats kc-88by31">
-                    <div class="comments-header">Stats</div>
+                    <div class="segment-header">Stats</div>
                     <div class="site-stats__item">
                         <span class="stats-segment">Unique Visitors</span>
                         <div class="site-stats__counter" id="unique-visits-count"></div>

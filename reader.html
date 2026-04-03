@@ -2,105 +2,110 @@
 <html lang="en">
 
 <head>
-  <script src="./dist/themeLoad.js"></script>
-  <script type="module" src="./dist/main.js"></script>
-  <script type="module" src="./dist/reader.js"></script>
-  <script type="module" src="./dist/readAloud.js"></script>
-  <script type="module" src="./dist/comments.js"></script>
-  <script type="module" src="./dist/readerParams.js"></script>
-  <script type="module" src="./dist/visitLogger.js"></script>
-  <script type="module">
-    import { renderVisits } from "./dist/visits.js";
+	<script src="./dist/themeLoad.js"></script>
+	<script type="module" src="./dist/main.js"></script>
+	<script type="module" src="./dist/reader.js"></script>
+	<script type="module" src="./dist/readAloud.js"></script>
+	<script type="module" src="./dist/comments.js"></script>
+	<script type="module" src="./dist/readerParams.js"></script>
+	<script type="module" src="./dist/visitLogger.js"></script>
+	<script type="module">
+		import { renderVisits } from "./dist/visits.js";
 
-    void renderVisits({
-      scope: "page",
-      metric: "visits",
-      target: "visits-count"
-    });
+		void renderVisits({
+			scope: "page",
+			metric: "visits",
+			target: "visits-count"
+		});
 
-    void renderVisits({
-      scope: "page",
-      metric: "uniqueVisitors",
-      target: "unique-visits-count"
-    });
-  </script>
-  <title>Kitty Crypto Reader</title>
-  <link rel="stylesheet" href="/styles/styles.css" />
+		void renderVisits({
+			scope: "page",
+			metric: "uniqueVisitors",
+			target: "unique-visits-count"
+		});
+	</script>
+	<title>Kitty's Stories</title>
+	<link rel="stylesheet" href="/styles/styles.css" />
 </head>
 
 <body>
-  <div class="frame">
-    <div class="frame-content">
-      <aside id="banner-wrapper" role="presentation" aria-hidden="true">
-        <img id="term-icon" />
-        <div id="terminal-wrapper">
-          <div id="terminal-loading">Loading terminal...</div>
-          <div id="terminal"></div>
-          <div id="banner"></div>
-        </div>
-      </aside>
-      <nav id="main-menu"></nav>
-      <header id="main-header">My Stories</header>
-      <div id="read-aloud-menu" style="display:none;"></div>
-      <div id="story-picker"></div>
-      <main id="main-content" role="main">
-        <article id="reader" class="reader-container">
-          <!-- Chapter will be injected here -->
-          <p id="js-content-fallback">Content will load shortly (JS needed)...</p>
-          <noscript>
-            <p>This page requires JavaScript to load stories.</p>
-          </noscript>
-        </article>
-        <div id="comments" class="comments-container">
-          <div class="comments-header">Leave your comment!</div>
+	<div class="frame">
+		<div class="frame-content">
+			<aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
+				<div id="terminal-wrapper">
+					<div id="terminal-loading">Loading terminal...</div>
+					<div id="terminal"></div>
+				</div>
+			</aside>
 
-          <div class="comment-input">
-            <div class="comment-row comment-meta-row">
-              <input type="text" id="comment-nick" maxlength="32" placeholder="Your nickname (max 32 characters)" />
+			<nav id="main-menu"></nav>
+			<header id="main-header">Kitty's Stories</header>
+			<div id="read-aloud-menu" style="display:none;"></div>
 
-              <input type="text" id="comment-website" placeholder="Your Website (Optional)" />
+			<div id="story-window-wrapper">
+				<div id="story-picker"></div>
 
-              <div class="comment-location-field">
-                <div class="comment-location-control">
-                  <select id="comment-location" aria-label="Your location">
-                    <option value="">Location (Optional)</option>
-                  </select>
-                  <span id="comment-location-flag" aria-hidden="true">🌎</span>
-                </div>
-              </div>
-            </div>
+				<main id="main-content" role="main">
+					<article id="reader" class="reader-container">
+						<p id="js-content-fallback">Content will load shortly (JS needed)...</p>
+						<noscript>
+							<p>This page requires JavaScript to load stories.</p>
+						</noscript>
+					</article>
+				</main>
+			</div>
 
-            <div class="comment-row comment-body-row">
-              <textarea id="new-comment" maxlength="256" rows="4"
-                placeholder="Write your comment here (max 256 characters)..."></textarea>
-            </div>
+			<div id="comments" class="comments-container">
+				<div class="segment-header">Leave your comment!</div>
 
-            <div class="comment-row comment-submit-row">
-              <button id="post-comment-button">Post</button>
-            </div>
-          </div>
+				<div class="comment-input">
+					<div class="comment-row comment-meta-row">
+						<input type="text" id="comment-nick" maxlength="32"
+							placeholder="Your nickname (max 32 characters)" />
 
-          <div class="comments-header">Visitor Comments</div>
-          <div id="comments-box" class="comments-box">
-            <!-- Comments will be dynamically inserted here -->
-          </div>
-        </div>
-      </main>
-      <div class="site-stats kc-88by31">
-        <div class="comments-header">Stats</div>
-        <div class="site-stats__grid">
-          <div class="site-stats__item">
-            <span class="stats-segment">Visits</span>
-            <div class="site-stats__counter" id="visits-count"></div>
-          </div>
-          <div class="site-stats__item">
-            <span class="stats-segment">Unique Visitors</span>
-            <div class="site-stats__counter" id="unique-visits-count"></div>
-          </div>
-        </div>
-      </div>
-      <footer id="main-footer"></footer>
-    </div>
+						<input type="text" id="comment-website" placeholder="Your Website (Optional)" />
+
+						<div class="comment-location-field">
+							<div class="comment-location-control">
+								<select id="comment-location" aria-label="Your location">
+									<option value="">Location (Optional)</option>
+								</select>
+								<span id="comment-location-flag" aria-hidden="true">🌎</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="comment-row comment-body-row">
+						<textarea id="new-comment" maxlength="256" rows="4"
+							placeholder="Write your comment here (max 256 characters)..."></textarea>
+					</div>
+
+					<div class="comment-row comment-submit-row">
+						<button id="post-comment-button">Post</button>
+					</div>
+				</div>
+
+				<div class="segment-header">Visitor Comments</div>
+				<div id="comments-box" class="comments-box"></div>
+			</div>
+
+			<div class="site-stats kc-88by31">
+				<div class="segment-header">Stats</div>
+				<div class="site-stats__grid">
+					<div class="site-stats__item">
+						<span class="stats-segment">Visits</span>
+						<div class="site-stats__counter" id="visits-count"></div>
+					</div>
+					<div class="site-stats__item">
+						<span class="stats-segment">Unique Visitors</span>
+						<div class="site-stats__counter" id="unique-visits-count"></div>
+					</div>
+				</div>
+			</div>
+
+			<footer id="main-footer"></footer>
+		</div>
+	</div>
 </body>
 
 </html>

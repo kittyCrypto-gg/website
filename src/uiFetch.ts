@@ -3,6 +3,34 @@ export type MainMenuEntry = string | Readonly<{
     icon?: string;
 }>;
 
+export type WindowJsonInitialFloatingPosition = Readonly<{
+    x: string;
+    y: string;
+}>;
+
+export type WindowJsonOptions = Readonly<{
+    id?: string;
+    title?: string;
+    launcherSrc?: string;
+    mountTarget?: string;
+    floatMntTrgt?: string;
+    insertAtStart?: boolean;
+    closedLnchrDis?: string;
+    initFloat?: boolean;
+    initFloatPos?: WindowJsonInitialFloatingPosition;
+    initClosed?: boolean;
+    initMini?: boolean;
+    showCloseBttn?: boolean;
+    showMiniBttn?: boolean;
+    showFloatBttn?: boolean;
+}>;
+
+export type WindowJsonDefinition = Readonly<{
+    selector: string;
+    forceFreshStateOnLoad?: boolean;
+    options: WindowJsonOptions;
+}>;
+
 export type MainJson = Readonly<{
     headScripts?: readonly string[];
     headerInjections?: readonly string[];
@@ -12,6 +40,7 @@ export type MainJson = Readonly<{
     themeToggle: Readonly<{ dark: string; light: string; title?: string }>;
     readerModeToggle: Readonly<{ enable: string; disable: string; title?: string }>;
     readAloudToggle: Readonly<{ enable: string; disable: string; title?: string }>;
+    windows?: Readonly<Record<string, WindowJsonDefinition>>;
 }>;
 
 let uiDataPromise: Promise<MainJson> | null = null;

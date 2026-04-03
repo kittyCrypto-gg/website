@@ -68,6 +68,8 @@
     --temporary-notice-fade: 0.3s ease;
     --temporary-notice-dark-brightness: 1.2;
 
+    --kitty-chat-padding: 1rem;
+
     /* Light mode: darken meta text on even rows (works with inline JS colours) */
     --chat-even-meta-brightness: 0.9;
 }
@@ -341,6 +343,17 @@
     & :is(input, button) {
         max-width: 100%;
     }
+}
+
+#chat-window {
+    display: flex;
+    flex-direction: column;
+    gap: var(--chat-inputs-margin-block-start);
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: var(--kitty-chat-padding);
 }
 
 /* Temporary notice (used for short-lived UI feedback) */

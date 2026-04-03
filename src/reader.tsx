@@ -887,7 +887,10 @@ function syncCtrlDock(root: Document = document): void {
     ctrlMarkerAbove = marker.getBoundingClientRect().bottom <= 0;
     ctrlBottomSeen = isVis(bottomCtrls);
 
-    const detached = ctrlMarkerAbove && !ctrlBottomSeen;
+    const bottomRect = bottomCtrls?.getBoundingClientRect() ?? null;
+    const viewportPastBottom = bottomRect ? bottomRect.bottom <= 0 : false;
+
+    const detached = ctrlMarkerAbove && !ctrlBottomSeen && !viewportPastBottom;
     const wasDetached = ctrls.classList.contains("is-detached");
 
     if (detached) {
@@ -1076,9 +1079,9 @@ function injectNav(): void {
     navBottom.appendChild(render2Frag(<ReaderCtrls />));
 
     navBottom.querySelectorAll<HTMLInputElement>
-    (".chapter-input, .chapter-display").forEach((input) => {
-        input.id = input.id.replace("-top", "-bottom");
-    });
+        (".chapter-input, .chapter-display").forEach((input) => {
+            input.id = input.id.replace("-top", "-bottom");
+        });
 
     const scrollBtn = navBottom.querySelector(".btn-scroll-down") as HTMLButtonElement | null;
     if (scrollBtn) {
@@ -2061,3 +2064,12 @@ window.debug.renderXmlFile = async function (file: File): Promise<void> {
 };
 
 if (/\/reader(?:\.html)?(?:\/|$)/.test(window.location.pathname)) bootReader();
+
+export const readerModeFocus = "#reader";
+
+export const readerModeKeep: readonly string[] = [
+    "#reader",
+    "#story-picker",
+    "#kc-reader-controls-top",
+    "#kc-reader-controls-bottom"
+];

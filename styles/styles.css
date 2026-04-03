@@ -10,6 +10,7 @@
 @import url("./core/utilities.css");
 
 @import url("./modules/index.css");
+@import url("./modules/calendar.css");
 @import url("./modules/avatars.css");
 @import url("./modules/tooltip.css");
 @import url("./modules/banner.css");

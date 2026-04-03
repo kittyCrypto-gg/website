@@ -9,6 +9,8 @@ import { createMenu } from "./menu.tsx";
 import { createHeader } from "./header.ts";
 import { createFooter } from "./footer.ts";
 import { fetchUiData } from "./uiFetch.ts";
+import { instantiateWindows } from "./window.ts";
+import { readerModeFocus, readerModeKeep } from "./reader.tsx";
 
 type TerminalModule = Readonly<{
     term: Readonly<{
@@ -482,6 +484,10 @@ async function initialiseUI(): Promise<void> {
             });
         }
 
+        if (data.windows) {
+            await instantiateWindows(data.windows);
+        }
+
         const themeToggle = recreateSingleton("theme-toggle", () => document.createElement("button"), document);
         themeToggle.classList.add("theme-toggle-button");
         document.body.appendChild(themeToggle);
@@ -550,7 +556,18 @@ async function initialiseUI(): Promise<void> {
         readerToggle.title = data.readerModeToggle.title || "Reader Mode";
         document.body.appendChild(readerToggle);
 
-        await setupReaderToggle();
+        await setupReaderToggle({
+            focus: readerModeFocus,
+            keep: [
+                ...readerModeKeep,
+                "#theme-toggle",
+                "#reader-toggle",
+                "#read-aloud-toggle",
+                "#main-menu",
+                "#main-header",
+                "#main-footer"
+            ]
+        });
 
         const readAloudToggle = recreateSingleton("read-aloud-toggle", () => document.createElement("button"), document);
         readAloudToggle.classList.add("theme-toggle-button");

@@ -2,58 +2,57 @@
 <html lang="en">
 
 <head>
-  <script src="./dist/themeLoad.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script type="module" src="./dist/main.js"></script>
-  <script type="module" src="./dist/rss.js"></script>
-  <script type="module" src="./dist/visitLogger.js"></script>
-  <script type="module">
-    import { renderVisits } from "./dist/visits.js";
+	<script src="./dist/themeLoad.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<script type="module" src="./dist/main.js"></script>
+	<script type="module" src="./dist/rss.js"></script>
+	<script type="module" src="./dist/visitLogger.js"></script>
+	<script type="module">
+		import { renderVisits } from "./dist/visits.js";
 
-    void renderVisits({
-      scope: "page",
-      metric: "uniqueVisitors",
-      target: "unique-visits-count"
-    });
-  </script>
-  <title>Kitty Crypto Blog</title>
-  <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
+		void renderVisits({
+			scope: "page",
+			metric: "uniqueVisitors",
+			target: "unique-visits-count"
+		});
+	</script>
+	<title>Kitty's Blog</title>
+	<link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
+	<link rel="stylesheet" href="/styles/modules/calendar.css">
 </head>
 
 <body>
-  <div class="frame">
-    <div class="frame-content">
-      <aside id="banner-wrapper" role="presentation" aria-hidden="true">
-        <img id="term-icon" />
-        <div id="terminal-wrapper">
-          <div id="terminal-loading">Loading terminal...</div>
-          <div id="terminal"></div>
-          <div id="banner"></div>
-        </div>
-      </aside>
+	<div class="frame">
+		<div class="frame-content">
+			<aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
+				<div id="terminal-wrapper">
+					<div id="terminal-loading">Loading terminal...</div>
+					<div id="terminal"></div>
+				</div>
+			</aside>
 
-      <nav id="main-menu"></nav>
-      <header id="main-header">Kitty's Blog</header>
+			<nav id="main-menu"></nav>
+			<header id="main-header">Kitty's Blog</header>
 
-      <div id="main-content">
-        <div class="blog-wrapper">
-          <a class="comments-header" style="display: block; text-align: left;">Blog Posts</a>
-          <div class="blog-container"></div>
-        </div>
-        <div class="site-stats kc-88by31">
-          <div class="comments-header">Stats</div>
-          <div class="site-stats__item">
-            <span class="stats-segment">Unique Visitors</span>
-            <div class="site-stats__counter" id="unique-visits-count"></div>
-          </div>
-        </div>
-      </div>
-    </div>
+			<div id="main-content">
+				<div class="blog-wrapper">
+					<a class="comments-header" style="display: block; text-align: left;"></a>
+					<div id="kc-blog-cal-filter" class="blog-cal-slot" aria-label="Blog date filters"></div>
+					<div class="blog-container"></div>
+				</div>
 
-    <footer id="main-footer"></footer>
-  </div>
-  </div>
-  </div>
+				<div class="site-stats kc-88by31">
+					<div class="segment-header">Stats</div>
+					<div class="site-stats__item">
+						<span class="stats-segment">Unique Visitors</span>
+						<div class="site-stats__counter" id="unique-visits-count"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<footer id="main-footer"></footer>
+	</div>
 </body>
 
 </html>

@@ -1,0 +1,656 @@
+@import url("/styles/modules/physics.css");
+
+/* =========================================
+    Module: Calendar Filter
+========================================= */
+
+:root {
+    --cal-max-inline: 100%;
+
+    --cal-pad-block: clamp(0.48rem, 0.82vw, 0.62rem);
+    --cal-pad-inline: clamp(0.54rem, 0.94vw, 0.7rem);
+    --cal-gap: clamp(0.42rem, 0.76vw, 0.56rem);
+    --cal-gap-tight: clamp(0.2rem, 0.4vw, 0.3rem);
+
+    --cal-radius: 10px;
+    --cal-radius-sm: 999px;
+    --cal-radius-xs: 7px;
+    --cal-border-width: 1px;
+    --cal-shadow:
+        0 0 0 1px color-mix(in srgb, var(--frame-border-light) 18%, transparent),
+        0 8px 22px color-mix(in srgb, var(--frame-border-light) 12%, transparent);
+
+    --cal-bg: color-mix(in srgb, var(--frame-bg-colour) 82%, var(--chatroom-bg-colour));
+    --cal-brd: color-mix(in srgb, var(--frame-border-light) 72%, var(--menu-button-bg-colour));
+    --cal-hdr-brd: color-mix(in srgb, var(--frame-border-light) 46%, transparent);
+    --cal-ttl-col: var(--header-text-colour);
+    --cal-sub-col: var(--timestamp-colour);
+
+    --cal-chip-pad-block: clamp(0.34rem, 0.62vw, 0.42rem);
+    --cal-chip-pad-inline: clamp(0.52rem, 0.95vw, 0.68rem);
+    --cal-chip-gap: clamp(0.22rem, 0.45vw, 0.34rem);
+    --cal-chip-font-size: calc(clamp(0.76rem, 0.74rem + 0.08vw, 0.82rem) * var(--kc-text-scale));
+    --cal-chip-font-weight: 600;
+    --cal-chip-bg: color-mix(in srgb, var(--menu-button-bg-colour) 68%, var(--frame-bg-colour));
+    --cal-chip-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 72%, var(--frame-bg-colour));
+    --cal-chip-col: var(--menu-button-text-colour);
+    --cal-chip-brd: color-mix(in srgb, var(--frame-border-light) 48%, var(--menu-button-bg-colour));
+    --cal-chip-sel-bg: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--banner-teal-bright) 22%, var(--menu-button-bg-colour)),
+        color-mix(in srgb, var(--banner-blue) 14%, var(--menu-button-bg-colour))
+    );
+    --cal-chip-sel-col: var(--header-text-colour);
+    --cal-chip-sel-brd: color-mix(in srgb, var(--banner-blue) 34%, var(--frame-border-light));
+    --cal-chip-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 90%, var(--frame-bg-colour));
+    --cal-chip-empty-col: var(--timestamp-colour);
+    --cal-chip-empty-brd: color-mix(in srgb, var(--timestamp-colour) 42%, var(--frame-border-light));
+    --cal-chip-empty-opc: 0.72;
+    --cal-chip-stat-size: calc(clamp(0.54rem, 0.52rem + 0.06vw, 0.6rem) * var(--kc-text-scale));
+
+    --cal-sct-gap: clamp(0.38rem, 0.68vw, 0.48rem);
+    --cal-sct-pad-block: clamp(0.42rem, 0.8vw, 0.56rem);
+    --cal-sct-pad-inline: clamp(0.48rem, 0.88vw, 0.62rem);
+    --cal-sct-radius: 8px;
+    --cal-sct-bg: color-mix(in srgb, var(--chatroom-bg-colour) 80%, var(--frame-bg-colour));
+    --cal-sct-brd: color-mix(in srgb, var(--frame-border-light) 62%, transparent);
+
+    --cal-sct-btn-pad-block: 0;
+    --cal-sct-btn-pad-inline: 0;
+    --cal-sct-title-size: calc(clamp(0.78rem, 0.76rem + 0.08vw, 0.84rem) * var(--kc-text-scale));
+    --cal-sct-title-weight: 700;
+    --cal-sct-meta-size: calc(clamp(0.68rem, 0.66rem + 0.06vw, 0.74rem) * var(--kc-text-scale));
+
+    --cal-grid-gap: clamp(0.28rem, 0.55vw, 0.38rem);
+    --cal-grid-min-yr: clamp(3.8rem, 8vw, 4.35rem);
+    --cal-grid-min-mo: clamp(3.55rem, 7.5vw, 4rem);
+    --cal-grid-min-dy: clamp(2.2rem, 4.8vw, 2.5rem);
+    --cal-grid-cols-dy: 7;
+
+    --cal-selbar-gap: clamp(0.38rem, 0.68vw, 0.5rem);
+    --cal-selpill-pad-block: clamp(0.24rem, 0.46vw, 0.32rem);
+    --cal-selpill-pad-inline: clamp(0.42rem, 0.78vw, 0.54rem);
+    --cal-selpill-bg: color-mix(in srgb, var(--banner-blue) 10%, var(--frame-bg-colour));
+    --cal-selpill-col: var(--header-text-colour);
+    --cal-selpill-brd: color-mix(in srgb, var(--banner-blue) 22%, var(--frame-border-light));
+    --cal-selpill-k-opc: 0.62;
+    --cal-selpill-v-weight: 700;
+
+    --cal-ctl-gap: clamp(0.28rem, 0.55vw, 0.38rem);
+    --cal-rst-pad-block: clamp(0.3rem, 0.56vw, 0.38rem);
+    --cal-rst-pad-inline: clamp(0.48rem, 0.88vw, 0.64rem);
+    --cal-rst-size: calc(clamp(0.72rem, 0.7rem + 0.08vw, 0.78rem) * var(--kc-text-scale));
+    --cal-rst-bg: color-mix(in srgb, var(--banner-lilac) 14%, var(--menu-button-bg-colour));
+    --cal-rst-col: var(--menu-button-text-colour);
+    --cal-rst-brd: color-mix(in srgb, var(--banner-lilac) 24%, var(--frame-border-light));
+    --cal-rst-bg-hover: color-mix(in srgb, var(--banner-lilac) 20%, var(--menu-button-hover-bg-colour));
+
+    --cal-clr-pad-block: clamp(0.3rem, 0.56vw, 0.38rem);
+    --cal-clr-pad-inline: clamp(0.48rem, 0.88vw, 0.64rem);
+    --cal-clr-size: calc(clamp(0.72rem, 0.7rem + 0.08vw, 0.78rem) * var(--kc-text-scale));
+    --cal-clr-bg: color-mix(in srgb, var(--banner-blue) 12%, var(--menu-button-bg-colour));
+    --cal-clr-col: var(--menu-button-text-colour);
+    --cal-clr-brd: color-mix(in srgb, var(--banner-blue) 22%, var(--frame-border-light));
+    --cal-clr-bg-hover: color-mix(in srgb, var(--banner-blue) 18%, var(--menu-button-hover-bg-colour));
+
+    --cal-ttl-size: calc(clamp(0.88rem, 0.86rem + 0.1vw, 0.94rem) * var(--kc-text-scale));
+    --cal-ttl-weight: 700;
+    --cal-eye-size: calc(clamp(0.62rem, 0.6rem + 0.05vw, 0.68rem) * var(--kc-text-scale));
+    --cal-eye-weight: 700;
+    --cal-eye-ls: 0.1em;
+    --cal-eye-transform: uppercase;
+
+    --cal-roottgl-size: 1.95rem;
+    --cal-roottgl-font-size: calc(clamp(0.78rem, 0.76rem + 0.08vw, 0.9rem) * var(--kc-text-scale));
+    --cal-roottgl-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 62%, transparent);
+
+    --cal-mo-gap: clamp(0.32rem, 0.6vw, 0.42rem);
+    --cal-mo-pad-block: clamp(0.38rem, 0.72vw, 0.5rem);
+    --cal-mo-pad-inline: clamp(0.42rem, 0.78vw, 0.56rem);
+    --cal-mo-radius: 8px;
+    --cal-mo-bg: color-mix(in srgb, var(--frame-bg-colour) 88%, var(--chatroom-bg-colour));
+    --cal-mo-brd: color-mix(in srgb, var(--frame-border-light) 52%, transparent);
+    --cal-mo-title-size: calc(clamp(0.72rem, 0.7rem + 0.06vw, 0.78rem) * var(--kc-text-scale));
+    --cal-mo-title-weight: 700;
+
+    --cal-wk-gap: clamp(0.2rem, 0.38vw, 0.26rem);
+    --cal-wk-size: calc(clamp(0.64rem, 0.62rem + 0.05vw, 0.68rem) * var(--kc-text-scale));
+    --cal-wk-weight: 700;
+    --cal-wk-col: var(--timestamp-colour);
+
+    --cal-dygrid-gap: clamp(0.2rem, 0.38vw, 0.26rem);
+    --cal-dy-pad-block: clamp(0.4rem, 0.66vw, 0.48rem);
+    --cal-dy-pad-inline: clamp(0.18rem, 0.34vw, 0.24rem);
+    --cal-dy-font-size: calc(clamp(0.72rem, 0.7rem + 0.05vw, 0.78rem) * var(--kc-text-scale));
+    --cal-dy-font-weight: 700;
+    --cal-dy-stat-size: calc(clamp(0.4rem, 0.38rem + 0.04vw, 0.46rem) * var(--kc-text-scale));
+    --cal-dy-stat-inset-block: 0.18rem;
+    --cal-dy-stat-inset-inline: 0.22rem;
+    --cal-dy-min-block: 1.85rem;
+    --cal-dypad-radius: 999px;
+    --cal-dypad-bg: color-mix(in srgb, var(--chatroom-bg-colour) 52%, transparent);
+
+    --cal-fcs-ring: 0 0 0 2px color-mix(in srgb, var(--banner-blue) 22%, transparent);
+
+    --cal-collapse-duration: var(--phys-collapse-duration);
+    --cal-collapse-fade-duration: var(--phys-collapse-fade-duration);
+    --cal-collapse-ease: var(--phys-collapse-ease);
+    --cal-collapse-enter-x: var(--phys-collapse-enter-x);
+    --cal-collapse-scale-x0: var(--phys-collapse-scale-x0);
+    --cal-collapse-scale-y0: var(--phys-collapse-scale-y0);
+}
+
+.cal {
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: 0;
+    box-sizing: border-box;
+    justify-self: stretch;
+    align-self: start;
+    gap: var(--cal-gap);
+    padding: var(--cal-pad-block) var(--cal-pad-inline);
+    border-radius: var(--cal-radius);
+    border: var(--cal-border-width) solid var(--cal-brd);
+    background: var(--cal-bg);
+    box-shadow: var(--cal-shadow);
+
+    & .cal__hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--cal-gap);
+        min-inline-size: 0;
+        flex: 0 0 auto;
+        padding-block-end: var(--cal-gap-tight);
+        border-block-end: var(--cal-border-width) solid var(--cal-hdr-brd);
+        border-radius: var(--cal-radius-xs);
+        cursor: pointer;
+        user-select: none;
+        transition:
+            background 0.18s ease,
+            transform 0.18s ease,
+            box-shadow 0.18s ease;
+
+        &:hover,
+        &:focus-visible {
+            background: var(--cal-roottgl-bg-hover);
+            transform: translateY(-1px);
+            outline: none;
+            box-shadow: var(--cal-fcs-ring);
+        }
+    }
+
+    & .cal__ttlWrap {
+        display: grid;
+        gap: 0.12rem;
+        min-width: 0;
+        text-align: left;
+    }
+
+    & .cal__eyebrow {
+        font-size: var(--cal-eye-size);
+        font-weight: var(--cal-eye-weight);
+        letter-spacing: var(--cal-eye-ls);
+        text-transform: var(--cal-eye-transform);
+        color: var(--banner-blue);
+        line-height: 1;
+    }
+
+    & .cal__ttl {
+        margin: 0;
+        font-size: var(--cal-ttl-size);
+        font-weight: var(--cal-ttl-weight);
+        color: var(--cal-ttl-col);
+        line-height: 1.1;
+    }
+
+    & .cal__rootTgl,
+    & .cal__selPill,
+    & .cal__rst,
+    & .cal__clr,
+    & .cal__itm,
+    & .cal__sctTgl {
+        appearance: none;
+        border: none;
+        background: none;
+        font: inherit;
+        line-height: 1.1;
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: var(--cal-fcs-ring);
+        }
+    }
+
+    & .cal__rootTgl {
+        display: inline-grid;
+        place-items: center;
+        inline-size: var(--cal-roottgl-size);
+        block-size: var(--cal-roottgl-size);
+        flex: 0 0 auto;
+        border-radius: var(--cal-radius-sm);
+        pointer-events: none;
+        font-size: var(--cal-roottgl-font-size);
+        transition:
+            background 0.18s ease,
+            transform 0.18s ease;
+    }
+
+    & .cal__hdr:focus-visible .cal__rootTgl {
+        background: var(--cal-roottgl-bg-hover);
+        transform: translateY(-1px);
+    }
+
+    & .cal__selBar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--cal-selbar-gap);
+        flex: 0 0 auto;
+        min-inline-size: 0;
+    }
+
+    & .cal__rootBody {
+        min-inline-size: 0;
+        min-block-size: 0;
+        overflow: hidden;
+        flex: 0 0 auto;
+        opacity: var(--phys-collapse-open-opacity);
+        visibility: visible;
+        pointer-events: auto;
+        transition:
+            max-height var(--cal-collapse-duration) var(--cal-collapse-ease),
+            opacity var(--cal-collapse-fade-duration) ease,
+            visibility 0s linear 0s;
+    }
+
+    & .cal__rootBodyInner {
+        min-inline-size: 0;
+        min-block-size: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--cal-gap);
+        transform-origin: 50% 0%;
+        will-change: transform, opacity;
+        transform: translateX(var(--phys-collapse-open-x)) scaleX(var(--phys-collapse-open-scale)) scaleY(var(--phys-collapse-open-scale));
+        opacity: var(--phys-collapse-open-opacity);
+        transition:
+            transform var(--cal-collapse-duration) var(--cal-collapse-ease),
+            opacity var(--cal-collapse-fade-duration) ease;
+    }
+
+    & .cal__selGrp {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--cal-gap-tight);
+        min-width: 0;
+    }
+
+    & .cal__ctlGrp {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--cal-ctl-gap);
+        margin-inline-start: auto;
+    }
+
+    & .cal__selPill {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--cal-chip-gap);
+        padding: var(--cal-selpill-pad-block) var(--cal-selpill-pad-inline);
+        border-radius: var(--cal-radius-sm);
+        border: var(--cal-border-width) solid var(--cal-selpill-brd);
+        background: var(--cal-selpill-bg);
+        color: var(--cal-selpill-col);
+        cursor: pointer;
+        transition:
+            background 0.18s ease,
+            transform 0.18s ease,
+            border-color 0.18s ease;
+
+        &:hover,
+        &:focus-visible {
+            transform: translateY(-1px);
+        }
+
+        & .cal__selK {
+            opacity: var(--cal-selpill-k-opc);
+            font-size: 0.95em;
+        }
+
+        & .cal__selV {
+            font-weight: var(--cal-selpill-v-weight);
+        }
+    }
+
+    & .cal__rst,
+    & .cal__clr {
+        border-radius: var(--cal-radius-sm);
+        cursor: pointer;
+        transition:
+            background 0.18s ease,
+            transform 0.18s ease,
+            border-color 0.18s ease;
+
+        &:hover,
+        &:focus-visible {
+            transform: translateY(-1px);
+        }
+    }
+
+    & .cal__rst {
+        padding: var(--cal-rst-pad-block) var(--cal-rst-pad-inline);
+        border: var(--cal-border-width) solid var(--cal-rst-brd);
+        background: var(--cal-rst-bg);
+        color: var(--cal-rst-col);
+        font-size: var(--cal-rst-size);
+
+        &:hover,
+        &:focus-visible {
+            background: var(--cal-rst-bg-hover);
+        }
+    }
+
+    & .cal__clr {
+        padding: var(--cal-clr-pad-block) var(--cal-clr-pad-inline);
+        border: var(--cal-border-width) solid var(--cal-clr-brd);
+        background: var(--cal-clr-bg);
+        color: var(--cal-clr-col);
+        font-size: var(--cal-clr-size);
+
+        &:hover,
+        &:focus-visible {
+            background: var(--cal-clr-bg-hover);
+        }
+    }
+
+    & .cal__grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--cal-gap);
+        inline-size: 100%;
+        min-inline-size: 0;
+        min-block-size: 0;
+        flex: 0 0 auto;
+    }
+
+    & .cal__sct {
+        display: flex;
+        flex-direction: column;
+        gap: var(--cal-sct-gap);
+        inline-size: 100%;
+        min-inline-size: 0;
+        min-block-size: 0;
+        box-sizing: border-box;
+        padding: var(--cal-sct-pad-block) var(--cal-sct-pad-inline);
+        border-radius: var(--cal-sct-radius);
+        border: var(--cal-border-width) solid var(--cal-sct-brd);
+        background: var(--cal-sct-bg);
+    }
+
+    & .cal__sctHdr {
+        min-width: 0;
+        flex: 0 0 auto;
+    }
+
+    & .cal__sctTgl {
+        width: 100%;
+        padding: var(--cal-sct-btn-pad-block) var(--cal-sct-btn-pad-inline);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--cal-gap-tight);
+        cursor: pointer;
+        text-align: left;
+    }
+
+    & .cal__sctTtl {
+        font-size: var(--cal-sct-title-size);
+        font-weight: var(--cal-sct-title-weight);
+        color: var(--cal-ttl-col);
+        line-height: 1.1;
+    }
+
+    & .cal__sctMeta {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--cal-gap-tight);
+        color: var(--cal-sub-col);
+        font-size: var(--cal-sct-meta-size);
+        flex: 0 0 auto;
+    }
+
+    & .cal__sctCnt {
+        min-inline-size: 1.55rem;
+        padding: 0.18rem 0.42rem;
+        border-radius: var(--cal-radius-sm);
+        background: color-mix(in srgb, var(--menu-button-bg-colour) 28%, transparent);
+        color: var(--menu-button-text-colour);
+        text-align: center;
+        line-height: 1;
+    }
+
+    & .cal__sctIcn {
+        inline-size: 1.1rem;
+        text-align: center;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    & .cal__sctBody {
+        min-inline-size: 0;
+        min-block-size: 0;
+        inline-size: 100%;
+        overflow: hidden;
+        flex: 0 0 auto;
+        opacity: var(--phys-collapse-open-opacity);
+        visibility: visible;
+        pointer-events: auto;
+        transition:
+            max-height var(--cal-collapse-duration) var(--cal-collapse-ease),
+            opacity var(--cal-collapse-fade-duration) ease,
+            visibility 0s linear 0s;
+    }
+
+    & .cal__sctBodyInner {
+        min-inline-size: 0;
+        min-block-size: 0;
+        display: flex;
+        flex-direction: column;
+        transform-origin: 50% 0%;
+        will-change: transform, opacity;
+        transform: translateX(var(--phys-collapse-open-x)) scaleX(var(--phys-collapse-open-scale)) scaleY(var(--phys-collapse-open-scale));
+        opacity: var(--phys-collapse-open-opacity);
+        transition:
+            transform var(--cal-collapse-duration) var(--cal-collapse-ease),
+            opacity var(--cal-collapse-fade-duration) ease;
+    }
+
+    & .cal__itmGrid {
+        display: grid;
+        gap: var(--cal-grid-gap);
+        inline-size: 100%;
+        min-inline-size: 0;
+        min-block-size: 0;
+
+        &.cal__itmGrid--yrs {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--cal-grid-min-yr)), 1fr));
+        }
+
+        &.cal__itmGrid--mos {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--cal-grid-min-mo)), 1fr));
+        }
+
+        &.cal__itmGrid--dys {
+            grid-template-columns: repeat(var(--cal-grid-cols-dy), minmax(0, 1fr));
+        }
+    }
+
+    & .cal__itm {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--cal-chip-gap);
+        min-width: 0;
+        padding: var(--cal-chip-pad-block) var(--cal-chip-pad-inline);
+        border-radius: var(--cal-radius-sm);
+        border: var(--cal-border-width) solid var(--cal-chip-brd);
+        background: var(--cal-chip-bg);
+        color: var(--cal-chip-col);
+        cursor: pointer;
+        transition:
+            background 0.18s ease,
+            border-color 0.18s ease,
+            transform 0.18s ease,
+            opacity 0.18s ease,
+            box-shadow 0.18s ease;
+
+        &:hover,
+        &:focus-visible {
+            background: var(--cal-chip-bg-hover);
+            transform: translateY(-1px);
+        }
+
+        &[data-sel="1"] {
+            background: var(--cal-chip-sel-bg);
+            border-color: var(--cal-chip-sel-brd);
+            color: var(--cal-chip-sel-col);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--banner-blue) 26%, transparent);
+        }
+
+        &[data-has="0"] {
+            background: linear-gradient(
+                135deg,
+                color-mix(in srgb, var(--cal-chip-empty-bg) 92%, transparent),
+                color-mix(in srgb, var(--frame-bg-colour) 82%, transparent)
+            );
+            border-color: var(--cal-chip-empty-brd);
+            color: var(--cal-chip-empty-col);
+            opacity: var(--cal-chip-empty-opc);
+        }
+
+        &[data-has="0"][data-sel="1"] {
+            opacity: 1;
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--timestamp-colour) 24%, transparent);
+        }
+
+        & .cal__itmTxt {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: var(--cal-chip-font-size);
+            font-weight: var(--cal-chip-font-weight);
+            line-height: 1.1;
+        }
+
+        & .cal__itmStat {
+            flex: 0 0 auto;
+            font-size: var(--cal-chip-stat-size);
+            line-height: 1;
+            opacity: 0.74;
+        }
+
+        &[data-cal-lvl="dy"] {
+            position: relative;
+            justify-content: center;
+            min-block-size: var(--cal-dy-min-block);
+            padding-block: var(--cal-dy-pad-block);
+            padding-inline: var(--cal-dy-pad-inline);
+
+            & .cal__itmTxt {
+                overflow: visible;
+                text-overflow: clip;
+                white-space: nowrap;
+                font-size: var(--cal-dy-font-size);
+                font-weight: var(--cal-dy-font-weight);
+                font-variant-numeric: tabular-nums;
+            }
+
+            & .cal__itmStat {
+                position: absolute;
+                inset-block-start: var(--cal-dy-stat-inset-block);
+                inset-inline-end: var(--cal-dy-stat-inset-inline);
+                font-size: var(--cal-dy-stat-size);
+                line-height: 1;
+                opacity: 0.66;
+            }
+        }
+    }
+
+    & .cal__mo,
+    & .cal__dyBulk {
+        display: flex;
+        flex-direction: column;
+        gap: var(--cal-mo-gap);
+        inline-size: 100%;
+        min-inline-size: 0;
+        min-block-size: 0;
+        box-sizing: border-box;
+        padding: var(--cal-mo-pad-block) var(--cal-mo-pad-inline);
+        border-radius: var(--cal-mo-radius);
+        border: var(--cal-border-width) solid var(--cal-mo-brd);
+        background: var(--cal-mo-bg);
+    }
+
+    & .cal__moHdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--cal-gap-tight);
+        min-width: 0;
+        flex: 0 0 auto;
+    }
+
+    & .cal__moTtl {
+        margin: 0;
+        min-width: 0;
+        font-size: var(--cal-mo-title-size);
+        font-weight: var(--cal-mo-title-weight);
+        line-height: 1.1;
+        color: var(--cal-ttl-col);
+    }
+
+    & .cal__wkRow {
+        display: grid;
+        inline-size: 100%;
+        min-inline-size: 0;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: var(--cal-wk-gap);
+        flex: 0 0 auto;
+    }
+
+    & .cal__wkItm {
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        font-size: var(--cal-wk-size);
+        font-weight: var(--cal-wk-weight);
+        color: var(--cal-wk-col);
+        line-height: 1;
+        text-transform: uppercase;
+    }
+
+    & .cal__dyGrid {
+        display: grid;
+        inline-size: 100%;
+        min-inline-size: 0;
+        min-block-size: 0;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: var(--cal-dygrid-gap);
+        flex: 0 0 auto;
+    }
+
+    & .cal__dyPad {
+        display: block;
+        min-block-size: var(--cal-dy-min-block);
+        border-radius: var(--cal-dypad-radius);
+        background: var(--cal-dypad-bg);
+        opacity: 0.34;
+    }
+}

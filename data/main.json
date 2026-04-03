@@ -45,5 +45,147 @@
     "<meta charset=\"UTF-8\">",
     "<meta property=\"og:type\" content=\"website\">",
     "<script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>"
-  ]
+  ],
+  "windows": {
+    "kittyIntro": {
+      "selector": "#kitty-intro-wrapper",
+      "options": {
+        "id": "kitty-intro",
+        "title": "Introduction",
+        "mountTarget": "body",
+        "launcherSrc": "/images/about.svg"
+      }
+    },
+    "commitsWrapper": {
+      "selector": "#commits-outer-shell",
+      "options": {
+        "id": "commits-wrapper",
+        "title": "Source Code Tracker",
+        "mountTarget": "body",
+        "launcherSrc": "/images/factory.svg"
+      }
+    },
+    "frontendCommitsWrapper": {
+      "selector": "#frontend-commits-window",
+      "options": {
+        "id": "frontend-commits",
+        "title": "Front-end Commits",
+        "launcherSrc": "/images/template.svg"
+      }
+    },
+    "backendCommitsWrapper": {
+      "selector": "#backend-commits-window",
+      "options": {
+        "id": "backend-commits",
+        "title": "Back-end Commits",
+        "launcherSrc": "/images/electronics.svg"
+      }
+    },
+    "sitesILikeWrapper": {
+      "selector": "#sites-i-like",
+      "options": {
+        "id": "sites-i-like",
+        "title": "Sites I find Interesting",
+        "mountTarget": "body",
+        "launcherSrc": "/images/mind_map.svg"
+      }
+    },
+    "myButtonWrapper": {
+      "selector": "#my-button",
+      "options": {
+        "id": "my-button",
+        "title": "My Button",
+        "mountTarget": "body",
+        "launcherSrc": "/images/share.svg"
+      }
+    },
+    "commentsWrapper": {
+      "selector": "#comments",
+      "options": {
+        "id": "comments-wrapper",
+        "title": "Comments",
+        "mountTarget": "body",
+        "launcherSrc": "/images/comments.svg"
+      }
+    },
+    "homeSiteStats": {
+      "selector": "#site-stats",
+      "options": {
+        "id": "site-stats",
+        "title": "Stats",
+        "mountTarget": "body",
+        "launcherSrc": "/images/display.svg"
+      }
+    },
+    "presenceWindow": {
+      "selector": "#presence-window-wrapper",
+      "forceFreshStateOnLoad": true,
+      "options": {
+        "id": "presence-window",
+        "title": "Status",
+        "mountTarget": "body",
+        "launcherSrc": "/images/miku.svg"
+      }
+    },
+    "aboutMe": {
+      "selector": "#kitty-about",
+      "options": {
+        "id": "about-me",
+        "title": "About Me",
+        "mountTarget": "body"
+      }
+    },
+    "socials": {
+      "selector": ".socials-segment",
+      "options": {
+        "id": "socials",
+        "title": "Find me elsewhere",
+        "mountTarget": "body"
+      }
+    },
+    "aboutSiteStats": {
+      "selector": ".site-stats",
+      "options": {
+        "id": "site-stats",
+        "title": "Stats",
+        "mountTarget": "body"
+      }
+    },
+    "terminalWindow": {
+      "selector": "#shell-wrapper",
+      "options": {
+        "id": "terminal",
+        "title": "Terminal Emulator",
+        "mountTarget": "body",
+        "launcherSrc": "/images/terminal.svg",
+        "closedLnchrDis": "inline-block",
+        "showCloseBttn": true
+      }
+    },
+    "blogWrapper": {
+      "selector": ".blog-wrapper",
+      "options": {
+        "id": "blog-window",
+        "title": "Blog Posts",
+        "mountTarget": "body",
+        "launcherSrc": "/images/yarn.svg"
+      }
+    },
+    "storyWindow": {
+      "selector": "#story-window-wrapper",
+      "options": {
+        "id": "story-window",
+        "title": "Reader",
+        "mountTarget": "body"
+      }
+    },
+      "chatWindow": {
+        "selector": "#chat-window",
+        "options": {
+          "id": "chat-window",
+          "title": "Kitty Chat",
+          "mountTarget": "body"
+        }
+      }
+  }
 }
