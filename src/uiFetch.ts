@@ -31,6 +31,30 @@ export type WindowJsonDefinition = Readonly<{
     options: WindowJsonOptions;
 }>;
 
+export type EffectsUiModalConfig = Readonly<{
+    title: string;
+    lead: string;
+    closeTitle: string;
+    phosphorTitle: string;
+    phosphorDescription: string;
+    phosphorToggle: string;
+    intensityLabel: string;
+    phosphorHint: string;
+    scanlinesTitle: string;
+    scanlinesDescription: string;
+    scanlinesToggle: string;
+    scanlinesHint: string;
+    reset: string;
+    done: string;
+}>;
+
+export type EffectsUiConfig = Readonly<{
+    icon: string;
+    iconPath?: string;
+    title: string;
+    modal: EffectsUiModalConfig;
+}>;
+
 export type MainJson = Readonly<{
     headScripts?: readonly string[];
     headerInjections?: readonly string[];
@@ -40,6 +64,7 @@ export type MainJson = Readonly<{
     themeToggle: Readonly<{ dark: string; light: string; title?: string }>;
     readerModeToggle: Readonly<{ enable: string; disable: string; title?: string }>;
     readAloudToggle: Readonly<{ enable: string; disable: string; title?: string }>;
+    effects: EffectsUiConfig;
     windows?: Readonly<Record<string, WindowJsonDefinition>>;
 }>;
 

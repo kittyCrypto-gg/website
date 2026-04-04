@@ -1,0 +1,14 @@
+# .gitignore file
+# dist folder
+dist/
+# node_modules folder
+node_modules/
+#all .old files
+*.old
+#any .js file
+*.js
+#manifest.json file
+manifest.json
+# .env file
+.env
+.DS_Store

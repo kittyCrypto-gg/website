@@ -39,6 +39,27 @@
     "enable": "🔊",
     "disable": "🔇"
   },
+  "effects": {
+    "icon": "📺",
+    "iconPath": "/images/imacG3.svg",
+    "title": "CRT Effects",
+    "modal": {
+      "title": "CRT Effects",
+      "lead": "Tune the phosphor mask and scan lines to taste. Changes apply instantly and stay saved in this browser.",
+      "closeTitle": "Close effects",
+      "phosphorTitle": "Phosphor mask",
+      "phosphorDescription": "Controls the Trinitron-style RGB lattice.",
+      "phosphorToggle": "Disable phosphor mask",
+      "intensityLabel": "Intensity",
+      "phosphorHint": "Trinitron aperture-grill vibes. From old CRT hum to ‘that telly is absolutely not surviving the winter’.",
+      "scanlinesTitle": "Scan lines",
+      "scanlinesDescription": "Controls the moving horizontal pass.",
+      "scanlinesToggle": "Disable scan lines",
+      "scanlinesHint": "This is the bright cyan sweep, from subtle ghost to arcade fever.",
+      "reset": "Reset to defaults",
+      "done": "Done"
+    }
+  },
   "headScripts": [],
   "headerInjections": [
     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\">",
@@ -179,13 +200,13 @@
         "mountTarget": "body"
       }
     },
-      "chatWindow": {
-        "selector": "#chat-window",
-        "options": {
-          "id": "chat-window",
-          "title": "Kitty Chat",
-          "mountTarget": "body"
-        }
+    "chatWindow": {
+      "selector": "#chat-window",
+      "options": {
+        "id": "chat-window",
+        "title": "Kitty Chat",
+        "mountTarget": "body"
       }
+    }
   }
 }

@@ -320,6 +320,26 @@
 
 @media (max-width: 41.25rem) {
     .commits-outer-shell {
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+
+        block-size: 0 !important;
+        min-block-size: 0 !important;
+        max-block-size: 0 !important;
+
+        inline-size: 0 !important;
+        min-inline-size: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+        border-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .commits-outer-shell > .window-header,
+    .commits-outer-shell > .window-body,
+    .window-launcher[src="/images/factory.svg"] {
         display: none !important;
     }
 }

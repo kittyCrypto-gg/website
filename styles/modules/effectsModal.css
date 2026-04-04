@@ -1,0 +1,224 @@
+/* =========================================
+    Module: Effects Modal
+========================================= */
+
+:root {
+    --effects-toggle-z-index: var(--theme-toggle-z-index, 2000);
+
+    --effects-modal-max-width: min(40rem,
+            calc(100dvw - var(--modal-viewport-gap-left) - var(--modal-viewport-gap-right)));
+    --effects-modal-gap: clamp(0.875rem, 2vw, 1rem);
+    --effects-modal-section-gap: clamp(0.625rem, 1.8vw, 0.875rem);
+    --effects-modal-section-radius: clamp(0.75rem, 2vw, 0.875rem);
+    --effects-modal-section-pad-block: clamp(0.875rem, 2vw, 1rem);
+    --effects-modal-section-pad-inline: clamp(0.875rem, 2.2vw, 1rem);
+
+    --effects-modal-section-bg: color-mix(in srgb, var(--frame-bg-colour) 88%, transparent);
+    --effects-modal-section-border: color-mix(in srgb, var(--nav-border-colour) 48%, transparent);
+
+    --effects-modal-muted: color-mix(in srgb, var(--body-text-colour) 72%, transparent);
+    --effects-modal-output-bg: color-mix(in srgb, var(--menu-button-hover-bg-colour) 18%, transparent);
+    --effects-modal-output-border: color-mix(in srgb, var(--menu-button-hover-bg-colour) 45%, transparent);
+
+    --effects-modal-close-size: clamp(2.375rem, 5vw, 2.625rem);
+    --effects-modal-close-radius: 999px;
+
+    --effects-slider-track-height: 0.45rem;
+    --effects-slider-thumb-size: 1rem;
+    --effects-slider-track-bg: color-mix(in srgb, var(--nav-border-colour) 42%, transparent);
+    --effects-slider-thumb-bg: var(--toggle-btn-bg-colour);
+    --effects-slider-thumb-border: color-mix(in srgb, var(--nav-border-colour) 70%, black 12%);
+    --effects-slider-accent: var(--menu-button-hover-bg-colour);
+}
+
+#effects-toggle {
+    z-index: var(--effects-toggle-z-index);
+}
+
+.effects-modal {
+    width: min(100%, var(--effects-modal-max-width));
+
+    .effects-modal__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--effects-modal-gap);
+    }
+
+    .effects-modal__title {
+        margin: 0;
+    }
+
+    .effects-modal__lead {
+        margin: 0.35rem 0 0;
+        color: var(--effects-modal-muted);
+        max-width: 36rem;
+    }
+
+    .effects-modal__close {
+        width: var(--effects-modal-close-size);
+        height: var(--effects-modal-close-size);
+        min-height: var(--effects-modal-close-size);
+        padding: 0;
+        border-radius: var(--effects-modal-close-radius);
+        flex: 0 0 auto;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .effects-modal__grid {
+        display: grid;
+        gap: var(--effects-modal-gap);
+    }
+
+    .effects-modal__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--effects-modal-section-gap);
+
+        padding:
+            var(--effects-modal-section-pad-block) var(--effects-modal-section-pad-inline);
+
+        background: var(--effects-modal-section-bg);
+        border: 1px solid var(--effects-modal-section-border);
+        border-radius: var(--effects-modal-section-radius);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .effects-modal__section-heading {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+
+        h3 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        p {
+            margin: 0;
+            color: var(--effects-modal-muted);
+            font-size: 0.94rem;
+        }
+    }
+
+    .effects-modal__toggle {
+        font-weight: 600;
+    }
+
+    .effects-modal__control {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+    }
+
+    .effects-modal__control-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+
+        label {
+            font-weight: 600;
+            cursor: default;
+        }
+
+        output {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            min-width: 3.5rem;
+            padding: 0.25rem 0.5rem;
+
+            background: var(--effects-modal-output-bg);
+            border: 1px solid var(--effects-modal-output-border);
+            border-radius: 999px;
+
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .effects-modal__hint {
+        margin: 0;
+        color: var(--effects-modal-muted);
+        font-size: 0.92rem;
+    }
+
+    .effects-modal__footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.625rem;
+    }
+
+    input[type="range"] {
+        appearance: none;
+        -webkit-appearance: none;
+
+        width: 100%;
+        min-height: 0;
+        padding: 0;
+        margin: 0.1rem 0 0;
+
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+
+        accent-color: var(--effects-slider-accent);
+        cursor: pointer;
+
+        &:focus {
+            box-shadow: none;
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        &::-webkit-slider-runnable-track {
+            height: var(--effects-slider-track-height);
+            background: var(--effects-slider-track-bg);
+            border-radius: 999px;
+        }
+
+        &::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+
+            width: var(--effects-slider-thumb-size);
+            height: var(--effects-slider-thumb-size);
+            margin-top: calc((var(--effects-slider-track-height) - var(--effects-slider-thumb-size)) / 2);
+
+            background: var(--effects-slider-thumb-bg);
+            border: 1px solid var(--effects-slider-thumb-border);
+            border-radius: 999px;
+            box-shadow: var(--modal-btn-shadow);
+        }
+
+        &::-moz-range-track {
+            height: var(--effects-slider-track-height);
+            background: var(--effects-slider-track-bg);
+            border: none;
+            border-radius: 999px;
+        }
+
+        &::-moz-range-thumb {
+            width: var(--effects-slider-thumb-size);
+            height: var(--effects-slider-thumb-size);
+
+            background: var(--effects-slider-thumb-bg);
+            border: 1px solid var(--effects-slider-thumb-border);
+            border-radius: 999px;
+            box-shadow: var(--modal-btn-shadow);
+        }
+    }
+}

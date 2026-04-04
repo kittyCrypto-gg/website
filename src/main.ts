@@ -11,6 +11,7 @@ import { createFooter } from "./footer.ts";
 import { fetchUiData } from "./uiFetch.ts";
 import { instantiateWindows } from "./window.ts";
 import { readerModeFocus, readerModeKeep } from "./reader.tsx";
+import { initEffectsControls } from "./effects.tsx";
 
 type TerminalModule = Readonly<{
     term: Readonly<{
@@ -48,9 +49,18 @@ type ServerStatusResult =
     | Readonly<{ kind: "online"; now: string }>
     | Readonly<{ kind: "offline"; reason: string }>;
 
+const FLOATING_UI_BUTTON_SELECTORS = [
+    "#theme-toggle",
+    "#effects-toggle",
+    "#reader-toggle",
+    "#read-aloud-toggle"
+] as const;
+
+let floatingUiButtonsResizeObserver: ResizeObserver | null = null;
+let floatingUiButtonsLayoutInstalled = false;
 
 /**
- * 
+ *
  * @param res Response to read JSON from.
  * @returns json if possible
  */
@@ -59,7 +69,7 @@ function readJsonIfAny(res: Response): Promise<unknown> {
 }
 
 /**
- * 
+ *
  * @param v Value to check.
  * @returns whether v is a record (non-null object, not an array)
  */
@@ -203,7 +213,6 @@ function applyHeaderInjections(doc: Document, injections: readonly string[]): vo
     if (start.parentNode !== doc.head) doc.head.appendChild(start);
     if (end.parentNode !== doc.head) doc.head.appendChild(end);
 
-    // Ensure correct order (start before end)
     if (start.compareDocumentPosition(end) & Node.DOCUMENT_POSITION_PRECEDING) {
         doc.head.appendChild(end);
     }
@@ -285,11 +294,136 @@ async function checkMobile(): Promise<boolean> {
 function applyMobileTextScale(isMobile: boolean): void {
     const root = document.documentElement;
 
-    // Single dial for CSS to consume
     root.style.setProperty("--kc-text-scale", isMobile ? "0.65" : "1");
-
-    // Optional hook if you also want a class for other mobile-only tweaks
     root.classList.toggle("kc-mobile", isMobile);
+}
+
+/**
+ * @param {string} raw - Raw CSS pixel value.
+ * @param {number} fallback - Fallback value.
+ * @returns {number} Parsed numeric pixel value.
+ */
+function parseCssPx(raw: string, fallback: number = 0): number {
+    const parsed = Number.parseFloat(raw);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/**
+ * @returns {readonly HTMLButtonElement[]} Floating UI buttons that currently exist.
+ */
+function getFloatingUiButtons(): readonly HTMLButtonElement[] {
+    return FLOATING_UI_BUTTON_SELECTORS
+        .map((selector) => document.querySelector(selector))
+        .filter((node): node is HTMLButtonElement => node instanceof HTMLButtonElement);
+}
+
+/**
+ * @param {HTMLElement} el - Element to measure.
+ * @returns {number} Rendered height in pixels.
+ */
+function getRenderedHeight(el: HTMLElement): number {
+    const rect = el.getBoundingClientRect();
+    if (rect.height > 0) return rect.height;
+
+    const computed = window.getComputedStyle(el);
+    const cssHeight = parseCssPx(computed.height, 0);
+    if (cssHeight > 0) return cssHeight;
+
+    return el.offsetHeight;
+}
+
+/**
+ * Aligns and vertically stacks the floating UI buttons so they share the same
+ * right position and z-index, while keeping a fixed 1rem gap between them.
+ *
+ * @returns {void} Nothing.
+ */
+function alignFloatingUiButtons(): void {
+    const buttons = getFloatingUiButtons();
+    if (buttons.length === 0) return;
+
+    const rootFontSize = parseCssPx(
+        window.getComputedStyle(document.documentElement).fontSize,
+        16
+    );
+    const gapPx = rootFontSize;
+
+    const measuredButtons = buttons
+        .map((button) => {
+            const computed = window.getComputedStyle(button);
+
+            return {
+                button,
+                bottom: parseCssPx(computed.bottom, 0),
+                right: computed.right,
+                zIndex: parseCssPx(computed.zIndex, 0),
+                height: getRenderedHeight(button)
+            };
+        })
+        .sort((a, b) => a.bottom - b.bottom);
+
+    const sharedRight = measuredButtons[0]?.right || "0px";
+    const sharedZIndex = String(
+        Math.max(...measuredButtons.map((entry) => entry.zIndex))
+    );
+
+    let nextBottom = measuredButtons[0]?.bottom || 0;
+
+    for (let i = 0; i < measuredButtons.length; i += 1) {
+        const entry = measuredButtons[i];
+
+        if (i > 0) {
+            const previous = measuredButtons[i - 1];
+            nextBottom += previous.height + gapPx;
+        }
+
+        entry.button.style.right = sharedRight;
+        entry.button.style.bottom = `${nextBottom}px`;
+        entry.button.style.zIndex = sharedZIndex;
+    }
+}
+
+/**
+ * Refreshes button observations so any later size change triggers a restack.
+ *
+ * @returns {void} Nothing.
+ */
+function observeFloatingUiButtons(): void {
+    floatingUiButtonsResizeObserver?.disconnect();
+
+    if (typeof ResizeObserver === "undefined") return;
+
+    const buttons = getFloatingUiButtons();
+    if (buttons.length === 0) return;
+
+    floatingUiButtonsResizeObserver = new ResizeObserver(() => {
+        alignFloatingUiButtons();
+    });
+
+    for (const button of buttons) {
+        floatingUiButtonsResizeObserver.observe(button);
+    }
+}
+
+/**
+ * Schedules a layout pass for the floating UI buttons and ensures future
+ * resize changes keep the stack tidy.
+ *
+ * @returns {void} Nothing.
+ */
+function ensureFloatingUiButtonsLayout(): void {
+    if (!floatingUiButtonsLayoutInstalled) {
+        floatingUiButtonsLayoutInstalled = true;
+
+        window.addEventListener("resize", () => {
+            alignFloatingUiButtons();
+        });
+    }
+
+    requestAnimationFrame(() => {
+        alignFloatingUiButtons();
+        observeFloatingUiButtons();
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -346,6 +480,8 @@ document.addEventListener("DOMContentLoaded", () => {
             terminalMod.setWebUiTheme(pendingWebUiTheme);
             pendingWebUiTheme = null;
         }
+
+        void status;
     };
 
     void init();
@@ -397,7 +533,6 @@ const repaint = (): void => {
  * @returns {string} Text suitable for clipboard.
  */
 function normaliseCssContent(raw: string): string {
-    // Computed `content` is usually quoted, or "none"/"normal" when nothing is rendered.
     if (!raw || raw === "none" || raw === "normal") return "";
 
     const quote = raw[0];
@@ -407,7 +542,6 @@ function normaliseCssContent(raw: string): string {
 
     const withoutOuterQuotes = hasQuotes ? raw.slice(1, -1) : raw;
 
-    // Unescape CSS newlines and common escapes from computed `content`.
     return withoutOuterQuotes
         .replaceAll("\\A", "\n")
         .replaceAll("\\a", "\n")
@@ -533,6 +667,9 @@ async function initialiseUI(): Promise<void> {
 
         themeToggle.title = data.themeToggle.title || "Theme";
 
+        initEffectsControls(data.effects);
+        ensureFloatingUiButtonsLayout();
+
         if (window.matchMedia) {
             const mq = window.matchMedia("(prefers-color-scheme: dark)");
             mq.addEventListener("change", (e) => {
@@ -549,7 +686,7 @@ async function initialiseUI(): Promise<void> {
 
         const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
         readerToggle.classList.add("theme-toggle-button");
-        readerToggle.style.bottom = "80px";
+        readerToggle.style.bottom = "140px";
         readerToggle.textContent = data.readerModeToggle.enable;
         readerToggle.setAttribute("data-enable", data.readerModeToggle.enable);
         readerToggle.setAttribute("data-disable", data.readerModeToggle.disable);
@@ -561,6 +698,7 @@ async function initialiseUI(): Promise<void> {
             keep: [
                 ...readerModeKeep,
                 "#theme-toggle",
+                "#effects-toggle",
                 "#reader-toggle",
                 "#read-aloud-toggle",
                 "#main-menu",
@@ -571,7 +709,7 @@ async function initialiseUI(): Promise<void> {
 
         const readAloudToggle = recreateSingleton("read-aloud-toggle", () => document.createElement("button"), document);
         readAloudToggle.classList.add("theme-toggle-button");
-        readAloudToggle.style.bottom = "140px";
+        readAloudToggle.style.bottom = "200px";
         readAloudToggle.textContent = data.readAloudToggle.enable;
         readAloudToggle.setAttribute("data-enable", data.readAloudToggle.enable);
         readAloudToggle.setAttribute("data-disable", data.readAloudToggle.disable);
@@ -579,6 +717,8 @@ async function initialiseUI(): Promise<void> {
         document.body.appendChild(readAloudToggle);
 
         readAloudToggle.addEventListener("click", readAloud.showMenu);
+
+        ensureFloatingUiButtonsLayout();
 
         if (params.has("darkmode")) {
             const raw = params.get("darkmode");
