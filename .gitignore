@@ -1,4 +1,3 @@
-# .gitignore file
 # dist folder
 dist/
 # node_modules folder
@@ -11,4 +10,9 @@ node_modules/
 manifest.json
 # .env file
 .env
+# macOS system files
 .DS_Store
+# Host file
+host.ts
+# Log files
+*.log

@@ -10,6 +10,7 @@ type EffectsPrefs = Readonly<{
     phosphorOpacity: number;
     scanlinesEnabled: boolean;
     scanlineOpacity: number;
+    scanlineSpeed: number;
 }>;
 
 type StoredEffectsPrefs = Readonly<Partial<EffectsPrefs>>;
@@ -21,7 +22,7 @@ type EffectsPanelProps = Readonly<{
 
 const EFFECTS_STORAGE_KEY = "kcEffectsPrefs";
 const EFFECTS_BUTTON_ID = "effects-toggle";
-const EFFECTS_MODAL_ID = "effects-modal";
+const EFFECTS_MODAL_ID = "screen-effects";
 const EFFECTS_BUTTON_BOTTOM = "80px";
 
 const PHOSPHOR_OPACITY_MIN = 0;
@@ -29,6 +30,13 @@ const PHOSPHOR_OPACITY_MAX = 0.12;
 
 const SCANLINE_OPACITY_MIN = 0;
 const SCANLINE_OPACITY_MAX = 0.3;
+
+const SCANLINE_SPEED_MIN = 0;
+const SCANLINE_SPEED_MAX = 100;
+const DEFAULT_SCANLINE_SPEED = 90;
+
+const SCANLINE_TRAVEL_DURATION_MIN_MS = 1;
+const SCANLINE_TRAVEL_DURATION_MAX_MS = 22000;
 
 const SLIDER_PERCENT_MIN = 0;
 const SLIDER_PERCENT_MAX = 100;
@@ -99,6 +107,50 @@ function sliderPercentToOpacity(percent: number, maxOpacity: number): number {
 }
 
 /**
+ * @param {number} value - Duration in milliseconds.
+ * @returns {string} CSS duration string.
+ */
+function formatDurationMs(value: number): string {
+    return `${Math.round(
+        clamp(value, SCANLINE_TRAVEL_DURATION_MIN_MS, SCANLINE_TRAVEL_DURATION_MAX_MS)
+    )}ms`;
+}
+
+/**
+ * @param {number} speed - Speed percentage from 0 to 100.
+ * @returns {number} Travel duration in milliseconds.
+ */
+function scanlineSpeedToDurationMs(speed: number): number {
+    const clampedSpeed = clamp(speed, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
+    if (clampedSpeed <= 0) return SCANLINE_TRAVEL_DURATION_MAX_MS;
+
+    const progress = (clampedSpeed - 1) / 99;
+
+    return (
+        SCANLINE_TRAVEL_DURATION_MAX_MS -
+        progress * (SCANLINE_TRAVEL_DURATION_MAX_MS - SCANLINE_TRAVEL_DURATION_MIN_MS)
+    );
+}
+
+/**
+ * @param {number} durationMs - Travel duration in milliseconds.
+ * @returns {number} Speed percentage from 0 to 100.
+ */
+function durationMsToScanlineSpeed(durationMs: number): number {
+    const clampedDuration = clamp(
+        durationMs,
+        SCANLINE_TRAVEL_DURATION_MIN_MS,
+        SCANLINE_TRAVEL_DURATION_MAX_MS
+    );
+
+    const progress =
+        (SCANLINE_TRAVEL_DURATION_MAX_MS - clampedDuration) /
+        (SCANLINE_TRAVEL_DURATION_MAX_MS - SCANLINE_TRAVEL_DURATION_MIN_MS);
+
+    return clamp(1 + progress * 99, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
+}
+
+/**
  * @returns {EffectsUiConfig} Active UI config.
  */
 function getUiConfig(): EffectsUiConfig {
@@ -128,7 +180,8 @@ function readCssDefaults(): EffectsPrefs {
             parseNumber(rootStyle.getPropertyValue("--effect-crt-scanline-opacity"), 0.1),
             SCANLINE_OPACITY_MIN,
             SCANLINE_OPACITY_MAX
-        )
+        ),
+        scanlineSpeed: DEFAULT_SCANLINE_SPEED
     };
 }
 
@@ -162,7 +215,10 @@ function readStoredPrefs(): StoredEffectsPrefs | null {
             scanlinesEnabled:
                 typeof record.scanlinesEnabled === "boolean" ? record.scanlinesEnabled : undefined,
             scanlineOpacity:
-                typeof record.scanlineOpacity === "number" ? record.scanlineOpacity : undefined
+                typeof record.scanlineOpacity === "number" ? record.scanlineOpacity : undefined,
+            scanlineSpeed:
+                typeof record.scanlineSpeed === "number" ? record.scanlineSpeed : undefined
+
         };
     } catch {
         return null;
@@ -187,12 +243,18 @@ function mergePrefs(base: EffectsPrefs, stored: StoredEffectsPrefs | null): Effe
         SCANLINE_OPACITY_MIN,
         SCANLINE_OPACITY_MAX
     );
+    const scanlineSpeed = clamp(
+        stored.scanlineSpeed ?? base.scanlineSpeed,
+        SCANLINE_SPEED_MIN,
+        SCANLINE_SPEED_MAX
+    );
 
     return {
         phosphorEnabled: phosphorOpacity > 0 && (stored.phosphorEnabled ?? base.phosphorEnabled),
         phosphorOpacity,
         scanlinesEnabled: scanlineOpacity > 0 && (stored.scanlinesEnabled ?? base.scanlinesEnabled),
-        scanlineOpacity
+        scanlineOpacity,
+        scanlineSpeed
     };
 }
 
@@ -221,11 +283,21 @@ function readLivePrefs(): EffectsPrefs {
         SCANLINE_OPACITY_MAX
     );
 
+    const scanlineSpeed = body.classList.contains("effect-static-scanlines")
+        ? 0
+        : durationMsToScanlineSpeed(
+            parseNumber(
+                rootStyle.getPropertyValue("--effect-crt-scanline-travel-duration"),
+                scanlineSpeedToDurationMs(getDefaultPrefs().scanlineSpeed)
+            )
+        );
+
     return {
         phosphorEnabled: phosphorOpacity > 0 && !body.classList.contains("effect-disable-phosphor"),
         phosphorOpacity,
         scanlinesEnabled: scanlineOpacity > 0 && !body.classList.contains("effect-disable-scanlines"),
-        scanlineOpacity
+        scanlineOpacity,
+        scanlineSpeed
     };
 }
 
@@ -257,9 +329,14 @@ function applyPrefs(prefs: EffectsPrefs): void {
         "--effect-crt-scanline-opacity",
         formatCssNumber(prefs.scanlineOpacity)
     );
+    document.documentElement.style.setProperty(
+        "--effect-crt-scanline-travel-duration",
+        formatDurationMs(scanlineSpeedToDurationMs(prefs.scanlineSpeed))
+    );
 
     document.body.classList.toggle("effect-disable-phosphor", !prefs.phosphorEnabled || prefs.phosphorOpacity <= 0);
     document.body.classList.toggle("effect-disable-scanlines", !prefs.scanlinesEnabled || prefs.scanlineOpacity <= 0);
+    document.body.classList.toggle("effect-static-scanlines", prefs.scanlineSpeed <= 0);
 }
 
 /**
@@ -315,15 +392,18 @@ function syncOutput(modalEl: HTMLDivElement, selector: string, value: number): v
 function syncModalUi(modalEl: HTMLDivElement, prefs: EffectsPrefs): void {
     const phosphorPercent = opacityToSliderPercent(prefs.phosphorOpacity, PHOSPHOR_OPACITY_MAX);
     const scanlinePercent = opacityToSliderPercent(prefs.scanlineOpacity, SCANLINE_OPACITY_MAX);
+    const scanlineSpeed = clamp(prefs.scanlineSpeed, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
 
     syncCheckbox(modalEl, "#effects-phosphor-enabled", !prefs.phosphorEnabled || phosphorPercent === 0);
     syncCheckbox(modalEl, "#effects-scanlines-enabled", !prefs.scanlinesEnabled || scanlinePercent === 0);
 
     syncRange(modalEl, "#effects-phosphor-opacity", phosphorPercent);
     syncRange(modalEl, "#effects-scanline-opacity", scanlinePercent);
+    syncRange(modalEl, "#effects-scanline-speed", scanlineSpeed);
 
     syncOutput(modalEl, "#effects-phosphor-opacity-value", phosphorPercent);
     syncOutput(modalEl, "#effects-scanline-opacity-value", scanlinePercent);
+    syncOutput(modalEl, "#effects-scanline-speed-value", scanlineSpeed);
 }
 
 /**
@@ -417,6 +497,7 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
     const text = props.ui.modal;
     const phosphorPercent = opacityToSliderPercent(props.prefs.phosphorOpacity, PHOSPHOR_OPACITY_MAX);
     const scanlinePercent = opacityToSliderPercent(props.prefs.scanlineOpacity, SCANLINE_OPACITY_MAX);
+    const scanlineSpeed = clamp(props.prefs.scanlineSpeed, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
 
     return (
         <>
@@ -426,7 +507,7 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
                     <p className="effects-modal__lead">{text.lead}</p>
                 </div>
 
-                <button
+                {/* <button
                     type="button"
                     className="effects-modal__close"
                     data-effects-close=""
@@ -434,7 +515,7 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
                     aria-label={text.closeTitle}
                 >
                     ✕
-                </button>
+                </button> */}
             </div>
 
             <div className="effects-modal__grid">
@@ -504,6 +585,24 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
 
                         <p className="effects-modal__hint">{text.scanlinesHint}</p>
                     </div>
+
+                    <div className="effects-modal__control">
+                        <div className="effects-modal__control-meta">
+                            <label htmlFor="effects-scanline-speed">{text.scanlineSpeedLabel}</label>
+                            <output id="effects-scanline-speed-value">{formatPercent(scanlineSpeed)}</output>
+                        </div>
+
+                        <input
+                            id="effects-scanline-speed"
+                            type="range"
+                            min={String(SCANLINE_SPEED_MIN)}
+                            max={String(SCANLINE_SPEED_MAX)}
+                            step={String(SLIDER_PERCENT_STEP)}
+                            defaultValue={String(Math.round(scanlineSpeed))}
+                        />
+
+                        <p className="effects-modal__hint">{text.scanlineSpeedHint}</p>
+                    </div>
                 </section>
             </div>
 
@@ -536,6 +635,7 @@ function ensureEffectsModal(): Modal {
     effectsModal = modals.create({
         id: EFFECTS_MODAL_ID,
         mode: "blocking",
+        window: true,
         modalClassName: "effects-modal",
         content: renderEffectsModal,
         decorators: [
@@ -625,13 +725,33 @@ function ensureEffectsModal(): Modal {
                 syncModalUi(ctx.modalEl, next);
             }),
 
+            onModalEvent("#effects-scanline-speed", "input", (ev, ctx) => {
+                const target = ev.currentTarget;
+                if (!(target instanceof HTMLInputElement)) return;
+
+                const speed = clamp(
+                    Number.parseFloat(target.value),
+                    SCANLINE_SPEED_MIN,
+                    SCANLINE_SPEED_MAX
+                );
+
+                const next: EffectsPrefs = {
+                    ...readLivePrefs(),
+                    scanlineSpeed: speed
+                };
+
+                saveAndApplyPrefs(next);
+                syncModalUi(ctx.modalEl, next);
+            }),
+
             onModalEvent("#effects-reset", "click", (_ev, ctx) => {
                 const defaults = getDefaultPrefs();
                 const next: EffectsPrefs = {
                     phosphorEnabled: true,
                     phosphorOpacity: defaults.phosphorOpacity,
                     scanlinesEnabled: true,
-                    scanlineOpacity: defaults.scanlineOpacity
+                    scanlineOpacity: defaults.scanlineOpacity,
+                    scanlineSpeed: defaults.scanlineSpeed
                 };
 
                 saveAndApplyPrefs(next);

@@ -1,15 +1,19 @@
+import * as window from "./window.ts";
+
 type ModalMode = "blocking" | "non-blocking";
 
 type ModalDecoratorInfo = Readonly<{
     id: string;
     mode: ModalMode;
     readerModeCompatible: boolean;
+    windowed: boolean;
 }>;
 
 type ModalDecoratorContext = Readonly<{
     id: string;
     mode: ModalMode;
     readerModeCompatible: boolean;
+    windowed: boolean;
     modalEl: HTMLDivElement;
     overlayEl: HTMLDivElement | null;
     close: () => void;
@@ -30,6 +34,9 @@ type ModalSpec = Readonly<{
     // Default true
     readerModeCompatible?: boolean;
 
+    // Default false
+    window?: boolean;
+
     content: string | (() => string);
 
     modalClassName?: string;
@@ -49,60 +56,62 @@ type OpenEntry = Readonly<{
     closeOnEscape: boolean;
     close: () => void;
     overlayEl: HTMLDivElement | null;
-    modalEl: HTMLDivElement;
+    stackEl: HTMLDivElement;
 }>;
 
 const MODAL_CLASS = "modal";
 const OVERLAY_CLASS = "modal-overlay";
 const NON_BLOCKING_STACK_ID = "non-blocking-modal-stack";
 const READER_MODE_INCOMPATIBLE_CLASS = "readerModeIncompatible";
+const WINDOW_FRAME_SUFFIX = "-window-frame";
+const WINDOW_STATE_ID_PREFIX = "modal-window-";
 
-const globalRanInit = new WeakSet<() => void>();
+const ranInit = new WeakSet<() => void>();
 
-let globalEscInstalled = false;
-const globalOpenOrder: string[] = [];
-const globalOpenByKey = new Map<string, OpenEntry>();
+let escOn = false;
+const openOrd: string[] = [];
+const openMap = new Map<string, OpenEntry>();
 
-function ensureGlobalEsc(): void {
-    if (globalEscInstalled) return;
-    globalEscInstalled = true;
+function ensEsc(): void {
+    if (escOn) return;
+    escOn = true;
 
-    document.addEventListener("keydown", (event: KeyboardEvent) => {
-        if (event.key !== "Escape") return;
-        if (event.defaultPrevented) return;
+    document.addEventListener("keydown", (ev: KeyboardEvent) => {
+        if (ev.key !== "Escape") return;
+        if (ev.defaultPrevented) return;
 
-        for (let i = globalOpenOrder.length - 1; i >= 0; i -= 1) {
-            const key = globalOpenOrder[i];
-            const entry = globalOpenByKey.get(key);
-            if (!entry) continue;
-            if (!entry.closeOnEscape) continue;
-            entry.close();
+        for (let i = openOrd.length - 1; i >= 0; i -= 1) {
+            const k = openOrd[i];
+            const e = openMap.get(k);
+            if (!e) continue;
+            if (!e.closeOnEscape) continue;
+            e.close();
             return;
         }
     });
 }
 
-function ensureCss(cssHref: string): void {
-    const sheets = Array.from(document.styleSheets);
-    for (const s of sheets) {
+function ensCss(href: string): void {
+    const ss = Array.from(document.styleSheets);
+    for (const s of ss) {
         if (!s.href) continue;
-        if (s.href.endsWith(cssHref)) return;
+        if (s.href.endsWith(href)) return;
     }
 
-    const links = Array.from(document.querySelectorAll<HTMLLinkElement>("link[rel='stylesheet']"));
-    for (const l of links) {
-        if (l.getAttribute("href") === cssHref) return;
+    const ls = Array.from(document.querySelectorAll<HTMLLinkElement>("link[rel='stylesheet']"));
+    for (const l of ls) {
+        if (l.getAttribute("href") === href) return;
     }
 
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = cssHref;
-    document.head.appendChild(link);
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = href;
+    document.head.appendChild(l);
 }
 
-function ensureNonBlockingHost(): HTMLDivElement {
-    const existing = document.getElementById(NON_BLOCKING_STACK_ID);
-    if (existing instanceof HTMLDivElement) return existing;
+function ensNbHost(): HTMLDivElement {
+    const ex = document.getElementById(NON_BLOCKING_STACK_ID);
+    if (ex instanceof HTMLDivElement) return ex;
 
     const host = document.createElement("div");
     host.id = NON_BLOCKING_STACK_ID;
@@ -110,95 +119,146 @@ function ensureNonBlockingHost(): HTMLDivElement {
     return host;
 }
 
-function syncBodyScrollLock(): void {
-    for (const entry of globalOpenByKey.values()) {
-        if (entry.mode === "blocking") {
+function syncScrl(): void {
+    for (const e of openMap.values()) {
+        if (e.mode === "blocking") {
             document.body.classList.add("no-scroll");
             return;
         }
     }
+
     document.body.classList.remove("no-scroll");
 }
 
-function bringToFront(key: string): void {
+function zTop(key: string): void {
     if (!key) return;
 
-    const idx = globalOpenOrder.indexOf(key);
-    if (idx >= 0) globalOpenOrder.splice(idx, 1);
-    globalOpenOrder.push(key);
+    const i = openOrd.indexOf(key);
+    if (i >= 0) openOrd.splice(i, 1);
+    openOrd.push(key);
 
     const base = 10000;
-    for (let i = 0; i < globalOpenOrder.length; i += 1) {
-        const k = globalOpenOrder[i];
-        const entry = globalOpenByKey.get(k);
-        if (!entry) continue;
+    for (let j = 0; j < openOrd.length; j += 1) {
+        const k = openOrd[j];
+        const e = openMap.get(k);
+        if (!e) continue;
 
-        const overlayZ = base + i * 2;
-        const modalZ = base + i * 2 + 1;
+        const oz = base + j * 2;
+        const mz = base + j * 2 + 1;
 
-        if (entry.overlayEl) entry.overlayEl.style.zIndex = String(overlayZ);
-        entry.modalEl.style.zIndex = String(modalZ);
+        if (e.overlayEl) e.overlayEl.style.zIndex = String(oz);
+        e.stackEl.style.zIndex = String(mz);
     }
 }
 
-function removeFromFront(key: string): void {
-    const idx = globalOpenOrder.indexOf(key);
-    if (idx < 0) return;
-    globalOpenOrder.splice(idx, 1);
+function zRm(key: string): void {
+    const i = openOrd.indexOf(key);
+    if (i < 0) return;
 
-    const newTop = globalOpenOrder[globalOpenOrder.length - 1] ?? "";
-    if (newTop) bringToFront(newTop);
+    openOrd.splice(i, 1);
+
+    const top = openOrd[openOrd.length - 1] ?? "";
+    if (top) zTop(top);
 }
 
-function resolveId(preferredId: string | undefined): string {
-    const raw = (preferredId ?? "").trim();
+function mkId(pref: string | undefined): string {
+    const raw = (pref ?? "").trim();
     if (raw) return raw;
 
-    if ("crypto" in window && "randomUUID" in crypto) {
-        return `modal-${crypto.randomUUID()}`;
+    if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.randomUUID === "function") {
+        return `modal-${globalThis.crypto.randomUUID()}`;
     }
 
     const r = Math.random().toString(16).slice(2);
     return `modal-${Date.now()}-${r}`;
 }
 
-function runDecoratorInitOnce(decorators: readonly ModalDecorator[]): void {
-    for (const d of decorators) {
-        const cssHref = d.cssHref;
-        if (cssHref) ensureCss(cssHref);
+function runInit(ds: readonly ModalDecorator[]): void {
+    for (const d of ds) {
+        if (d.cssHref) ensCss(d.cssHref);
 
         const init = d.init;
         if (!init) continue;
-        if (globalRanInit.has(init)) continue;
+        if (ranInit.has(init)) continue;
 
-        globalRanInit.add(init);
+        ranInit.add(init);
         init();
     }
 }
 
-function applyPatchDecorators(
+function patchHtml(
     html: string,
-    decorators: readonly ModalDecorator[],
+    ds: readonly ModalDecorator[],
     info: ModalDecoratorInfo
 ): string {
     let out = html;
 
-    for (const d of decorators) {
-        const patch = d.patchHtml;
-        if (!patch) continue;
-        out = patch(out, info);
+    for (const d of ds) {
+        if (!d.patchHtml) continue;
+        out = d.patchHtml(out, info);
     }
 
     return out;
 }
 
+function escCss(v: string): string {
+    if (typeof globalThis.CSS !== "undefined" && typeof globalThis.CSS.escape === "function") {
+        return globalThis.CSS.escape(v);
+    }
+
+    return v.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+}
+
+function px(v: string): number {
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function bx(cs: CSSStyleDeclaration | null): number {
+    if (!cs) return 0;
+    return px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
+}
+
+function by(cs: CSSStyleDeclaration | null): number {
+    if (!cs) return 0;
+    return px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth);
+}
+
+function oh(el: Element | null): number {
+    if (!(el instanceof HTMLElement)) return 0;
+
+    const cs = globalThis.getComputedStyle(el);
+    return Math.ceil(el.getBoundingClientRect().height + px(cs.marginTop) + px(cs.marginBottom));
+}
+
+/**
+ * @param {string} id - Raw modal id.
+ * @returns {string} A human-readable window title.
+ */
+function windowTitleFromId(id: string): string {
+    const parts = id
+        .trim()
+        .replace(/[_-]+/g, " ")
+        .split(/\s+/)
+        .filter(Boolean);
+
+    if (!parts.length) return "Modal";
+
+    return parts
+        .map((part) => {
+            const lower = part.toLowerCase();
+            return lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join(" ");
+}
+
 export class ModalFactory {
-    readonly #factoryToken: string;
-    readonly #sessionsById: Map<string, ModalSession>;
+    readonly #tok: string;
+    readonly #byId: Map<string, ModalSession>;
 
     constructor() {
-        this.#factoryToken = resolveId("factory");
-        this.#sessionsById = new Map<string, ModalSession>();
+        this.#tok = mkId("factory");
+        this.#byId = new Map<string, ModalSession>();
     }
 
     /**
@@ -214,68 +274,69 @@ export class ModalFactory {
      * @returns {ModalSession | null} Live session if open.
      */
     getOpenSession(id: string): ModalSession | null {
-        return this.#sessionsById.get(id) ?? null;
+        return this.#byId.get(id) ?? null;
     }
 
     /**
      * @returns {readonly ModalSession[]} Open sessions created by this factory.
      */
     listOpenSessions(): readonly ModalSession[] {
-        return Array.from(this.#sessionsById.values());
+        return Array.from(this.#byId.values());
     }
 
     /** @internal */
     _keyFor(id: string): string {
-        return `${this.#factoryToken}::${id}`;
+        return `${this.#tok}::${id}`;
     }
 
     /** @internal */
-    _registerSession(id: string, session: ModalSession): void {
-        this.#sessionsById.set(id, session);
+    _registerSession(id: string, s: ModalSession): void {
+        this.#byId.set(id, s);
     }
 
     /** @internal */
     _unregisterSession(id: string): void {
-        this.#sessionsById.delete(id);
+        this.#byId.delete(id);
     }
 }
 
 export class Modal {
-    readonly #factory: ModalFactory;
+    readonly #fac: ModalFactory;
 
     readonly #id: string;
     #mode: ModalMode;
 
-    readonly #readerModeCompatible: boolean;
+    readonly #rmOk: boolean;
+    readonly #win: boolean;
 
-    #content: string | (() => string);
+    #cnt: string | (() => string);
 
-    #modalClassName: string;
-    #overlayClassName: string;
+    #mCls: string;
+    #oCls: string;
 
-    #closeOnEscape: boolean;
-    #closeOnOutsideClick: boolean;
+    #esc: boolean;
+    #out: boolean;
 
-    #decorators: ModalDecorator[];
+    #ds: ModalDecorator[];
 
     constructor(factory: ModalFactory, spec: ModalSpec) {
-        this.#factory = factory;
+        this.#fac = factory;
 
-        this.#id = resolveId(spec.id);
+        this.#id = mkId(spec.id);
         this.#mode = spec.mode ?? "blocking";
 
-        this.#readerModeCompatible = spec.readerModeCompatible ?? true;
+        this.#rmOk = spec.readerModeCompatible ?? true;
+        this.#win = spec.window ?? false;
 
-        this.#content = spec.content;
+        this.#cnt = spec.content;
 
-        this.#modalClassName = spec.modalClassName ?? "";
-        this.#overlayClassName = spec.overlayClassName ?? "";
+        this.#mCls = spec.modalClassName ?? "";
+        this.#oCls = spec.overlayClassName ?? "";
 
-        this.#closeOnEscape = spec.closeOnEscape ?? true;
-        this.#closeOnOutsideClick =
-            spec.closeOnOutsideClick ?? (this.#mode === "blocking");
+        this.#esc = spec.closeOnEscape ?? true;
+        this.#out = spec.closeOnOutsideClick ?? (this.#mode === "blocking");
 
-        this.#decorators = Array.from(spec.decorators ?? []);
+        this.#ds = Array.from(spec.decorators ?? []);
     }
 
     /**
@@ -306,12 +367,12 @@ export class Modal {
      * @returns {this} This modal.
      */
     setContent(content: string | (() => string)): this {
-        this.#content = content;
+        this.#cnt = content;
 
-        const open = this.#factory.getOpenSession(this.#id);
-        if (!open) return this;
+        const s = this.#fac.getOpenSession(this.#id);
+        if (!s) return this;
 
-        open.setHtml(this.renderHtml());
+        s.setHtml(this.renderHtml());
         return this;
     }
 
@@ -320,12 +381,12 @@ export class Modal {
      * @returns {this} This modal.
      */
     decorate(decorator: ModalDecorator): this {
-        this.#decorators.push(decorator);
+        this.#ds.push(decorator);
 
-        const open = this.#factory.getOpenSession(this.#id);
-        if (!open) return this;
+        const s = this.#fac.getOpenSession(this.#id);
+        if (!s) return this;
 
-        open.setHtml(this.renderHtml());
+        s.setHtml(this.renderHtml());
         return this;
     }
 
@@ -336,12 +397,14 @@ export class Modal {
         const info: ModalDecoratorInfo = {
             id: this.#id,
             mode: this.#mode,
-            readerModeCompatible: this.#readerModeCompatible
+            readerModeCompatible: this.#rmOk,
+            windowed: this.#win
         };
-        const base = typeof this.#content === "function" ? this.#content() : this.#content;
 
-        runDecoratorInitOnce(this.#decorators);
-        return applyPatchDecorators(base, this.#decorators, info);
+        const base = typeof this.#cnt === "function" ? this.#cnt() : this.#cnt;
+
+        runInit(this.#ds);
+        return patchHtml(base, this.#ds, info);
     }
 
     /**
@@ -350,38 +413,39 @@ export class Modal {
      * @returns {ModalSession} Live session.
      */
     open(): ModalSession {
-        ensureGlobalEsc();
+        ensEsc();
 
-        const already = this.#factory.getOpenSession(this.#id);
-        if (already) {
-            already.setHtml(this.renderHtml());
-            already.bringToFront();
-            return already;
+        const ex = this.#fac.getOpenSession(this.#id);
+        if (ex) {
+            ex.setHtml(this.renderHtml());
+            ex.bringToFront();
+            return ex;
         }
 
-        const session = new ModalSession({
-            factory: this.#factory,
+        const s = new ModalSession({
+            factory: this.#fac,
             id: this.#id,
             mode: this.#mode,
-            readerModeCompatible: this.#readerModeCompatible,
-            modalClassName: this.#modalClassName,
-            overlayClassName: this.#overlayClassName,
-            closeOnEscape: this.#closeOnEscape,
-            closeOnOutsideClick: this.#closeOnOutsideClick,
-            decorators: this.#decorators,
+            readerModeCompatible: this.#rmOk,
+            windowed: this.#win,
+            modalClassName: this.#mCls,
+            overlayClassName: this.#oCls,
+            closeOnEscape: this.#esc,
+            closeOnOutsideClick: this.#out,
+            decorators: this.#ds,
             html: this.renderHtml()
         });
 
-        this.#factory._registerSession(this.#id, session);
-        session.open();
-        return session;
+        this.#fac._registerSession(this.#id, s);
+        s.open();
+        return s;
     }
 
     /**
      * @returns {boolean} True if this modal is open.
      */
     isOpen(): boolean {
-        return this.#factory.getOpenSession(this.#id) !== null;
+        return this.#fac.getOpenSession(this.#id) !== null;
     }
 
     /**
@@ -390,9 +454,9 @@ export class Modal {
      * @returns {boolean} True if closed.
      */
     close(): boolean {
-        const open = this.#factory.getOpenSession(this.#id);
-        if (!open) return false;
-        open.close();
+        const s = this.#fac.getOpenSession(this.#id);
+        if (!s) return false;
+        s.close();
         return true;
     }
 }
@@ -403,6 +467,7 @@ type ModalSessionSpec = Readonly<{
     mode: ModalMode;
 
     readerModeCompatible: boolean;
+    windowed: boolean;
 
     modalClassName: string;
     overlayClassName: string;
@@ -414,60 +479,100 @@ type ModalSessionSpec = Readonly<{
     html: string;
 }>;
 
+type Mx = Readonly<{
+    mw: number;
+    mh: number;
+    fw: number;
+    fh: number;
+}>;
+
 export class ModalSession {
-    readonly #factory: ModalFactory;
+    readonly #fac: ModalFactory;
     readonly #key: string;
 
     readonly #id: string;
     readonly #mode: ModalMode;
 
-    readonly #readerModeCompatible: boolean;
+    readonly #rmOk: boolean;
+    readonly #win: boolean;
 
-    readonly #closeOnEscape: boolean;
-    readonly #closeOnOutsideClick: boolean;
+    readonly #esc: boolean;
+    readonly #out: boolean;
 
-    readonly #decorators: readonly ModalDecorator[];
+    readonly #ds: readonly ModalDecorator[];
 
-    readonly #modalEl: HTMLDivElement;
-    readonly #overlayEl: HTMLDivElement | null;
+    readonly #mEl: HTMLDivElement;
+    readonly #fEl: HTMLDivElement | null;
+    readonly #sEl: HTMLDivElement;
+    readonly #oEl: HTMLDivElement | null;
 
-    #mountedCleanups: Array<() => void>;
+    readonly #lnEl: HTMLDivElement | null;
+
+    #wh: window.WindowHandle | null;
+    #sty: HTMLStyleElement | null;
+    #raf: number | null;
+    #mCln: Array<() => void>;
+    #wCln: Array<() => void>;
+    #wOn: boolean;
 
     constructor(spec: ModalSessionSpec) {
-        this.#factory = spec.factory;
+        this.#fac = spec.factory;
         this.#id = spec.id;
         this.#mode = spec.mode;
 
-        this.#readerModeCompatible = spec.readerModeCompatible;
+        this.#rmOk = spec.readerModeCompatible;
+        this.#win = spec.windowed;
 
-        this.#closeOnEscape = spec.closeOnEscape;
-        this.#closeOnOutsideClick = spec.closeOnOutsideClick;
-        this.#decorators = spec.decorators;
+        this.#esc = spec.closeOnEscape;
+        this.#out = spec.closeOnOutsideClick;
+        this.#ds = spec.decorators;
 
-        this.#key = this.#factory._keyFor(this.#id);
-        this.#mountedCleanups = [];
+        this.#key = this.#fac._keyFor(this.#id);
+        this.#wh = null;
+        this.#sty = null;
+        this.#raf = null;
+        this.#mCln = [];
+        this.#wCln = [];
+        this.#wOn = false;
 
-        this.#modalEl = document.createElement("div");
-        this.#modalEl.id = this.#id;
+        this.#mEl = document.createElement("div");
+        this.#mEl.id = this.#id;
+        this.#mEl.className = [MODAL_CLASS, spec.modalClassName].filter(Boolean).join(" ");
 
-        const modalClasses = [MODAL_CLASS, spec.modalClassName].filter(Boolean).join(" ");
-        this.#modalEl.className = modalClasses;
+        if (this.#mode === "non-blocking" && !this.#win) {
+            this.#mEl.classList.add("non-blocking");
+        }
 
-        if (this.#mode === "non-blocking") this.#modalEl.classList.add("non-blocking");
+        if (this.#win) {
+            this.#fEl = document.createElement("div");
+            this.#fEl.id = `${this.#id}${WINDOW_FRAME_SUFFIX}`;
+            this.#fEl.dataset.modalWindowFrame = "true";
+            this.#fEl.appendChild(this.#mEl);
+            this.#sEl = this.#fEl;
 
-        this.#overlayEl = this.#mode === "blocking"
+            this.#lnEl = document.createElement("div");
+            this.#lnEl.hidden = true;
+            this.#lnEl.setAttribute("aria-hidden", "true");
+        } else {
+            this.#fEl = null;
+            this.#sEl = this.#mEl;
+            this.#lnEl = null;
+        }
+
+        this.#oEl = this.#mode === "blocking"
             ? document.createElement("div")
             : null;
 
-        if (this.#overlayEl) {
-            this.#overlayEl.id = `modal-overlay-${this.#id}`;
-            this.#overlayEl.className = [OVERLAY_CLASS, spec.overlayClassName].filter(Boolean).join(" ");
-            this.#overlayEl.appendChild(this.#modalEl);
+        if (this.#oEl) {
+            this.#oEl.id = `modal-overlay-${this.#id}`;
+            this.#oEl.className = [OVERLAY_CLASS, spec.overlayClassName].filter(Boolean).join(" ");
+            this.#oEl.appendChild(this.#sEl);
         }
 
-        if (!this.#readerModeCompatible) {
-            this.#modalEl.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
-            this.#overlayEl?.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
+        if (!this.#rmOk) {
+            this.#mEl.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
+            this.#fEl?.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
+            this.#oEl?.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
         }
 
         this.setHtml(spec.html);
@@ -491,54 +596,57 @@ export class ModalSession {
      * @returns {HTMLDivElement} Modal element.
      */
     get modalEl(): HTMLDivElement {
-        return this.#modalEl;
+        return this.#mEl;
     }
 
     /**
      * @returns {HTMLDivElement | null} Overlay element.
      */
     get overlayEl(): HTMLDivElement | null {
-        return this.#overlayEl;
+        return this.#oEl;
     }
 
     /**
      * @returns {void} Opens and mounts the session into DOM.
      */
     open(): void {
-        if (globalOpenByKey.has(this.#key)) {
+        if (openMap.has(this.#key)) {
             this.bringToFront();
             return;
         }
 
-        if (this.#overlayEl) {
-            document.body.appendChild(this.#overlayEl);
+        if (this.#oEl) {
+            document.body.appendChild(this.#oEl);
 
-            if (this.#closeOnOutsideClick) {
-                this.#overlayEl.addEventListener("click", (event: MouseEvent) => {
-                    if (event.target !== this.#overlayEl) return;
+            if (this.#out) {
+                this.#oEl.addEventListener("click", (ev: MouseEvent) => {
+                    if (ev.target !== this.#oEl) return;
                     this.close();
                 });
             }
         } else {
-            const host = ensureNonBlockingHost();
-            host.appendChild(this.#modalEl);
+            ensNbHost().appendChild(this.#sEl);
         }
 
-        globalOpenByKey.set(this.#key, {
+        openMap.set(this.#key, {
             key: this.#key,
             id: this.#id,
             mode: this.#mode,
-            readerModeCompatible: this.#readerModeCompatible,
-            closeOnEscape: this.#closeOnEscape,
+            readerModeCompatible: this.#rmOk,
+            closeOnEscape: this.#esc,
             close: () => this.close(),
-            overlayEl: this.#overlayEl,
-            modalEl: this.#modalEl
+            overlayEl: this.#oEl,
+            stackEl: this.#sEl
         });
 
-        bringToFront(this.#key);
-        syncBodyScrollLock();
+        if (this.#win) {
+            this.#ensWin();
+        }
 
-        this.#mountDecorators();
+        zTop(this.#key);
+        syncScrl();
+        this.#mnt();
+        this.#qSty();
     }
 
     /**
@@ -546,70 +654,286 @@ export class ModalSession {
      * @returns {void} Updates HTML and remounts decorator behaviour.
      */
     setHtml(html: string): void {
-        this.#modalEl.innerHTML = html;
-        this.#remountDecoratorsIfOpen();
+        this.#mEl.innerHTML = html;
+        this.#reMnt();
+        this.#qSty();
     }
 
     /**
      * @returns {void} Brings this modal to front.
      */
     bringToFront(): void {
-        bringToFront(this.#key);
+        zTop(this.#key);
     }
 
     /**
      * @returns {void} Closes and cleans up.
      */
     close(): void {
-        const entry = globalOpenByKey.get(this.#key);
-        if (!entry) return;
+        const e = openMap.get(this.#key);
+        if (!e) return;
 
-        this.#runMountedCleanups();
+        this.#runM();
+        this.#runW();
 
-        this.#overlayEl?.remove();
-        if (!this.#overlayEl) this.#modalEl.remove();
-
-        globalOpenByKey.delete(this.#key);
-        removeFromFront(this.#key);
-        syncBodyScrollLock();
-
-        this.#factory._unregisterSession(this.#id);
-    }
-
-    #remountDecoratorsIfOpen(): void {
-        if (!globalOpenByKey.has(this.#key)) return;
-        this.#mountDecorators(true);
-    }
-
-    #runMountedCleanups(): void {
-        for (const fn of this.#mountedCleanups) {
-            try { fn(); } catch { /* ignore */ }
+        if (this.#raf !== null) {
+            globalThis.cancelAnimationFrame(this.#raf);
+            this.#raf = null;
         }
-        this.#mountedCleanups = [];
+
+        this.#wh?.dispose();
+        this.#wh = null;
+
+        this.#rmSty();
+
+        this.#oEl?.remove();
+        if (!this.#oEl) this.#sEl.remove();
+
+        openMap.delete(this.#key);
+        zRm(this.#key);
+        syncScrl();
+
+        this.#fac._unregisterSession(this.#id);
     }
 
-    #mountDecorators(clearFirst: boolean = false): void {
-        if (clearFirst) this.#runMountedCleanups();
+    #reMnt(): void {
+        if (!openMap.has(this.#key)) return;
+        this.#mnt(true);
+    }
+
+    #runM(): void {
+        for (const fn of this.#mCln) {
+            try {
+                fn();
+            } catch {
+                /* ignore */
+            }
+        }
+        this.#mCln = [];
+    }
+
+    #runW(): void {
+        for (const fn of this.#wCln) {
+            try {
+                fn();
+            } catch {
+                /* ignore */
+            }
+        }
+        this.#wCln = [];
+    }
+
+    #mnt(clr: boolean = false): void {
+        if (clr) this.#runM();
 
         const ctx: ModalDecoratorContext = {
             id: this.#id,
             mode: this.#mode,
-            readerModeCompatible: this.#readerModeCompatible,
-            modalEl: this.#modalEl,
-            overlayEl: this.#overlayEl,
+            readerModeCompatible: this.#rmOk,
+            windowed: this.#win,
+            modalEl: this.#mEl,
+            overlayEl: this.#oEl,
             close: () => this.close(),
             setHtml: (html: string) => this.setHtml(html)
         };
 
-        for (const d of this.#decorators) {
-            const mount = d.mount;
-            if (!mount) continue;
+        for (const d of this.#ds) {
+            if (!d.mount) continue;
 
-            const cleanup = mount(ctx);
-            if (typeof cleanup !== "function") continue;
+            const cln = d.mount(ctx);
+            if (typeof cln !== "function") continue;
 
-            this.#mountedCleanups.push(cleanup);
+            this.#mCln.push(cln);
         }
+    }
+
+    #host(): HTMLElement {
+        return this.#oEl ?? ensNbHost();
+    }
+
+    #mkWinOpts(): window.WindowApiOptions {
+        const host = this.#host();
+
+        return {
+            id: `${WINDOW_STATE_ID_PREFIX}${this.#id}`,
+            title: windowTitleFromId(this.#id),
+            launcher: this.#lnEl,
+            closedLnchrDis: "none",
+            showCloseBttn: true,
+            showMiniBttn: false,
+            showFloatBttn: false,
+            mountTarget: host,
+            floatMntTrgt: host,
+            initClosed: false,
+            initFloat: true
+        };
+    }
+
+    #ensWin(): void {
+        if (this.#wOn) return;
+        if (!this.#fEl || !this.#lnEl) return;
+
+        this.#wOn = true;
+
+        try {
+            this.#wh = window.mountWindow(this.#fEl, this.#mkWinOpts());
+            this.#qSty();
+        } catch (err: unknown) {
+            console.warn("Modal window mounting failed:", this.#id, err);
+            this.#rmSty();
+            return;
+        }
+
+        if (!openMap.has(this.#key)) return;
+        if (!this.#fEl.isConnected) return;
+
+        this.#bndCls();
+    }
+
+    #qSty(): void {
+        if (!this.#win) return;
+        if (!this.#mEl.isConnected) return;
+
+        if (this.#raf !== null) {
+            globalThis.cancelAnimationFrame(this.#raf);
+        }
+
+        this.#raf = globalThis.requestAnimationFrame(() => {
+            this.#raf = globalThis.requestAnimationFrame(() => {
+                this.#raf = null;
+                this.#syncSty();
+            });
+        });
+    }
+
+    #syncSty(): void {
+        if (!this.#win) return;
+        if (!this.#mEl.isConnected) return;
+
+        const sz = this.#calcMx();
+        const ms = `#${escCss(this.#id)}`;
+        const fs = this.#fEl ? `#${escCss(this.#fEl.id)}` : "";
+        const bs = fs ? `${fs} .window-body` : "";
+        const rs = fs ? `${fs} [data-window-content-root='true']` : "";
+
+        let css = `${ms} {
+  border-radius: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+}`;
+
+        if (fs) {
+            css += `
+${bs} {
+  min-height: 0 !important;
+}
+
+${rs} {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}`;
+        }
+
+        if (sz && fs) {
+            css = `${ms} {
+  border-radius: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+  max-width: ${sz.mw}px !important;
+  max-height: 100% !important;
+}
+
+${fs} {
+  max-width: ${sz.fw}px !important;
+  max-height: ${sz.fh}px !important;
+}
+
+${bs} {
+  min-height: 0 !important;
+}
+
+${rs} {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}`;
+        }
+
+        if (!this.#sty) {
+            this.#sty = document.createElement("style");
+            this.#sty.setAttribute("data-modal-window-style-for", this.#id);
+            document.head.appendChild(this.#sty);
+        }
+
+        this.#sty.textContent = css;
+    }
+
+    #calcMx(): Mx | null {
+        if (!this.#mEl.isConnected) return null;
+
+        const mcs = globalThis.getComputedStyle(this.#mEl);
+
+        const mw = Math.ceil(
+            this.#mEl.scrollWidth +
+            px(mcs.borderLeftWidth) +
+            px(mcs.borderRightWidth)
+        );
+
+        const mh = Math.ceil(
+            this.#mEl.scrollHeight +
+            px(mcs.borderTopWidth) +
+            px(mcs.borderBottomWidth)
+        );
+
+        if (mw <= 0 || mh <= 0) return null;
+
+        let fw = mw;
+        let fh = mh;
+
+        if (this.#fEl?.isConnected) {
+            const hdr = this.#fEl.querySelector(".window-header");
+            const bod = this.#fEl.querySelector(".window-body");
+            const root = this.#fEl.querySelector("[data-window-content-root='true']");
+
+            const fcs = globalThis.getComputedStyle(this.#fEl);
+            const bcs = bod instanceof HTMLElement ? globalThis.getComputedStyle(bod) : null;
+            const rcs = root instanceof HTMLElement ? globalThis.getComputedStyle(root) : null;
+
+            fw = Math.ceil(mw + bx(fcs) + bx(bcs) + bx(rcs));
+            fh = Math.ceil(mh + by(fcs) + by(bcs) + by(rcs) + oh(hdr));
+        }
+
+        return { mw, mh, fw, fh };
+    }
+
+    #rmSty(): void {
+        this.#sty?.remove();
+        this.#sty = null;
+    }
+
+    #bndCls(): void {
+        if (!this.#fEl) return;
+
+        this.#runW();
+
+        const btn = this.#fEl.querySelector<HTMLButtonElement>("[data-window-role='close']");
+        if (!btn) return;
+
+        const onClick = (ev: MouseEvent): void => {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+            this.close();
+        };
+
+        btn.addEventListener("click", onClick, true);
+
+        this.#wCln.push(() => {
+            btn.removeEventListener("click", onClick, true);
+        });
     }
 }
 
@@ -628,23 +952,22 @@ export function onModalEvent<K extends keyof HTMLElementEventMap>(
 ): ModalDecorator {
     return {
         mount: (ctx) => {
-            const nodes = Array.from(ctx.modalEl.querySelectorAll(selector));
-            const elems = nodes.filter((n): n is HTMLElement => n instanceof HTMLElement);
+            const ns = Array.from(ctx.modalEl.querySelectorAll(selector));
+            const els = ns.filter((n): n is HTMLElement => n instanceof HTMLElement);
 
-            if (!elems.length) return;
+            if (!els.length) return;
 
-            const listener = (ev: Event): void => {
-                const typed = ev as HTMLElementEventMap[K];
-                fn(typed, ctx);
+            const l = (ev: Event): void => {
+                fn(ev as HTMLElementEventMap[K], ctx);
             };
 
-            for (const el of elems) {
-                el.addEventListener(eventName, listener);
+            for (const el of els) {
+                el.addEventListener(eventName, l);
             }
 
             return () => {
-                for (const el of elems) {
-                    el.removeEventListener(eventName, listener);
+                for (const el of els) {
+                    el.removeEventListener(eventName, l);
                 }
             };
         }

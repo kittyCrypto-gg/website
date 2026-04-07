@@ -47,7 +47,7 @@
     --effect-crt-scanline-colour-strong: rgba(0, 255, 255, 0.07);
     --effect-crt-scanline-colour-soft: rgba(0, 255, 255, 0.025);
     --effect-crt-scanline-pitch: clamp(5px, calc(8px - 0.3vh), 6px);
-    --effect-crt-scanline-travel-duration: 22s;
+    --effect-crt-scanline-travel-duration: 22000ms;
 }
 
 /*
@@ -128,6 +128,9 @@ body:not(.effect-disable-scanlines)::after {
     will-change: transform;
 }
 
+body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
+    animation: none;
+}
 @keyframes effect-crt-scanline-drift {
     from {
         transform: translate3d(0, 0, 0);

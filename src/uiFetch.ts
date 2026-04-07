@@ -44,6 +44,8 @@ export type EffectsUiModalConfig = Readonly<{
     scanlinesDescription: string;
     scanlinesToggle: string;
     scanlinesHint: string;
+        scanlineSpeedLabel: string;
+    scanlineSpeedHint: string;
     reset: string;
     done: string;
 }>;

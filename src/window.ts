@@ -6,7 +6,7 @@ type InitialFloatingPosition = Readonly<{
     y: string;
 }>;
 
-type WindowApiOptions = Readonly<{
+export type WindowApiOptions = Readonly<{
     id?: string;
     title?: string;
     launcher?: HTMLElement | null;
@@ -92,6 +92,21 @@ type ContentLayout = Readonly<{
     overflow: string;
     overflowX: string;
     overflowY: string;
+}>;
+
+export type WindowHandle = Readonly<{
+    open: () => void;
+    close: () => void;
+    minimise: () => void;
+    restore: () => void;
+    toggleFloating: () => void;
+    toggleMaximised: () => void;
+    isClosed: () => boolean;
+    isMinimised: () => boolean;
+    isFloating: () => boolean;
+    getFrameElement: () => HTMLElement | null;
+    getWindowId: () => string;
+    dispose: () => void;
 }>;
 
 /**
@@ -1984,6 +1999,25 @@ class WindowMaker {
             });
         });
     }
+}
+
+/**
+ * Mounts a single element as a managed window immediately.
+ *
+ * This is the runtime API for code-driven windows, unlike instantiateWindows,
+ * which is for config-driven batch bootstrapping.
+ *
+ * @param {HTMLElement} element - Element to convert into a window.
+ * @param {WindowApiOptions} [options={}] - Window options.
+ * @returns {WindowHandle} Window controller.
+ */
+export function mountWindow(
+    element: HTMLElement,
+    options: WindowApiOptions = {}
+): WindowHandle {
+    const maker = new WindowMaker(options);
+    maker.makeWindow(element);
+    return maker;
 }
 
 /**
