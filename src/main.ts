@@ -57,7 +57,9 @@ const FLOATING_UI_BUTTON_SELECTORS = [
 ] as const;
 
 let floatingUiButtonsResizeObserver: ResizeObserver | null = null;
+let floatingUiButtonsMutationObserver: MutationObserver | null = null;
 let floatingUiButtonsLayoutInstalled = false;
+let floatingUiButtonsAlignQueued = false;
 
 /**
  *
@@ -309,12 +311,28 @@ function parseCssPx(raw: string, fallback: number = 0): number {
 }
 
 /**
- * @returns {readonly HTMLButtonElement[]} Floating UI buttons that currently exist.
+ * @param {HTMLButtonElement} button - Button to inspect.
+ * @returns {boolean} True when the button should participate in stacking.
+ */
+function isVisibleFloatingUiButton(button: HTMLButtonElement): boolean {
+    if (!button.isConnected) return false;
+    if (button.hidden) return false;
+
+    const computed = window.getComputedStyle(button);
+    if (computed.display === "none") return false;
+    if (computed.visibility === "hidden") return false;
+
+    return true;
+}
+
+/**
+ * @returns {readonly HTMLButtonElement[]} Floating UI buttons that currently exist and are visible.
  */
 function getFloatingUiButtons(): readonly HTMLButtonElement[] {
     return FLOATING_UI_BUTTON_SELECTORS
         .map((selector) => document.querySelector(selector))
-        .filter((node): node is HTMLButtonElement => node instanceof HTMLButtonElement);
+        .filter((node): node is HTMLButtonElement => node instanceof HTMLButtonElement)
+        .filter((button) => isVisibleFloatingUiButton(button));
 }
 
 /**
@@ -335,6 +353,8 @@ function getRenderedHeight(el: HTMLElement): number {
 /**
  * Aligns and vertically stacks the floating UI buttons so they share the same
  * right position and z-index, while keeping a fixed 1rem gap between them.
+ *
+ * Hidden buttons do not participate in the stack.
  *
  * @returns {void} Nothing.
  */
@@ -384,6 +404,22 @@ function alignFloatingUiButtons(): void {
 }
 
 /**
+ * Schedules a single alignment pass on the next animation frame.
+ *
+ * @returns {void} Nothing.
+ */
+function queueFloatingUiButtonsAlign(): void {
+    if (floatingUiButtonsAlignQueued) return;
+    floatingUiButtonsAlignQueued = true;
+
+    requestAnimationFrame(() => {
+        floatingUiButtonsAlignQueued = false;
+        alignFloatingUiButtons();
+        observeFloatingUiButtons();
+    });
+}
+
+/**
  * Refreshes button observations so any later size change triggers a restack.
  *
  * @returns {void} Nothing.
@@ -397,7 +433,7 @@ function observeFloatingUiButtons(): void {
     if (buttons.length === 0) return;
 
     floatingUiButtonsResizeObserver = new ResizeObserver(() => {
-        alignFloatingUiButtons();
+        queueFloatingUiButtonsAlign();
     });
 
     for (const button of buttons) {
@@ -406,8 +442,8 @@ function observeFloatingUiButtons(): void {
 }
 
 /**
- * Schedules a layout pass for the floating UI buttons and ensures future
- * resize changes keep the stack tidy.
+ * Installs listeners that keep the floating button stack tidy when buttons are
+ * resized, added, removed, hidden, or shown.
  *
  * @returns {void} Nothing.
  */
@@ -416,14 +452,24 @@ function ensureFloatingUiButtonsLayout(): void {
         floatingUiButtonsLayoutInstalled = true;
 
         window.addEventListener("resize", () => {
-            alignFloatingUiButtons();
+            queueFloatingUiButtonsAlign();
         });
+
+        floatingUiButtonsMutationObserver = new MutationObserver(() => {
+            queueFloatingUiButtonsAlign();
+        });
+
+        if (document.body) {
+            floatingUiButtonsMutationObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ["style", "class", "hidden"]
+            });
+        }
     }
 
-    requestAnimationFrame(() => {
-        alignFloatingUiButtons();
-        observeFloatingUiButtons();
-    });
+    queueFloatingUiButtonsAlign();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -698,12 +744,14 @@ async function initialiseUI(): Promise<void> {
             keep: [
                 ...readerModeKeep,
                 "#theme-toggle",
-                "#effects-toggle",
                 "#reader-toggle",
                 "#read-aloud-toggle",
                 "#main-menu",
                 "#main-header",
                 "#main-footer"
+            ],
+            sheetPurge: [
+                "effects.css"
             ]
         });
 
