@@ -1,14 +1,4 @@
-/**
- * @param {string} id - Element id or class token to escape for use in a CSS selector.
- * @returns {string} A safely escaped string that can be used in CSS selectors to target an element by its id or class. This function checks if the CSS.escape method is available in the environment and uses it to escape the value. If CSS.escape is not available, it falls back to a manual escaping method that replaces characters that are not alphanumeric, underscores, or hyphens with a backslash followed by the character itself. This ensures that the resulting string can be safely used in query selectors without causing syntax errors or unintended matches.
- */
-function escapeIdForQuery(id: string): string {
-    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-        return CSS.escape(id);
-    }
-
-    return String(id).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
-}
+import * as helpers from "./helpers.ts";
 
 /**
  * Resolves a singleton target by first looking for matching ids, then falling back to matching classes.
@@ -26,7 +16,7 @@ function escapeIdForQuery(id: string): string {
 function resolveSingletonTarget(id: string, root: ParentNode = document): HTMLElement | null {
     if (!id || !root) return null;
 
-    const safe = escapeIdForQuery(id);
+    const safe = helpers.escapeCssIdentifier(id);
 
     const idMatches = Array.from(root.querySelectorAll<HTMLElement>(`#${safe}`));
     if (idMatches.length > 0) {
@@ -58,7 +48,7 @@ export function removeExistingById(id: string, root: ParentNode = document): voi
 
     resolveSingletonTarget(id, root);
 
-    const safe = escapeIdForQuery(id);
+    const safe = helpers.escapeCssIdentifier(id);
     root.querySelectorAll<HTMLElement>(`#${safe}`).forEach((el) => el.remove());
 }
 

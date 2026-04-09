@@ -49,6 +49,7 @@
 
     --chat-inputs-gap: 2%;
     --chat-inputs-margin-block-start: 10px;
+    --chat-message-input-margin-block-start: 1rem;
 
     --chat-input-padding: 10px;
     --chat-input-font-size: calc(14px * var(--kc-text-scale));
@@ -293,6 +294,7 @@
 /* Chat inputs */
 .chat-inputs {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--chat-inputs-gap);
     margin-top: var(--chat-inputs-margin-block-start);
 
@@ -301,16 +303,13 @@
 
     width: 100%;
 
-    & input {
+    & input,
+    & textarea {
         padding: var(--chat-input-padding);
         font-size: var(--chat-input-font-size);
 
         border: 1px solid var(--chat-input-border-colour);
         border-radius: var(--chat-input-radius);
-
-        flex-grow: 1;
-        width: var(--chat-input-width);
-        min-width: var(--chat-input-min-width);
 
         box-sizing: border-box;
 
@@ -318,7 +317,34 @@
         color: var(--chat-input-text-colour);
     }
 
+    & input {
+        min-width: var(--chat-input-min-width);
+    }
+
+    & #nickname {
+        order: 1;
+        flex: 4 1 0;
+        width: auto;
+        min-width: 0;
+    }
+
+    & textarea {
+        order: 3;
+        flex: 0 0 100%;
+        width: 100%;
+        min-width: 0;
+        min-height: 120px;
+        margin-top: var(--chat-message-input-margin-block-start);
+
+        resize: vertical;
+        font-family: inherit;
+    }
+
     & button {
+        order: 2;
+        flex: 1 1 0;
+        width: auto;
+        min-width: var(--chat-send-btn-min-width);
         padding: var(--chat-input-padding);
         font-size: var(--chat-input-font-size);
 
@@ -330,9 +356,6 @@
 
         cursor: pointer;
 
-        width: var(--chat-send-btn-width);
-        min-width: var(--chat-send-btn-min-width);
-
         box-sizing: border-box;
 
         &:hover {
@@ -340,7 +363,7 @@
         }
     }
 
-    & :is(input, button) {
+    & :is(input, textarea, button) {
         max-width: 100%;
     }
 }

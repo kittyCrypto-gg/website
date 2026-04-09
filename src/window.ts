@@ -1,5 +1,6 @@
-import { isObjectRecord } from "./helpers.ts";
+import { isRecord } from "./helpers.ts";
 import { waitForDomPaint } from "./reactHelpers.tsx";
+import * as helpers from "./helpers.ts";
 
 type InitialFloatingPosition = Readonly<{
     x: string;
@@ -508,16 +509,6 @@ class WindowMaker {
     }
 
     /**
-     * Checks whether a value is a plain object-like record and not null or an array.
-     *
-     * @param {unknown} value The value to inspect.
-     * @returns {value is Record<string, unknown>} True when the value is an object record.
-     */
-    private static isRecord(value: unknown): value is Record<string, unknown> {
-        return value !== null && typeof value === "object" && !Array.isArray(value);
-    }
-
-    /**
      * Generates a unique identifier for a window instance.
      *
      * Uses crypto.randomUUID when available, otherwise falls back to a timestamp
@@ -639,7 +630,7 @@ class WindowMaker {
             return fallback;
         }
 
-        if (!WindowMaker.isRecord(parsedUnknown)) return fallback;
+        if (!helpers.isRecord(parsedUnknown)) return fallback;
 
         const parsed = parsedUnknown;
 
@@ -2027,12 +2018,12 @@ export function mountWindow(
 export async function instantiateWindows(windowDefinitions: unknown): Promise<void> {
     await waitForDomPaint();
 
-    if (!isObjectRecord(windowDefinitions)) return;
+    if (!isRecord(windowDefinitions)) return;
 
     const defs = Object.values(windowDefinitions);
 
     for (const definitionUnknown of defs) {
-        if (!isObjectRecord(definitionUnknown)) {
+        if (!isRecord(definitionUnknown)) {
             continue;
         }
 
@@ -2065,7 +2056,7 @@ export async function instantiateWindows(windowDefinitions: unknown): Promise<vo
 
         const optionsUnknown = definitionUnknown.options;
 
-        if (!isObjectRecord(optionsUnknown)) {
+        if (!isRecord(optionsUnknown)) {
             console.warn("Window definition missing options, skipping:", selector);
             continue;
         }

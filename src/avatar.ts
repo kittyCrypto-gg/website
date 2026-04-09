@@ -1,3 +1,5 @@
+import { hashString } from "./helpers.ts";
+
 export type ColourPick = Readonly<{
     arms: readonly [string, string, string];
     background: string;
@@ -8,16 +10,6 @@ export type SpiralConfig = Readonly<{
     radiusStep: number;
     steps: number;
 }>;
-
-/**
- * @param {string} str - Input string to hash.
- * @returns {Promise<number[]>} - Promise resolving to an array of bytes representing the SHA-256 hash of the input string.
- */
-async function hashString(str: string): Promise<number[]> {
-    const msgBuffer = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-    return Array.from(new Uint8Array(hashBuffer));
-}
 
 /**
  * @param {number} hue - Hue in degrees.

@@ -1,5 +1,6 @@
 const urlPending = new Map<string, Promise<HTMLScriptElement>>();
 const LOADED_ATTR = "data-script-loaded";
+import * as helpers from "./helpers.ts";
 
 type ScriptAttrs = Readonly<Record<string, string>>;
 
@@ -23,7 +24,7 @@ export async function loadScript(url: string, opts: LoadScriptOpts = {}): Promis
 
     const retries = typeof opts.retries === "number" ? opts.retries : -1;
     const asModule = opts.asModule === true;
-    const attrs = isObj(opts.attrs) ? (opts.attrs as ScriptAttrs) : null;
+    const attrs = helpers.isRecord(opts.attrs) ? (opts.attrs as ScriptAttrs) : null;
 
     const run = (async (): Promise<HTMLScriptElement> => {
         const tag = scrptTaginHead(src, { asModule, attrs });
@@ -152,14 +153,6 @@ async function waitForIt(tag: HTMLScriptElement, src: string): Promise<void> {
             resolve();
         }
     });
-}
-
-/**
- * @param {unknown} v - Value to test.
- * @returns {v is Record<string, unknown>} True if the value is a non-null object that is not an array. This type guard function checks if the provided value is an object by verifying that it is not null, has a type of "object", and is not an array. This is useful for ensuring that a value can be safely treated as an object with key-value pairs, which is often necessary when working with dynamic data structures or when validating input before processing it as an object.
- */
-function isObj(v: unknown): v is Record<string, unknown> {
-    return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
 async function nextFrame(): Promise<void> {

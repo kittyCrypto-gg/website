@@ -1,3 +1,5 @@
+import { hashString } from "./helpers.ts";
+
 export type TriangleColourPick = Readonly<{
     arms: readonly [string, string, string];
     background: string;
@@ -7,16 +9,6 @@ export type TriangleColourPick = Readonly<{
 export type TriangleConfig = Readonly<{
     depth: number;
 }>;
-
-/**
- * @param str - Input string to hash.
- * @returns {Promise<number[]>} A promise that resolves to an array of bytes representing the SHA-256 hash of the input string. The function uses the Web Crypto API to perform the hashing operation, encoding the input string as UTF-8 before hashing and returning the result as an array of unsigned 8-bit integers.
- */
-async function hashString(str: string): Promise<number[]> {
-    const msgBuffer = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-    return Array.from(new Uint8Array(hashBuffer));
-}
 
 /**
  * @param hue - Hue in degrees.

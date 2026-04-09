@@ -1,3 +1,5 @@
+import * as helpers from "./helpers";
+
 type ClusterizeRow = string;
 
 type ClusterizeInstance = Readonly<{
@@ -26,61 +28,66 @@ export class Clusteriser {
     #contentId: string;
     #instance: ClusterizeInstance | null;
     #options: ClusteriserOptions;
+    #initialised: boolean;
 
-    /**
-     * @param {ClusteriserTarget} target - Target container element or selector/id.
-     * @param {ClusteriserOptions} options - Options passed through to Clusterize.
-     * @throws {Error} If the target container cannot be found in the DOM.
-     * @remarks This class provides a wrapper around Clusterize.js to facilitate virtualized rendering of large lists. It handles DOM preparation and dynamic loading of the Clusterize.js library. The target can be specified as an Element or a selector string (id with # or class with .). The init() method must be called after construction to set up the Clusterize instance, and update() can be used to change the rendered rows.
-     */
     constructor(target: ClusteriserTarget, options: ClusteriserOptions = {}) {
         const resolvedTarget = this.#getElement(target);
         if (!resolvedTarget) throw new Error("Target container not found");
 
         this.#target = resolvedTarget;
-        this.#baseId = this.#target.id || "clusterise";
+        this.#baseId = this.#target.id || "clusterize";
         this.#scrollId = `${this.#baseId}-scroll-area`;
         this.#contentId = `${this.#baseId}-content-area`;
         this.#options = options;
         this.#instance = null;
+        this.#initialised = false;
     }
 
     async init(): Promise<this> {
-        this.#prepareDOM();
+        if (this.#initialised) return this;
+
         await this.#loadClusterizeJS();
-        this.#instance = new window.Clusterize!({
+
+        const Clusterize = window.Clusterize;
+        if (!Clusterize) {
+            throw new Error("Clusterize.js loaded but window.Clusterize is unavailable");
+        }
+
+        this.#instance = new Clusterize({
             scrollId: this.#scrollId,
             contentId: this.#contentId,
-            rows: this.#options.rows || [],
+            rows: this.#options.rows ?? [],
             ...this.#options
         });
+
+        this.#initialised = true;
         return this;
     }
 
-    /**
-     * @param {readonly ClusterizeRow[]} rows - HTML row strings to render.
-     * @returns {void} Updates the rendered rows in the Clusterize instance. This method should be called whenever the data changes and you want to re-render the list. It will efficiently update the DOM to reflect the new set of rows, only rendering what is visible in the scroll area.
-     */
     update(rows: readonly ClusterizeRow[]): void {
-        if (!this.#instance) throw new Error("Clusteriser not initialised yet");
+        if (!this.#initialised || !this.#instance) return;
         this.#instance.update(rows);
     }
 
     destroy(): void {
-        if (this.#instance) {
-            this.#instance.destroy(true);
-            this.#instance = null;
-        }
+        if (!this.#instance) return;
+        this.#instance.destroy(true);
+        this.#instance = null;
+        this.#initialised = false;
     }
 
-    get instance(): ClusterizeInstance | null {
-        return this.#instance;
+    get isInitialised(): boolean {
+        return this.#initialised;
     }
 
-    /**
-     * @param {ClusteriserTarget} target - Element or selector/id.
-     * @returns {Element | null} The resolved DOM element corresponding to the target, or null if not found. The method supports direct Element references, id selectors (starting with #), class selectors (starting with .), and fallback to id or class if a plain string is provided.
-     */
+    get contentId(): string {
+        return this.#contentId;
+    }
+
+    get scrollId(): string {
+        return this.#scrollId;
+    }
+
     #getElement(target: ClusteriserTarget): Element | null {
         if (target instanceof Element) return target;
         if (typeof target === "string" && target[0] === "#") return document.getElementById(target.slice(1));
@@ -89,7 +96,8 @@ export class Clusteriser {
         return null;
     }
 
-    #prepareDOM(): void {
+    async #prepareDOM(): Promise<void> {
+        await helpers.waitForDomReady();
         if (this.#target.querySelector(".clusterise-scroll")) return;
 
         const scrollArea = document.createElement("div");
@@ -106,11 +114,14 @@ export class Clusteriser {
         this.#target.classList.add("clusterise");
     }
 
-    #loadClusterizeJS(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            if (window.Clusterize) return resolve();
+    async #loadClusterizeJS(): Promise<void> {
+        await this.#prepareDOM();
+
+        if (window.Clusterize) return;
+
+        await new Promise<void>((resolve, reject) => {
             const script = document.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/gh/NeXTs/Clusterize.js@master/clusterize.js";
+            script.src = "https://cdn.jsdelivr.net/npm/clusterize.js/clusterize.min.js";
             script.onload = () => resolve();
             script.onerror = () => reject(new Error("Failed to load Clusterize.js"));
             document.head.appendChild(script);

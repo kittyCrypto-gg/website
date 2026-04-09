@@ -1,4 +1,5 @@
 import * as config from "./config.ts";
+import * as helpers from "./helpers.ts";
 
 type MobileDetectInstance = Readonly<{
     mobile: () => unknown;
@@ -91,19 +92,6 @@ export type TerminalModule = Readonly<{
     dispose: () => void;
 }>;
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-    return v !== null && typeof v === "object" && !Array.isArray(v);
-}
-
-/**
- * @returns {Promise<void>} Resolves on the next animation frame.
- */
-function nextFrame(): Promise<void> {
-    return new Promise<void>((resolve) => {
-        window.requestAnimationFrame(() => resolve());
-    });
-}
-
 /**
  * @param {XtermTerminal} term - Xterm terminal instance.
  * @returns {Promise<HTMLTextAreaElement>} Resolves when the helper textarea exists.
@@ -142,7 +130,7 @@ async function waitForTerminalTextarea(term: XtermTerminal): Promise<HTMLTextAre
  */
 async function checkMobile(): Promise<boolean> {
     while (document.readyState === "loading") {
-        await nextFrame();
+        await helpers.nextFrame();
     }
 
     if (!window.MobileDetect) {
@@ -228,21 +216,12 @@ function raf2(fn: () => void): void {
 }
 
 /**
- * @param {string} id - Element id.
- * @returns {HTMLElement | null} The element if it is an HTMLElement.
- */
-function safeGetEl(id: string): HTMLElement | null {
-    const el = document.getElementById(id);
-    return el instanceof HTMLElement ? el : null;
-}
-
-/**
  * @param {readonly string[]} ids - Candidate element ids.
  * @returns {HTMLElement | null} First matching HTMLElement.
  */
 function firstExistingEl(ids: readonly string[]): HTMLElement | null {
     for (const id of ids) {
-        const el = safeGetEl(id);
+        const el = helpers.getEl(id);
         if (el) return el;
     }
     return null;
@@ -401,7 +380,7 @@ async function getOrCreateSessionToken(): Promise<SessionTokenResult> {
 
     const bodyUnknown: unknown = await res.json();
     const token =
-        isRecord(bodyUnknown) &&
+        helpers.isRecord(bodyUnknown) &&
             typeof bodyUnknown.sessionToken === "string" &&
             bodyUnknown.sessionToken.length > 0
             ? bodyUnknown.sessionToken
@@ -582,7 +561,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         throw new Error("xterm fit addon failed to load (window.FitAddon.FitAddon missing)");
     }
 
-    const terminalWrapper = safeGetEl("terminal-wrapper");
+    const terminalWrapper = helpers.getEl("terminal-wrapper");
     const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
 
     if (!terminalWrapper) throw new Error("Missing element: #terminal-wrapper");
@@ -823,7 +802,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     void (async (): Promise<void> => {
         try {
             const textarea = await waitForTerminalTextarea(term);
-            await nextFrame();
+            await helpers.nextFrame();
 
             ready = true;
 

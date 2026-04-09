@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { smsEnterBounce } from "./physics.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
+import * as helpers from "./helpers.ts";
 
 const themes: Record<string, unknown> = {};
 
@@ -50,19 +51,6 @@ function getTheme(addr: string): string {
 }
 
 /**
- * @param {string | null | undefined} s - Raw string to escape for HTML.
- * @returns {string} Escaped string safe for HTML insertion.
- */
-function esc(s: string | null | undefined): string {
-    return (s || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("\"", "&quot;")
-        .replaceAll("'", "&#39;");
-}
-
-/**
  * @param {Node} node - Node whose children are serialised as mixed content.
  * @returns {string} A string representation of the mixed content of a node
  */
@@ -71,7 +59,7 @@ export function serialiseMixedContent(node: Node): string {
         .map((n) => {
             switch (n.nodeType) {
                 case 3:
-                    return esc(n.textContent || "");
+                    return helpers.escapeHtml(n.textContent || "");
                 case 1:
                     return (n as Element).outerHTML;
                 default:
@@ -204,12 +192,12 @@ function parseSignature(sig: Element, escFn: Escaper): string {
     if (!hasAny) return "";
 
     const lines = [
-        name && `<strong class="email-signature-name">${esc(name)}</strong>`,
+        name && `<strong class="email-signature-name">${helpers.escapeHtml(name)}</strong>`,
         ...positions.map((p) => `<span class="email-signature-position">${p}</span>`),
-        company && `<span class="email-signature-company">${esc(company)}</span>`,
-        address && `<span class="email-signature-address">${esc(address)}</span>`,
-        telephone && `<span class="email-signature-telephone">Tel: ${esc(telephone)}</span>`,
-        emailAddress && `<span class="email-signature-email">Email: ${esc(emailAddress)}</span>`
+        company && `<span class="email-signature-company">${helpers.escapeHtml(company)}</span>`,
+        address && `<span class="email-signature-address">${helpers.escapeHtml(address)}</span>`,
+        telephone && `<span class="email-signature-telephone">Tel: ${helpers.escapeHtml(telephone)}</span>`,
+        emailAddress && `<span class="email-signature-email">Email: ${helpers.escapeHtml(emailAddress)}</span>`
     ].filter(Boolean) as string[];
 
     return render2Mkup(
@@ -409,10 +397,10 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
                     case 1: {
                         const el = n as Element;
                         const tag = el.tagName.toLowerCase();
-                        return tag === "signature" ? parseSignature(el, esc) : el.outerHTML;
+                        return tag === "signature" ? parseSignature(el, helpers.escapeHtml) : el.outerHTML;
                     }
                     case 3:
-                        return esc(n.textContent || "");
+                        return helpers.escapeHtml(n.textContent || "");
                     default:
                         return "";
                 }
@@ -435,13 +423,13 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
 
         const fromNameHtml = fromNameEl
             ? serialiseMixedContent(fromNameEl)
-            : esc(from ? raw(from, "name") : "");
+            : helpers.escapeHtml(from ? raw(from, "name") : "");
 
         const fromAddr = from ? raw(from, "addr") : "";
 
         const toNameHtml = toNameEl
             ? serialiseMixedContent(toNameEl)
-            : esc(to ? raw(to, "name") : "");
+            : helpers.escapeHtml(to ? raw(to, "name") : "");
 
         const toAddr = to ? raw(to, "addr") : "";
 
@@ -884,7 +872,7 @@ async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
     const serialise = (n: Node): string => {
         switch (n.nodeType) {
             case 3:
-                return esc(n.textContent || "");
+                return helpers.escapeHtml(n.textContent || "");
             case 1:
                 return new XMLSerializer().serializeToString(n);
             default:
@@ -917,7 +905,7 @@ async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
             ? Array.from(contentEl.childNodes)
                 .map((n) => new XMLSerializer().serializeToString(n))
                 .join("")
-            : esc(contentEl.textContent || "");
+            : helpers.escapeHtml(contentEl.textContent || "");
 
         return render2Mkup(
             <TooltipMarkup

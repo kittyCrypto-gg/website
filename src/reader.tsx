@@ -7,6 +7,7 @@ import MediaStyler from "./mediaStyler.tsx";
 import * as config from "./config.ts";
 import { render2Frag, render2Mkup } from "./reactHelpers.tsx";
 import * as icons from "./icons.tsx";
+import * as helpers from "./helpers.ts";
 
 void recreateSingleton;
 
@@ -80,14 +81,6 @@ declare global {
 
         debug?: DebugApi;
     }
-}
-
-/**
- * @param {unknown} v
- * @returns {v is Record<string, unknown>}
- */
-function isRec(v: unknown): v is Record<string, unknown> {
-    return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
 /**
@@ -1191,7 +1184,7 @@ async function populatePicker(root: Document = document): Promise<void> {
         if (!res.ok) throw new Error("No stories found");
         const storiesUnknown: unknown = await res.json();
 
-        if (!isRec(storiesUnknown)) throw new Error("Invalid stories index format");
+        if (!helpers.isRecord(storiesUnknown)) throw new Error("Invalid stories index format");
         const stories = storiesUnknown as StoriesIndex;
 
         const select = root.createElement("select");
@@ -1296,7 +1289,7 @@ export async function getChapters(storyName: string): Promise<ChaptersIndexResul
     if (!indexRes.ok) throw new Error("Failed to load stories index");
 
     const indexUnknown: unknown = await indexRes.json();
-    if (!isRec(indexUnknown)) throw new Error("Invalid stories index format");
+    if (!helpers.isRecord(indexUnknown)) throw new Error("Invalid stories index format");
     const index = indexUnknown as StoriesIndex;
 
     const files = index[storyName];
@@ -1782,7 +1775,7 @@ function restoreLastRead(): void {
 
     try {
         const parsed: unknown = JSON.parse(last);
-        if (!isRec(parsed)) return;
+        if (!helpers.isRecord(parsed)) return;
 
         const storyVal = parsed["story"];
         const chapterVal = parsed["chapter"];

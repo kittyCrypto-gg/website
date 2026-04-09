@@ -3,6 +3,7 @@ import { forceBookmark } from "./reader.tsx";
 import { modals, type Modal } from "./modals.ts";
 import * as loader from "./loader.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
+import * as helpers from "./helpers.ts";
 
 type ReadAloudButton = Readonly<{
   icon: string;
@@ -305,19 +306,6 @@ function RegionProbe(): ReactElement {
   );
 }
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return v !== null && typeof v === "object" && !Array.isArray(v);
-}
-
-/**
- * @param {string} id - Element id.
- * @returns {HTMLElement | null} HTMLElement if found.
- */
-function getEl(id: string): HTMLElement | null {
-  const el = document.getElementById(id);
-  return el instanceof HTMLElement ? el : null;
-}
-
 /**
  * @param {string} selector - CSS selector.
  * @returns {HTMLElement | null} First HTMLElement match.
@@ -571,7 +559,7 @@ class ReadAloudModule {
 
     try {
       const parsedUnknown: unknown = JSON.parse(raw);
-      if (!isRecord(parsedUnknown)) return null;
+      if (!helpers.isRecord(parsedUnknown)) return null;
 
       const speechKey = typeof parsedUnknown.speechKey === "string" ? parsedUnknown.speechKey : "";
       const region = typeof parsedUnknown.region === "string" ? parsedUnknown.region : "";
@@ -695,14 +683,6 @@ class ReadAloudModule {
   }
 
   /**
-   * @param {unknown} v - Value to check.
-   * @returns {boolean} True if it is a non-null object.
-   */
-  __isRecord(v: unknown): v is Record<string, unknown> {
-    return typeof v === "object" && v !== null;
-  }
-
-  /**
    * @param {string} raw - Raw JSON or plain text.
    * @returns {unknown | null} Parsed JSON or null.
    */
@@ -750,7 +730,7 @@ class ReadAloudModule {
     if (parsed === null) return trimmed;
     if (typeof parsed === "string") return parsed.trim();
 
-    if (!this.__isRecord(parsed)) return trimmed;
+    if (!helpers.isRecord(parsed)) return trimmed;
 
     const textRaw = parsed["text"];
     const text = typeof textRaw === "string" ? textRaw.trim() : "";
@@ -777,7 +757,7 @@ class ReadAloudModule {
 
     if (parsed === null) return { kind: "text", value: trimmed };
     if (typeof parsed === "string") return { kind: "text", value: parsed.trim() };
-    if (!this.__isRecord(parsed)) return { kind: "text", value: trimmed };
+    if (!helpers.isRecord(parsed)) return { kind: "text", value: trimmed };
 
     const ssmlRaw = parsed["ssml"];
     const ssml = typeof ssmlRaw === "string" ? ssmlRaw.trim() : "";
@@ -952,8 +932,8 @@ class ReadAloudModule {
    * @returns {void} Nothing.
    */
   __setRegionUiVisible(visible: boolean): void {
-    const wrap = getEl("read-aloud-region-wrap");
-    const btn = getEl("read-aloud-region-toggle");
+    const wrap = helpers.getEl("read-aloud-region-wrap");
+    const btn = helpers.getEl("read-aloud-region-toggle");
     const fields = queryEl("#read-aloud-menu .read-aloud-fields");
     const apikeyWrap = queryEl("#read-aloud-menu .read-aloud-apikey-wrap");
     const regionInput = document.getElementById("read-aloud-region-input");
@@ -1014,7 +994,7 @@ class ReadAloudModule {
    * @returns {void} Nothing.
    */
   __positionMenu(detached: boolean): void {
-    const menu = getEl("read-aloud-menu");
+    const menu = helpers.getEl("read-aloud-menu");
     if (!menu) return;
 
     if (!detached) {
@@ -1044,7 +1024,7 @@ class ReadAloudModule {
    * @returns {void} Nothing.
    */
   __setPlayPauseButton(isPlaying: boolean): void {
-    const btn = getEl("read-aloud-toggle-playpause");
+    const btn = helpers.getEl("read-aloud-toggle-playpause");
     if (!btn) return;
 
     btn.textContent = isPlaying ? this.#buttons.pause.icon : this.#buttons.play.icon;
@@ -1057,7 +1037,7 @@ class ReadAloudModule {
   showMenu(): void {
     window.readAloudState.pressed = true;
 
-    const toggleBtn = getEl("read-aloud-toggle");
+    const toggleBtn = helpers.getEl("read-aloud-toggle");
     if (toggleBtn) {
       const disableLabel = toggleBtn.getAttribute("data-disable") || "";
       toggleBtn.textContent = disableLabel;
@@ -1066,7 +1046,7 @@ class ReadAloudModule {
       toggleBtn.addEventListener("click", this.#boundCloseMenu);
     }
 
-    const menu = getEl("read-aloud-menu");
+    const menu = helpers.getEl("read-aloud-menu");
     if (!menu) {
       console.error("Read Aloud menu element not found in DOM");
       return;
@@ -1424,7 +1404,7 @@ class ReadAloudModule {
 
     this.__enableNav();
 
-    getEl("read-aloud-close")?.addEventListener("click", () => {
+    helpers.getEl("read-aloud-close")?.addEventListener("click", () => {
       this.#boundCloseMenu();
     });
 
@@ -1464,7 +1444,7 @@ class ReadAloudModule {
    */
   __toggleCnfg(forceValue: boolean | null = null): boolean {
     const fields = queryEl(".read-aloud-fields");
-    const configBtn = getEl("read-aloud-config");
+    const configBtn = helpers.getEl("read-aloud-config");
     if (!fields) return false;
 
     const newValue = forceValue !== null
@@ -1487,7 +1467,7 @@ class ReadAloudModule {
    */
   __toggleJump(forceValue: boolean | null = null): boolean {
     const jumpWrap = queryEl(".read-aloud-jump");
-    const btn = getEl("read-aloud-jump-toggle");
+    const btn = helpers.getEl("read-aloud-jump-toggle");
     if (!jumpWrap || !btn) return false;
 
     const current = window.readAloudState.jumpVisible;
@@ -1506,8 +1486,8 @@ class ReadAloudModule {
    * @returns {void} Nothing.
    */
   __toggleVis(): void {
-    const menu = getEl("read-aloud-menu");
-    const toggleBtn = getEl("read-aloud-toggle");
+    const menu = helpers.getEl("read-aloud-menu");
+    const toggleBtn = helpers.getEl("read-aloud-toggle");
     if (!menu || !toggleBtn) return;
 
     if (!window.readAloudState.originalMenuDisplay) {
@@ -1562,10 +1542,10 @@ class ReadAloudModule {
    * @returns {Promise<void>} Resolves when menu is closed and speech paused.
    */
   async __closeMenu(): Promise<void> {
-    const menu = getEl("read-aloud-menu");
+    const menu = helpers.getEl("read-aloud-menu");
     if (!menu) return;
 
-    const toggleBtn = getEl("read-aloud-toggle");
+    const toggleBtn = helpers.getEl("read-aloud-toggle");
     if (toggleBtn) {
       toggleBtn.textContent = toggleBtn.getAttribute("data-enable") || "";
       toggleBtn.classList.remove("active");
@@ -1657,7 +1637,7 @@ class ReadAloudModule {
       return 0;
     }
 
-    if (!isRecord(savedObjUnknown)) return 0;
+    if (!helpers.isRecord(savedObjUnknown)) return 0;
 
     const paragraphId = typeof savedObjUnknown.paragraphId === "string" ? savedObjUnknown.paragraphId : null;
     if (paragraphId) {

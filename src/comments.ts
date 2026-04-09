@@ -1,6 +1,7 @@
 import { drawSpiralIdenticon } from "./avatar.ts";
 import * as config from "./config.ts";
 import { createLocationApi, type locApi } from "./locations.ts";
+import * as helpers from "./helpers.ts";
 
 declare global {
     interface Window {
@@ -18,14 +19,6 @@ const LOCATION_FLAGS_URL = "../images/flags";
 
 const NICKNAME_STORAGE_KEY = "nickname";
 const LOCATION_STORAGE_KEY = "comment-location";
-
-type SessionTokenResponse = Readonly<{
-    sessionToken: string;
-}>;
-
-type GetIpResponse = Readonly<{
-    ip: string;
-}>;
 
 type PostCommentInput = Readonly<{
     nick: string;
@@ -61,10 +54,6 @@ let sessionToken: string | null = null;
 let userIP: string | null = null;
 let locAPI: locApi | null = null;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
-}
-
 function isValidURL(value: string): boolean {
     try {
         new URL(value);
@@ -87,28 +76,10 @@ function normaliseWebsite(rawValue: string): string | undefined {
 
 /**
  * @param {unknown} value - Unknown JSON payload to validate.
- * @returns {void} This function does not return a value; it either completes successfully if the validation passes or throws an error if it fails. The use of "asserts value is SessionTokenResponse" in the function signature allows TypeScript to narrow the type of the value to SessionTokenResponse after this function is called, enabling safer access to the sessionToken property in subsequent code.
- */
-function assertSessionTokenResponse(value: unknown): asserts value is SessionTokenResponse {
-    if (!isRecord(value)) throw new Error("Invalid session token payload");
-    if (typeof value.sessionToken !== "string") throw new Error("Invalid session token payload");
-}
-
-/**
- * @param {unknown} value - Unknown JSON payload to validate.
- * @returns {void} This function does not return a value; it either completes successfully if the validation passes or throws an error if it fails. The use of "asserts value is GetIpResponse" in the function signature allows TypeScript to narrow the type of the value to GetIpResponse after this function is called, enabling safer access to the ip property in subsequent code.
- */
-function assertGetIpResponse(value: unknown): asserts value is GetIpResponse {
-    if (!isRecord(value)) throw new Error("Invalid IP payload");
-    if (typeof value.ip !== "string") throw new Error("Invalid IP payload");
-}
-
-/**
- * @param {unknown} value - Unknown JSON payload to validate.
  * @returns {void} This function does not return a value; it either completes successfully if the validation passes or throws an error if it fails. The use of "asserts value is LoadedComment" in the function signature allows TypeScript to narrow the type of the value to LoadedComment after this function is called, enabling safer access to the properties of the comment in subsequent code.
  */
 function assertLoadedComment(value: unknown): asserts value is LoadedComment {
-    if (!isRecord(value)) throw new Error("Invalid data format in comment data");
+    if (!helpers.isRecord(value)) throw new Error("Invalid data format in comment data");
     if (typeof value.nick !== "string") throw new Error("Invalid nickname format in comment data");
     if (typeof value.ip !== "string") throw new Error("Invalid comment metadata format in comment data");
     if (typeof value.msg !== "string") throw new Error("Invalid comment format in comment data");
@@ -225,7 +196,7 @@ async function fetchSessionToken(): Promise<void> {
         if (!response.ok) throw new Error(`Failed to fetch session token: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
-        assertSessionTokenResponse(data);
+        helpers.assertSessionTokenResponse(data);
 
         sessionToken = data.sessionToken;
         console.log("🔑 Session Token received:", sessionToken);
@@ -241,7 +212,7 @@ async function fetchUserIP(): Promise<string | null> {
         if (!response.ok) throw new Error(`Failed to fetch IP: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
-        assertGetIpResponse(data);
+        helpers.assertGetIpResponse(data);
 
         console.log(`🌍 User IP: ${data.ip}`);
         window.ipAddress = data.ip;
@@ -297,16 +268,8 @@ async function loadCommentsForPage(): Promise<unknown[]> {
     }
 }
 
-function domReady(): Promise<void> {
-    if (document.readyState !== "loading") return Promise.resolve();
-
-    return new Promise<void>((resolve) => {
-        document.addEventListener("DOMContentLoaded", () => resolve(), { once: true });
-    });
-}
-
 async function renderComments(): Promise<void> {
-    await domReady();
+    await helpers.waitForDomReady();
     const comments = await loadCommentsForPage();
     const box = document.getElementById("comments-box");
     if (!box) return;
@@ -412,7 +375,7 @@ async function postComment({ nick, msg, ip, sessionToken, website, location }: P
         if (!response.ok) {
             const errorData: unknown = await (response.json() as Promise<unknown>);
             const serverError =
-                isRecord(errorData) && typeof errorData.error === "string"
+                helpers.isRecord(errorData) && typeof errorData.error === "string"
                     ? errorData.error
                     : undefined;
 

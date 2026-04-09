@@ -1,4 +1,5 @@
 import * as window from "./window.ts";
+import * as helpers from "./helpers.ts";
 
 type ModalMode = "blocking" | "non-blocking";
 
@@ -199,14 +200,6 @@ function patchHtml(
     }
 
     return out;
-}
-
-function escCss(v: string): string {
-    if (typeof globalThis.CSS !== "undefined" && typeof globalThis.CSS.escape === "function") {
-        return globalThis.CSS.escape(v);
-    }
-
-    return v.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
 
 function px(v: string): number {
@@ -811,8 +804,8 @@ export class ModalSession {
         if (!this.#mEl.isConnected) return;
 
         const sz = this.#calcMx();
-        const ms = `#${escCss(this.#id)}`;
-        const fs = this.#fEl ? `#${escCss(this.#fEl.id)}` : "";
+        const ms = `#${helpers.escapeCssIdentifier(this.#id)}`;
+        const fs = this.#fEl ? `#${helpers.escapeCssIdentifier(this.#fEl.id)}` : "";
         const bs = fs ? `${fs} .window-body` : "";
         const rs = fs ? `${fs} [data-window-content-root='true']` : "";
 

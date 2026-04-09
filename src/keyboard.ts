@@ -1,3 +1,5 @@
+import { nextFrame } from "./helpers.js";
+
 type KeyboardMods = {
     ctrl: boolean;
     alt: boolean;
@@ -441,21 +443,12 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {Promise<void>} A promise that resolves on the next animation frame.
-     */
-    __nextFrame(): Promise<void> {
-        return new Promise<void>((resolve) => {
-            window.requestAnimationFrame(() => resolve());
-        });
-    }
-
-    /**
      * @param {string} id - Element id.
      * @returns {Promise<void>} Resolves when an element with the given id exists.
      */
     async __waitForElementById(id: string): Promise<void> {
         while (!document.getElementById(id)) {
-            await this.__nextFrame();
+            await nextFrame();
         }
     }
 
@@ -634,7 +627,7 @@ export class keyboardEmu {
      * @returns {Promise<void>} Updates toolbar visibility after focus has settled.
      */
     async __updateVisibilityFromActive(): Promise<void> {
-        await this.__nextFrame();
+        await nextFrame();
 
         const a = document.activeElement;
         if ((this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(a)) {

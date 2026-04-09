@@ -5,6 +5,8 @@ import {
 	readerIsFullyLoaded
 } from "./reader.tsx";
 
+import * as helpers from "./helpers.ts";
+
 type ChapterImageInfo = Readonly<{
 	src: string;
 	alt: string;
@@ -87,9 +89,7 @@ class ReaderToggle {
 	 */
 	static async setup(options: ReaderModeOptions = {}): Promise<boolean> {
 		if (document.readyState === "loading") {
-			await new Promise<void>((resolve) =>
-				document.addEventListener("DOMContentLoaded", () => resolve(), { once: true })
-			);
+			await helpers.waitForDomReady();
 		}
 
 		let readerToggle = document.getElementById("reader-toggle");

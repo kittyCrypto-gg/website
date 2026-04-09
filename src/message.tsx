@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import * as config from "./config.ts";
 import { modals, onModalEvent, closeOnClick } from "./modals.ts";
 import { render2Frag, render2Mkup } from "./reactHelpers.tsx";
+import * as helpers from "./helpers.ts";
 
 declare global {
     interface Window {
@@ -124,14 +125,6 @@ const editMessageModal = modals.create({
 });
 
 /**
- * @param {unknown} v
- * @returns {v is Record<string, unknown>}
- */
-function isRecord(v: unknown): v is Record<string, unknown> {
-    return v !== null && typeof v === "object" && !Array.isArray(v);
-}
-
-/**
  * @returns {Promise<void>}
  */
 async function fetchUserHashedIp(): Promise<void> {
@@ -141,7 +134,7 @@ async function fetchUserHashedIp(): Promise<void> {
 
         const data: unknown = await response.json();
 
-        if (!isRecord(data) || typeof data.hashedIp !== "string") {
+        if (!helpers.isRecord(data) || typeof data.hashedIp !== "string") {
             throw new Error("Invalid hashed IP response");
         }
 

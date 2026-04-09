@@ -1,5 +1,7 @@
 import { Clusteriser } from "./clusterise.ts";
 import * as config from "./config.ts";
+import * as helpers from "./helpers.ts";
+import { createDisconnectionGuard } from "./disconnectionGuard.ts";
 
 declare global {
     interface Window {
@@ -21,23 +23,6 @@ type ChatMessageLocal = ChatMessage & Readonly<{
     pending?: boolean;
 }>;
 
-type SessionTokenResponse = Readonly<{
-    sessionToken: string;
-}>;
-
-type GetIpResponse = Readonly<{
-    ip: string;
-}>;
-
-type ClusteriserLike = Readonly<{
-    init: () => Promise<unknown>;
-    update: (rows: readonly string[]) => void;
-}>;
-
-type ClusteriserConstructor = new (target: Element) => ClusteriserLike;
-
-
-
 const CHAT_SERVER = `${config.chatURL}`;
 const CHAT_STREAM_URL = `${config.chatStreamURL}`;
 const SESSION_TOKEN_URL = `${config.sessionTokenURL}`;
@@ -49,41 +34,30 @@ const messageInput = document.getElementById("message") as HTMLInputElement;
 const sendButton = document.getElementById("send-button") as HTMLElement;
 
 let sessionToken: string | null = null;
-let eventSource: EventSource | null = null; // Track SSE connection
+let eventSource: EventSource | null = null;
 let reconnecting = false;
+let chatClusteriser: Clusteriser | null = null;
 
 nicknameInput.addEventListener("input", () => {
     setChatCookie("nickname", nicknameInput.value.trim());
 });
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
-}
+const disconnectionGuard = createDisconnectionGuard({
+  gracePeriodMS: 4000,
+  fetch: {
+    retries: 2,
+    retryDelayMS: 750
+  }
+});
 
-/**
- * @param {unknown} value - Unknown JSON payload to validate.
- * @returns {void} Asserts that the value is a valid SessionTokenResponse, otherwise throws an error.
- */
-function assertSessionTokenResponse(value: unknown): asserts value is SessionTokenResponse {
-    if (!isRecord(value)) throw new Error("Invalid session-token payload: not an object");
-    if (typeof value.sessionToken !== "string") throw new Error("Invalid session-token payload: sessionToken is not a string");
-}
-
-/**
- * @param {unknown} value - Unknown JSON payload to validate.
- * @returns {void} Asserts that the value is a valid GetIpResponse, otherwise throws an error.
- */
-function assertGetIpResponse(value: unknown): asserts value is GetIpResponse {
-    if (!isRecord(value)) throw new Error("Invalid get-ip payload: not an object");
-    if (typeof value.ip !== "string") throw new Error("Invalid get-ip payload: ip is not a string");
-}
+const guardedFetch = disconnectionGuard.decorateFetch();
 
 /**
  * @param {unknown} value - Unknown JSON value to validate.
  * @returns {boolean} True if the value conforms to the ChatMessage structure, false otherwise.
  */
 function isChatMessage(value: unknown): value is ChatMessage {
-    if (!isRecord(value)) return false;
+    if (!helpers.isRecord(value)) return false;
 
     const nickOk = typeof value.nick === "string";
     const idOk = typeof value.id === "string";
@@ -101,11 +75,17 @@ function isChatMessage(value: unknown): value is ChatMessage {
  */
 function assertChatMessageArray(value: unknown): asserts value is ChatMessage[] {
     if (!Array.isArray(value)) throw new Error("Invalid SSE payload: expected an array");
+
     for (const item of value) {
-        if (!isChatMessage(item)) throw new Error("Invalid SSE payload: array contained non-ChatMessage items");
+        if (!isChatMessage(item)) {
+            throw new Error("Invalid SSE payload: array contained non-ChatMessage items");
+        }
     }
 }
 
+/**
+ * @returns {void} Closes the active SSE connection if one exists.
+ */
 function closeEventSource(): void {
     if (!eventSource) return;
     eventSource.close();
@@ -122,7 +102,9 @@ async function attemptReconnect(retryMS: number = 3000): Promise<void> {
 
     const retry = (): void => {
         reconnecting = false;
-        setTimeout(attemptReconnect, retryMS);
+        setTimeout(() => {
+            void attemptReconnect(retryMS);
+        }, retryMS);
     };
 
     try {
@@ -130,46 +112,72 @@ async function attemptReconnect(retryMS: number = 3000): Promise<void> {
 
         if (!token) {
             reconnecting = false;
-            fetchSessionToken();
+            void fetchSessionToken();
             return;
         }
 
-        let res: Response;
+        let response: Response;
         try {
-            res = await fetch(SESSION_REREGISTER_URL, {
+            response = await guardedFetch(SESSION_REREGISTER_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ sessionToken: token })
             });
         } catch {
-            retry(); // server offline
+            retry();
             return;
         }
 
-        console.log("🔁 reregister status:", res.status);
+        console.log("🔁 reregister status:", response.status);
 
-        if (res.status === 200) {
+        if (response.status === 200) {
             reconnecting = false;
             connectToChatStream();
             return;
         }
 
-        if (res.status === 403) {
+        if (response.status === 403) {
             reconnecting = false;
-            fetchSessionToken(); // expired, get a new one
+            void fetchSessionToken();
             return;
         }
 
-        // 503 or anything else: retry forever
         retry();
     } catch {
         retry();
     }
 }
 
+/**
+ * @returns {HTMLElement} The current content root used for chat messages.
+ */
+function getChatContentRoot(): HTMLElement {
+    if (!chatClusteriser) return chatroom;
+
+    const contentElement = document.getElementById(chatClusteriser.contentId);
+    return contentElement instanceof HTMLElement ? contentElement : chatroom;
+}
+
+/**
+ * @returns {HTMLElement} The current scroll root used for chat scrolling.
+ */
+function getChatScrollRoot(): HTMLElement {
+    if (!chatClusteriser) return chatroom;
+
+    const scrollElement = document.getElementById(chatClusteriser.scrollId);
+    return scrollElement instanceof HTMLElement ? scrollElement : chatroom;
+}
+
+/**
+ * @returns {void} Pushes current DOM rows into Clusterize when initialised.
+ */
 function updateClusterisedChat(): void {
-    if (!chatClusteriser) return;
-    const rows = Array.from(chatroom.querySelectorAll(".chat-message")).map((el) => el.outerHTML);
+    if (!chatClusteriser?.isInitialised) return;
+
+    const contentRoot = getChatContentRoot();
+    const rows = Array.from(contentRoot.querySelectorAll(".chat-message"))
+        .map((element) => element.outerHTML);
+
     chatClusteriser.update(rows);
 }
 
@@ -194,26 +202,30 @@ function setChatCookie(name: string, value: string, days: number = 365): void {
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
 }
 
+/**
+ * @returns {void} Loads the saved nickname from cookies into the input field.
+ */
 function loadNickname(): void {
     const savedNick = getChatCookie("nickname");
-    if (savedNick) {
-        nicknameInput.value = savedNick;
-    }
+    if (!savedNick) return;
+    nicknameInput.value = savedNick;
 }
 
+/**
+ * @returns {Promise<void>} Fetches a session token and connects to the chat stream.
+ */
 async function fetchSessionToken(): Promise<void> {
     try {
         const response = await fetch(SESSION_TOKEN_URL);
         if (!response.ok) throw new Error(`Failed to fetch session token: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
-        assertSessionTokenResponse(data);
+        helpers.assertSessionTokenResponse(data);
 
         sessionToken = data.sessionToken;
         window.sessionToken = sessionToken;
         console.log("🔑 Session Token received:", sessionToken);
 
-        // Connect to SSE once session token is received
         connectToChatStream();
     } catch (error) {
         console.error("❌ Error fetching session token:", error);
@@ -222,18 +234,20 @@ async function fetchSessionToken(): Promise<void> {
 
 /**
  * @param {number} seed - Seed value.
- * @param {ReadonlyArray<number>} hash - SHA-256 hash bytes.
- * @returns {number} A pseudo-random number in the range [0, 1) derived from the seed and hash, using a simple seeded RNG algorithm.
- * @remarks This function is used to generate consistent random values based on the input seed and hash, ensuring that the same input will always produce the same output. The implementation is a simple linear congruential generator (LCG) variant, which is not cryptographically secure but sufficient for visual variations in avatars.
+ * @returns {number} A pseudo-random number in the range [0, 1) derived from the seed, using a simple seeded RNG algorithm.
+ * @remarks This function is not cryptographically secure and is retained only for deterministic visual variation.
  */
 function seededRandom(seed: number): number {
     let t = seed += 0x6D2B79F5;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296; // Scales to [0, 1)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 void seededRandom;
 
+/**
+ * @returns {void} Connects to the SSE chat stream using the current session token.
+ */
 function connectToChatStream(): void {
     if (!sessionToken) return;
 
@@ -243,8 +257,6 @@ function connectToChatStream(): void {
     }
 
     console.log("🔄 Attempting to connect to chat stream...");
-
-    // Use query parameter for token since EventSource does not support headers
     eventSource = new EventSource(`${CHAT_STREAM_URL}?token=${sessionToken}`);
 
     eventSource.onopen = () => {
@@ -253,36 +265,33 @@ function connectToChatStream(): void {
 
     eventSource.onmessage = (event: MessageEvent<string>) => {
         try {
-            const parsedData: unknown = JSON.parse(event.data) as unknown;
-            console.log("📩 Raw SSE Data:", parsedData); // Logs as an object (collapsible)
-        } catch (error) {
-            console.error("❌ Error parsing chat update:", error, "\n📩 Raw data received:", event.data);
-        }
-
-        try {
             const messagesUnknown: unknown = JSON.parse(event.data) as unknown;
+            console.log("📩 Raw SSE Data:", messagesUnknown);
+
             assertChatMessageArray(messagesUnknown);
-            const messages = messagesUnknown;
-            displayChat(messages);
+            void displayChat(messagesUnknown);
         } catch (error) {
             console.error("❌ Error parsing chat update:", error, "\n📩 Raw data received:", event.data);
         }
     };
 
     eventSource.onerror = () => {
-        console.error("❌ Connection to chat stream lost. Retrying...");
+        console.log("❌ Connection to chat stream lost. Retrying...");
         closeEventSource();
-        attemptReconnect(); // Start reconnection attempts every 3 seconds
+        void attemptReconnect();
     };
 }
 
+/**
+ * @returns {Promise<string | null>} Fetches the user's IP address, or null on failure.
+ */
 export async function fetchUserIP(): Promise<string | null> {
     try {
         const response = await fetch(`${config.getIpURL}`);
         if (!response.ok) throw new Error(`Failed to fetch IP: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
-        assertGetIpResponse(data);
+        helpers.assertGetIpResponse(data);
 
         console.log(`🌍 User IP: ${data.ip}`);
         window.ipAddress = data.ip;
@@ -293,7 +302,9 @@ export async function fetchUserIP(): Promise<string | null> {
     }
 }
 
-// Sends a chat message
+/**
+ * @returns {Promise<void>} Sends the current chat message to the server.
+ */
 async function sendMessage(): Promise<void> {
     const nick = nicknameInput.value.trim();
     const msg = messageInput.value.trim();
@@ -312,25 +323,24 @@ async function sendMessage(): Promise<void> {
 
     console.log("📡 Fetching IP address...");
     const userIp = await fetchUserIP();
+
     if (!userIp) {
         alert("❌ Unable to retrieve IP. Please try again.");
         return;
     }
 
-    // Create a unique temporary ID for the pending message
     const tempId = `pending-${Date.now()}`;
 
-    // Inject the pending message into the chatroom
     const pendingMessage: ChatMessageLocal = {
         nick,
         id: tempId,
         msg,
         timestamp: new Date().toISOString(),
         msgId: "0",
-        pending: true,
+        pending: true
     };
 
-    displayChat([pendingMessage], true); // Display it as pending
+    await displayChat([pendingMessage], true);
 
     const chatRequest = {
         chatRequest: {
@@ -356,45 +366,53 @@ async function sendMessage(): Promise<void> {
 
         console.log("✅ Message sent successfully.");
         messageInput.value = "";
-
     } catch (error) {
         console.error("❌ Error sending message:", error);
 
-        const message =
-            error instanceof Error
-                ? error.message
-                : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        alert(`Failed to send message: ${errorMessage}`);
 
-        alert(`Failed to send message: ${message}`);
-
-        // Remove the pending message on failure
         removePendingMessage(tempId);
+        updateClusterisedChat();
     }
 }
 
 /**
  * @param {readonly ChatMessageLocal[]} messages - Chat messages to render.
  * @param {boolean} isLocalUpdate - Whether this render is a local append (does not clear chat first).
- * @returns {Promise<void>} Renders the provided chat messages into the chatroom. If isLocalUpdate is false, it clears existing messages first (used for full updates from SSE). If true, it appends to existing messages (used for local pending messages). After rendering, it scrolls to the bottom and dispatches a "chatUpdated" event.
+ * @returns {Promise<void>} Renders the provided chat messages into the chatroom. If isLocalUpdate is false, it clears existing messages first. If true, it appends to existing messages. After rendering, it scrolls to the bottom and dispatches a "chatUpdated" event.
  */
 async function displayChat(messages: readonly ChatMessageLocal[], isLocalUpdate: boolean = false): Promise<void> {
+    const contentRoot = getChatContentRoot();
+
     if (!isLocalUpdate) {
-        document.querySelectorAll(".chat-message.pending").forEach((el) => el.remove());
-        chatroom.innerHTML = "";
+        contentRoot.querySelectorAll(".chat-message.pending").forEach((element) => element.remove());
+        contentRoot.innerHTML = "";
     }
 
-    messages.forEach((msgObj) => {
+    messages.forEach((message) => {
         const {
-            nick, id, msg, timestamp,
-            msgId, pending = false, edited = false
-        } = msgObj;
+            nick,
+            id,
+            msg,
+            timestamp,
+            msgId,
+            pending = false,
+            edited = false
+        } = message;
 
-        const colour = `hsl(${parseInt(id, 16) % 360}, 61%, 51%)`;
+        const parsedId = Number.parseInt(id, 16);
+        const hue = Number.isNaN(parsedId) ? 0 : parsedId % 360;
+        const colour = `hsl(${hue}, 61%, 51%)`;
         const formattedDate = timestamp.replace("T", " ").slice(0, 19).replace(/-/g, ".");
 
         const messageDiv = document.createElement("div");
         messageDiv.classList.add("chat-message");
-        if (pending) messageDiv.classList.add("pending");
+        messageDiv.dataset.id = id;
+
+        if (pending) {
+            messageDiv.classList.add("pending");
+        }
 
         const headerDiv = document.createElement("div");
         headerDiv.classList.add("chat-header");
@@ -433,11 +451,12 @@ async function displayChat(messages: readonly ChatMessageLocal[], isLocalUpdate:
         messageDiv.appendChild(timeRow);
         messageDiv.appendChild(msgIdSpan);
         messageDiv.appendChild(textDiv);
-        chatroom.appendChild(messageDiv);
+        contentRoot.appendChild(messageDiv);
     });
 
     requestAnimationFrame(() => {
-        chatroom.scrollTop = chatroom.scrollHeight;
+        const scrollRoot = getChatScrollRoot();
+        scrollRoot.scrollTop = scrollRoot.scrollHeight;
     });
 
     document.dispatchEvent(new Event("chatUpdated"));
@@ -450,26 +469,39 @@ async function displayChat(messages: readonly ChatMessageLocal[], isLocalUpdate:
  * @returns {void} Removes the pending message with the specified temporary ID from the chatroom.
  */
 function removePendingMessage(tempId: string): void {
-    const pendingMessage = document.querySelector(`.chat-message[data-id="${tempId}"]`);
-    if (pendingMessage) pendingMessage.remove();
+    const contentRoot = getChatContentRoot();
+    const pendingMessage = contentRoot.querySelector(`.chat-message[data-id="${tempId}"]`);
+    if (!pendingMessage) return;
+    pendingMessage.remove();
 }
 
-// Attach Event Listeners
-sendButton.addEventListener("click", sendMessage);
-messageInput.addEventListener("keypress", (e: KeyboardEvent) => {
-    if (e.key === "Enter") sendMessage();
+/**
+ * @returns {Promise<void>} Initialises the chat clusteriser if available.
+ */
+async function initialiseClusteriser(): Promise<void> {
+    try {
+        chatClusteriser = new Clusteriser(chatroom);
+        await chatClusteriser.init();
+        updateClusterisedChat();
+    } catch (error) {
+        console.error("❌ Failed to initialise Clusterize:", error);
+        chatClusteriser = null;
+    }
+}
+
+sendButton.addEventListener("click", () => {
+    void sendMessage();
 });
 
-let chatClusteriser: ClusteriserLike | null = null;
-(async () => {
-    chatClusteriser = new (Clusteriser as unknown as ClusteriserConstructor)(chatroom);
-    await chatClusteriser.init();
-    updateClusterisedChat(); // Optionally, call after init to set initial rows
-})();
+messageInput.addEventListener("keypress", (event: KeyboardEvent) => {
+    if (event.key !== "Enter") return;
+    void sendMessage();
+});
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo(0, document.body.scrollHeight);
 });
 
 loadNickname();
-fetchSessionToken();
+void initialiseClusteriser();
+void fetchSessionToken();

@@ -12,6 +12,7 @@ import { fetchUiData } from "./uiFetch.ts";
 import { instantiateWindows } from "./window.ts";
 import { readerModeFocus, readerModeKeep } from "./reader.tsx";
 import { initEffectsControls } from "./effects.tsx";
+import * as helpers from "./helpers.ts";
 
 type TerminalModule = Readonly<{
     term: Readonly<{
@@ -71,15 +72,6 @@ function readJsonIfAny(res: Response): Promise<unknown> {
 }
 
 /**
- *
- * @param v Value to check.
- * @returns whether v is a record (non-null object, not an array)
- */
-function isRecord(v: unknown): v is Record<string, unknown> {
-    return v !== null && typeof v === "object" && !Array.isArray(v);
-}
-
-/**
  * @param {number} timeoutMs - Timeout in milliseconds.
  * @returns {Promise<ServerStatusResult>} Online/offline status result.
  */
@@ -103,7 +95,7 @@ async function fetchServerStatus(timeoutMs: number): Promise<ServerStatusResult>
         const bodyUnknown: unknown = await readJsonIfAny(res);
 
         const looksOk =
-            isRecord(bodyUnknown) &&
+            helpers.isRecord(bodyUnknown) &&
             bodyUnknown.ok === true &&
             bodyUnknown.online === true &&
             typeof bodyUnknown.now === "string" &&
@@ -250,16 +242,6 @@ function toSafeIdPart(v: unknown): string {
         .toLowerCase()
         .replace(/[^a-z0-9_-]+/g, "_")
         .replace(/^_+|_+$/g, "");
-}
-
-/**
- * @param {string} prefix - Prefix for id.
- * @param {unknown} value - Value to incorporate.
- * @returns {string} Stable id.
- */
-function makeStableId(prefix: string, value: unknown): string {
-    const part = toSafeIdPart(value);
-    return part ? `${prefix}${part}` : `${prefix}x`;
 }
 
 /**
@@ -652,7 +634,7 @@ async function initialiseUI(): Promise<void> {
 
         if (data.headScripts) {
             data.headScripts.forEach((scriptSrc) => {
-                const scriptId = makeStableId("kc-head-script_", scriptSrc);
+                const scriptId = helpers.makeStableId("kc-head-script_", scriptSrc);
 
                 removeExistingById(scriptId, document);
 

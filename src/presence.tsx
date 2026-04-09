@@ -1,5 +1,6 @@
 import { render2Frag } from "./reactHelpers.tsx";
 import * as config from "./config.ts";
+import * as helpers from "./helpers.ts";
 import type { JSX } from "react";
 
 declare global {
@@ -49,19 +50,11 @@ interface PresenceRuntimeState {
 }
 
 /**
- * @param {unknown} value - Unknown candidate value.
- * @returns {value is Record<string, unknown>} True when the value is a non-null object.
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
-}
-
-/**
  * @param {unknown} value - JSON payload returned by the presence endpoint.
  * @returns {value is PresenceSnapshot} True when the payload matches the expected presence shape.
  */
 function isPresenceSnapshot(value: unknown): value is PresenceSnapshot {
-    if (!isRecord(value)) return false;
+    if (!helpers.isRecord(value)) return false;
 
     return typeof value.status === "string"
         && typeof value.isAfk === "boolean"

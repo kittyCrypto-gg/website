@@ -1,3 +1,5 @@
+import * as helpers from "./helpers.ts";
+
 interface LocationApiOptions {
     selectElement: HTMLSelectElement
     flagElement: HTMLElement
@@ -281,7 +283,7 @@ export class locApi {
 
         const value: unknown = await response.json()
 
-        if (!isRecord(value)) {
+        if (!helpers.isRecord(value)) {
             throw new Error('Locations JSON must contain an object at the root')
         }
 
@@ -345,7 +347,7 @@ export class locApi {
         for (const regionName of this.regionOrder) {
             const regionEntries = this.dataset[regionName]
 
-            if (!isRecord(regionEntries)) {
+            if (!helpers.isRecord(regionEntries)) {
                 continue
             }
 
@@ -378,7 +380,7 @@ export class locApi {
         for (const regionName of this.regionOrder) {
             const regionEntries = this.dataset[regionName]
 
-            if (!isRecord(regionEntries)) {
+            if (!helpers.isRecord(regionEntries)) {
                 continue
             }
 
@@ -460,14 +462,14 @@ async function assertAssetExists(assetUrl: string): Promise<void> {
  * @returns {RegionDataset}
  */
 function normaliseRegionDataset(value: unknown): RegionDataset {
-    if (!isRecord(value)) {
+    if (!helpers.isRecord(value)) {
         throw new Error('Locations JSON must contain an object at the root')
     }
 
     const dataset: RegionDataset = {}
 
     for (const [regionName, regionValue] of Object.entries(value)) {
-        if (!isRecord(regionValue)) {
+        if (!helpers.isRecord(regionValue)) {
             continue
         }
 
@@ -593,23 +595,13 @@ function trimTrailingSlash(value: string): string {
 }
 
 /**
- * Checks whether a value is a plain object record.
- *
- * @param {unknown} value
- * @returns {value is Record<string, unknown>}
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/**
  * Checks whether a value is a valid location dataset entry.
  *
  * @param {unknown} value
  * @returns {value is LocationDatasetEntry}
  */
 function isLocationDatasetEntry(value: unknown): value is LocationDatasetEntry {
-    return isRecord(value)
+    return helpers.isRecord(value)
         && typeof value.emoji === 'string'
         && typeof value.local_name === 'string'
 }

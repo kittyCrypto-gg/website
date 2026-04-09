@@ -1,4 +1,5 @@
 import { removeExistingById, recreateSingleton } from "./domSingletons.js";
+import * as helpers from "./helpers.ts";
 
 interface InjectionGuardApi {
     /**
@@ -68,18 +69,6 @@ declare global {
     interface Window {
         injectionGuard?: InjectionGuard;
     }
-}
-
-/**
- * @param {string} id - Element id to escape for use in a CSS selector.
- * @returns {string} A safely escaped id string for querySelector usage.
- */
-function escapeIdForQuery(id: string): string {
-    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-        return CSS.escape(id);
-    }
-
-    return String(id).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
 
 /**
@@ -156,7 +145,7 @@ export class InjectionGuard implements InjectionGuardApi {
     public enforceOne(id: string, root: ParentNode = document): HTMLElement | null {
         if (!this.has(id)) return null;
 
-        const safeId = escapeIdForQuery(id);
+        const safeId = helpers.escapeCssIdentifier(id);
         const matches = Array.from(root.querySelectorAll<HTMLElement>(`#${safeId}`));
 
         if (matches.length === 0) return null;

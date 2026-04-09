@@ -1,17 +1,5 @@
 import { serialiseMixedContent as serialiseMxCnt } from "./mediaStyler.tsx";
-
-/**
- * @param {string | null | undefined} value
- * @returns {string}
- */
-function esc(value: string | null | undefined): string {
-    return (value || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("\"", "&quot;")
-        .replaceAll("'", "&#39;");
-}
+import * as helpers from "./helpers.ts";
 
 /**
  * @param {Node} node
@@ -146,7 +134,7 @@ function bldModernTgXml(tategaki: Element): string | null {
  */
 function serialiseXmlNd(node: Node): string {
     if (isTextNode(node)) {
-        return esc(node.textContent || "");
+        return helpers.escapeHtml(node.textContent || "");
     }
 
     if (isElementNode(node)) {

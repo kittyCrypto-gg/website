@@ -1,5 +1,6 @@
 import { renderCounter } from "./counter.ts"
 import * as config from "./config.ts"
+import * as helpers from "./helpers.ts";
 
 export interface VisitCounterOptions {
     scope: "overall" | "page"
@@ -30,16 +31,6 @@ interface PageVisitStats extends BaseVisitStats {
 const DEFAULT_STATS_ENDPOINT = config.statsEndpoint
 
 let generatedCounterHostIndex = 0
-
-/**
- * Checks whether a value is a non-null record.
- *
- * @param {unknown} value Value to test.
- * @returns {boolean} True when the value is an object record.
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null
-}
 
 /**
  * Reads a required numeric field from a record.
@@ -82,7 +73,7 @@ function readRequiredString(source: Record<string, unknown>, fieldName: string):
  * @returns {BaseVisitStats} Parsed stats object.
  */
 function parseBaseVisitStats(payload: unknown): BaseVisitStats {
-    if (!isRecord(payload)) {
+    if (!helpers.isRecord(payload)) {
         throw new Error("Visit stats response is not a valid object.")
     }
 
@@ -100,7 +91,7 @@ function parseBaseVisitStats(payload: unknown): BaseVisitStats {
  * @returns {PageVisitStats} Parsed page stats object.
  */
 function parsePageVisitStats(payload: unknown): PageVisitStats {
-    if (!isRecord(payload)) {
+    if (!helpers.isRecord(payload)) {
         throw new Error("Page visit stats response is not a valid object.")
     }
 

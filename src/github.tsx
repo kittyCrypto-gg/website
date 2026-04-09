@@ -3,6 +3,7 @@ import { Clusteriser } from "./clusterise.ts";
 import MediaStyler from "./mediaStyler.tsx";
 import { render2Frag } from "./reactHelpers.tsx";
 import type { JSX } from "react";
+import * as helpers from "./helpers.ts";
 
 declare global {
     interface Window {
@@ -90,19 +91,6 @@ function extractCommitFields(item: GithubCommitsApiItem): GithubCommit {
 }
 
 /**
- * @param {string} raw - Raw string to escape for HTML.
- * @returns {string} Escaped string safe for HTML insertion.
- */
-function escapeHtml(raw: string): string {
-    return raw
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("\"", "&quot;")
-        .replaceAll("'", "&#39;");
-}
-
-/**
  * @param {string} message - Full Git commit message.
  * @returns {SplitCommitMessage} Commit summary and description.
  */
@@ -122,7 +110,7 @@ function splitCommitMessage(message: string): SplitCommitMessage {
  * @returns {string} Escaped tooltip HTML content.
  */
 function buildTooltipContentHtml(description: string): string {
-    return escapeHtml(description).replace(/\n/g, "<br />");
+    return helpers.escapeHtml(description).replace(/\n/g, "<br />");
 }
 
 /**
@@ -131,7 +119,7 @@ function buildTooltipContentHtml(description: string): string {
  */
 async function buildCommitMessageHtml(message: string): Promise<string> {
     const { summary, description } = splitCommitMessage(message);
-    const safeSummary = escapeHtml(summary);
+    const safeSummary = helpers.escapeHtml(summary);
     const tooltipContent = description || NO_COMMIT_DESCRIPTION_MESSAGE;
     const tooltipContentHtml = buildTooltipContentHtml(tooltipContent);
 

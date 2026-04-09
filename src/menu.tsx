@@ -2,6 +2,7 @@ import { removeExistingById } from "./domSingletons.ts";
 import { loadSvgPathIcon } from "./icons.tsx";
 import { render2Frag } from "./reactHelpers.tsx";
 import type { MainJson, MainMenuEntry } from "./uiFetch.ts";
+import * as helpers from "./helpers.ts";
 
 /**
  * @param {unknown} v Value to convert.
@@ -13,16 +14,6 @@ function toSafeIdPart(v: unknown): string {
         .toLowerCase()
         .replace(/[^a-z0-9_-]+/g, "_")
         .replace(/^_+|_+$/g, "");
-}
-
-/**
- * @param {string} prefix Prefix for id.
- * @param {unknown} value Value to incorporate.
- * @returns {string} Stable id.
- */
-function makeStableId(prefix: string, value: unknown): string {
-    const part = toSafeIdPart(value);
-    return part ? `${prefix}${part}` : `${prefix}x`;
 }
 
 /**
@@ -80,7 +71,7 @@ export async function createMenu(data: MainJson, root: Document = document): Pro
 
     for (const [text, entry] of Object.entries(data.mainMenu)) {
         const { href, icon } = readMainMenuEntry(entry);
-        const linkId = makeStableId("kc-main-menu_", text);
+        const linkId = helpers.makeStableId("kc-main-menu_", text);
 
         removeExistingById(linkId, root);
 

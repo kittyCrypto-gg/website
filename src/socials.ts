@@ -1,3 +1,5 @@
+import * as helpers from "./helpers.ts";
+
 /**
  * Socials data loaded from ../data/socials.json.
  */
@@ -47,23 +49,13 @@ async function loadSocialsPayload(): Promise<SocialPayload | null> {
 }
 
 /**
- * Checks whether a value is a record-like object.
- *
- * @param {unknown} value The value to inspect.
- * @returns {value is Record<string, unknown>} True when the value is a non-null object.
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null;
-}
-
-/**
  * Checks whether a value matches a social entry.
  *
  * @param {unknown} value The value to inspect.
  * @returns {value is SocialEntry} True when the value matches the SocialEntry shape.
  */
 function isSocialEntry(value: unknown): value is SocialEntry {
-    if (!isRecord(value)) {
+    if (!helpers.isRecord(value)) {
         return false;
     }
 
@@ -77,7 +69,7 @@ function isSocialEntry(value: unknown): value is SocialEntry {
  * @returns {value is SocialPayload} True when the value matches the SocialPayload shape.
  */
 function isSocialPayload(value: unknown): value is SocialPayload {
-    if (!isRecord(value) || !isRecord(value.social)) {
+    if (!helpers.isRecord(value) || !helpers.isRecord(value.social)) {
         return false;
     }
 
