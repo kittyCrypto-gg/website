@@ -58,6 +58,23 @@ type ReadAloudParagraphSpeech = Readonly<{
   ssmlBody: string | null;
 }>;
 
+type ReadAloudReq = {
+  key: string;
+  idx: number;
+  speech: ReadAloudParagraphSpeech;
+  aud: ArrayBuffer | null;
+  buf: ReadAloudBuffer | null;
+  synth: SpeechSynthesizer | null;
+  doneAud: boolean;
+  doneTim: boolean;
+  okAud: (audioData: ArrayBuffer | null) => void;
+  noAud: (error: unknown) => void;
+  okTim: (chunk: ReadAloudBuffer | null) => void;
+  noTim: (error: unknown) => void;
+  audP: Promise<ArrayBuffer | null>;
+  timP: Promise<ReadAloudBuffer | null>;
+};
+
 type ReadAloudState = {
   paused: boolean;
   pressed: boolean;
@@ -331,6 +348,10 @@ class ReadAloudModule {
   #regionResolvePromise: Promise<RegionResolveResult> | null = null;
   #customModalsById = new Map<string, Modal>();
   #activeSynths = new Set<SpeechSynthesizer>();
+  #reqs = new Map<string, ReadAloudReq>();
+  #bufs = new Map<string, ReadAloudBuffer>();
+  #bufCap = 4;
+  #reqSig: string | null = null;
   #elemsToIgnore = [
     ".reader-paragraph-num",
     ".bookmark-emoji",
@@ -1613,6 +1634,7 @@ class ReadAloudModule {
     window.readAloudState.speechKey = speechKey;
     window.readAloudState.serviceRegion = serviceRegion;
 
+    await this.__syncReqs();
     await this.__speakP(startIdx);
   }
 
@@ -1687,6 +1709,7 @@ class ReadAloudModule {
 
     try {
       await this.__sdkReady();
+      await this.__syncReqs();
     } catch {
       window.alert("Speech SDK could not be loaded. Please check your connection or script includes.");
       return;
@@ -1706,31 +1729,22 @@ class ReadAloudModule {
     if (state.currentPid) forceBookmark(state.currentPid);
 
     try {
-      let bufferedChunk: ReadAloudBuffer | null;
-
-      if (state.buffer && state.buffer.idx === idx) {
-        bufferedChunk = state.buffer;
-        state.buffer = null;
-      } else {
-        bufferedChunk = await this.__bufferPAudio(idx, true, playbackToken);
-      }
+      const chunk = await this.__buf(idx);
 
       if (state.playbackToken !== playbackToken || state.paused) return;
 
-      if (!bufferedChunk) {
+      if (!chunk) {
         await this.__speakP(idx + 1);
         return;
       }
 
-      await this.__updateMediaSession(plainText, bufferedChunk.timing.wordsPerSecond);
+      await this.__updateMediaSession(plainText, chunk.timing.wordsPerSecond);
 
       if (state.playbackToken !== playbackToken || state.paused) return;
 
-      if (idx + 1 < state.paragraphs.length) {
-        void this.__bufferPAudio(idx + 1, false, playbackToken);
-      }
+      this.__warm(idx + 1);
 
-      await this.__playAudioBlob(bufferedChunk.audioData, playbackToken);
+      await this.__playAudioBlob(chunk.audioData, playbackToken);
 
       if (state.playbackToken !== playbackToken || state.paused) return;
       await this.__speakP(idx + 1);
@@ -1994,70 +2008,244 @@ class ReadAloudModule {
   }
 
   /**
-   * @param {number} idx - Paragraph index.
-   * @param {boolean} blocking - If true, return audioData. If false, cache into state.buffer.
-   * @param {number | null} playbackToken - Playback invalidation token.
-   * @returns {Promise<ReadAloudBuffer | null>} Audio chunk or null if skipped.
+   * @returns {string} Current synthesis config signature.
    */
-  async __bufferPAudio(
-    idx: number,
-    blocking: boolean = false,
-    playbackToken: number | null = null
-  ): Promise<ReadAloudBuffer | null> {
+  __cfgSig(): string {
     const state = window.readAloudState;
-    if (idx >= state.paragraphs.length) return null;
+
+    return JSON.stringify({
+      speechKey: state.speechKey,
+      serviceRegion: state.serviceRegion,
+      voiceName: state.voiceName,
+      speechRate: state.speechRate
+    });
+  }
+
+  /**
+   * @param {number} idx - Paragraph index.
+   * @returns {string | null} Cache key for this paragraph and config.
+   */
+  __mkKey(idx: number): string | null {
+    const state = window.readAloudState;
+    if (idx < 0 || idx >= state.paragraphs.length) return null;
 
     const paragraph = state.paragraphs[idx] ?? null;
     const speech = this.__paragSpeech(paragraph);
     if (!speech.plainText && !speech.ssmlBody) return null;
 
-    const sdk = await this.__sdkReady();
-    const ssml = this.__buildSSML(speech, state.voiceName, state.speechRate);
+    return JSON.stringify({
+      idx,
+      speechKey: state.speechKey,
+      serviceRegion: state.serviceRegion,
+      voiceName: state.voiceName,
+      speechRate: state.speechRate,
+      plainText: speech.plainText,
+      ssmlBody: speech.ssmlBody ?? ""
+    });
+  }
 
-    const speechConfig = sdk.SpeechConfig.fromSubscription(state.speechKey, state.serviceRegion);
-    speechConfig.speechSynthesisVoiceName = state.voiceName;
-    speechConfig.setProperty(
-      sdk.PropertyId.SpeechSynthesisOutputFormat,
-      sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
-    );
+  /**
+   * @param {number} idx - Paragraph index.
+   * @returns {ReadAloudBuffer | null} Cached buffer if available.
+   */
+  __getBuf(idx: number): ReadAloudBuffer | null {
+    const key = this.__mkKey(idx);
+    if (!key) return null;
 
-    const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
-    state.synthesiser = synthesizer;
-    this.#activeSynths.add(synthesizer);
+    const hit = this.#bufs.get(key) ?? null;
+    if (!hit) return null;
 
-    /**
-     * @returns {void} Nothing.
-     */
-    const finishSynth = (): void => {
-      this.#activeSynths.delete(synthesizer);
-      if (state.synthesiser === synthesizer) {
-        state.synthesiser = null;
-      }
-      synthesizer.close();
+    this.#bufs.delete(key);
+    this.#bufs.set(key, hit);
+    window.readAloudState.buffer = hit;
+
+    return hit;
+  }
+
+  /**
+   * @param {string} key - Cache key.
+   * @param {ReadAloudBuffer} chunk - Buffered audio chunk.
+   * @returns {void} Nothing.
+   */
+  __setBuf(key: string, chunk: ReadAloudBuffer): void {
+    this.#bufs.delete(key);
+    this.#bufs.set(key, chunk);
+    window.readAloudState.buffer = chunk;
+
+    while (this.#bufs.size > this.#bufCap) {
+      const first = this.#bufs.keys().next();
+      if (first.done) break;
+      this.#bufs.delete(first.value);
+    }
+  }
+
+  /**
+   * @returns {void} Nothing.
+   */
+  __dropBufs(): void {
+    this.#bufs.clear();
+    window.readAloudState.buffer = null;
+  }
+
+  /**
+   * @returns {void} Nothing.
+   */
+  __dropReqs(): void {
+    const reqs = Array.from(this.#reqs.values());
+    this.#reqs.clear();
+
+    for (const req of reqs) {
+      req.okAud(null);
+      req.okTim(null);
+    }
+  }
+
+  /**
+   * @returns {Promise<void>} Resolves after request state matches the current config.
+   */
+  async __syncReqs(): Promise<void> {
+    const sig = this.__cfgSig();
+    if (this.#reqSig === sig) return;
+
+    await this.__stopReqs();
+    this.__dropReqs();
+    this.__dropBufs();
+    this.#reqSig = sig;
+  }
+
+  /**
+   * @param {number} idx - Paragraph index.
+   * @returns {ReadAloudReq | null} Shared request record.
+   */
+  __req(idx: number): ReadAloudReq | null {
+    const state = window.readAloudState;
+    if (idx < 0 || idx >= state.paragraphs.length) return null;
+
+    const key = this.__mkKey(idx);
+    if (!key) return null;
+    if (this.#bufs.has(key)) return null;
+
+    const live = this.#reqs.get(key);
+    if (live) return live;
+
+    const paragraph = state.paragraphs[idx] ?? null;
+    const speech = this.__paragSpeech(paragraph);
+    if (!speech.plainText && !speech.ssmlBody) return null;
+
+    let audRes: ((audioData: ArrayBuffer | null) => void) | null = null;
+    let audRej: ((error: unknown) => void) | null = null;
+    let timRes: ((chunk: ReadAloudBuffer | null) => void) | null = null;
+    let timRej: ((error: unknown) => void) | null = null;
+
+    const audP = new Promise<ArrayBuffer | null>((resolve, reject) => {
+      audRes = resolve;
+      audRej = reject;
+    });
+
+    const timP = new Promise<ReadAloudBuffer | null>((resolve, reject) => {
+      timRes = resolve;
+      timRej = reject;
+    });
+
+    const req: ReadAloudReq = {
+      key,
+      idx,
+      speech,
+      aud: null,
+      buf: null,
+      synth: null,
+      doneAud: false,
+      doneTim: false,
+      okAud: (audioData: ArrayBuffer | null): void => {
+        if (req.doneAud) return;
+        req.doneAud = true;
+        req.aud = audioData;
+        audRes?.(audioData);
+      },
+      noAud: (error: unknown): void => {
+        if (req.doneAud) return;
+        req.doneAud = true;
+        audRej?.(error);
+      },
+      okTim: (chunk: ReadAloudBuffer | null): void => {
+        if (req.doneTim) return;
+        req.doneTim = true;
+        req.buf = chunk;
+        timRes?.(chunk);
+      },
+      noTim: (error: unknown): void => {
+        if (req.doneTim) return;
+        req.doneTim = true;
+        timRej?.(error);
+      },
+      audP,
+      timP
     };
 
-    return new Promise<ReadAloudBuffer | null>((resolve, reject) => {
-      synthesizer.speakSsmlAsync(
+    this.#reqs.set(key, req);
+
+    void (async (): Promise<void> => {
+      const sdk = await this.__sdkReady();
+      const ssml = this.__buildSSML(speech, state.voiceName, state.speechRate);
+
+      const speechConfig = sdk.SpeechConfig.fromSubscription(state.speechKey, state.serviceRegion);
+      speechConfig.speechSynthesisVoiceName = state.voiceName;
+      speechConfig.setProperty(
+        sdk.PropertyId.SpeechSynthesisOutputFormat,
+        sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
+      );
+
+      const synth = new sdk.SpeechSynthesizer(speechConfig, null);
+      req.synth = synth;
+      state.synthesiser = synth;
+      this.#activeSynths.add(synth);
+
+      /**
+       * @returns {void} Nothing.
+       */
+      const done = (): void => {
+        this.#activeSynths.delete(synth);
+        if (state.synthesiser === synth) {
+          state.synthesiser = null;
+        }
+        synth.close();
+      };
+
+      /**
+       * @returns {boolean} True if the request is still live.
+       */
+      const isLive = (): boolean => this.#reqs.get(key) === req;
+
+      synth.speakSsmlAsync(
         ssml,
         (result) => {
           void (async (): Promise<void> => {
-            if (result.reason !== sdk.ResultReason.SynthesizingAudioCompleted) {
-              finishSynth();
-              reject(new Error(result.errorDetails || "Speech synthesis failed"));
+            if (!isLive()) {
+              done();
               return;
             }
 
-            if (playbackToken !== null && state.playbackToken !== playbackToken) {
-              finishSynth();
-              resolve(null);
+            if (result.reason !== sdk.ResultReason.SynthesizingAudioCompleted) {
+              req.noAud(new Error(result.errorDetails || "Speech synthesis failed"));
+              req.noTim(new Error(result.errorDetails || "Speech synthesis failed"));
+              this.#reqs.delete(key);
+              done();
+              return;
+            }
+
+            req.okAud(result.audioData);
+
+            if (!isLive()) {
+              this.#reqs.delete(key);
+              done();
               return;
             }
 
             const timing = await this.__audioTime(speech.plainText, result.audioData);
 
-            if (playbackToken !== null && state.playbackToken !== playbackToken) {
-              finishSynth();
-              resolve(null);
+            if (!isLive()) {
+              this.#reqs.delete(key);
+              done();
               return;
             }
 
@@ -2067,30 +2255,88 @@ class ReadAloudModule {
               timing
             };
 
-            if (!blocking) {
-              const canCache = playbackToken === null || state.playbackToken === playbackToken;
-              if (canCache && !state.paused) {
-                state.buffer = chunk;
-              }
-            }
-
-            finishSynth();
-            resolve(chunk);
+            this.__setBuf(key, chunk);
+            req.okTim(chunk);
+            this.#reqs.delete(key);
+            done();
           })().catch((error: unknown) => {
-            finishSynth();
-            reject(error);
+            if (isLive()) {
+              req.noAud(error);
+              req.noTim(error);
+              this.#reqs.delete(key);
+            }
+            done();
           });
         },
         (error) => {
-          finishSynth();
-          reject(error);
+          if (isLive()) {
+            req.noAud(error);
+            req.noTim(error);
+            this.#reqs.delete(key);
+          }
+          done();
         }
       );
+    })().catch((error: unknown) => {
+      if (this.#reqs.get(key) === req) {
+        req.noAud(error);
+        req.noTim(error);
+        this.#reqs.delete(key);
+      }
+    });
+
+    return req;
+  }
+
+  /**
+   * @param {number} idx - Paragraph index.
+   * @returns {Promise<ReadAloudBuffer | null>} Buffered audio chunk.
+   */
+  async __buf(idx: number): Promise<ReadAloudBuffer | null> {
+    const hit = this.__getBuf(idx);
+    if (hit) return hit;
+
+    const req = this.__req(idx);
+    if (!req) return this.__getBuf(idx);
+
+    return req.timP;
+  }
+
+  /**
+   * @param {number} idx - Paragraph index.
+   * @returns {void} Nothing.
+   */
+  __warm(idx: number): void {
+    if (idx < 0) return;
+    if (this.__getBuf(idx)) return;
+
+    const req = this.__req(idx);
+    if (!req) return;
+
+    void req.audP.catch(() => {
+      // Ignore background prefetch errors here.
     });
   }
 
   /**
+   * @param {number} idx - Paragraph index.
+   * @param {boolean} blocking - If true, return buffered audio. Unused now but kept for compatibility.
+   * @param {number | null} playbackToken - Playback invalidation token. Unused now but kept for compatibility.
+   * @returns {Promise<ReadAloudBuffer | null>} Audio chunk or null if skipped.
+   */
+  async __bufferPAudio(
+    idx: number,
+    blocking: boolean = false,
+    playbackToken: number | null = null
+  ): Promise<ReadAloudBuffer | null> {
+    void blocking;
+    void playbackToken;
+    return this.__buf(idx);
+  }
+
+  /**
    * @param {ArrayBuffer} audioData - MP3 data.
+
    * @param {number} playbackToken - Playback invalidation token.
    * @returns {Promise<void>} Resolves when playback ends.
    */
@@ -2165,20 +2411,29 @@ class ReadAloudModule {
   }
 
   /**
+   * @param {boolean} hard - If true, also clear cache and shared requests.
    * @returns {Promise<void>} Resolves after invalidating and stopping all read aloud playback.
    */
-  async __stopAllPlayback(): Promise<void> {
+  async __stopAllPlayback(hard: boolean = false): Promise<void> {
     const state = window.readAloudState;
     state.paused = true;
     state.playbackToken += 1;
     state.buffer = null;
 
-    await this.__stopAsync();
+    await this.__stopAud();
     await this.__stopMSloop();
+
+    if (!hard) return;
+
+    await this.__stopReqs();
+    this.__dropReqs();
+    this.__dropBufs();
+    this.#reqSig = null;
   }
 
   /**
    * @returns {Promise<void>} Resolves when paused and state saved.
+
    */
   async __pause(): Promise<void> {
     const state = window.readAloudState;
@@ -2203,6 +2458,8 @@ class ReadAloudModule {
     const state = window.readAloudState;
     state.paused = false;
 
+    await this.__syncReqs();
+
     const idx = state.currentPIdx || 0;
     await this.__speakP(idx);
   }
@@ -2224,9 +2481,9 @@ class ReadAloudModule {
   }
 
   /**
-   * @returns {Promise<void>} Resolves after stopping any active synthesiser/audio.
+   * @returns {Promise<void>} Resolves after stopping active audio playback.
    */
-  async __stopAsync(): Promise<void> {
+  async __stopAud(): Promise<void> {
     const state = window.readAloudState;
 
     if (state.currentAudio) {
@@ -2242,7 +2499,13 @@ class ReadAloudModule {
       URL.revokeObjectURL(state.currentAudioUrl);
       state.currentAudioUrl = null;
     }
+  }
 
+  /**
+   * @returns {Promise<void>} Resolves after stopping any active synthesiser.
+   */
+  async __stopReqs(): Promise<void> {
+    const state = window.readAloudState;
     const activeSynths = Array.from(this.#activeSynths);
     this.#activeSynths.clear();
 
@@ -2256,7 +2519,7 @@ class ReadAloudModule {
         /**
          * @returns {void} Nothing.
          */
-        const finish = (): void => {
+        const done = (): void => {
           if (state.synthesiser === synth) {
             state.synthesiser = null;
           }
@@ -2265,17 +2528,18 @@ class ReadAloudModule {
         };
 
         if (synth.stopSpeakingAsync) {
-          synth.stopSpeakingAsync(finish);
+          synth.stopSpeakingAsync(done);
           return;
         }
 
-        finish();
+        done();
       });
     }));
   }
 
   /**
    * @param {number} idx - Paragraph index to switch to.
+
    * @returns {Promise<void>} Resolves after switching paragraph.
    */
   async __changeParagraph(idx: number): Promise<void> {
@@ -2404,7 +2668,7 @@ class ReadAloudModule {
    */
   async __clearBuffer(state: ReadAloudState, idx: number | null | undefined): Promise<void> {
     const pausedState = state.paused;
-    await this.__stopAllPlayback();
+    await this.__stopAllPlayback(true);
     state.paused = pausedState;
 
     if (state.paused) return;
@@ -2507,6 +2771,11 @@ class ReadAloudModule {
 
     const paragraphs = Array.from(container.querySelectorAll<HTMLElement>(".reader-bookmark"));
     if (paragraphs.length <= 0) return;
+
+    await this.__stopReqs();
+    this.__dropReqs();
+    this.__dropBufs();
+    this.#reqSig = null;
 
     window.readAloudState.paragraphs = paragraphs;
     window.readAloudState.currentPIdx = 0;
