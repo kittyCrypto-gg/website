@@ -21,7 +21,7 @@ interface PresenceSnapshot {
     isAfk: boolean;
     activity: string;
     lastSshSeenAt: string;
-    lastActivityAt: string;
+    lastActivityAt: string | null;
     updatedAt: string;
 }
 
@@ -60,7 +60,7 @@ function isPresenceSnapshot(value: unknown): value is PresenceSnapshot {
         && typeof value.isAfk === "boolean"
         && typeof value.activity === "string"
         && typeof value.lastSshSeenAt === "string"
-        && typeof value.lastActivityAt === "string"
+        && (typeof value.lastActivityAt === "string" || value.lastActivityAt === null)
         && typeof value.updatedAt === "string";
 }
 
@@ -153,19 +153,23 @@ function formatUtcOffset(value: Date): string {
 }
 
 /**
- * @param {string} value - API timestamp in "YYYY-MM-DD HH:mm:ss" form.
+ * @param {string | null} value - API timestamp in "YYYY-MM-DD HH:mm:ss" form.
  * @returns {string} ISO datetime for the <time> element when parsing succeeds, otherwise an empty string.
  */
-function toDateTimeAttribute(value: string): string {
+function toDateTimeAttribute(value: string | null): string {
+    if (!value) return "";
+
     const parsed = parsePresenceDate(value);
     return parsed ? parsed.toISOString() : "";
 }
 
 /**
- * @param {string} value - API timestamp in "YYYY-MM-DD HH:mm:ss" form.
+ * @param {string | null} value - API timestamp in "YYYY-MM-DD HH:mm:ss" form.
  * @returns {string} Local display value in "YYYY.MM.DD HH:MM:SS" format, or the raw input when parsing fails.
  */
-function formatPresenceTimestamp(value: string): string {
+function formatPresenceTimestamp(value: string | null): string {
+    if (!value) return "Not available";
+
     const trimmed = value.trim();
     if (!trimmed) return "Not available";
 
@@ -237,7 +241,7 @@ function resolvePresencePresentation(snapshot: PresenceSnapshot): PresencePresen
             emoji: "🟩",
             badge: "Online",
             statusText: "Programming",
-            subline: "Locked in and actively coding."
+            subline: "Locked in VS Code"
         };
     }
 
@@ -452,7 +456,7 @@ async function fetchPresence(): Promise<PresenceSnapshot> {
     });
 
     if (!response.ok) {
-        throw new Error(`Presence API error: ${response.status}`);
+        throw new Error(`Presence API error: ${response}`);
     }
 
     const payload: unknown = await (response.json() as Promise<unknown>);
