@@ -12,59 +12,66 @@ export type SpiralConfig = Readonly<{
 }>;
 
 /**
- * @param {number} hue - Hue in degrees.
- * @param {number} sat - Saturation percentage.
- * @param {number} light - Lightness percentage.
- * @returns {string} - HSL color string.
+ * Tiny hsl helper.
+ * @param {number} hue
+ * @param {number} sat
+ * @param {number} light
+ * @returns {string}
  */
-function getHSL(hue: number, sat: number = 80, light: number = 60): string {
+function hsl(hue: number, sat: number = 80, light: number = 60): string {
     return `hsl(${hue % 360}, ${sat}%, ${light}%)`;
 }
 
 /**
- * @param {number} seed - Seed value derived from the hash.
- * @param {ReadonlyArray<number>} hash - SHA-256 hash bytes.
- * @returns {ColourPick} - Object containing the colors for the spiral arms and background.
+ * Picks the arm colours + bg from the hash bits.
+ * not super fancy, just deterministic.
+ * @param {number} seed
+ * @param {ReadonlyArray<number>} hash
+ * @returns {ColourPick}
  */
-function pickDistinctColours(seed: number, hash: ReadonlyArray<number>): ColourPick {
+function pickCols(seed: number, hash: ReadonlyArray<number>): ColourPick {
     const baseHue = seed % 360;
 
-    // Triadic colours
     const arms: [string, string, string] = [
-        getHSL(baseHue),       // Arm 1
-        getHSL(baseHue + 120), // Arm 2
-        getHSL(baseHue + 240)  // Arm 3
+        hsl(baseHue),
+        hsl(baseHue + 120),
+        hsl(baseHue + 240)
     ];
 
     const bgIndex = hash[5] % 3;
     const bgHue = (baseHue + 120 * bgIndex) % 360;
-    const background = getHSL(bgHue, 40, 85); // pastel bg
+    const background = hsl(bgHue, 40, 85);
 
     return { arms, background };
 }
 
 /**
- * @param {ReadonlyArray<number>} hash - SHA-256 hash bytes.
- * @returns {SpiralConfig} - Configuration parameters for the spiral generation, derived from the hash to ensure uniqueness.
+ * Derives the spiral params from the hash.
+ * Enough variation without getting too cursed.
+ * @param {ReadonlyArray<number>} hash
+ * @returns {SpiralConfig}
  */
-function getSpiralConfig(hash: ReadonlyArray<number>): SpiralConfig {
-    const angleStep = 0.15 + (hash[2] % 70) / 200; // 0.15–0.5
-    const radiusStep = 1.0 + (hash[3] % 40) / 10;  // 1.0–5.0
-    const steps = 60 + (hash[4] % 40);             // 60–100
+function getCfg(hash: ReadonlyArray<number>): SpiralConfig {
+    const angleStep = 0.15 + (hash[2] % 70) / 200;
+    const radiusStep = 1.0 + (hash[3] % 40) / 10;
+    const steps = 60 + (hash[4] % 40);
+
     return { angleStep, radiusStep, steps };
 }
 
 /**
- * @param {number} angleOffset - Angular offset (radians) for the spiral arm.
- * @param {SpiralConfig} spiralConfig - Spiral parameters.
- * @param {number} size - SVG size (px).
- * @returns {string} - SVG path data string representing the spiral arm.
+ * Builds one spiral arm path.
+ * @param {number} angleOffset
+ * @param {SpiralConfig} spiralConfig
+ * @param {number} size
+ * @returns {string}
  */
-function createSpiralPath(angleOffset: number, spiralConfig: SpiralConfig, size: number): string {
+function mkPath(angleOffset: number, spiralConfig: SpiralConfig, size: number): string {
     const { angleStep, radiusStep, steps } = spiralConfig;
     const centre = size / 2;
 
     let d = "";
+
     for (let t = 0; t < steps; t++) {
         const theta = t * angleStep + angleOffset;
         const r = t * radiusStep;
@@ -77,15 +84,17 @@ function createSpiralPath(angleOffset: number, spiralConfig: SpiralConfig, size:
 }
 
 /**
- * @param {string} username - Identifier used to deterministically generate the identicon.
- * @param {number} size - SVG size (px).
- * @returns {Promise<SVGSVGElement>} - Promise resolving to the generated identicon as an SVG element.
+ * Makes the spiral identicon svg for a username.
+ * same input, same result, thats the whole point really.
+ * @param {string} username
+ * @param {number} size
+ * @returns {Promise<SVGSVGElement>}
  */
 export async function drawSpiralIdenticon(username: string, size: number = 128): Promise<SVGSVGElement> {
     const hash = await hashString(username);
     const seed = hash[0] + hash[1] * 256;
-    const { arms, background } = pickDistinctColours(seed, hash);
-    const spiralConfig = getSpiralConfig(hash);
+    const { arms, background } = pickCols(seed, hash);
+    const spiralConfig = getCfg(hash);
 
     const xmlns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(xmlns, "svg");
@@ -97,7 +106,7 @@ export async function drawSpiralIdenticon(username: string, size: number = 128):
 
     for (let i = 0; i < 3; i++) {
         const angleOffset = (2 * Math.PI / 3) * i;
-        const pathData = createSpiralPath(angleOffset, spiralConfig, size);
+        const pathData = mkPath(angleOffset, spiralConfig, size);
 
         const path = document.createElementNS(xmlns, "path");
         path.setAttribute("d", pathData);

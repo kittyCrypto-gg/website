@@ -22,6 +22,7 @@
 
 @import url("./modules/chat.css");
 @import url("./modules/modals.css");
+@import url("./modules/notices.css");
 
 @import url("./modules/reader.css");
 @import url("./modules/reader-mode.css");
@@ -33,7 +34,8 @@
 @import url("./modules/commits.css");
 @import url("./modules/rss.css");
 @import url("./modules/about.css");
-@import url("./modules/debug.css");
+@import url("./modules/crt-ui.css");
+@import url("./modules/plot.css");
 
 @import url("./modules/88by31.css");
 @import url("./modules/socials.css");

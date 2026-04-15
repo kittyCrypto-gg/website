@@ -4,7 +4,7 @@ export interface CounterOptions {
     durationMs?: number;
 }
 
-interface CounterCell {
+interface Cell {
     cell: HTMLTableCellElement;
     face: HTMLSpanElement;
     currentDigit: number;
@@ -12,36 +12,36 @@ interface CounterCell {
     usesBlur: boolean;
 }
 
-interface CounterAnimationEvent {
+interface Ev {
     timeMs: number;
     cellIndex: number;
     digit: number;
 }
 
-interface CounterInstance {
+interface Inst {
     root: HTMLElement;
     table: HTMLTableElement;
-    cells: CounterCell[];
+    cells: Cell[];
     padLength: number;
     targetValue: number;
     frameId: number | null;
-    events: CounterAnimationEvent[];
+    events: Ev[];
     eventCursor: number;
 }
 
-const DEFAULT_DURATION_MS = 2500;
-const MIN_DURATION_MS = 250;
+const DEF_DUR_MS = 2500;
+const MIN_DUR_MS = 250;
 const MAX_PRECISE_STEPS_PER_CELL = 80;
 const MIN_VISIBLE_STEP_INTERVAL_MS = 40;
 const BLUR_DIGIT_FRAME_MS = 35;
 
 /**
- * Normalises the requested counter value.
- *
- * @param {number} value Raw counter target.
- * @returns {number} A safe non-negative integer.
+ * Makes the target safe enough to use.
+ * Negative or weird values just become 0.
+ * @param {number} value
+ * @returns {number}
  */
-function sanitiseValue(value: number): number {
+function sanVal(value: number): number {
     if (!Number.isFinite(value) || value < 0) {
         return 0;
     }
@@ -50,88 +50,73 @@ function sanitiseValue(value: number): number {
 }
 
 /**
- * Calculates how many digits are needed, including the leading zero.
- *
- * @param {number} value Counter target value.
- * @returns {number} Total digit count including the leading zero.
+ * How many digits we need, with the leading zero slot too.
+ * @param {number} value
+ * @returns {number}
  */
-function getPadLength(value: number): number {
+function padLen(value: number): number {
     return String(value).length + 1;
 }
 
 /**
- * Formats a value with leading zero padding.
- *
- * @param {number} value Counter value to format.
- * @param {number} padLength Total digit count.
- * @returns {string} The padded digit string.
+ * Pads a number out into the final digit string.
+ * @param {number} value
+ * @param {number} length
+ * @returns {string}
  */
-function formatValue(value: number, padLength: number): string {
-    return String(value).padStart(padLength, "0");
+function fmtVal(value: number, length: number): string {
+    return String(value).padStart(length, "0");
 }
 
 /**
- * Resolves the counter animation duration.
- *
- * @param {number} targetValue Final counter value.
- * @param {number | undefined} durationMs Optional caller-provided duration.
- * @returns {number} Effective animation duration in milliseconds.
+ * Picks the runtime duration.
+ * if caller gives one we clamp it a bit, otherwise default and done.
+ * @param {number} _targetValue
+ * @param {number | undefined} durationMs
+ * @returns {number}
  */
-function getEffectiveDuration(targetValue: number, durationMs?: number): number {
+function durMs(_targetValue: number, durationMs?: number): number {
     if (typeof durationMs === "number") {
-        return Math.max(MIN_DURATION_MS, durationMs);
+        return Math.max(MIN_DUR_MS, durationMs);
     }
 
-    if (targetValue <= 9) {
-        return DEFAULT_DURATION_MS;
-    }
-
-    if (targetValue <= 99) {
-        return DEFAULT_DURATION_MS;
-    }
-
-    if (targetValue <= 999) {
-        return DEFAULT_DURATION_MS;
-    }
-
-    return DEFAULT_DURATION_MS;
+    return DEF_DUR_MS;
 }
 
 /**
- * Computes the place value represented by a given column.
- *
- * @param {number} padLength Total digit count.
- * @param {number} cellIndex Zero-based cell index from left to right.
- * @returns {number} The place value for that column.
+ * Place value for a column.
+ * leftmost gets the biggest one obv.
+ * @param {number} length
+ * @param {number} cellIndex
+ * @returns {number}
  */
-function getPlaceValue(padLength: number, cellIndex: number): number {
-    const power = padLength - cellIndex - 1;
+function placeVal(length: number, cellIndex: number): number {
+    const power = length - cellIndex - 1;
 
     return 10 ** power;
 }
 
 /**
- * Computes how many visible digit changes a column would perform.
- *
- * @param {number} targetValue Final counter value.
- * @param {number} padLength Total digit count.
- * @param {number} cellIndex Zero-based cell index from left to right.
- * @returns {number} Number of digit changes for that column.
+ * Counts how many visible changes one column would do.
+ * @param {number} targetValue
+ * @param {number} length
+ * @param {number} cellIndex
+ * @returns {number}
  */
-function getDigitChangeCount(targetValue: number, padLength: number, cellIndex: number): number {
-    const placeValue = getPlaceValue(padLength, cellIndex);
+function changeCnt(targetValue: number, length: number, cellIndex: number): number {
+    const value = placeVal(length, cellIndex);
 
-    return Math.floor(targetValue / placeValue);
+    return Math.floor(targetValue / value);
 }
 
 /**
- * Forces a CSS animation class to restart.
- *
- * @param {HTMLElement} element Element receiving the class.
- * @param {string} className CSS class to restart.
+ * Forces a css anim class to restart.
+ * old browser trick, still useful somehow.
+ * @param {HTMLElement} element
+ * @param {string} className
  * @returns {void}
  */
-function restartAnimationClass(element: HTMLElement, className: string): void {
+function restartAnim(element: HTMLElement, className: string): void {
     element.classList.remove(className);
 
     void element.offsetWidth;
@@ -140,57 +125,55 @@ function restartAnimationClass(element: HTMLElement, className: string): void {
 }
 
 /**
- * Updates a single digit cell and optionally triggers its animation.
- *
- * @param {CounterCell} counterCell Digit cell state.
- * @param {number} digit Next digit to display.
- * @param {string | undefined} animationClass Optional CSS animation class.
- * @param {boolean} forceAnimation Whether animation should run even when the digit is unchanged.
+ * Sets one digit and maybe kicks its animation too.
+ * @param {Cell} cell
+ * @param {number} digit
+ * @param {string | undefined} animCls
+ * @param {boolean} forceAnim
  * @returns {void}
  */
-function setCellDigit(
-    counterCell: CounterCell,
+function setDig(
+    cell: Cell,
     digit: number,
-    animationClass?: string,
-    forceAnimation = false
+    animCls?: string,
+    forceAnim = false
 ): void {
-    const digitChanged = counterCell.currentDigit !== digit;
+    const changed = cell.currentDigit !== digit;
 
-    if (digitChanged) {
-        counterCell.face.textContent = String(digit);
-        counterCell.currentDigit = digit;
+    if (changed) {
+        cell.face.textContent = String(digit);
+        cell.currentDigit = digit;
     }
 
-    if (!animationClass) {
+    if (!animCls) {
         return;
     }
 
-    if (!digitChanged && !forceAnimation) {
+    if (!changed && !forceAnim) {
         return;
     }
 
-    restartAnimationClass(counterCell.cell, animationClass);
+    restartAnim(cell.cell, animCls);
 }
 
 /**
- * Builds the counter table structure.
- *
- * @param {number} padLength Total digit count.
- * @param {number} targetValue Final counter value.
- * @returns {{ table: HTMLTableElement; cells: CounterCell[] }} Table and cell state.
+ * Builds the table dom and cell state.
+ * @param {number} length
+ * @param {number} targetValue
+ * @returns {{ table: HTMLTableElement; cells: Cell[] }}
  */
-function createCounterTable(
-    padLength: number,
+function mkTable(
+    length: number,
     targetValue: number
-): { table: HTMLTableElement; cells: CounterCell[] } {
+): { table: HTMLTableElement; cells: Cell[] } {
     const table = document.createElement("table");
     const row = document.createElement("tr");
-    const cells: CounterCell[] = [];
-    const finalDigits = formatValue(targetValue, padLength);
+    const cells: Cell[] = [];
+    const finalDigits = fmtVal(targetValue, length);
 
     table.className = "clicker-counter";
 
-    for (let index = 0; index < padLength; index += 1) {
+    for (let index = 0; index < length; index += 1) {
         const cell = document.createElement("td");
         const windowElement = document.createElement("div");
         const face = document.createElement("span");
@@ -219,58 +202,53 @@ function createCounterTable(
 }
 
 /**
- * Chooses whether each digit should use precise carry animation or blur mode.
- *
- * @param {CounterInstance} instance Counter instance state.
- * @param {number} durationMs Total animation duration in milliseconds.
+ * Decides which cells get proper carries and which ones just blur-spin.
+ * @param {Inst} inst
+ * @param {number} durationMs
  * @returns {void}
  */
-function assignCellAnimationModes(instance: CounterInstance, durationMs: number): void {
-    for (let cellIndex = 0; cellIndex < instance.cells.length; cellIndex += 1) {
-        const changeCount = getDigitChangeCount(instance.targetValue, instance.padLength, cellIndex);
+function setModes(inst: Inst, durationMs: number): void {
+    for (let cellIndex = 0; cellIndex < inst.cells.length; cellIndex += 1) {
+        const count = changeCnt(inst.targetValue, inst.padLength, cellIndex);
 
-        if (changeCount === 0) {
-            instance.cells[cellIndex].usesBlur = false;
+        if (count === 0) {
+            inst.cells[cellIndex].usesBlur = false;
             continue;
         }
 
-        const stepIntervalMs = durationMs / changeCount;
-        const hasTooManySteps = changeCount > MAX_PRECISE_STEPS_PER_CELL;
-        const isTooFastToRead = stepIntervalMs < MIN_VISIBLE_STEP_INTERVAL_MS;
+        const stepIntervalMs = durationMs / count;
+        const tooMany = count > MAX_PRECISE_STEPS_PER_CELL;
+        const tooFast = stepIntervalMs < MIN_VISIBLE_STEP_INTERVAL_MS;
 
-        instance.cells[cellIndex].usesBlur = hasTooManySteps || isTooFastToRead;
+        inst.cells[cellIndex].usesBlur = tooMany || tooFast;
     }
 }
 
 /**
- * Precomputes all precise carry events for non-blurred columns.
- *
- * @param {CounterInstance} instance Counter instance state.
- * @param {number} durationMs Total animation duration in milliseconds.
- * @returns {CounterAnimationEvent[]} Sorted timeline of digit changes.
+ * Precomputes the exact carry events for the non-blur cells.
+ * @param {Inst} inst
+ * @param {number} durationMs
+ * @returns {Ev[]}
  */
-function buildAnimationEvents(instance: CounterInstance, durationMs: number): CounterAnimationEvent[] {
-    const events: CounterAnimationEvent[] = [];
+function mkEvents(inst: Inst, durationMs: number): Ev[] {
+    const events: Ev[] = [];
 
-    if (instance.targetValue === 0) {
+    if (inst.targetValue === 0) {
         return events;
     }
 
-    for (let cellIndex = 0; cellIndex < instance.cells.length; cellIndex += 1) {
-        const counterCell = instance.cells[cellIndex];
+    for (let cellIndex = 0; cellIndex < inst.cells.length; cellIndex += 1) {
+        const cell = inst.cells[cellIndex];
+        if (cell.usesBlur) continue;
 
-        if (counterCell.usesBlur) {
-            continue;
-        }
+        const value = placeVal(inst.padLength, cellIndex);
+        const count = Math.floor(inst.targetValue / value);
 
-        const placeValue = getPlaceValue(instance.padLength, cellIndex);
-        const changeCount = Math.floor(instance.targetValue / placeValue);
-
-        for (let stepIndex = 1; stepIndex <= changeCount; stepIndex += 1) {
-            const reachedValue = stepIndex * placeValue;
+        for (let stepIndex = 1; stepIndex <= count; stepIndex += 1) {
+            const reachedValue = stepIndex * value;
 
             events.push({
-                timeMs: durationMs * (reachedValue / instance.targetValue),
+                timeMs: durationMs * (reachedValue / inst.targetValue),
                 cellIndex,
                 digit: stepIndex % 10
             });
@@ -289,185 +267,185 @@ function buildAnimationEvents(instance: CounterInstance, durationMs: number): Co
 }
 
 /**
- * Applies all precise carry events that should have happened by the current time.
- *
- * @param {CounterInstance} instance Counter instance state.
- * @param {number} elapsedMs Elapsed animation time in milliseconds.
+ * Applies all precise events that should already have happened.
+ * @param {Inst} inst
+ * @param {number} elapsedMs
  * @returns {void}
  */
-function updatePreciseCells(instance: CounterInstance, elapsedMs: number): void {
-    while (instance.eventCursor < instance.events.length) {
-        const event = instance.events[instance.eventCursor];
+function stepPrecise(inst: Inst, elapsedMs: number): void {
+    while (inst.eventCursor < inst.events.length) {
+        const event = inst.events[inst.eventCursor];
 
         if (event.timeMs > elapsedMs) {
             return;
         }
 
-        const counterCell = instance.cells[event.cellIndex];
+        const cell = inst.cells[event.cellIndex];
 
-        counterCell.cell.classList.remove("is-blur-spinning");
-        setCellDigit(counterCell, event.digit, "is-spinning", true);
+        cell.cell.classList.remove("is-blur-spinning");
+        setDig(cell, event.digit, "is-spinning", true);
 
-        instance.eventCursor += 1;
+        inst.eventCursor += 1;
     }
 }
 
 /**
- * Updates blurred columns while the counter is rolling.
- *
- * @param {CounterInstance} instance Counter instance state.
- * @param {number} elapsedMs Elapsed animation time in milliseconds.
+ * Updates the blur-spin columns while the thing is rolling.
+ * @param {Inst} inst
+ * @param {number} elapsedMs
  * @returns {void}
  */
-function updateBlurredCells(instance: CounterInstance, elapsedMs: number): void {
+function stepBlur(inst: Inst, elapsedMs: number): void {
     const blurStep = Math.floor(elapsedMs / BLUR_DIGIT_FRAME_MS);
 
-    for (let cellIndex = 0; cellIndex < instance.cells.length; cellIndex += 1) {
-        const counterCell = instance.cells[cellIndex];
+    for (let cellIndex = 0; cellIndex < inst.cells.length; cellIndex += 1) {
+        const cell = inst.cells[cellIndex];
+        if (!cell.usesBlur) continue;
 
-        if (!counterCell.usesBlur) {
-            continue;
-        }
+        const rollingDigit = (blurStep + (inst.cells.length - cellIndex) * 3) % 10;
 
-        const rollingDigit = (blurStep + (instance.cells.length - cellIndex) * 3) % 10;
-
-        counterCell.cell.classList.add("is-blur-spinning");
-        setCellDigit(counterCell, rollingDigit);
+        cell.cell.classList.add("is-blur-spinning");
+        setDig(cell, rollingDigit);
     }
 }
 
 /**
- * Lands all digits on their final values.
- *
- * @param {CounterInstance} instance Counter instance state.
+ * Lands every cell on the final digit.
+ * @param {Inst} inst
  * @returns {void}
  */
-function finaliseCounter(instance: CounterInstance): void {
-    for (let cellIndex = 0; cellIndex < instance.cells.length; cellIndex += 1) {
-        const counterCell = instance.cells[cellIndex];
-        const animationClass = counterCell.usesBlur ? "is-landing" : "is-spinning";
+function finish(inst: Inst): void {
+    for (let cellIndex = 0; cellIndex < inst.cells.length; cellIndex += 1) {
+        const cell = inst.cells[cellIndex];
+        const animCls = cell.usesBlur ? "is-landing" : "is-spinning";
 
-        counterCell.cell.classList.remove("is-blur-spinning");
-        setCellDigit(counterCell, counterCell.finalDigit, animationClass, counterCell.usesBlur);
+        cell.cell.classList.remove("is-blur-spinning");
+        setDig(cell, cell.finalDigit, animCls, cell.usesBlur);
     }
 }
 
 /**
- * Runs the counter animation immediately.
- *
- * @param {CounterInstance} instance Counter instance state.
- * @param {number} durationMs Total animation duration in milliseconds.
+ * Runs the animation right now.
+ * @param {Inst} inst
+ * @param {number} durationMs
  * @returns {void}
  */
-function animateCounter(instance: CounterInstance, durationMs: number): void {
-    if (instance.targetValue === 0) {
-        finaliseCounter(instance);
+function runAnim(inst: Inst, durationMs: number): void {
+    if (inst.targetValue === 0) {
+        finish(inst);
         return;
     }
 
-    instance.events = buildAnimationEvents(instance, durationMs);
-    instance.eventCursor = 0;
+    inst.events = mkEvents(inst, durationMs);
+    inst.eventCursor = 0;
 
     const startTime = performance.now();
 
+    /**
+     * One animation frame tick.
+     * @param {number} now
+     * @returns {void}
+     */
     const tick = (now: number): void => {
         const elapsedMs = Math.min(durationMs, now - startTime);
 
-        updatePreciseCells(instance, elapsedMs);
-        updateBlurredCells(instance, elapsedMs);
+        stepPrecise(inst, elapsedMs);
+        stepBlur(inst, elapsedMs);
 
         if (elapsedMs < durationMs) {
-            instance.frameId = window.requestAnimationFrame(tick);
+            inst.frameId = window.requestAnimationFrame(tick);
             return;
         }
 
-        finaliseCounter(instance);
-        instance.frameId = null;
+        finish(inst);
+        inst.frameId = null;
     };
 
-    instance.frameId = window.requestAnimationFrame(tick);
+    inst.frameId = window.requestAnimationFrame(tick);
 }
 
 /**
- * Starts the counter only when its host enters the viewport.
- *
- * @param {CounterInstance} instance Counter instance state.
- * @param {number} durationMs Total animation duration in milliseconds.
+ * Waits until the counter is visible before starting it.
+ * if IntersectionObserver doesnt exist we just run it straight away.
+ * @param {Inst} inst
+ * @param {number} durationMs
  * @returns {void}
  */
-function animateCounterWhenVisible(instance: CounterInstance, durationMs: number): void {
+function runWhenVis(inst: Inst, durationMs: number): void {
     if (typeof window.IntersectionObserver !== "function") {
-        animateCounter(instance, durationMs);
+        runAnim(inst, durationMs);
         return;
     }
 
-    const observer = new IntersectionObserver(
-        (entries, activeObserver) => {
-            for (const entry of entries) {
-                if (!entry.isIntersecting) {
-                    continue;
-                }
-
-                activeObserver.unobserve(instance.root);
-                activeObserver.disconnect();
-                animateCounter(instance, durationMs);
-                return;
+    /**
+     * Starts once the host is actually on screen.
+     * @param {IntersectionObserverEntry[]} entries
+     * @param {IntersectionObserver} obs
+     * @returns {void}
+     */
+    const onInt = (entries: IntersectionObserverEntry[], obs: IntersectionObserver): void => {
+        for (const entry of entries) {
+            if (!entry.isIntersecting) {
+                continue;
             }
-        },
-        {
-            threshold: 0.2
-        }
-    );
 
-    observer.observe(instance.root);
+            obs.unobserve(inst.root);
+            obs.disconnect();
+            runAnim(inst, durationMs);
+            return;
+        }
+    };
+
+    const observer = new IntersectionObserver(onInt, {
+        threshold: 0.2
+    });
+
+    observer.observe(inst.root);
 }
 
 /**
- * Clears the current host contents.
- *
- * @param {HTMLElement} root Counter host element.
+ * Clears the host before we rebuild the table.
+ * @param {HTMLElement} root
  * @returns {void}
  */
-function clearRoot(root: HTMLElement): void {
+function clear(root: HTMLElement): void {
     root.textContent = "";
 }
 
 /**
- * Builds a counter instance and injects it into the host element.
- *
- * @param {HTMLElement} root Counter host element.
- * @param {number} targetValue Final counter value.
- * @param {number} durationMs Total animation duration in milliseconds.
- * @returns {CounterInstance} Prepared counter instance.
+ * Builds one counter instance and puts it into the host.
+ * @param {HTMLElement} root
+ * @param {number} targetValue
+ * @param {number} durationMs
+ * @returns {Inst}
  */
-function buildCounter(root: HTMLElement, targetValue: number, durationMs: number): CounterInstance {
-    const padLength = getPadLength(targetValue);
-    const { table, cells } = createCounterTable(padLength, targetValue);
+function mkCounter(root: HTMLElement, targetValue: number, durationMs: number): Inst {
+    const length = padLen(targetValue);
+    const { table, cells } = mkTable(length, targetValue);
 
-    clearRoot(root);
+    clear(root);
     root.appendChild(table);
 
-    const instance: CounterInstance = {
+    const inst: Inst = {
         root,
         table,
         cells,
-        padLength,
+        padLength: length,
         targetValue,
         frameId: null,
         events: [],
         eventCursor: 0
     };
 
-    assignCellAnimationModes(instance, durationMs);
+    setModes(inst, durationMs);
 
-    return instance;
+    return inst;
 }
 
 /**
- * Renders a clicker-style counter into a specific element by id.
- * The counter starts animating only when it enters the viewport.
- *
- * @param {CounterOptions} options Counter configuration.
+ * Renders a clicker-style counter into a host element by id.
+ * Starts once it comes into view.
+ * @param {CounterOptions} options
  * @returns {void}
  */
 export function renderCounter(options: CounterOptions): void {
@@ -479,9 +457,9 @@ export function renderCounter(options: CounterOptions): void {
 
     root.classList.add("counter");
 
-    const targetValue = sanitiseValue(options.target);
-    const durationMs = getEffectiveDuration(targetValue, options.durationMs);
-    const instance = buildCounter(root, targetValue, durationMs);
+    const targetValue = sanVal(options.target);
+    const durationMs = durMs(targetValue, options.durationMs);
+    const inst = mkCounter(root, targetValue, durationMs);
 
-    animateCounterWhenVisible(instance, durationMs);
+    runWhenVis(inst, durationMs);
 }

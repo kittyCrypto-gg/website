@@ -1,16 +1,16 @@
-import * as window from "./window.ts";
+import * as winApi from "./window.ts";
 import * as helpers from "./helpers.ts";
 
 type ModalMode = "blocking" | "non-blocking";
 
-type ModalDecoratorInfo = Readonly<{
+type DecInfo = Readonly<{
     id: string;
     mode: ModalMode;
     readerModeCompatible: boolean;
     windowed: boolean;
 }>;
 
-type ModalDecoratorContext = Readonly<{
+type DecCtx = Readonly<{
     id: string;
     mode: ModalMode;
     readerModeCompatible: boolean;
@@ -21,21 +21,21 @@ type ModalDecoratorContext = Readonly<{
     setHtml: (html: string) => void;
 }>;
 
-type ModalDecorator = Readonly<{
+type Dec = Readonly<{
     cssHref?: string;
     init?: () => void;
-    patchHtml?: (html: string, info: ModalDecoratorInfo) => string;
-    mount?: (ctx: ModalDecoratorContext) => void | (() => void);
+    patchHtml?: (html: string, info: DecInfo) => string;
+    mount?: (ctx: DecCtx) => void | (() => void);
 }>;
 
-type ModalSpec = Readonly<{
+type Spec = Readonly<{
     id?: string;
     mode?: ModalMode;
 
-    // Default true
+    // default true
     readerModeCompatible?: boolean;
 
-    // Default false
+    // default false
     window?: boolean;
 
     content: string | (() => string);
@@ -46,10 +46,10 @@ type ModalSpec = Readonly<{
     closeOnEscape?: boolean;
     closeOnOutsideClick?: boolean;
 
-    decorators?: readonly ModalDecorator[];
+    decorators?: readonly Dec[];
 }>;
 
-type OpenEntry = Readonly<{
+type OpenRec = Readonly<{
     key: string;
     id: string;
     mode: ModalMode;
@@ -60,19 +60,25 @@ type OpenEntry = Readonly<{
     stackEl: HTMLDivElement;
 }>;
 
-const MODAL_CLASS = "modal";
-const OVERLAY_CLASS = "modal-overlay";
-const NON_BLOCKING_STACK_ID = "non-blocking-modal-stack";
-const READER_MODE_INCOMPATIBLE_CLASS = "readerModeIncompatible";
-const WINDOW_FRAME_SUFFIX = "-window-frame";
-const WINDOW_STATE_ID_PREFIX = "modal-window-";
+const MOD_CLS = "modal";
+const OVR_CLS = "modal-overlay";
+const NB_STACK_ID = "non-blocking-modal-stack";
+const RM_BAD_CLS = "readerModeIncompatible";
+const WIN_FRAME_SFX = "-window-frame";
+const WIN_STATE_ID_PREF = "modal-window-";
 
-const ranInit = new WeakSet<() => void>();
+const initsRan = new WeakSet<() => void>();
 
 let escOn = false;
-const openOrd: string[] = [];
-const openMap = new Map<string, OpenEntry>();
+const openZ: string[] = [];
+const openByKey = new Map<string, OpenRec>();
 
+/**
+ * hooks the global escape handler once.
+ * pretty plain, just closes the top one that says escape is fine.
+ *
+ * @returns {void}
+ */
 function ensEsc(): void {
     if (escOn) return;
     escOn = true;
@@ -81,142 +87,231 @@ function ensEsc(): void {
         if (ev.key !== "Escape") return;
         if (ev.defaultPrevented) return;
 
-        for (let i = openOrd.length - 1; i >= 0; i -= 1) {
-            const k = openOrd[i];
-            const e = openMap.get(k);
-            if (!e) continue;
-            if (!e.closeOnEscape) continue;
-            e.close();
+        for (let i = openZ.length - 1; i >= 0; i -= 1) {
+            const key = openZ[i];
+            const rec = openByKey.get(key);
+            if (!rec) continue;
+            if (!rec.closeOnEscape) continue;
+
+            rec.close();
             return;
         }
     });
 }
 
+/**
+ * makes sure a css file is around.
+ * does a couple of checks first so it doesnt spam duplicate links everywhere.
+ *
+ * @param {string} href
+ * @returns {void}
+ */
 function ensCss(href: string): void {
-    const ss = Array.from(document.styleSheets);
-    for (const s of ss) {
-        if (!s.href) continue;
-        if (s.href.endsWith(href)) return;
+    const sheets = Array.from(document.styleSheets);
+
+    for (const sheet of sheets) {
+        if (!sheet.href) continue;
+        if (sheet.href.endsWith(href)) return;
     }
 
-    const ls = Array.from(document.querySelectorAll<HTMLLinkElement>("link[rel='stylesheet']"));
-    for (const l of ls) {
-        if (l.getAttribute("href") === href) return;
+    const links = Array.from(
+        document.querySelectorAll<HTMLLinkElement>("link[rel='stylesheet']")
+    );
+
+    for (const link of links) {
+        if (link.getAttribute("href") === href) return;
     }
 
-    const l = document.createElement("link");
-    l.rel = "stylesheet";
-    l.href = href;
-    document.head.appendChild(l);
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
 }
 
+/**
+ * gets the host for non-blocking modals.
+ * creates it if needed.
+ *
+ * @returns {HTMLDivElement}
+ */
 function ensNbHost(): HTMLDivElement {
-    const ex = document.getElementById(NON_BLOCKING_STACK_ID);
+    const ex = document.getElementById(NB_STACK_ID);
     if (ex instanceof HTMLDivElement) return ex;
 
     const host = document.createElement("div");
-    host.id = NON_BLOCKING_STACK_ID;
+    host.id = NB_STACK_ID;
     document.body.appendChild(host);
     return host;
 }
 
+/**
+ * body no-scroll toggler.
+ * if any blocking modal is open, body gets locked. otherwise not.
+ *
+ * @returns {void}
+ */
 function syncScrl(): void {
-    for (const e of openMap.values()) {
-        if (e.mode === "blocking") {
-            document.body.classList.add("no-scroll");
-            return;
-        }
+    for (const rec of openByKey.values()) {
+        if (rec.mode !== "blocking") continue;
+
+        document.body.classList.add("no-scroll");
+        return;
     }
 
     document.body.classList.remove("no-scroll");
 }
 
+/**
+ * pushes one open modal to the top and redoes z values.
+ *
+ * @param {string} key
+ * @returns {void}
+ */
 function zTop(key: string): void {
     if (!key) return;
 
-    const i = openOrd.indexOf(key);
-    if (i >= 0) openOrd.splice(i, 1);
-    openOrd.push(key);
+    const idx = openZ.indexOf(key);
+    if (idx >= 0) openZ.splice(idx, 1);
+    openZ.push(key);
 
     const base = 10000;
-    for (let j = 0; j < openOrd.length; j += 1) {
-        const k = openOrd[j];
-        const e = openMap.get(k);
-        if (!e) continue;
 
-        const oz = base + j * 2;
-        const mz = base + j * 2 + 1;
+    for (let i = 0; i < openZ.length; i += 1) {
+        const zKey = openZ[i];
+        const rec = openByKey.get(zKey);
+        if (!rec) continue;
 
-        if (e.overlayEl) e.overlayEl.style.zIndex = String(oz);
-        e.stackEl.style.zIndex = String(mz);
+        const oZ = base + i * 2;
+        const mZ = base + i * 2 + 1;
+
+        if (rec.overlayEl) rec.overlayEl.style.zIndex = String(oZ);
+        rec.stackEl.style.zIndex = String(mZ);
     }
 }
 
+/**
+ * removes a key from the z order and re-stacks whats left.
+ *
+ * @param {string} key
+ * @returns {void}
+ */
 function zRm(key: string): void {
-    const i = openOrd.indexOf(key);
-    if (i < 0) return;
+    const idx = openZ.indexOf(key);
+    if (idx < 0) return;
 
-    openOrd.splice(i, 1);
+    openZ.splice(idx, 1);
 
-    const top = openOrd[openOrd.length - 1] ?? "";
-    if (top) zTop(top);
+    const top = openZ[openZ.length - 1] ?? "";
+    if (!top) return;
+
+    zTop(top);
 }
 
+/**
+ * id maker.
+ * uses the preferred one if you gave it one, otherwise cobbles one together.
+ *
+ * @param {string | undefined} pref
+ * @returns {string}
+ */
 function mkId(pref: string | undefined): string {
     const raw = (pref ?? "").trim();
     if (raw) return raw;
 
-    if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.randomUUID === "function") {
+    if (
+        typeof globalThis.crypto !== "undefined" &&
+        typeof globalThis.crypto.randomUUID === "function"
+    ) {
         return `modal-${globalThis.crypto.randomUUID()}`;
     }
 
-    const r = Math.random().toString(16).slice(2);
-    return `modal-${Date.now()}-${r}`;
+    const rand = Math.random().toString(16).slice(2);
+    return `modal-${Date.now()}-${rand}`;
 }
 
-function runInit(ds: readonly ModalDecorator[]): void {
-    for (const d of ds) {
-        if (d.cssHref) ensCss(d.cssHref);
+/**
+ * runs decorator init hooks once each.
+ * also makes sure decorator css is loaded.
+ *
+ * @param {readonly Dec[]} decs
+ * @returns {void}
+ */
+function runInit(decs: readonly Dec[]): void {
+    for (const dec of decs) {
+        if (dec.cssHref) ensCss(dec.cssHref);
 
-        const init = d.init;
+        const init = dec.init;
         if (!init) continue;
-        if (ranInit.has(init)) continue;
+        if (initsRan.has(init)) continue;
 
-        ranInit.add(init);
+        initsRan.add(init);
         init();
     }
 }
 
+/**
+ * lets decorators patch the html in order.
+ * one after another, nothing clever.
+ *
+ * @param {string} html
+ * @param {readonly Dec[]} decs
+ * @param {DecInfo} info
+ * @returns {string}
+ */
 function patchHtml(
     html: string,
-    ds: readonly ModalDecorator[],
-    info: ModalDecoratorInfo
+    decs: readonly Dec[],
+    info: DecInfo
 ): string {
     let out = html;
 
-    for (const d of ds) {
-        if (!d.patchHtml) continue;
-        out = d.patchHtml(out, info);
+    for (const dec of decs) {
+        if (!dec.patchHtml) continue;
+        out = dec.patchHtml(out, info);
     }
 
     return out;
 }
 
-function px(v: string): number {
-    const n = Number.parseFloat(v);
+/**
+ * px parser. not exactly thrilling.
+ *
+ * @param {string} value
+ * @returns {number}
+ */
+function px(value: string): number {
+    const n = Number.parseFloat(value);
     return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * horizontal box extras from computed style.
+ *
+ * @param {CSSStyleDeclaration | null} cs
+ * @returns {number}
+ */
 function bx(cs: CSSStyleDeclaration | null): number {
     if (!cs) return 0;
     return px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
 }
 
+/**
+ * vertical box extras from computed style.
+ *
+ * @param {CSSStyleDeclaration | null} cs
+ * @returns {number}
+ */
 function by(cs: CSSStyleDeclaration | null): number {
     if (!cs) return 0;
     return px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth);
 }
 
+/**
+ * outer-ish height helper, margins included.
+ *
+ * @param {Element | null} el
+ * @returns {number}
+ */
 function oh(el: Element | null): number {
     if (!(el instanceof HTMLElement)) return 0;
 
@@ -225,10 +320,13 @@ function oh(el: Element | null): number {
 }
 
 /**
- * @param {string} id - Raw modal id.
- * @returns {string} A human-readable window title.
+ * turns an id into a window title that doesnt look awful.
+ * good enough for modal headings anyway.
+ *
+ * @param {string} id
+ * @returns {string}
  */
-function windowTitleFromId(id: string): string {
+function winTitle(id: string): string {
     const parts = id
         .trim()
         .replace(/[_-]+/g, " ")
@@ -255,23 +353,30 @@ export class ModalFactory {
     }
 
     /**
-     * @param {ModalSpec} spec - Modal specification.
-     * @returns {Modal} Modal blueprint object.
+     * makes a modal blueprint from a spec.
+     * not open yet, just ready to be used.
+     *
+     * @param {Spec} spec
+     * @returns {Modal}
      */
-    create(spec: ModalSpec): Modal {
+    create(spec: Spec): Modal {
         return new Modal(this, spec);
     }
 
     /**
-     * @param {string} id - Modal id.
-     * @returns {ModalSession | null} Live session if open.
+     * gets the open session for a modal id, if there is one.
+     *
+     * @param {string} id
+     * @returns {ModalSession | null}
      */
     getOpenSession(id: string): ModalSession | null {
         return this.#byId.get(id) ?? null;
     }
 
     /**
-     * @returns {readonly ModalSession[]} Open sessions created by this factory.
+     * open sessions from this factory, all of them.
+     *
+     * @returns {readonly ModalSession[]}
      */
     listOpenSessions(): readonly ModalSession[] {
         return Array.from(this.#byId.values());
@@ -283,8 +388,8 @@ export class ModalFactory {
     }
 
     /** @internal */
-    _registerSession(id: string, s: ModalSession): void {
-        this.#byId.set(id, s);
+    _registerSession(id: string, session: ModalSession): void {
+        this.#byId.set(id, session);
     }
 
     /** @internal */
@@ -310,9 +415,9 @@ export class Modal {
     #esc: boolean;
     #out: boolean;
 
-    #ds: ModalDecorator[];
+    #decs: Dec[];
 
-    constructor(factory: ModalFactory, spec: ModalSpec) {
+    constructor(factory: ModalFactory, spec: Spec) {
         this.#fac = factory;
 
         this.#id = mkId(spec.id);
@@ -329,26 +434,33 @@ export class Modal {
         this.#esc = spec.closeOnEscape ?? true;
         this.#out = spec.closeOnOutsideClick ?? (this.#mode === "blocking");
 
-        this.#ds = Array.from(spec.decorators ?? []);
+        this.#decs = Array.from(spec.decorators ?? []);
     }
 
     /**
-     * @returns {string} Modal id.
+     * modal id getter.
+     *
+     * @returns {string}
      */
     get id(): string {
         return this.#id;
     }
 
     /**
-     * @returns {ModalMode} Current mode.
+     * current mode getter.
+     *
+     * @returns {ModalMode}
      */
     get mode(): ModalMode {
         return this.#mode;
     }
 
     /**
-     * @param {ModalMode} mode - New mode.
-     * @returns {this} This modal.
+     * changes the mode on the blueprint.
+     * useful before opening it.
+     *
+     * @param {ModalMode} mode
+     * @returns {this}
      */
     setMode(mode: ModalMode): this {
         this.#mode = mode;
@@ -356,38 +468,46 @@ export class Modal {
     }
 
     /**
-     * @param {string | (() => string)} content - HTML or HTML producer.
-     * @returns {this} This modal.
+     * swaps the content html or content producer.
+     * if the modal is already open it gets refreshed too.
+     *
+     * @param {string | (() => string)} content
+     * @returns {this}
      */
     setContent(content: string | (() => string)): this {
         this.#cnt = content;
 
-        const s = this.#fac.getOpenSession(this.#id);
-        if (!s) return this;
+        const sess = this.#fac.getOpenSession(this.#id);
+        if (!sess) return this;
 
-        s.setHtml(this.renderHtml());
+        sess.setHtml(this.renderHtml());
         return this;
     }
 
     /**
-     * @param {ModalDecorator} decorator - Decorator to add.
-     * @returns {this} This modal.
+     * adds a decorator to the modal.
+     * open modal gets refreshed right away.
+     *
+     * @param {Dec} decorator
+     * @returns {this}
      */
-    decorate(decorator: ModalDecorator): this {
-        this.#ds.push(decorator);
+    decorate(decorator: Dec): this {
+        this.#decs.push(decorator);
 
-        const s = this.#fac.getOpenSession(this.#id);
-        if (!s) return this;
+        const sess = this.#fac.getOpenSession(this.#id);
+        if (!sess) return this;
 
-        s.setHtml(this.renderHtml());
+        sess.setHtml(this.renderHtml());
         return this;
     }
 
     /**
-     * @returns {string} Rendered HTML after patch decorators.
+     * renders the current html after decorator patch passes.
+     *
+     * @returns {string}
      */
     renderHtml(): string {
-        const info: ModalDecoratorInfo = {
+        const info: DecInfo = {
             id: this.#id,
             mode: this.#mode,
             readerModeCompatible: this.#rmOk,
@@ -396,14 +516,15 @@ export class Modal {
 
         const base = typeof this.#cnt === "function" ? this.#cnt() : this.#cnt;
 
-        runInit(this.#ds);
-        return patchHtml(base, this.#ds, info);
+        runInit(this.#decs);
+        return patchHtml(base, this.#decs, info);
     }
 
     /**
-     * Opens the modal. If already open, it is brought to front and refreshed.
+     * opens the modal.
+     * if it is already open, it just refreshes and comes to the front.
      *
-     * @returns {ModalSession} Live session.
+     * @returns {ModalSession}
      */
     open(): ModalSession {
         ensEsc();
@@ -415,7 +536,7 @@ export class Modal {
             return ex;
         }
 
-        const s = new ModalSession({
+        const sess = new ModalSession({
             factory: this.#fac,
             id: this.#id,
             mode: this.#mode,
@@ -425,36 +546,39 @@ export class Modal {
             overlayClassName: this.#oCls,
             closeOnEscape: this.#esc,
             closeOnOutsideClick: this.#out,
-            decorators: this.#ds,
+            decorators: this.#decs,
             html: this.renderHtml()
         });
 
-        this.#fac._registerSession(this.#id, s);
-        s.open();
-        return s;
+        this.#fac._registerSession(this.#id, sess);
+        sess.open();
+        return sess;
     }
 
     /**
-     * @returns {boolean} True if this modal is open.
+     * tells you if this modal is open right now.
+     *
+     * @returns {boolean}
      */
     isOpen(): boolean {
         return this.#fac.getOpenSession(this.#id) !== null;
     }
 
     /**
-     * Closes this modal if open.
+     * closes it if open.
      *
-     * @returns {boolean} True if closed.
+     * @returns {boolean}
      */
     close(): boolean {
-        const s = this.#fac.getOpenSession(this.#id);
-        if (!s) return false;
-        s.close();
+        const sess = this.#fac.getOpenSession(this.#id);
+        if (!sess) return false;
+
+        sess.close();
         return true;
     }
 }
 
-type ModalSessionSpec = Readonly<{
+type SessSpec = Readonly<{
     factory: ModalFactory;
     id: string;
     mode: ModalMode;
@@ -468,11 +592,11 @@ type ModalSessionSpec = Readonly<{
     closeOnEscape: boolean;
     closeOnOutsideClick: boolean;
 
-    decorators: readonly ModalDecorator[];
+    decorators: readonly Dec[];
     html: string;
 }>;
 
-type Mx = Readonly<{
+type WinMx = Readonly<{
     mw: number;
     mh: number;
     fw: number;
@@ -492,7 +616,7 @@ export class ModalSession {
     readonly #esc: boolean;
     readonly #out: boolean;
 
-    readonly #ds: readonly ModalDecorator[];
+    readonly #decs: readonly Dec[];
 
     readonly #mEl: HTMLDivElement;
     readonly #fEl: HTMLDivElement | null;
@@ -501,14 +625,14 @@ export class ModalSession {
 
     readonly #lnEl: HTMLDivElement | null;
 
-    #wh: window.WindowHandle | null;
+    #wh: winApi.WindowHandle | null;
     #sty: HTMLStyleElement | null;
     #raf: number | null;
     #mCln: Array<() => void>;
     #wCln: Array<() => void>;
     #wOn: boolean;
 
-    constructor(spec: ModalSessionSpec) {
+    constructor(spec: SessSpec) {
         this.#fac = spec.factory;
         this.#id = spec.id;
         this.#mode = spec.mode;
@@ -518,7 +642,7 @@ export class ModalSession {
 
         this.#esc = spec.closeOnEscape;
         this.#out = spec.closeOnOutsideClick;
-        this.#ds = spec.decorators;
+        this.#decs = spec.decorators;
 
         this.#key = this.#fac._keyFor(this.#id);
         this.#wh = null;
@@ -530,7 +654,7 @@ export class ModalSession {
 
         this.#mEl = document.createElement("div");
         this.#mEl.id = this.#id;
-        this.#mEl.className = [MODAL_CLASS, spec.modalClassName].filter(Boolean).join(" ");
+        this.#mEl.className = [MOD_CLS, spec.modalClassName].filter(Boolean).join(" ");
 
         if (this.#mode === "non-blocking" && !this.#win) {
             this.#mEl.classList.add("non-blocking");
@@ -538,7 +662,7 @@ export class ModalSession {
 
         if (this.#win) {
             this.#fEl = document.createElement("div");
-            this.#fEl.id = `${this.#id}${WINDOW_FRAME_SUFFIX}`;
+            this.#fEl.id = `${this.#id}${WIN_FRAME_SFX}`;
             this.#fEl.dataset.modalWindowFrame = "true";
             this.#fEl.appendChild(this.#mEl);
             this.#sEl = this.#fEl;
@@ -558,52 +682,63 @@ export class ModalSession {
 
         if (this.#oEl) {
             this.#oEl.id = `modal-overlay-${this.#id}`;
-            this.#oEl.className = [OVERLAY_CLASS, spec.overlayClassName].filter(Boolean).join(" ");
+            this.#oEl.className = [OVR_CLS, spec.overlayClassName].filter(Boolean).join(" ");
             this.#oEl.appendChild(this.#sEl);
         }
 
         if (!this.#rmOk) {
-            this.#mEl.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
-            this.#fEl?.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
-            this.#oEl?.classList.add(READER_MODE_INCOMPATIBLE_CLASS);
+            this.#mEl.classList.add(RM_BAD_CLS);
+            this.#fEl?.classList.add(RM_BAD_CLS);
+            this.#oEl?.classList.add(RM_BAD_CLS);
         }
 
         this.setHtml(spec.html);
     }
 
     /**
-     * @returns {string} Modal id.
+     * modal id again, but on the live session.
+     *
+     * @returns {string}
      */
     get id(): string {
         return this.#id;
     }
 
     /**
-     * @returns {ModalMode} Modal mode.
+     * session mode getter.
+     *
+     * @returns {ModalMode}
      */
     get mode(): ModalMode {
         return this.#mode;
     }
 
     /**
-     * @returns {HTMLDivElement} Modal element.
+     * raw modal element.
+     *
+     * @returns {HTMLDivElement}
      */
     get modalEl(): HTMLDivElement {
         return this.#mEl;
     }
 
     /**
-     * @returns {HTMLDivElement | null} Overlay element.
+     * overlay if this one has one.
+     *
+     * @returns {HTMLDivElement | null}
      */
     get overlayEl(): HTMLDivElement | null {
         return this.#oEl;
     }
 
     /**
-     * @returns {void} Opens and mounts the session into DOM.
+     * mounts the session into the dom.
+     * if already open it just comes forward.
+     *
+     * @returns {void}
      */
     open(): void {
-        if (openMap.has(this.#key)) {
+        if (openByKey.has(this.#key)) {
             this.bringToFront();
             return;
         }
@@ -621,7 +756,7 @@ export class ModalSession {
             ensNbHost().appendChild(this.#sEl);
         }
 
-        openMap.set(this.#key, {
+        openByKey.set(this.#key, {
             key: this.#key,
             id: this.#id,
             mode: this.#mode,
@@ -643,8 +778,10 @@ export class ModalSession {
     }
 
     /**
-     * @param {string} html - New HTML.
-     * @returns {void} Updates HTML and remounts decorator behaviour.
+     * swaps the inner html and remounts decorator hooks.
+     *
+     * @param {string} html
+     * @returns {void}
      */
     setHtml(html: string): void {
         this.#mEl.innerHTML = html;
@@ -653,18 +790,22 @@ export class ModalSession {
     }
 
     /**
-     * @returns {void} Brings this modal to front.
+     * bumps this session to the top.
+     *
+     * @returns {void}
      */
     bringToFront(): void {
         zTop(this.#key);
     }
 
     /**
-     * @returns {void} Closes and cleans up.
+     * closes the session and clears its bits up.
+     *
+     * @returns {void}
      */
     close(): void {
-        const e = openMap.get(this.#key);
-        if (!e) return;
+        const rec = openByKey.get(this.#key);
+        if (!rec) return;
 
         this.#runM();
         this.#runW();
@@ -682,18 +823,28 @@ export class ModalSession {
         this.#oEl?.remove();
         if (!this.#oEl) this.#sEl.remove();
 
-        openMap.delete(this.#key);
+        openByKey.delete(this.#key);
         zRm(this.#key);
         syncScrl();
 
         this.#fac._unregisterSession(this.#id);
     }
 
+    /**
+     * re-mount pass after html changes.
+     *
+     * @returns {void}
+     */
     #reMnt(): void {
-        if (!openMap.has(this.#key)) return;
+        if (!openByKey.has(this.#key)) return;
         this.#mnt(true);
     }
 
+    /**
+     * runs modal cleanup fns.
+     *
+     * @returns {void}
+     */
     #runM(): void {
         for (const fn of this.#mCln) {
             try {
@@ -702,9 +853,15 @@ export class ModalSession {
                 /* ignore */
             }
         }
+
         this.#mCln = [];
     }
 
+    /**
+     * runs window cleanup fns.
+     *
+     * @returns {void}
+     */
     #runW(): void {
         for (const fn of this.#wCln) {
             try {
@@ -713,13 +870,21 @@ export class ModalSession {
                 /* ignore */
             }
         }
+
         this.#wCln = [];
     }
 
+    /**
+     * mount pass for decorators.
+     * when clr is true, old mounts get cleaned first.
+     *
+     * @param {boolean} clr
+     * @returns {void}
+     */
     #mnt(clr: boolean = false): void {
         if (clr) this.#runM();
 
-        const ctx: ModalDecoratorContext = {
+        const ctx: DecCtx = {
             id: this.#id,
             mode: this.#mode,
             readerModeCompatible: this.#rmOk,
@@ -730,26 +895,36 @@ export class ModalSession {
             setHtml: (html: string) => this.setHtml(html)
         };
 
-        for (const d of this.#ds) {
-            if (!d.mount) continue;
+        for (const dec of this.#decs) {
+            if (!dec.mount) continue;
 
-            const cln = d.mount(ctx);
+            const cln = dec.mount(ctx);
             if (typeof cln !== "function") continue;
 
             this.#mCln.push(cln);
         }
     }
 
+    /**
+     * picks the element the window api should mount into.
+     *
+     * @returns {HTMLElement}
+     */
     #host(): HTMLElement {
         return this.#oEl ?? ensNbHost();
     }
 
-    #mkWinOpts(): window.WindowApiOptions {
+    /**
+     * builds the window api options for this session.
+     *
+     * @returns {winApi.WindowApiOptions}
+     */
+    #mkWinOpts(): winApi.WindowApiOptions {
         const host = this.#host();
 
         return {
-            id: `${WINDOW_STATE_ID_PREFIX}${this.#id}`,
-            title: windowTitleFromId(this.#id),
+            id: `${WIN_STATE_ID_PREF}${this.#id}`,
+            title: winTitle(this.#id),
             launcher: this.#lnEl,
             closedLnchrDis: "none",
             showCloseBttn: true,
@@ -762,6 +937,11 @@ export class ModalSession {
         };
     }
 
+    /**
+     * mounts the window wrapper when this modal is windowed.
+     *
+     * @returns {void}
+     */
     #ensWin(): void {
         if (this.#wOn) return;
         if (!this.#fEl || !this.#lnEl) return;
@@ -769,7 +949,7 @@ export class ModalSession {
         this.#wOn = true;
 
         try {
-            this.#wh = window.mountWindow(this.#fEl, this.#mkWinOpts());
+            this.#wh = winApi.mountWindow(this.#fEl, this.#mkWinOpts());
             this.#qSty();
         } catch (err: unknown) {
             console.warn("Modal window mounting failed:", this.#id, err);
@@ -777,12 +957,18 @@ export class ModalSession {
             return;
         }
 
-        if (!openMap.has(this.#key)) return;
+        if (!openByKey.has(this.#key)) return;
         if (!this.#fEl.isConnected) return;
 
         this.#bndCls();
     }
 
+    /**
+     * queues a style sync on a couple of frames.
+     * a bit belt-and-braces but helps after layout settles.
+     *
+     * @returns {void}
+     */
     #qSty(): void {
         if (!this.#win) return;
         if (!this.#mEl.isConnected) return;
@@ -799,6 +985,11 @@ export class ModalSession {
         });
     }
 
+    /**
+     * updates the window sizing style tag.
+     *
+     * @returns {void}
+     */
     #syncSty(): void {
         if (!this.#win) return;
         if (!this.#mEl.isConnected) return;
@@ -865,7 +1056,12 @@ ${rs} {
         this.#sty.textContent = css;
     }
 
-    #calcMx(): Mx | null {
+    /**
+     * works out modal and frame max sizes from the live dom.
+     *
+     * @returns {WinMx | null}
+     */
+    #calcMx(): WinMx | null {
         if (!this.#mEl.isConnected) return null;
 
         const mcs = globalThis.getComputedStyle(this.#mEl);
@@ -903,11 +1099,21 @@ ${rs} {
         return { mw, mh, fw, fh };
     }
 
+    /**
+     * removes the temp style tag if it exists.
+     *
+     * @returns {void}
+     */
     #rmSty(): void {
         this.#sty?.remove();
         this.#sty = null;
     }
 
+    /**
+     * steals the window close button click so it closes this session properly.
+     *
+     * @returns {void}
+     */
     #bndCls(): void {
         if (!this.#fEl) return;
 
@@ -931,36 +1137,37 @@ ${rs} {
 }
 
 /**
- * Helper decorator: bind an event to all elements matching selector inside the modal.
+ * handy decorator helper.
+ * binds one event to all matching bits inside the modal.
  *
- * @param {string} selector - Query selector within modal root.
- * @param {keyof HTMLElementEventMap} eventName - Event name.
- * @param {(ev: HTMLElementEventMap[keyof HTMLElementEventMap], ctx: ModalDecoratorContext) => void} fn - Callback.
- * @returns {ModalDecorator} Decorator.
+ * @param {string} selector
+ * @param {K} eventName
+ * @param {(ev: HTMLElementEventMap[K], ctx: DecCtx) => void} fn
+ * @returns {Dec}
  */
 export function onModalEvent<K extends keyof HTMLElementEventMap>(
     selector: string,
     eventName: K,
-    fn: (ev: HTMLElementEventMap[K], ctx: ModalDecoratorContext) => void
-): ModalDecorator {
+    fn: (ev: HTMLElementEventMap[K], ctx: DecCtx) => void
+): Dec {
     return {
         mount: (ctx) => {
-            const ns = Array.from(ctx.modalEl.querySelectorAll(selector));
-            const els = ns.filter((n): n is HTMLElement => n instanceof HTMLElement);
+            const nodes = Array.from(ctx.modalEl.querySelectorAll(selector));
+            const els = nodes.filter((node): node is HTMLElement => node instanceof HTMLElement);
 
             if (!els.length) return;
 
-            const l = (ev: Event): void => {
+            const onEvt = (ev: Event): void => {
                 fn(ev as HTMLElementEventMap[K], ctx);
             };
 
             for (const el of els) {
-                el.addEventListener(eventName, l);
+                el.addEventListener(eventName, onEvt);
             }
 
             return () => {
                 for (const el of els) {
-                    el.removeEventListener(eventName, l);
+                    el.removeEventListener(eventName, onEvt);
                 }
             };
         }
@@ -968,16 +1175,17 @@ export function onModalEvent<K extends keyof HTMLElementEventMap>(
 }
 
 /**
- * Helper decorator: closes modal when a matching element is clicked.
+ * tiny close helper.
+ * click matching thing, modal goes away.
  *
- * @param {string} selector - Close button selector.
- * @returns {ModalDecorator} Decorator.
+ * @param {string} selector
+ * @returns {Dec}
  */
-export function closeOnClick(selector: string): ModalDecorator {
+export function closeOnClick(selector: string): Dec {
     return onModalEvent(selector, "click", (_ev, ctx) => ctx.close());
 }
 
 /**
- * Convenience singleton if you only want one factory.
+ * one shared factory if you dont feel like making your own.
  */
 export const modals = new ModalFactory();

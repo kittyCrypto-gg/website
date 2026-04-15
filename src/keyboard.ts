@@ -1,6 +1,6 @@
 import { nextFrame } from "./helpers.js";
 
-type KeyboardMods = {
+type Mods = {
     ctrl: boolean;
     alt: boolean;
     meta: boolean;
@@ -8,9 +8,9 @@ type KeyboardMods = {
     fn: boolean;
 };
 
-type ModName = keyof KeyboardMods;
+type ModKey = keyof Mods;
 
-type DesktopPreset = Readonly<{
+type DeskPreset = Readonly<{
     keyW: number;
     keyH: number;
     btnGap: number;
@@ -21,15 +21,15 @@ type DesktopPreset = Readonly<{
     radius: number;
 }>;
 
-type SendPayload = Readonly<{
+type SendMsg = Readonly<{
     key: string;
     seq: string;
-    mods: KeyboardMods;
+    mods: Mods;
 }>;
 
-type SendFn = (p: SendPayload) => void;
+type SendCb = (p: SendMsg) => void;
 
-type EnsureCssResult = Readonly<{
+type CssRes = Readonly<{
     link: HTMLLinkElement;
     injected: boolean;
 }>;
@@ -71,7 +71,7 @@ export class keyboardEmu {
         "`": "~"
     };
 
-    static DESKTOP_PRESETS: readonly DesktopPreset[] = [
+    static DESKTOP_PRESETS: readonly DeskPreset[] = [
         { keyW: 44, keyH: 40, btnGap: 8, padX: 12, innerGap: 6, font: 13, icon: 15, radius: 10 },
         { keyW: 42, keyH: 38, btnGap: 7, padX: 11, innerGap: 6, font: 12.5, icon: 14.5, radius: 10 },
         { keyW: 40, keyH: 36, btnGap: 6, padX: 10, innerGap: 5, font: 12, icon: 14, radius: 9 },
@@ -79,10 +79,12 @@ export class keyboardEmu {
     ];
 
     /**
-     * @param {string} path - Path to resolve relative to the module.
-     * @returns {string} A fully resolved URL string or the original path if URL construction fails.
+     * Resolves a path against this module when possible.
+     * If URL blows up for some reason it just gives the input back.
+     * @param {string} path
+     * @returns {string}
      */
-    static __resolveURL(path: string): string {
+    static __url(path: string): string {
         try {
             return new URL(path, import.meta.url).toString();
         } catch {
@@ -101,8 +103,8 @@ export class keyboardEmu {
     cssLink: HTMLLinkElement | null;
     cssInjected: boolean;
 
-    mods: KeyboardMods;
-    send: SendFn | null;
+    mods: Mods;
+    send: SendCb | null;
 
     lastEditable: HTMLElement | null;
     toolbarVisible: boolean;
@@ -126,21 +128,22 @@ export class keyboardEmu {
     private __onTransitionEndBound: (e: TransitionEvent) => void;
 
     /**
-     * @param {unknown} isMobile - Whether the device is mobile.
-     * @param {unknown} htmlUrl - Keyboard HTML URL.
-     * @param {unknown} cssUrl - Keyboard CSS URL.
+     * Builds the thing and binds all the boring handler refs.
+     * @param {unknown} isMobile
+     * @param {unknown} htmlUrl
+     * @param {unknown} cssUrl
      * @returns {void}
      */
     constructor(isMobile?: unknown, htmlUrl?: unknown, cssUrl?: unknown) {
         this.isMobile = !!isMobile;
 
         this.htmlUrl = typeof htmlUrl === "string" && htmlUrl !== ""
-            ? keyboardEmu.__resolveURL(htmlUrl)
-            : keyboardEmu.__resolveURL("/ui/keyboard.html");
+            ? keyboardEmu.__url(htmlUrl)
+            : keyboardEmu.__url("/ui/keyboard.html");
 
         this.cssUrl = typeof cssUrl === "string" && cssUrl !== ""
-            ? keyboardEmu.__resolveURL(cssUrl)
-            : keyboardEmu.__resolveURL("/styles/modules/keyboard.css");
+            ? keyboardEmu.__url(cssUrl)
+            : keyboardEmu.__url("/styles/modules/keyboard.css");
 
         this.opts = null;
         this.zIndex = keyboardEmu.DEFAULT_Z_INDEX;
@@ -175,48 +178,59 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {unknown} v - Mobile flag.
-     * @returns {void} Updates the mobile mode and schedules a reflow.
+     * Switches mobile mode and redoes labels/layout.
+     * @param {unknown} v
+     * @returns {void}
      */
     setIsMobile(v: unknown): void {
         this.isMobile = !!v;
         if (!this.bar) return;
-        this.__applyResponsiveLabels(this.bar);
+
+        this.__setLabels(this.bar);
         this.__schedule();
     }
 
     /**
-     * @param {unknown} options - Installation options.
-     * @param {unknown} targets - Allowed targets / editables.
-     * @returns {Promise<this>} The current emulator instance.
+     * Installs the toolbar and wires it to the allowed editables.
+     * Yeah this one does a lot.
+     * @param {unknown} options
+     * @param {unknown} targets
+     * @returns {Promise<this>}
      */
     async install(options?: unknown, targets?: unknown): Promise<this> {
         const opts = options || {};
         this.opts = opts;
 
-        const firstDefined = (...values: readonly unknown[]): unknown | null => {
+        /**
+         * Picks the first defined value from a bunch of possibles.
+         * @param {...unknown[]} values
+         * @returns {unknown | null}
+         */
+        const firstDef = (...values: readonly unknown[]): unknown | null => {
             for (const v of values) {
                 if (v !== undefined) return v;
             }
+
             return null;
         };
 
-        const optsRecord = opts as Record<string, unknown>;
+        const optsRec = opts as Record<string, unknown>;
 
-        const allowRaw = firstDefined(
+        const allowRaw = firstDef(
             targets,
-            optsRecord["targets"],
-            optsRecord["target"],
-            optsRecord["allowed"],
-            optsRecord["allow"],
-            optsRecord["editables"],
-            optsRecord["editable"]
+            optsRec["targets"],
+            optsRec["target"],
+            optsRec["allowed"],
+            optsRec["allow"],
+            optsRec["editables"],
+            optsRec["editable"]
         );
 
         const allowed = (() => {
             if (!allowRaw) return [];
             if (Array.isArray(allowRaw)) return allowRaw;
             if (allowRaw instanceof Element) return [allowRaw];
+
             if (typeof allowRaw === "object" && typeof (allowRaw as { length?: unknown }).length === "number") {
                 try {
                     return Array.from(allowRaw as ArrayLike<unknown>);
@@ -224,6 +238,7 @@ export class keyboardEmu {
                     return [];
                 }
             }
+
             return [];
         })()
             .filter((x): x is Element => x instanceof Element);
@@ -235,15 +250,17 @@ export class keyboardEmu {
             if (!baseIsEditable(el)) return false;
             if (!allowedSet.size) return false;
             if (!(el instanceof Element)) return false;
+
             for (const a of allowedSet) {
                 if (a === el) return true;
                 if (typeof a.contains === "function" && a.contains(el)) return true;
             }
+
             return false;
         };
 
-        const zIndex = typeof optsRecord["zIndex"] === "number"
-            ? (optsRecord["zIndex"] as number)
+        const zIndex = typeof optsRec["zIndex"] === "number"
+            ? (optsRec["zIndex"] as number)
             : keyboardEmu.DEFAULT_Z_INDEX;
         this.zIndex = zIndex;
 
@@ -251,11 +268,15 @@ export class keyboardEmu {
         if (existing) existing.remove();
 
         const existingCss = document.getElementById(keyboardEmu.CSS_LINK_ID);
-        if (existingCss && existingCss.tagName === "LINK" && existingCss.getAttribute("data-owner") === "keyboard-emu") {
+        if (
+            existingCss &&
+            existingCss.tagName === "LINK" &&
+            existingCss.getAttribute("data-owner") === "keyboard-emu"
+        ) {
             existingCss.remove();
         }
 
-        const { link: cssLink, injected: cssInjected } = this.__ensureKeyboardCSS();
+        const { link: cssLink, injected: cssInjected } = this.__ensCss();
         this.cssLink = cssLink;
         this.cssInjected = cssInjected;
 
@@ -269,17 +290,17 @@ export class keyboardEmu {
 
         bar.style.setProperty("--toolbar-z", String(keyboardEmu.HIDDEN_Z));
 
-        await this.__injectKeyboardHTML(bar);
-        this.__applyResponsiveLabels(bar);
+        await this.__injHtml(bar);
+        this.__setLabels(bar);
 
         this.mods = { ctrl: false, alt: false, meta: false, shift: false, fn: false };
-        this.__syncButtons();
+        this.__syncBtns();
 
-        const sendCandidate = optsRecord["send"];
+        const sendCandidate = optsRec["send"];
         this.send =
             typeof sendCandidate === "function"
-                ? (sendCandidate as SendFn)
-                : (p: SendPayload): void => {
+                ? (sendCandidate as SendCb)
+                : (p: SendMsg): void => {
                     const t = (window as unknown as { term?: unknown }).term;
                     if (t && typeof (t as { write?: unknown }).write === "function") {
                         (t as { write: (seq: string) => void }).write(p.seq);
@@ -295,9 +316,9 @@ export class keyboardEmu {
         const initialActive = document.activeElement;
         if ((this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(initialActive)) {
             this.lastEditable = initialActive as HTMLElement;
-            this.__applyVisibility(true);
+            this.__setVis(true);
         } else {
-            this.__applyVisibility(false);
+            this.__setVis(false);
         }
 
         for (const b of bar.querySelectorAll("button")) b.tabIndex = -1;
@@ -338,25 +359,28 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {unknown} fn - Send handler.
-     * @returns {void} Sets the send function if the provided value is callable.
+     * Replaces the send callback if the value is callable.
+     * @param {unknown} fn
+     * @returns {void}
      */
     setSend(fn: unknown): void {
-        if (typeof fn === "function") this.send = fn as SendFn;
+        if (typeof fn === "function") this.send = fn as SendCb;
     }
 
     /**
-     * @param {boolean} v - Visibility flag.
-     * @returns {void} Shows or hides the toolbar.
+     * Shows or hides the toolbar.
+     * @param {boolean} v
+     * @returns {void}
      */
     setVisible(v: boolean): void {
         if (!this.bar) return;
-        if (v) this.__showToolbar();
-        else this.__hideToolbar();
+        if (v) this.__show();
+        else this.__hide();
     }
 
     /**
-     * @returns {void} Destroys the keyboard emulator and removes all listeners.
+     * Tears the whole thing down and removes listeners.
+     * @returns {void}
      */
     destroy(): void {
         const bar = this.bar;
@@ -382,11 +406,13 @@ export class keyboardEmu {
         bar.removeEventListener("transitionend", this.__onTransitionEndBound);
 
         if (this.ro) this.ro.disconnect();
-
         if (this.raf) window.cancelAnimationFrame(this.raf);
+
         bar.remove();
 
-        if (this.cssInjected && this.cssLink && this.cssLink.isConnected) this.cssLink.remove();
+        if (this.cssInjected && this.cssLink && this.cssLink.isConnected) {
+            this.cssLink.remove();
+        }
 
         this.bar = null;
         this.vv = null;
@@ -397,8 +423,9 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {MouseEvent} e - Click event.
-     * @returns {void} Suppresses the synthetic click that follows a handled touch press.
+     * Swallows the synthetic click after a handled touch press.
+     * @param {MouseEvent} e
+     * @returns {void}
      */
     __onDocClickCapture(e: MouseEvent): void {
         if (!this.suppressNextClick) return;
@@ -414,8 +441,10 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {TransitionEvent} e - Transition event.
-     * @returns {void} Finalises visual state changes after toolbar or Fn row animations complete.
+     * Finishes visibility bits after css transitions end.
+     * Also tidies the Fn row state when that animation is done.
+     * @param {TransitionEvent} e
+     * @returns {void}
      */
     __onTransitionEnd(e: TransitionEvent): void {
         const bar = this.bar;
@@ -430,6 +459,7 @@ export class keyboardEmu {
             } else if (bar.classList.contains("kb-hidden")) {
                 bar.style.setProperty("--toolbar-z", String(keyboardEmu.HIDDEN_Z));
             }
+
             return;
         }
 
@@ -443,21 +473,25 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {string} id - Element id.
-     * @returns {Promise<void>} Resolves when an element with the given id exists.
+     * Waits until an element with this id exists in the DOM.
+     * @param {string} id
+     * @returns {Promise<void>}
      */
-    async __waitForElementById(id: string): Promise<void> {
+    async __waitEl(id: string): Promise<void> {
         while (!document.getElementById(id)) {
             await nextFrame();
         }
     }
 
     /**
-     * @returns {EnsureCssResult} The stylesheet link and whether it was injected by this instance.
+     * Makes sure the css link is there.
+     * @returns {CssRes}
      */
-    __ensureKeyboardCSS(): EnsureCssResult {
+    __ensCss(): CssRes {
         const existing = document.getElementById(keyboardEmu.CSS_LINK_ID);
-        if (existing && existing.tagName === "LINK") return { link: existing as HTMLLinkElement, injected: false };
+        if (existing && existing.tagName === "LINK") {
+            return { link: existing as HTMLLinkElement, injected: false };
+        }
 
         const link = document.createElement("link");
         link.id = keyboardEmu.CSS_LINK_ID;
@@ -465,14 +499,16 @@ export class keyboardEmu {
         link.href = this.cssUrl;
         link.setAttribute("data-owner", "keyboard-emu");
         document.head.appendChild(link);
+
         return { link, injected: true };
     }
 
     /**
-     * @param {HTMLDivElement} bar - Toolbar element.
-     * @returns {Promise<void>} Loads and injects the keyboard HTML into the toolbar.
+     * Fetches and injects the keyboard html.
+     * @param {HTMLDivElement} bar
+     * @returns {Promise<void>}
      */
-    async __injectKeyboardHTML(bar: HTMLDivElement): Promise<void> {
+    async __injHtml(bar: HTMLDivElement): Promise<void> {
         const res = await fetch(this.htmlUrl, { credentials: "same-origin" });
         if (!res.ok) throw new Error(`Failed to load ${this.htmlUrl} (${res.status})`);
 
@@ -480,15 +516,17 @@ export class keyboardEmu {
         bar.innerHTML = html;
 
         document.body.appendChild(bar);
-        await this.__waitForElementById(keyboardEmu.MARKER_ID);
+        await this.__waitEl(keyboardEmu.MARKER_ID);
     }
 
     /**
-     * @param {HTMLElement} bar - Toolbar element.
-     * @returns {void} Applies mobile or desktop text labels to responsive button content.
+     * Applies mobile or desktop labels to responsive bits.
+     * @param {HTMLElement} bar
+     * @returns {void}
      */
-    __applyResponsiveLabels(bar: HTMLElement): void {
+    __setLabels(bar: HTMLElement): void {
         const nodes = bar.querySelectorAll<HTMLElement>("[data-mobile-text][data-desktop-text]");
+
         for (const el of nodes) {
             const m = el.getAttribute("data-mobile-text") || "";
             const d = el.getAttribute("data-desktop-text") || "";
@@ -497,34 +535,39 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {number} n - Value to clamp.
-     * @param {number} min - Minimum.
-     * @param {number} max - Maximum.
-     * @returns {number} The clamped value.
+     * Tiny number clamp.
+     * @param {number} n
+     * @param {number} min
+     * @param {number} max
+     * @returns {number}
      */
     __clamp(n: number, min: number, max: number): number {
         return Math.max(min, Math.min(max, n));
     }
 
     /**
-     * @param {string} name - CSS variable name.
-     * @param {number} v - Pixel value.
-     * @returns {void} Sets a CSS custom property on the toolbar using pixel units.
+     * Writes a px css var onto the toolbar root.
+     * @param {string} name
+     * @param {number} v
+     * @returns {void}
      */
     __setPxVar(name: string, v: number): void {
         this.bar!.style.setProperty(name, `${v.toFixed(2)}px`);
     }
 
     /**
-     * @param {unknown} el - Candidate element.
-     * @returns {boolean} Whether the provided element is editable.
+     * Says whether an element counts as editable for this tool.
+     * @param {unknown} el
+     * @returns {boolean}
      */
     __isEditable(el: unknown): boolean {
         if (!(el instanceof HTMLElement)) return false;
         if (el.isContentEditable) return true;
         if (el instanceof HTMLTextAreaElement) return true;
+
         if (el instanceof HTMLInputElement) {
             const t = (el.type || "").toLowerCase();
+
             return ![
                 "button",
                 "submit",
@@ -541,11 +584,13 @@ export class keyboardEmu {
                 "week"
             ].includes(t);
         }
+
         return false;
     }
 
     /**
-     * @returns {void} Refocuses the last known editable element without scrolling if possible.
+     * Refocuses the last editable if it still exists.
+     * @returns {void}
      */
     __refocusEditable(): void {
         const el = this.lastEditable;
@@ -560,7 +605,8 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Blurs the currently focused editable element if one is active.
+     * Blurs the active editable if one is focused.
+     * @returns {void}
      */
     __blurActiveEditable(): void {
         const a = document.activeElement;
@@ -573,96 +619,106 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {boolean} visible - Visibility flag.
-     * @returns {void} Applies the visual and interactive visibility state to the toolbar.
+     * Applies the visible/hidden state to the toolbar.
+     * @param {boolean} visible
+     * @returns {void}
      */
-    __applyVisibility(visible: boolean): void {
+    __setVis(visible: boolean): void {
         const bar = this.bar!;
         const wasVisible = this.toolbarVisible;
 
         this.toolbarVisible = visible;
 
-        if (visible) {
-            bar.style.setProperty("--toolbar-z", String(this.zIndex));
-            bar.style.pointerEvents = "auto";
-            (bar as unknown as { inert: boolean }).inert = false;
+        if (!visible) {
+            bar.classList.add("kb-hidden");
+            bar.style.pointerEvents = "none";
+            (bar as unknown as { inert: boolean }).inert = true;
 
-            window.requestAnimationFrame(() => {
-                if (!this.bar || !this.toolbarVisible) return;
-                this.bar.classList.remove("kb-hidden");
-                this.__schedule();
-            });
+            if (!wasVisible) {
+                bar.style.setProperty("--toolbar-z", String(keyboardEmu.HIDDEN_Z));
+            }
 
             return;
         }
 
-        bar.classList.add("kb-hidden");
-        bar.style.pointerEvents = "none";
-        (bar as unknown as { inert: boolean }).inert = true;
+        bar.style.setProperty("--toolbar-z", String(this.zIndex));
+        bar.style.pointerEvents = "auto";
+        (bar as unknown as { inert: boolean }).inert = false;
 
-        if (!wasVisible) {
-            bar.style.setProperty("--toolbar-z", String(keyboardEmu.HIDDEN_Z));
-        }
+        window.requestAnimationFrame(() => {
+            if (!this.bar || !this.toolbarVisible) return;
+
+            this.bar.classList.remove("kb-hidden");
+            this.__schedule();
+        });
     }
 
     /**
-     * @returns {void} Shows the toolbar if it is currently hidden.
+     * Shows the toolbar if it is not already showing.
+     * @returns {void}
      */
-    __showToolbar(): void {
+    __show(): void {
         if (this.toolbarVisible) return;
-        this.__applyVisibility(true);
+        this.__setVis(true);
         this.__schedule();
     }
 
     /**
-     * @returns {void} Hides the toolbar and clears all modifier state.
+     * Hides the toolbar and clears mods.
+     * @returns {void}
      */
-    __hideToolbar(): void {
+    __hide(): void {
         if (!this.toolbarVisible) return;
-        this.__applyVisibility(false);
+        this.__setVis(false);
         this.__clearMods();
     }
 
     /**
-     * @returns {Promise<void>} Updates toolbar visibility after focus has settled.
+     * Re-checks visibility after focus has settled a frame later.
+     * @returns {Promise<void>}
      */
-    async __updateVisibilityFromActive(): Promise<void> {
+    async __syncVisFromActive(): Promise<void> {
         await nextFrame();
 
         const a = document.activeElement;
         if ((this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(a)) {
             this.lastEditable = a as HTMLElement;
-            this.__showToolbar();
+            this.__show();
             return;
         }
 
-        this.__hideToolbar();
+        this.__hide();
     }
 
     /**
-     * @param {FocusEvent} e - Focus event.
-     * @returns {void} Shows the toolbar when an editable element receives focus.
+     * Focusin handler.
+     * shows the toolbar when an editable gains focus.
+     * @param {FocusEvent} e
+     * @returns {void}
      */
     __onFocusIn(e: FocusEvent): void {
         const t = e.target;
         if (!(this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(t)) return;
 
         this.lastEditable = t as HTMLElement;
-        this.__showToolbar();
+        this.__show();
     }
 
     /**
-     * @param {FocusEvent} _e - Focus event.
-     * @returns {void} Re-evaluates visibility when focus leaves an element.
+     * Focusout handler.
+     * lets the next frame decide if toolbar should stay.
+     * @param {FocusEvent} _e
+     * @returns {void}
      */
     __onFocusOut(_e: FocusEvent): void {
-        void this.__updateVisibilityFromActive();
+        void this.__syncVisFromActive();
     }
 
     /**
-     * @returns {void} Applies stacked labels to buttons whose inline content no longer fits.
+     * Adds stacked labels when button content no longer fits in one row.
+     * @returns {void}
      */
-    __applyStackingIfNeeded(): void {
+    __stackIfNeeded(): void {
         const buttons = this.bar!.querySelectorAll<HTMLButtonElement>("button");
 
         for (const btn of buttons) {
@@ -685,9 +741,10 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Fits the keyboard to the available mobile width.
+     * Fits the keyboard to mobile width.
+     * @returns {void}
      */
-    __fitToWidthMobile(): void {
+    __fitMobile(): void {
         const cs = getComputedStyle(this.bar!);
         const padL = parseFloat(cs.paddingLeft) || 0;
         const padR = parseFloat(cs.paddingRight) || 0;
@@ -720,9 +777,10 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Fits the keyboard to the available desktop width using the first preset that fits.
+     * Fits the keyboard to desktop width using the first preset that works.
+     * @returns {void}
      */
-    __fitToWidthDesktop(): void {
+    __fitDesk(): void {
         const cs = getComputedStyle(this.bar!);
         const padL = parseFloat(cs.paddingLeft) || 0;
         const padR = parseFloat(cs.paddingRight) || 0;
@@ -745,17 +803,19 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Chooses the correct width fitting strategy for the current device mode.
+     * Picks the right width-fit strategy.
+     * @returns {void}
      */
-    __fitToWidth(): void {
-        if (this.isMobile) this.__fitToWidthMobile();
-        else this.__fitToWidthDesktop();
+    __fit(): void {
+        if (this.isMobile) this.__fitMobile();
+        else this.__fitDesk();
     }
 
     /**
-     * @returns {void} Scales the Fn row horizontally if it would overflow the toolbar width.
+     * Scales the Fn row down if it would overflow.
+     * @returns {void}
      */
-    __fitFnRowToWidth(): void {
+    __fitFn(): void {
         const wrap = this.bar!.querySelector(".fn-grid-wrap") as HTMLElement | null;
         const grid = this.bar!.querySelector(".fn-grid") as HTMLElement | null;
         if (!wrap || !grid) return;
@@ -779,10 +839,11 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {KeyboardMods} m - Modifier state.
-     * @returns {number} The xterm modifier parameter for the provided modifiers.
+     * Computes the xterm modifier param from current mods.
+     * @param {Mods} m
+     * @returns {number}
      */
-    __xtermModParam(m: KeyboardMods): number {
+    __xMod(m: Mods): number {
         return (
             1 +
             (m.shift ? 1 : 0) +
@@ -793,10 +854,12 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {string} ch - Character to ctrlify.
-     * @returns {string} The control character for the provided input, or an empty string if unsupported.
+     * Turns a character into its ctrl version if possible.
+     * Empty string means nope.
+     * @param {string} ch
+     * @returns {string}
      */
-    __ctrlify(ch: string): string {
+    __ctrl(ch: string): string {
         if (ch === " ") return "\x00";
 
         const c = ch.length ? ch.charCodeAt(0) : 0;
@@ -818,10 +881,11 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {string} ch - Single character.
-     * @returns {string} The character after applying Shift rules.
+     * Applies shifted character rules.
+     * @param {string} ch
+     * @returns {string}
      */
-    __applyShiftToChar(ch: string): string {
+    __shiftChar(ch: string): string {
         if (ch.length !== 1) return ch;
 
         const code = ch.charCodeAt(0);
@@ -831,11 +895,12 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {string} key - Key identifier.
-     * @param {KeyboardMods} m - Modifier state.
-     * @returns {string} The escape sequence corresponding to the given key and modifiers.
+     * Builds the sequence for a given key + mods combo.
+     * @param {string} key
+     * @param {Mods} m
+     * @returns {string}
      */
-    __seqFor(key: string, m: KeyboardMods): string {
+    __seq(key: string, m: Mods): string {
         if (m.fn && key === "Backspace") key = "Delete";
 
         if (key === "Escape") return "\x1b";
@@ -850,7 +915,7 @@ export class keyboardEmu {
         if (key === "Backspace") return "\x7f";
 
         if (key === "Delete") {
-            const mod = this.__xtermModParam(m);
+            const mod = this.__xMod(m);
             return mod === 1 ? "\x1b[3~" : `\x1b[3;${mod}~`;
         }
 
@@ -865,7 +930,7 @@ export class keyboardEmu {
 
         if (/^F(1[0-2]|[1-9])$/.test(key)) {
             const n = parseInt(key.slice(1), 10);
-            const mod = this.__xtermModParam(m);
+            const mod = this.__xMod(m);
             const plain = mod === 1;
 
             if (n >= 1 && n <= 4) {
@@ -889,7 +954,7 @@ export class keyboardEmu {
             return plain ? `\x1b[${base}~` : `\x1b[${base};${mod}~`;
         }
 
-        const mod = this.__xtermModParam(m);
+        const mod = this.__xMod(m);
         const plain = mod === 1;
 
         if (key === "ArrowUp") return plain ? "\x1b[A" : `\x1b[1;${mod}A`;
@@ -900,12 +965,14 @@ export class keyboardEmu {
         if (key.length === 1) {
             let k = key;
 
-            if (m.shift && !m.ctrl) k = this.__applyShiftToChar(k);
+            if (m.shift && !m.ctrl) {
+                k = this.__shiftChar(k);
+            }
 
             let s = k;
 
             if (m.ctrl) {
-                const c = this.__ctrlify(k);
+                const c = this.__ctrl(k);
                 if (!c) return "";
                 s = c;
             }
@@ -920,10 +987,16 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Synchronises the visual pressed state of modifier buttons and Fn row classes.
+     * Updates pressed states and Fn classes.
+     * @returns {void}
      */
-    __syncButtons(): void {
-        const set = (name: ModName): void => {
+    __syncBtns(): void {
+        /**
+         * Syncs one modifier button.
+         * @param {ModKey} name
+         * @returns {void}
+         */
+        const set = (name: ModKey): void => {
             const b = this.bar!.querySelector(`button[data-mod="${name}"]`) as HTMLButtonElement | null;
             if (!b) return;
 
@@ -958,7 +1031,8 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Clears one-shot modifiers while preserving Fn.
+     * Clears one-shot modifiers but leaves Fn alone.
+     * @returns {void}
      */
     __clearOneShotMods(): void {
         const hadOneShot = this.mods.ctrl || this.mods.alt || this.mods.meta || this.mods.shift;
@@ -968,11 +1042,12 @@ export class keyboardEmu {
         this.mods.alt = false;
         this.mods.meta = false;
         this.mods.shift = false;
-        this.__syncButtons();
+        this.__syncBtns();
     }
 
     /**
-     * @returns {void} Clears all modifiers including Fn.
+     * Clears all modifiers, Fn included.
+     * @returns {void}
      */
     __clearMods(): void {
         this.mods.ctrl = false;
@@ -980,24 +1055,27 @@ export class keyboardEmu {
         this.mods.meta = false;
         this.mods.shift = false;
         this.mods.fn = false;
-        this.__syncButtons();
+        this.__syncBtns();
     }
 
     /**
-     * @param {ModName} name - Modifier name.
-     * @returns {void} Toggles the named modifier and refreshes button state.
+     * Toggles a modifier and refreshes button state.
+     * @param {ModKey} name
+     * @returns {void}
      */
-    __toggleMod(name: ModName): void {
+    __tglMod(name: ModKey): void {
         this.mods[name] = !this.mods[name];
-        this.__syncButtons();
+        this.__syncBtns();
     }
 
     /**
-     * @param {string} key - Key identifier.
-     * @returns {void} Sends the key sequence and clears only one-shot modifiers afterwards.
+     * Sends one key and clears one-shot mods afterwards.
+     * Escape is special and hides the toolbar.
+     * @param {string} key
+     * @returns {void}
      */
-    __fireKey(key: string): void {
-        const seq = this.__seqFor(key, this.mods);
+    __fire(key: string): void {
+        const seq = this.__seq(key, this.mods);
         if (!seq) return;
 
         this.send!({ key, seq, mods: { ...this.mods } });
@@ -1005,7 +1083,7 @@ export class keyboardEmu {
         if (key === "Escape") {
             this.skipNextRefocus = true;
             this.__blurActiveEditable();
-            this.__hideToolbar();
+            this.__hide();
             return;
         }
 
@@ -1013,33 +1091,37 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {Element} btn - Button element.
-     * @returns {void} Handles modifier toggles and normal key presses for toolbar buttons.
+     * Handles a toolbar button press.
+     * either toggles a mod or fires a key.
+     * @param {Element} btn
+     * @returns {void}
      */
-    __handleButtonPress(btn: Element): void {
+    __press(btn: Element): void {
         const mod = btn.getAttribute("data-mod");
         if (mod === "ctrl" || mod === "alt" || mod === "meta" || mod === "shift" || mod === "fn") {
-            this.__toggleMod(mod);
+            this.__tglMod(mod);
             return;
         }
 
         const key = btn.getAttribute("data-key");
         if (!key) return;
 
-        this.__fireKey(key);
+        this.__fire(key);
     }
 
     /**
-     * @param {TouchEvent} e - Touch event.
-     * @returns {void} Prevents scroll gestures while touching the toolbar.
+     * Prevents toolbar touches from scrolling the page underneath.
+     * @param {TouchEvent} e
+     * @returns {void}
      */
     __onTouchMove(e: TouchEvent): void {
         e.preventDefault();
     }
 
     /**
-     * @param {PointerEvent} e - Pointer event.
-     * @returns {void} Handles touch presses on toolbar buttons while keeping focus on the editable target.
+     * Handles touch presses while keeping focus on the editable.
+     * @param {PointerEvent} e
+     * @returns {void}
      */
     __onPointerDownCapture(e: PointerEvent): void {
         if (!this.isMobile) return;
@@ -1057,7 +1139,7 @@ export class keyboardEmu {
         if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
         this.suppressNextClick = true;
 
-        this.__handleButtonPress(btn);
+        this.__press(btn);
 
         if (this.skipNextRefocus) {
             this.skipNextRefocus = false;
@@ -1068,8 +1150,9 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {MouseEvent} e - Click event.
-     * @returns {void} Handles mouse clicks on toolbar buttons.
+     * Handles mouse clicks on toolbar buttons.
+     * @param {MouseEvent} e
+     * @returns {void}
      */
     __onClick(e: MouseEvent): void {
         if (this.suppressNextClick) {
@@ -1085,7 +1168,7 @@ export class keyboardEmu {
         const btn = t.closest("button") as HTMLButtonElement | null;
         if (!btn) return;
 
-        this.__handleButtonPress(btn);
+        this.__press(btn);
 
         if (this.skipNextRefocus) {
             this.skipNextRefocus = false;
@@ -1096,8 +1179,9 @@ export class keyboardEmu {
     }
 
     /**
-     * @param {Event} e - Event.
-     * @returns {void} Intercepts text input while modifiers are armed.
+     * Intercepts beforeinput while modifiers are armed.
+     * @param {Event} e
+     * @returns {void}
      */
     __onBeforeInputCapture(e: Event): void {
         if (!this.mods.ctrl && !this.mods.alt && !this.mods.meta && !this.mods.shift && !this.mods.fn) return;
@@ -1107,7 +1191,7 @@ export class keyboardEmu {
         const data = typeof e.data === "string" ? e.data : "";
 
         if (type === "insertText" && data.length === 1) {
-            const seq = this.__seqFor(data, this.mods);
+            const seq = this.__seq(data, this.mods);
             if (!seq) return;
 
             e.preventDefault();
@@ -1118,7 +1202,7 @@ export class keyboardEmu {
         }
 
         if (type === "insertLineBreak" || type === "insertParagraph") {
-            const seq = this.__seqFor("Enter", this.mods);
+            const seq = this.__seq("Enter", this.mods);
             if (!seq) return;
 
             e.preventDefault();
@@ -1128,21 +1212,22 @@ export class keyboardEmu {
             return;
         }
 
-        if (type === "deleteContentBackward") {
-            const key = this.mods.fn ? "Delete" : "Backspace";
-            const seq = this.__seqFor("Backspace", this.mods);
-            if (!seq) return;
+        if (type !== "deleteContentBackward") return;
 
-            e.preventDefault();
-            e.stopPropagation();
-            this.send!({ key, seq, mods: { ...this.mods } });
-            this.__clearOneShotMods();
-        }
+        const key = this.mods.fn ? "Delete" : "Backspace";
+        const seq = this.__seq("Backspace", this.mods);
+        if (!seq) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        this.send!({ key, seq, mods: { ...this.mods } });
+        this.__clearOneShotMods();
     }
 
     /**
-     * @param {KeyboardEvent} e - Keyboard event.
-     * @returns {void} Intercepts physical key presses while modifiers are armed.
+     * Intercepts physical key presses while modifiers are armed.
+     * @param {KeyboardEvent} e
+     * @returns {void}
      */
     __onKeyDownCapture(e: KeyboardEvent): void {
         if (!this.mods.ctrl && !this.mods.alt && !this.mods.meta && !this.mods.shift && !this.mods.fn) return;
@@ -1150,7 +1235,7 @@ export class keyboardEmu {
         const k = e.key;
         if (k === "Alt" || k === "Control" || k === "Meta" || k === "Shift") return;
 
-        const seq = this.__seqFor(k, this.mods);
+        const seq = this.__seq(k, this.mods);
         if (!seq) return;
 
         e.preventDefault();
@@ -1160,7 +1245,8 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Positions the toolbar against the bottom edge of the visual viewport.
+     * Positions the toolbar against the bottom edge of the visual viewport.
+     * @returns {void}
      */
     __place(): void {
         const bar = this.bar!;
@@ -1177,7 +1263,8 @@ export class keyboardEmu {
     }
 
     /**
-     * @returns {void} Schedules a layout pass on the next animation frame.
+     * Schedules a layout pass on the next frame.
+     * @returns {void}
      */
     __schedule(): void {
         if (!this.bar) return;
@@ -1185,9 +1272,9 @@ export class keyboardEmu {
 
         this.raf = window.requestAnimationFrame(() => {
             this.raf = 0;
-            this.__fitToWidth();
-            this.__fitFnRowToWidth();
-            this.__applyStackingIfNeeded();
+            this.__fit();
+            this.__fitFn();
+            this.__stackIfNeeded();
             this.__place();
         });
     }

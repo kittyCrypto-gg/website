@@ -1,0 +1,319 @@
+/* =========================================
+    Module: Notices
+========================================= */
+
+:root {
+    --ntcs-min-width: 800px;
+    --ntcs-max-width: min(64rem, calc(100vw - 2rem));
+    --ntcs-max-height: min(75vh, 46rem);
+
+    --ntcs-pad: clamp(0.75rem, 1.4vw, 1rem);
+    --ntcs-gap: clamp(0.75rem, 1.6vw, 1rem);
+    --ntcs-card-radius: clamp(0.625rem, 1vw, 0.875rem);
+
+    --ntcs-card-pad: 1rem;
+    --ntcs-hdr-gap: 0.75rem;
+    --ntcs-hdr-hover-pad: 0.5rem;
+    --ntcs-hdr-hover-radius: 999px;
+
+    --ntcs-card-border: color-mix(in srgb, var(--nav-border-colour) 26%, transparent);
+    --ntcs-card-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--frame-bg-colour));
+    --ntcs-card-bg-alt: color-mix(in srgb, var(--chatroom-bg-colour) 72%, var(--frame-bg-colour));
+    --ntcs-card-shadow: var(--frame-box-shadow);
+
+    --ntcs-meta-bg: color-mix(in srgb, var(--menu-button-bg-colour) 24%, transparent);
+    --ntcs-meta-bd: color-mix(in srgb, var(--nav-border-colour) 18%, transparent);
+    --ntcs-meta-lbl: var(--header-text-colour);
+
+    --ntcs-title: var(--header-text-colour);
+    --ntcs-stamp: var(--timestamp-colour);
+    --ntcs-focus: color-mix(in srgb, var(--banner-blue) 55%, transparent);
+    --ntcs-window-bg: color-mix(in srgb, var(--frame-bg-colour) 94%, transparent);
+
+    --ntcs-hover-border: color-mix(in srgb, var(--banner-blue) 35%, var(--ntcs-card-border));
+    --ntcs-hover-hdr-bg: color-mix(in srgb, var(--banner-blue) 8%, transparent);
+    --ntcs-hover-hdr-ring: 0 0 0 1px color-mix(in srgb, var(--banner-blue) 18%, transparent);
+    --ntcs-hover-title: color-mix(in srgb, var(--banner-blue) 28%, var(--ntcs-title));
+    --ntcs-hover-title-glow: 0 0 0.45rem color-mix(in srgb, var(--banner-blue) 16%, transparent);
+    --ntcs-hover-arr-glow: drop-shadow(0 0 0.3rem color-mix(in srgb, var(--banner-blue) 24%, transparent));
+    --ntcs-hover-stamp: color-mix(in srgb, var(--banner-blue) 22%, var(--ntcs-stamp));
+
+    --ntcs-card-lift-y: -1px;
+    --ntcs-hdr-lift-y: -1px;
+    --ntcs-hdr-scale: 1.01;
+    --ntcs-arr-scale: 1.08;
+
+    --ntcs-card-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --ntcs-hdr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --ntcs-card-dur: 0.24s;
+    --ntcs-hdr-dur: 0.22s;
+}
+
+.ntcs-window {
+    width: 100%;
+    max-width: 100%;
+    background: var(--ntcs-window-bg);
+
+    &.window-frame {
+        width: var(--ntcs-max-width);
+        min-width: var(--ntcs-min-width);
+        max-width: var(--ntcs-max-width);
+        max-height: var(--ntcs-max-height);
+    }
+
+    &.window-frame.floating,
+    &.window-frame.maximised {
+        width: var(--ntcs-max-width);
+        min-width: var(--ntcs-min-width);
+        max-width: var(--ntcs-max-width);
+    }
+
+    .window-body {
+        overflow: hidden auto;
+    }
+
+    [data-window-content-root="true"] {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        min-width: 0;
+    }
+}
+
+.ntcs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ntcs-gap);
+    padding: var(--ntcs-pad);
+    min-width: 0;
+
+    &__lst {
+        display: flex;
+        flex-direction: column;
+        gap: var(--ntcs-gap);
+        min-width: 0;
+    }
+}
+
+.ntcs-card {
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    border-radius: var(--ntcs-card-radius);
+    border: 1px solid var(--ntcs-card-border);
+    background: var(--ntcs-card-bg);
+    box-shadow: var(--ntcs-card-shadow);
+    min-width: 0;
+    padding: var(--ntcs-card-pad);
+    box-sizing: border-box;
+    transition:
+        background var(--ntcs-card-dur) var(--ntcs-card-ease),
+        border-color var(--ntcs-card-dur) var(--ntcs-card-ease),
+        transform var(--ntcs-card-dur) var(--ntcs-card-ease);
+
+    &:nth-child(even) {
+        background: var(--ntcs-card-bg-alt);
+    }
+
+    &:hover {
+        border-color: var(--ntcs-hover-border);
+        transform: translateY(var(--ntcs-card-lift-y));
+    }
+
+    &:hover .ntcs-card__hdr {
+        transform: translateY(var(--ntcs-hdr-lift-y));
+        background: var(--ntcs-hover-hdr-bg);
+        box-shadow: var(--ntcs-hover-hdr-ring);
+        border-radius: var(--ntcs-hdr-hover-radius);
+        /* padding: var(--ntcs-hdr-hover-pad); */
+    }
+
+    &:hover .ntcs-card__ttl {
+        color: var(--ntcs-hover-title);
+        text-shadow: var(--ntcs-hover-title-glow);
+    }
+
+    &:hover .ntcs-card__arr {
+        transform: scale(var(--ntcs-arr-scale));
+        filter: var(--ntcs-hover-arr-glow);
+    }
+
+    &:hover .ntcs-card__st {
+        color: var(--ntcs-hover-stamp);
+    }
+
+    &__tgl {
+        display: block;
+        cursor: inherit;
+        outline: none;
+        min-width: 0;
+        user-select: none;
+    }
+
+    &__tgl:focus-visible {
+        box-shadow: inset 0 0 0 2px var(--ntcs-focus);
+    }
+
+    &__hdr {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--ntcs-hdr-gap);
+        min-width: 0;
+        padding: 0;
+        border-radius: calc(var(--ntcs-card-radius) - 0.2rem);
+        transition:
+            transform var(--ntcs-hdr-dur) var(--ntcs-hdr-ease),
+            background var(--ntcs-hdr-dur) var(--ntcs-hdr-ease),
+            box-shadow var(--ntcs-hdr-dur) var(--ntcs-hdr-ease),
+            padding var(--ntcs-hdr-dur) var(--ntcs-hdr-ease),
+            border-radius var(--ntcs-hdr-dur) var(--ntcs-hdr-ease);
+    }
+
+    &__arr {
+        flex: 0 0 auto;
+        line-height: 1;
+        transition:
+            transform var(--ntcs-hdr-dur) var(--ntcs-hdr-ease),
+            filter var(--ntcs-hdr-dur) var(--ntcs-hdr-ease);
+    }
+
+    &__ttl {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 700;
+        color: var(--ntcs-title);
+        font-size: 1rem;
+        transition:
+            color var(--ntcs-hdr-dur) var(--ntcs-hdr-ease),
+            text-shadow var(--ntcs-hdr-dur) var(--ntcs-hdr-ease);
+    }
+
+    &__st {
+        flex: 0 0 auto;
+        color: var(--ntcs-stamp);
+        font-size: 0.84rem;
+        line-height: 1.35;
+        text-align: right;
+        white-space: nowrap;
+        transition: color var(--ntcs-hdr-dur) var(--ntcs-hdr-ease);
+    }
+
+    &__cnt {
+        text-align: left;
+        color: var(--body-text-colour);
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        margin-top: 0;
+        transition:
+            max-height 0.25s ease,
+            opacity 0.18s ease,
+            visibility 0s linear 0.25s,
+            margin-top 0.25s ease;
+
+        &.content-collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            margin-top: 0;
+
+            >.ntcs-card__meta,
+            >.ntcs-card__txt {
+                display: none;
+            }
+        }
+
+        &.content-expanded {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            margin-top: 1rem;
+            transition:
+                max-height 0.25s ease,
+                opacity 0.18s ease,
+                visibility 0s linear 0s,
+                margin-top 0.25s ease;
+
+            >.ntcs-card__meta {
+                display: grid;
+            }
+
+            >.ntcs-card__txt {
+                display: flex;
+            }
+        }
+    }
+
+    &__meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+        padding: 0 0 0.85rem;
+    }
+
+    &__metaRow {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        min-width: 0;
+        padding: 0.55rem 0.65rem;
+        border-radius: 0.7rem;
+        background: var(--ntcs-meta-bg);
+        border: 1px solid var(--ntcs-meta-bd);
+
+        time {
+            font-size: 0.9rem;
+            color: var(--body-text-colour);
+        }
+    }
+
+    &__metaLbl {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--ntcs-meta-lbl);
+    }
+
+    &__txt {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0;
+        line-height: 1.55;
+
+        p {
+            margin: 0;
+        }
+    }
+}
+
+@media (max-width: 900px) {
+    .ntcs-card {
+        &__hdr {
+            grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        &__st {
+            grid-column: 2;
+            text-align: left;
+            white-space: normal;
+        }
+
+        &__meta {
+            grid-template-columns: 1fr;
+        }
+
+        &__cnt.content-expanded {
+            >.ntcs-card__meta {
+                display: grid;
+            }
+        }
+    }
+}

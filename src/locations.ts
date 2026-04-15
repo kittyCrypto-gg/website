@@ -1,617 +1,642 @@
 import * as helpers from "./helpers.ts";
 
-interface LocationApiOptions {
-    selectElement: HTMLSelectElement
-    flagElement: HTMLElement
-    locationsUrl: string
-    flagsBaseUrl: string
-    mostFrequentKeys?: string[]
-    regionOrder?: readonly string[]
-    regionLabels?: Readonly<Record<string, string>>
-    placeholderLabel?: string
-    emptyFlagLabel?: string
+interface Opts {
+    selectElement: HTMLSelectElement;
+    flagElement: HTMLElement;
+    locationsUrl: string;
+    flagsBaseUrl: string;
+    mostFrequentKeys?: string[];
+    regionOrder?: readonly string[];
+    regionLabels?: Readonly<Record<string, string>>;
+    placeholderLabel?: string;
+    emptyFlagLabel?: string;
 }
 
-interface LocationApiLocation {
-    localName: string
-    flag: string
+interface Loc {
+    localName: string;
+    flag: string;
 }
 
-interface LocationApiFlagRenderResult {
-    locationKey: string
-    label: string
-    flagCode: string
-    flagUrl: string
+interface FlagRes {
+    locationKey: string;
+    label: string;
+    flagCode: string;
+    flagUrl: string;
 }
 
-type RegionDataset = Record<string, Record<string, LocationDatasetEntry>>
+type Regions = Record<string, Record<string, Row>>;
 
-interface LocationDatasetEntry {
-    local_name: string
-    emoji: string
+interface Row {
+    local_name: string;
+    emoji: string;
 }
 
-const DEFAULT_REGION_ORDER = [
-    'africa',
-    'america',
-    'asia',
-    'europe',
-    'oceania'
-] as const
+const DEF_REG_ORDER = [
+    "africa",
+    "america",
+    "asia",
+    "europe",
+    "oceania"
+] as const;
 
-const DEFAULT_REGION_LABELS: Readonly<Record<string, string>> = {
-    africa: 'Africa',
-    america: 'America',
-    asia: 'Asia',
-    europe: 'Europe',
-    oceania: 'Oceania'
-}
+const DEF_REG_LABELS: Readonly<Record<string, string>> = {
+    africa: "Africa",
+    america: "America",
+    asia: "Asia",
+    europe: "Europe",
+    oceania: "Oceania"
+};
 
-const DEFAULT_MOST_FREQUENT_KEYS = [
-    'scotland',
-    'england',
-    'wales',
-    'northern ireland',
-    'united states of america',
-    'japan',
-    'spain',
-    'argentina'
-] as const
+const DEF_TOP_KEYS = [
+    "scotland",
+    "england",
+    "wales",
+    "northern ireland",
+    "united states of america",
+    "japan",
+    "spain",
+    "argentina"
+] as const;
 
 export class locApi {
-    private readonly selectElement: HTMLSelectElement
-    private readonly flagElement: HTMLElement
-    private readonly locationsUrl: string
-    private readonly flagsBaseUrl: string
-    private readonly mostFrequentKeys: readonly string[]
-    private readonly regionOrder: readonly string[]
-    private readonly regionLabels: Readonly<Record<string, string>>
-    private readonly placeholderLabel: string
-    private readonly emptyFlagLabel: string
+    private readonly selEl: HTMLSelectElement;
+    private readonly flagEl: HTMLElement;
+    private readonly dataUrl: string;
+    private readonly flagsUrl: string;
+    private readonly topKeys: readonly string[];
+    private readonly regOrder: readonly string[];
+    private readonly regLabels: Readonly<Record<string, string>>;
+    private readonly phLabel: string;
+    private readonly emptyLabel: string;
 
-    private dataset: RegionDataset | null = null
-    private changeHandler: (() => void) | null = null
+    private data: Regions | null = null;
+    private onChg: (() => void) | null = null;
 
-    public constructor(options: LocationApiOptions) {
-        this.selectElement = options.selectElement
-        this.flagElement = options.flagElement
-        this.locationsUrl = options.locationsUrl
-        this.flagsBaseUrl = trimTrailingSlash(options.flagsBaseUrl)
-        this.mostFrequentKeys = options.mostFrequentKeys ?? DEFAULT_MOST_FREQUENT_KEYS
-        this.regionOrder = options.regionOrder ?? DEFAULT_REGION_ORDER
-        this.regionLabels = options.regionLabels ?? DEFAULT_REGION_LABELS
-        this.placeholderLabel = options.placeholderLabel ?? 'Select a location'
-        this.emptyFlagLabel = options.emptyFlagLabel ?? 'Select a location'
+    /**
+     * Wires the little api wrapper up.
+     * mostly just stores refs and defaults really.
+     * @param {Opts} options
+     * @returns {void}
+     */
+    public constructor(options: Opts) {
+        this.selEl = options.selectElement;
+        this.flagEl = options.flagElement;
+        this.dataUrl = options.locationsUrl;
+        this.flagsUrl = trimSlash(options.flagsBaseUrl);
+        this.topKeys = options.mostFrequentKeys ?? DEF_TOP_KEYS;
+        this.regOrder = options.regionOrder ?? DEF_REG_ORDER;
+        this.regLabels = options.regionLabels ?? DEF_REG_LABELS;
+        this.phLabel = options.placeholderLabel ?? "Select a location";
+        this.emptyLabel = options.emptyFlagLabel ?? "Select a location";
     }
 
     /**
-     * Loads the dataset, fills the dropdown, and binds the change listener.
-     *
+     * Loads the dataset, fills the select, hooks the change event.
+     * then paints the current flag if there is already a value sat there.
      * @returns {Promise<void>}
      */
     public async init(): Promise<void> {
-        this.dataset = await this.fetchLocations()
-        this.populateDropdown()
-        this.bindEvents()
+        this.data = await this.fetchData();
+        this.fill();
+        this.bind();
 
-        if (!this.selectElement.value) {
-            this.clearFlag()
-            return
+        if (!this.selEl.value) {
+            this.clearFlag();
+            return;
         }
 
-        await this.renderSelectedFlag(this.selectElement.value)
+        await this.show(this.selEl.value);
     }
 
     /**
-     * Removes listeners and clears internal state.
-     *
+     * Removes listeners and drops the cached dataset.
+     * small tidy-up job.
      * @returns {void}
      */
     public destroy(): void {
-        if (this.changeHandler) {
-            this.selectElement.removeEventListener('change', this.changeHandler)
-            this.changeHandler = null
+        if (this.onChg) {
+            this.selEl.removeEventListener("change", this.onChg);
+            this.onChg = null;
         }
 
-        this.dataset = null
+        this.data = null;
     }
 
     /**
-     * Reloads the remote locations dataset and redraws the dropdown.
-     *
+     * Re-fetches the locations json and rebuilds the dropdown.
+     * keeps the current value if it still exists.
      * @returns {Promise<void>}
      */
     public async reload(): Promise<void> {
-        const selectedLocationKey = this.selectElement.value
+        const selKey = this.selEl.value;
 
-        this.dataset = await this.fetchLocations()
-        this.populateDropdown()
+        this.data = await this.fetchData();
+        this.fill();
 
-        if (!selectedLocationKey) {
-            this.clearFlag()
-            return
+        if (!selKey) {
+            this.clearFlag();
+            return;
         }
 
-        const location = this.findLocation(selectedLocationKey)
-
-        if (!location) {
-            this.clearFlag()
-            return
+        const row = this.find(selKey);
+        if (!row) {
+            this.clearFlag();
+            return;
         }
 
-        this.selectElement.value = selectedLocationKey
-        await this.renderSelectedFlag(selectedLocationKey)
+        this.selEl.value = selKey;
+        await this.show(selKey);
     }
 
     /**
-     * Programmatically selects a location and renders its flag.
-     *
+     * Sets a location in code and updates the flag too.
+     * blank value clears it.
      * @param {string} locationKey
      * @returns {Promise<void>}
      */
     public async setValue(locationKey: string): Promise<void> {
-        this.ensureInitialised()
+        this.needInit();
 
         if (!locationKey) {
-            this.selectElement.value = ''
-            this.clearFlag()
-            return
+            this.selEl.value = "";
+            this.clearFlag();
+            return;
         }
 
-        const location = this.findLocation(locationKey)
-
-        if (!location) {
-            throw new Error(`Location not found in dataset: ${locationKey}`)
+        const row = this.find(locationKey);
+        if (!row) {
+            throw new Error(`Location not found in dataset: ${locationKey}`);
         }
 
-        this.selectElement.value = locationKey
-        await this.renderSelectedFlag(locationKey)
+        this.selEl.value = locationKey;
+        await this.show(locationKey);
     }
 
     /**
-     * Returns the currently selected location key.
-     *
+     * Gives back the currently selected key.
      * @returns {string}
      */
     public getValue(): string {
-        return this.selectElement.value
+        return this.selEl.value;
     }
 
     /**
-     * Returns a location from the loaded dataset.
-     *
+     * Looks up one location from the loaded dataset.
+     * returns null if it is missing.
      * @param {string} locationKey
-     * @returns {LocationApiLocation | null}
+     * @returns {Loc | null}
      */
-    public getLocation(locationKey: string): LocationApiLocation | null {
-        this.ensureInitialised()
+    public getLocation(locationKey: string): Loc | null {
+        this.needInit();
 
-        const location = this.findLocation(locationKey)
-
-        if (!location) {
-            return null
-        }
+        const row = this.find(locationKey);
+        if (!row) return null;
 
         return {
-            localName: location.local_name,
-            flag: location.emoji
-        }
+            localName: row.local_name,
+            flag: row.emoji
+        };
     }
 
     /**
-     * Clears the rendered flag host.
-     *
+     * Clears whatever is being shown in the flag slot.
      * @returns {void}
      */
     public clearFlag(): void {
-        this.flagElement.replaceChildren()
-        this.flagElement.textContent = this.emptyFlagLabel
+        this.flagEl.replaceChildren();
+        this.flagEl.textContent = this.emptyLabel;
     }
 
     /**
-     * Renders the flag for the currently selected value.
-     *
-     * @returns {Promise<LocationApiFlagRenderResult | null>}
+     * Re-renders the flag for the current select value.
+     * null when there is no value to show.
+     * @returns {Promise<FlagRes | null>}
      */
-    public async renderCurrentFlag(): Promise<LocationApiFlagRenderResult | null> {
-        const locationKey = this.selectElement.value
+    public async renderCurrentFlag(): Promise<FlagRes | null> {
+        const locationKey = this.selEl.value;
 
         if (!locationKey) {
-            this.clearFlag()
-            return null
+            this.clearFlag();
+            return null;
         }
 
-        return this.renderSelectedFlag(locationKey)
+        return this.show(locationKey);
     }
 
     /**
-     * Returns the resolved URL for a location's flag asset.
-     *
+     * Resolves the png url for a given location flag.
      * @param {string} locationKey
      * @returns {string}
      */
     public getFlagUrl(locationKey: string): string {
-        this.ensureInitialised()
+        this.needInit();
 
-        const location = this.findLocation(locationKey)
-
-        if (!location) {
-            throw new Error(`Location not found in dataset: ${locationKey}`)
+        const row = this.find(locationKey);
+        if (!row) {
+            throw new Error(`Location not found in dataset: ${locationKey}`);
         }
 
-        const flagCode = flagToCountryCode(location.emoji)
-
-        return `${this.flagsBaseUrl}/${flagCode}.png`
+        const code = toFlagCode(row.emoji);
+        return `${this.flagsUrl}/${code}.png`;
     }
 
     /**
-     * Builds the user-facing label for a location.
-     *
+     * Builds the user-facing label for one location.
      * @param {string} locationKey
      * @returns {string}
      */
     public getLabel(locationKey: string): string {
-        this.ensureInitialised()
+        this.needInit();
 
-        const location = this.findLocation(locationKey)
-
-        if (!location) {
-            throw new Error(`Location not found in dataset: ${locationKey}`)
+        const row = this.find(locationKey);
+        if (!row) {
+            throw new Error(`Location not found in dataset: ${locationKey}`);
         }
 
-        return buildLocationLabel(locationKey, location.local_name)
+        return mkLbl(locationKey, row.local_name);
     }
 
-    private bindEvents(): void {
-        if (this.changeHandler) {
-            this.selectElement.removeEventListener('change', this.changeHandler)
+    /**
+     * Hooks the select change event.
+     * if one was there already it gets replaced.
+     * @returns {void}
+     */
+    private bind(): void {
+        if (this.onChg) {
+            this.selEl.removeEventListener("change", this.onChg);
         }
 
-        this.changeHandler = () => {
-            void this.renderCurrentFlag()
-        }
+        this.onChg = () => {
+            void this.renderCurrentFlag();
+        };
 
-        this.selectElement.addEventListener('change', this.changeHandler)
+        this.selEl.addEventListener("change", this.onChg);
     }
 
-    private async fetchLocations(): Promise<RegionDataset> {
-        const response = await fetch(this.locationsUrl)
+    /**
+     * Fetches the raw locations json and normalises it.
+     * @returns {Promise<Regions>}
+     */
+    private async fetchData(): Promise<Regions> {
+        const response = await fetch(this.dataUrl);
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch ${this.locationsUrl} (${response.status})`)
+            throw new Error(`Failed to fetch ${this.dataUrl} (${response.status})`);
         }
 
-        const value: unknown = await response.json()
+        const value: unknown = await response.json();
 
         if (!helpers.isRecord(value)) {
-            throw new Error('Locations JSON must contain an object at the root')
+            throw new Error("Locations JSON must contain an object at the root");
         }
 
-        return normaliseRegionDataset(value)
+        return normData(value);
     }
 
-    private populateDropdown(): void {
-        this.ensureInitialised()
+    /**
+     * Rebuilds the dropdown from scratch.
+     * @returns {void}
+     */
+    private fill(): void {
+        this.needInit();
 
-        this.selectElement.replaceChildren()
-        this.appendPlaceholderOption()
-        this.appendMostFrequentGroup()
-        this.appendRegionGroups()
+        this.selEl.replaceChildren();
+        this.addPh();
+        this.addTop();
+        this.addRegs();
     }
 
-    private appendPlaceholderOption(): void {
-        const placeholder = document.createElement('option')
-        placeholder.value = ''
-        placeholder.textContent = this.placeholderLabel
-        this.selectElement.appendChild(placeholder)
+    /**
+     * Adds the empty placeholder option at the top.
+     * @returns {void}
+     */
+    private addPh(): void {
+        const ph = document.createElement("option");
+        ph.value = "";
+        ph.textContent = this.phLabel;
+        this.selEl.appendChild(ph);
     }
 
-    private appendMostFrequentGroup(): void {
-        const entries = this.mostFrequentKeys
+    /**
+     * Adds the "Most Frequent" optgroup if any of those keys exist.
+     * @returns {void}
+     */
+    private addTop(): void {
+        const items = this.topKeys
             .map((locationKey) => {
-                const location = this.findLocation(locationKey)
-
-                if (!location) {
-                    return null
-                }
+                const row = this.find(locationKey);
+                if (!row) return null;
 
                 return {
                     locationKey,
-                    location
-                }
+                    row
+                };
             })
-            .filter(notNull)
+            .filter(notNull);
 
-        if (entries.length === 0) {
-            return
+        if (items.length === 0) {
+            return;
         }
 
-        const group = document.createElement('optgroup')
-        group.label = 'Most Frequent'
+        const group = document.createElement("optgroup");
+        group.label = "Most Frequent";
 
-        for (const item of entries) {
-            const option = document.createElement('option')
-            option.value = item.locationKey
-            option.textContent = buildLocationLabel(item.locationKey, item.location.local_name)
-            group.appendChild(option)
+        for (const item of items) {
+            const option = document.createElement("option");
+            option.value = item.locationKey;
+            option.textContent = mkLbl(item.locationKey, item.row.local_name);
+            group.appendChild(option);
         }
 
-        this.selectElement.appendChild(group)
+        this.selEl.appendChild(group);
     }
 
-    private appendRegionGroups(): void {
-        if (!this.dataset) {
-            return
+    /**
+     * Adds all the regional optgroups in the configured order.
+     * skips empty or rubbish regions.
+     * @returns {void}
+     */
+    private addRegs(): void {
+        if (!this.data) {
+            return;
         }
 
-        for (const regionName of this.regionOrder) {
-            const regionEntries = this.dataset[regionName]
-
-            if (!helpers.isRecord(regionEntries)) {
-                continue
+        for (const regName of this.regOrder) {
+            const reg = this.data[regName];
+            if (!helpers.isRecord(reg)) {
+                continue;
             }
 
-            const sortedEntries = Object.entries(regionEntries)
-                .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey, 'en'))
+            const entries = Object.entries(reg)
+                .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey, "en"));
 
-            if (sortedEntries.length === 0) {
-                continue
+            if (entries.length === 0) {
+                continue;
             }
 
-            const group = document.createElement('optgroup')
-            group.label = this.regionLabels[regionName] ?? regionName
+            const group = document.createElement("optgroup");
+            group.label = this.regLabels[regName] ?? regName;
 
-            for (const [locationKey, location] of sortedEntries) {
-                const option = document.createElement('option')
-                option.value = locationKey
-                option.textContent = buildLocationLabel(locationKey, location.local_name)
-                group.appendChild(option)
+            for (const [locationKey, row] of entries) {
+                const option = document.createElement("option");
+                option.value = locationKey;
+                option.textContent = mkLbl(locationKey, row.local_name);
+                group.appendChild(option);
             }
 
-            this.selectElement.appendChild(group)
+            this.selEl.appendChild(group);
         }
     }
 
-    private findLocation(locationKey: string): LocationDatasetEntry | null {
-        if (!this.dataset) {
-            return null
+    /**
+     * Finds one row in the cached dataset.
+     * null if missing.
+     * @param {string} locationKey
+     * @returns {Row | null}
+     */
+    private find(locationKey: string): Row | null {
+        if (!this.data) {
+            return null;
         }
 
-        for (const regionName of this.regionOrder) {
-            const regionEntries = this.dataset[regionName]
-
-            if (!helpers.isRecord(regionEntries)) {
-                continue
+        for (const regName of this.regOrder) {
+            const reg = this.data[regName];
+            if (!helpers.isRecord(reg)) {
+                continue;
             }
 
-            const location = regionEntries[locationKey]
-
-            if (isLocationDatasetEntry(location)) {
-                return location
+            const row = reg[locationKey];
+            if (isRow(row)) {
+                return row;
             }
         }
 
-        return null
+        return null;
     }
 
-    private async renderSelectedFlag(locationKey: string): Promise<LocationApiFlagRenderResult> {
-        const location = this.findLocation(locationKey)
+    /**
+     * Renders a specific flag into the host element.
+     * also checks the asset exists before swapping it in.
+     * @param {string} locationKey
+     * @returns {Promise<FlagRes>}
+     */
+    private async show(locationKey: string): Promise<FlagRes> {
+        const row = this.find(locationKey);
 
-        if (!location) {
-            throw new Error(`Location not found in dataset: ${locationKey}`)
+        if (!row) {
+            throw new Error(`Location not found in dataset: ${locationKey}`);
         }
 
-        const flagCode = flagToCountryCode(location.emoji)
-        const flagUrl = `${this.flagsBaseUrl}/${flagCode}.png`
+        const code = toFlagCode(row.emoji);
+        const url = `${this.flagsUrl}/${code}.png`;
 
-        await assertAssetExists(flagUrl)
+        await needAsset(url);
 
-        const image = document.createElement('img')
-        image.src = flagUrl
-        image.alt = `${buildLocationLabel(locationKey, location.local_name)} flag`
+        const image = document.createElement("img");
+        image.src = url;
+        image.alt = `${mkLbl(locationKey, row.local_name)} flag`;
 
-        this.flagElement.replaceChildren(image)
+        this.flagEl.replaceChildren(image);
 
         return {
             locationKey,
-            label: buildLocationLabel(locationKey, location.local_name),
-            flagCode,
-            flagUrl
-        }
+            label: mkLbl(locationKey, row.local_name),
+            flagCode: code,
+            flagUrl: url
+        };
     }
 
-    private ensureInitialised(): void {
-        if (this.dataset) {
-            return
+    /**
+     * Throws if init was never called.
+     * saves the rest of the class from repeating itself too much.
+     * @returns {void}
+     */
+    private needInit(): void {
+        if (this.data) {
+            return;
         }
 
-        throw new Error('LocationApi has not been initialised. Call init() first.')
+        throw new Error("LocationApi has not been initialised. Call init() first.");
     }
 }
 
 /**
- * Creates and returns a LocationApi instance.
- *
- * @param {LocationApiOptions} options
+ * Tiny factory for the location api.
+ * @param {Opts} options
  * @returns {locApi}
  */
-export function createLocationApi(options: LocationApiOptions): locApi {
-    return new locApi(options)
+export function createLocationApi(options: Opts): locApi {
+    return new locApi(options);
 }
 
 /**
- * Verifies that a remote asset exists.
- *
+ * Makes sure an asset URL actually exists.
+ * throws if the fetch comes back bad.
  * @param {string} assetUrl
  * @returns {Promise<void>}
  */
-async function assertAssetExists(assetUrl: string): Promise<void> {
-    const response = await fetch(assetUrl)
+async function needAsset(assetUrl: string): Promise<void> {
+    const response = await fetch(assetUrl);
 
     if (response.ok) {
-        return
+        return;
     }
 
-    throw new Error(`Failed to fetch ${assetUrl} (${response.status})`)
+    throw new Error(`Failed to fetch ${assetUrl} (${response.status})`);
 }
 
 /**
- * Converts a region dataset value into a strongly typed dataset.
- *
+ * Normalises the raw dataset shape into the typed one we actually use.
+ * anything weird just gets skipped.
  * @param {unknown} value
- * @returns {RegionDataset}
+ * @returns {Regions}
  */
-function normaliseRegionDataset(value: unknown): RegionDataset {
+function normData(value: unknown): Regions {
     if (!helpers.isRecord(value)) {
-        throw new Error('Locations JSON must contain an object at the root')
+        throw new Error("Locations JSON must contain an object at the root");
     }
 
-    const dataset: RegionDataset = {}
+    const data: Regions = {};
 
-    for (const [regionName, regionValue] of Object.entries(value)) {
-        if (!helpers.isRecord(regionValue)) {
-            continue
+    for (const [regName, regValue] of Object.entries(value)) {
+        if (!helpers.isRecord(regValue)) {
+            continue;
         }
 
-        const regionEntries: Record<string, LocationDatasetEntry> = {}
+        const reg: Record<string, Row> = {};
 
-        for (const [locationKey, locationValue] of Object.entries(regionValue)) {
-            if (!isLocationDatasetEntry(locationValue)) {
-                continue
+        for (const [locationKey, locationValue] of Object.entries(regValue)) {
+            if (!isRow(locationValue)) {
+                continue;
             }
 
-            regionEntries[locationKey] = locationValue
+            reg[locationKey] = locationValue;
         }
 
-        dataset[regionName] = regionEntries
+        data[regName] = reg;
     }
 
-    return dataset
+    return data;
 }
 
 /**
- * Builds the display label for a location entry.
- *
+ * Builds the visible label for one location option.
+ * english name first, local name in brackets if it differs.
  * @param {string} locationKey
  * @param {string} localName
  * @returns {string}
  */
-function buildLocationLabel(locationKey: string, localName: string): string {
-    const englishName = formatEnglishName(locationKey)
+function mkLbl(locationKey: string, localName: string): string {
+    const englishName = fmtEng(locationKey);
 
-    return namesMatch(englishName, localName)
+    return sameName(englishName, localName)
         ? englishName
-        : `${englishName} (${localName})`
+        : `${englishName} (${localName})`;
 }
 
 /**
- * Checks whether two location names are effectively the same.
- *
+ * Checks if two names are basically the same after normalising.
  * @param {string} englishName
  * @param {string} localName
  * @returns {boolean}
  */
-function namesMatch(englishName: string, localName: string): boolean {
-    return normaliseName(englishName) === normaliseName(localName)
+function sameName(englishName: string, localName: string): boolean {
+    return normName(englishName) === normName(localName);
 }
 
 /**
- * Normalises a location name for comparison.
- *
+ * Normalises a name so comparisons are less fussy.
  * @param {string} value
  * @returns {string}
  */
-function normaliseName(value: string): string {
+function normName(value: string): string {
     return value
         .trim()
-        .toLocaleLowerCase('en')
+        .toLocaleLowerCase("en");
 }
 
 /**
- * Formats a dataset key into a title-cased English label.
- *
+ * Turns a dataset key into a nicer english label.
+ * pretty simple title-casing thing.
  * @param {string} value
  * @returns {string}
  */
-function formatEnglishName(value: string): string {
+function fmtEng(value: string): string {
     return value
-        .split(' ')
+        .split(" ")
         .filter(Boolean)
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
+        .join(" ");
 }
 
 /**
- * Converts a flag string into a lowercase ISO-style country code.
- *
+ * Turns a flag emoji into a lowercase country code-ish string.
  * @param {string} flag
  * @returns {string}
  */
-function flagToCountryCode(flag: string): string {
-    const symbols = Array.from(flag)
+function toFlagCode(flag: string): string {
+    const symbols = Array.from(flag);
 
     if (symbols.length === 0) {
-        throw new Error('Flag value is empty')
+        throw new Error("Flag value is empty");
     }
 
     return symbols
-        .map((symbol) => regionalIndicatorToAscii(symbol))
-        .join('')
-        .toLowerCase()
+        .map((symbol) => regToAsc(symbol))
+        .join("")
+        .toLowerCase();
 }
 
 /**
- * Converts a regional indicator symbol into its ASCII letter.
- *
+ * Converts one regional indicator symbol into its ASCII letter.
  * @param {string} symbol
  * @returns {string}
  */
-function regionalIndicatorToAscii(symbol: string): string {
-    const codePoint = symbol.codePointAt(0)
+function regToAsc(symbol: string): string {
+    const codePoint = symbol.codePointAt(0);
 
     if (!codePoint) {
-        throw new Error(`Invalid regional indicator symbol: ${symbol}`)
+        throw new Error(`Invalid regional indicator symbol: ${symbol}`);
     }
 
-    const asciiCode = codePoint - 127397
+    const asciiCode = codePoint - 127397;
 
     if (asciiCode < 65 || asciiCode > 90) {
-        throw new Error(`Symbol is not a regional indicator letter: ${symbol}`)
+        throw new Error(`Symbol is not a regional indicator letter: ${symbol}`);
     }
 
-    return String.fromCharCode(asciiCode)
+    return String.fromCharCode(asciiCode);
 }
 
 /**
- * Removes a trailing slash from a URL-like string.
- *
+ * Trims one trailing slash off a url-like string.
+ * just one, not a full cleanup mission.
  * @param {string} value
  * @returns {string}
  */
-function trimTrailingSlash(value: string): string {
-    return value.endsWith('/')
+function trimSlash(value: string): string {
+    return value.endsWith("/")
         ? value.slice(0, -1)
-        : value
+        : value;
 }
 
 /**
- * Checks whether a value is a valid location dataset entry.
- *
+ * Checks whether a value looks like a location row.
  * @param {unknown} value
- * @returns {value is LocationDatasetEntry}
+ * @returns {value is Row}
  */
-function isLocationDatasetEntry(value: unknown): value is LocationDatasetEntry {
+function isRow(value: unknown): value is Row {
     return helpers.isRecord(value)
-        && typeof value.emoji === 'string'
-        && typeof value.local_name === 'string'
+        && typeof value.emoji === "string"
+        && typeof value.local_name === "string";
 }
 
 /**
- * Narrows out null values from arrays.
- *
+ * Filters null out of arrays.
+ * nothing more exotic than that.
  * @param {T | null} value
  * @returns {value is T}
  */
 function notNull<T>(value: T | null): value is T {
-    return value !== null
+    return value !== null;
 }

@@ -1,0 +1,431 @@
+/* =========================================
+    Module: CRT Noise Control Desk UI
+========================================= */
+
+:root {
+    --crt-ui-shadow-colour: rgba(0, 0, 0, 0.35);
+    --crt-ui-group-border: rgba(255, 255, 255, 0.05);
+    --crt-ui-group-background: rgba(255, 255, 255, 0.02);
+    --crt-ui-status-background: rgba(111, 194, 255, 0.08);
+    --crt-ui-status-border: rgba(111, 194, 255, 0.18);
+    --crt-ui-range-track-start: #243142;
+    --crt-ui-range-track-end: #3e5570;
+    --crt-ui-range-thumb-background: #ffffff;
+
+    --crt-ui-radius: 16px;
+    --crt-ui-radius-sm: 10px;
+    --crt-ui-radius-md: 14px;
+    --crt-ui-radius-pill: 999px;
+    --crt-ui-border-width: 1px;
+    --crt-ui-thumb-border-width: 2px;
+
+    --crt-ui-modal-height: 100vh;
+
+    --crt-ui-layout-gap: 16px;
+    --crt-ui-controls-gap: 14px;
+    --crt-ui-title-gap: 6px;
+    --crt-ui-group-gap: 10px;
+    --crt-ui-button-row-gap: 8px;
+    --crt-ui-field-gap: 6px;
+    --crt-ui-label-gap: 10px;
+    --crt-ui-status-gap: 8px;
+    --crt-ui-status-grid-row-gap: 6px;
+    --crt-ui-status-grid-column-gap: 12px;
+    --crt-ui-footer-gap: 8px;
+
+    --crt-ui-controls-padding: 16px;
+    --crt-ui-controls-padding-compact: 12px;
+    --crt-ui-group-padding: 12px;
+    --crt-ui-group-padding-compact: 10px;
+    --crt-ui-status-padding: 12px;
+    --crt-ui-control-padding-block: 8px;
+    --crt-ui-control-padding-inline: 12px;
+
+    --crt-ui-control-min-height: 40px;
+    --crt-ui-range-height: 8px;
+    --crt-ui-range-thumb-size: 18px;
+
+    --crt-ui-title-font-size: clamp(1.1rem, 3.3cqi, 1.6rem);
+    --crt-ui-title-line-height: 1.08;
+    --crt-ui-body-font-size: clamp(0.84rem, 2.2cqi, 0.95rem);
+    --crt-ui-body-line-height: 1.42;
+    --crt-ui-section-title-font-size: 0.92rem;
+    --crt-ui-section-title-font-weight: 600;
+    --crt-ui-label-font-size: 0.88rem;
+    --crt-ui-status-title-font-size: 0.95rem;
+    --crt-ui-status-grid-font-size: 0.84rem;
+    --crt-ui-mobile-label-line-height: 1.2;
+
+    --crt-ui-button-hover-offset: -1px;
+    --crt-ui-button-transition-duration: 0.15s;
+    --crt-ui-button-transition-timing: ease;
+    --crt-ui-backdrop-blur: 8px;
+
+    --crt-ui-plot-mobile-height: clamp(18rem, 40vh, 24rem);
+    --crt-ui-plot-mobile-min-height: 18rem;
+
+    --crt-ui-layout-columns: minmax(0, 3fr) minmax(0, 4fr);
+    --crt-ui-button-row-columns-two: repeat(2, minmax(0, 1fr));
+    --crt-ui-status-grid-columns: repeat(2, minmax(0, 1fr));
+
+    --crt-ui-container-breakpoint-layout: 46rem;
+    --crt-ui-container-breakpoint-label: 620px;
+    --crt-ui-container-breakpoint-compact: 520px;
+}
+
+.crt-ui-modal {
+    --crt-ui-background: var(--frame-bg-colour);
+    --crt-ui-panel: var(--frame-bg-colour);
+    --crt-ui-panel-border: var(--nav-border-colour);
+    --crt-ui-text: var(--body-text-colour);
+    --crt-ui-muted: var(--timestamp-colour);
+    --crt-ui-accent: var(--accent);
+    --crt-ui-button: var(--menu-button-bg-colour);
+    --crt-ui-button-hover: var(--menu-button-hover-bg-colour);
+    --crt-ui-plot-background: var(--chatroom-bg-colour);
+    --crt-ui-shadow: 0 12px 30px var(--crt-ui-shadow-colour);
+
+    &,
+    & * {
+        box-sizing: border-box;
+    }
+
+    color-scheme: inherit;
+    color: var(--crt-ui-text);
+    font-family: Inter,
+    Arial,
+    sans-serif;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: var(--crt-ui-modal-height);
+    overflow: hidden;
+    container-type: inline-size;
+
+    & :is(.crt-ui__panel, .crt-ui__controls, .crt-ui__plotPanel, .crt-ui__plotCanvas) {
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    & .crt-ui__layout {
+        display: grid;
+        grid-template-columns: var(--crt-ui-layout-columns);
+        gap: var(--crt-ui-layout-gap);
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+        align-items: stretch;
+    }
+
+    & .crt-ui__panel {
+        background: var(--crt-ui-panel);
+        border-radius: var(--crt-ui-radius);
+        box-shadow: var(--crt-ui-shadow);
+        backdrop-filter: blur(var(--crt-ui-backdrop-blur));
+    }
+
+    & .crt-ui__controls {
+        display: grid;
+        gap: var(--crt-ui-controls-gap);
+        align-content: start;
+        padding: var(--crt-ui-controls-padding);
+        overflow: auto;
+    }
+
+    & .crt-ui__title {
+        display: grid;
+        gap: var(--crt-ui-title-gap);
+
+        & h2 {
+            margin: 0;
+            font-size: var(--crt-ui-title-font-size);
+            line-height: var(--crt-ui-title-line-height);
+        }
+
+        & p {
+            margin: 0;
+            color: var(--crt-ui-muted);
+            line-height: var(--crt-ui-body-line-height);
+            font-size: var(--crt-ui-body-font-size);
+        }
+    }
+
+    & .crt-ui__group {
+        display: grid;
+        gap: var(--crt-ui-group-gap);
+        min-width: 0;
+        padding: var(--crt-ui-group-padding);
+        border-radius: var(--crt-ui-radius-md);
+        border: var(--crt-ui-border-width) solid var(--crt-ui-group-border);
+        background: var(--crt-ui-group-background);
+
+        & h3 {
+            margin: 0;
+            font-size: var(--crt-ui-section-title-font-size);
+            font-weight: var(--crt-ui-section-title-font-weight);
+            color: var(--crt-ui-muted);
+        }
+    }
+
+    & .crt-ui__buttonRow {
+        display: grid;
+        gap: var(--crt-ui-button-row-gap);
+
+        &--two {
+            grid-template-columns: var(--crt-ui-button-row-columns-two);
+        }
+    }
+
+    & :is(button, select, input[type="range"]) {
+        width: 100%;
+        min-width: 0;
+    }
+
+    & :is(button, select) {
+        min-height: var(--crt-ui-control-min-height);
+        padding: var(--crt-ui-control-padding-block) var(--crt-ui-control-padding-inline);
+        border: var(--crt-ui-border-width) solid var(--crt-ui-panel-border);
+        border-radius: var(--crt-ui-radius-sm);
+        background: var(--crt-ui-button);
+        color: var(--crt-ui-text);
+        font: inherit;
+    }
+
+    & button {
+        cursor: pointer;
+        transition:
+            background var(--crt-ui-button-transition-duration) var(--crt-ui-button-transition-timing),
+            transform var(--crt-ui-button-transition-duration) var(--crt-ui-button-transition-timing);
+
+        &:hover {
+            background: var(--crt-ui-button-hover);
+            transform: translateY(var(--crt-ui-button-hover-offset));
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+            transform: none;
+        }
+    }
+
+    & .crt-ui__field {
+        display: grid;
+        gap: var(--crt-ui-field-gap);
+        min-width: 0;
+    }
+
+    & .crt-ui__fieldLabel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--crt-ui-label-gap);
+        min-width: 0;
+        font-size: var(--crt-ui-label-font-size);
+
+        & span {
+            &:first-child {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            &:last-child {
+                flex-shrink: 0;
+                color: var(--crt-ui-accent);
+                font-variant-numeric: tabular-nums;
+                white-space: nowrap;
+            }
+        }
+    }
+
+    & input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        min-width: 0;
+        height: var(--crt-ui-range-thumb-size);
+        margin: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+        outline: none;
+        cursor: pointer;
+    }
+
+    & input[type="range"]::-webkit-slider-runnable-track {
+        height: var(--crt-ui-range-height);
+        border: none;
+        border-radius: var(--crt-ui-radius-pill);
+        background: linear-gradient(90deg,
+                var(--crt-ui-range-track-start),
+                var(--crt-ui-range-track-end));
+    }
+
+    & input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: var(--crt-ui-range-thumb-size);
+        height: var(--crt-ui-range-thumb-size);
+        margin-top: calc((var(--crt-ui-range-height) - var(--crt-ui-range-thumb-size)) / 2);
+        border: var(--crt-ui-thumb-border-width) solid var(--crt-ui-accent);
+        border-radius: 50%;
+        background: var(--crt-ui-range-thumb-background);
+        cursor: pointer;
+    }
+
+    & input[type="range"]::-moz-range-track {
+        height: var(--crt-ui-range-height);
+        border: none;
+        border-radius: var(--crt-ui-radius-pill);
+        background: linear-gradient(90deg,
+                var(--crt-ui-range-track-start),
+                var(--crt-ui-range-track-end));
+    }
+
+    & input[type="range"]::-moz-range-thumb {
+        width: var(--crt-ui-range-thumb-size);
+        height: var(--crt-ui-range-thumb-size);
+        border: var(--crt-ui-thumb-border-width) solid var(--crt-ui-accent);
+        border-radius: 50%;
+        background: var(--crt-ui-range-thumb-background);
+        cursor: pointer;
+    }
+
+    & input[type="range"]::-moz-focus-outer {
+        border: 0;
+    }
+
+    & .crt-ui__status {
+        display: grid;
+        gap: var(--crt-ui-status-gap);
+        padding: var(--crt-ui-status-padding);
+        border-radius: var(--crt-ui-radius-md);
+        background: var(--crt-ui-status-background);
+        border: var(--crt-ui-border-width) solid var(--crt-ui-status-border);
+
+        & strong {
+            font-size: var(--crt-ui-status-title-font-size);
+        }
+    }
+
+    & .crt-ui__statusGrid {
+        display: grid;
+        grid-template-columns: var(--crt-ui-status-grid-columns);
+        gap: var(--crt-ui-status-grid-row-gap) var(--crt-ui-status-grid-column-gap);
+        font-size: var(--crt-ui-status-grid-font-size);
+        color: var(--crt-ui-muted);
+
+        & span:nth-child(2n) {
+            color: var(--crt-ui-text);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    & .crt-ui__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--crt-ui-footer-gap);
+    }
+
+    & .crt-ui__plotPanel {
+        position: relative;
+        overflow: hidden;
+    }
+
+    & .crt-ui__plotCanvas {
+        display: block;
+        background: var(--crt-ui-plot-background);
+    }
+}
+
+@container (max-width: 46rem) {
+    .crt-ui-modal {
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        overflow: visible;
+
+        & .crt-ui__layout {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--crt-ui-layout-gap);
+            height: auto;
+            min-height: 0;
+        }
+
+        & .crt-ui__panel {
+
+            &.crt-ui__controls,
+            &.crt-ui__plotPanel {
+                flex: 0 0 auto;
+                max-height: none;
+            }
+
+            &.crt-ui__controls {
+                height: auto;
+                min-height: 0;
+                overflow: visible;
+            }
+
+            &.crt-ui__plotPanel {
+                position: static;
+                height: var(--crt-ui-plot-mobile-height);
+                min-height: var(--crt-ui-plot-mobile-min-height);
+                overflow: hidden;
+            }
+        }
+    }
+}
+
+@container (max-width: 620px) {
+    .crt-ui-modal {
+        & .crt-ui__fieldLabel {
+            align-items: start;
+
+            & span:first-child {
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+                line-height: var(--crt-ui-mobile-label-line-height);
+            }
+        }
+    }
+}
+
+@container (max-width: 520px) {
+    .crt-ui-modal {
+        & .crt-ui__controls {
+            padding: var(--crt-ui-controls-padding-compact);
+            gap: 12px;
+        }
+
+        & .crt-ui__buttonRow--two {
+            grid-template-columns: 1fr;
+        }
+
+        & .crt-ui__group {
+            padding: var(--crt-ui-group-padding-compact);
+        }
+
+        & .crt-ui__statusGrid {
+            grid-template-columns: 1fr;
+
+            & span:nth-child(2n) {
+                text-align: left;
+            }
+        }
+    }
+}

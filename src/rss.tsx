@@ -3,6 +3,7 @@ import { Clusteriser } from "./clusterise.ts";
 import * as cfg from "./config.ts";
 import { render2Frag, render2Mkup } from "./reactHelpers.tsx";
 import { CalCtrl, type CalHasArg, type CalSel } from "./calendar.tsx";
+import { atchColl } from "./helpers.ts";
 
 declare global {
     namespace JSX {
@@ -354,65 +355,11 @@ function atchTgl(pstDiv: HTMLElement): void {
     const arr = hdr.querySelector(".summary-arrow");
     if (!(arr instanceof HTMLElement)) return;
 
-    const cntEl = pstDiv.querySelector(".rss-post-content");
-    if (!(cntEl instanceof HTMLElement)) return;
-
-    const cnt = cntEl;
-    const tglRef = tgl;
-    const arrRef = arr;
+    const cnt = pstDiv.querySelector(".rss-post-content");
+    if (!(cnt instanceof HTMLElement)) return;
 
     cfgPstLks(pstDiv);
-
-    /**
-     * @returns {void}
-     */
-    function tglPst(): void {
-        const expd = cnt.classList.toggle("content-expanded");
-        cnt.classList.toggle("content-collapsed", !expd);
-        tglRef.setAttribute("aria-expanded", expd ? "true" : "false");
-
-        if (expd) {
-            arrRef.textContent = "🔽";
-            cnt.style.maxHeight = `${cnt.scrollHeight}px`;
-            return;
-        }
-
-        arrRef.textContent = "▶️";
-        cnt.style.maxHeight = "0px";
-        tglRef.blur();
-    }
-
-    tglRef.addEventListener("click", (ev) => {
-        const pth = ev.composedPath();
-        const hitA = pth.find((nd) => nd instanceof HTMLAnchorElement);
-        if (hitA) return;
-
-        tglPst();
-    });
-
-    tglRef.addEventListener("keydown", (ev) => {
-        if (ev.key !== "Enter" && ev.key !== " ") return;
-
-        ev.preventDefault();
-        tglPst();
-    });
-
-    cnt.addEventListener("click", (ev) => {
-        if (!cnt.classList.contains("content-expanded")) return;
-
-        const pth = ev.composedPath();
-        const hitCtl = pth.find((nd) =>
-            nd instanceof HTMLAnchorElement ||
-            nd instanceof HTMLButtonElement ||
-            nd instanceof HTMLInputElement ||
-            nd instanceof HTMLTextAreaElement ||
-            nd instanceof HTMLSelectElement ||
-            nd instanceof HTMLLabelElement
-        );
-
-        if (hitCtl) return;
-        tglPst();
-    });
+    atchColl({ tgl, cnt, arr });
 }
 
 /**

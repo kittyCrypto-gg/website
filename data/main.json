@@ -62,6 +62,45 @@
       "done": "Done"
     }
   },
+  "crtUi": {
+    "icon": "🎛️",
+    "iconPath": "/images/tube.svg",
+    "title": "CRT Noise Control Desk",
+    "modal": {
+      "title": "CRT Noise Control Desk",
+      "lead": "Swap between PAL and NTSC presets, or set a custom frequency.",
+      "closeTitle": "Close CRT noise control desk",
+      "transportTitle": "Transport",
+      "presetAndFrequencyTitle": "Preset and frequency",
+      "layerTogglesTitle": "Layer toggles",
+      "levelsTitle": "Levels",
+      "statusTitle": "Status",
+      "presetFamilyLabel": "Preset family",
+      "presetPalLabel": "PAL preset",
+      "presetNtscLabel": "NTSC preset",
+      "baseFrequencyLabel": "Base frequency",
+      "masterLabel": "Master",
+      "scanlineLabel": "Scanline",
+      "humLabel": "Hum",
+      "rectifierLabel": "Rectifier",
+      "degaussLabel": "Degauss",
+      "collapseLabel": "Flyback voltage collapse",
+      "dischargeLabel": "Relay drop-out",
+      "runningLabel": "Running",
+      "standardLabel": "Standard",
+      "baseLabel": "Base",
+      "lineFrequencyLabel": "Line frequency",
+      "retriggerDegauss": "Degauss",
+      "restore": "Restore defaults",
+      "none": "None",
+      "startPrefix": "Start",
+      "stopPrefix": "Stop",
+      "plotSpectrogram": "Plot: Spectrogram",
+      "plotWaveform": "Plot: Waveform",
+      "idleStatus": "Idle",
+      "runningStatus": "Running"
+    }
+  },
   "headScripts": [],
   "headerInjections": [
     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\">",
@@ -77,6 +116,15 @@
         "title": "Introduction",
         "mountTarget": "body",
         "launcherSrc": "/images/about.svg"
+      }
+    },
+    "noticeBoard": {
+      "selector": "#notice-board-wrapper",
+      "options": {
+        "id": "notice-board",
+        "title": "Notice Board",
+        "mountTarget": "body",
+        "launcherSrc": "/images/calendar.svg"
       }
     },
     "commitsWrapper": {

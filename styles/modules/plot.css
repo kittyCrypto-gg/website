@@ -1,0 +1,44 @@
+/* =========================================
+    Plot theme variables
+========================================= */
+
+:root {
+    --plot-background-colour: var(--frame-bg-colour);
+    --plot-frame-colour: transparent;
+    --plot-grid-line-colour: var(--chatroom-border-colour);
+    --plot-axis-text-colour: var(--body-text-colour);
+    --plot-axis-title-colour: var(--header-text-colour);
+    --plot-footer-text-colour: var(--timestamp-colour);
+
+    /* Solid fallback if gradient endpoints are missing */
+    --plot-waveform-stroke-colour: var(--banner-blue);
+
+    /* Actual waveform gradient */
+    --plot-waveform-stroke-start-colour: var(--banner-green);
+    --plot-waveform-stroke-end-colour: var(--banner-blue);
+
+    /* Spectrogram gradient stops: teal-blue -> green -> red */
+    --plot-spectrogram-low-colour: #1fddeb;
+    --plot-spectrogram-mid-colour: #46d84b;
+    --plot-spectrogram-high-colour: #ff5a4f;
+}
+
+.dark-mode {
+    --plot-background-colour: var(--frame-bg-colour);
+    --plot-grid-line-colour: var(--frame-border-light);
+    --plot-axis-text-colour: var(--body-text-colour);
+    --plot-axis-title-colour: var(--header-text-colour);
+    --plot-footer-text-colour: var(--timestamp-colour);
+
+    /* Slightly brighter fallback */
+    --plot-waveform-stroke-colour: var(--banner-teal-bright);
+
+    /* Actual waveform gradient */
+    --plot-waveform-stroke-start-colour: var(--banner-green);
+    --plot-waveform-stroke-end-colour: var(--banner-blue);
+
+    /* Spectrogram gradient stops, a touch brighter for dark mode */
+    --plot-spectrogram-low-colour: #05373a;
+    --plot-spectrogram-mid-colour: #52e048;
+    --plot-spectrogram-high-colour: #ff4a44;
+}

@@ -24,7 +24,7 @@
     --window-btn-hover-scale: 1.2;
     --window-btn-hover-transition: 0.2s ease;
 
-    --window-btn-symbol-font-size: calc(clamp(0.55rem, 0.5rem + 0.2vw, 0.625rem) * var(--kc-text-scale));
+    --window-btn-symbol-font-size: calc(clamp(0.55rem, 0.5rem + 0.2vw, 0.625rem) / var(--kc-text-scale) * 1.2);
     --window-btn-symbol-font-weight: 700;
 
     --window-btn-close-fill: #ff5f57;
@@ -241,9 +241,8 @@
     min-height: 0;
     flex: 1 1 auto;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: auto;
     background: var(--window-content-bg);
-
     display: flex;
     flex-direction: column;
 }

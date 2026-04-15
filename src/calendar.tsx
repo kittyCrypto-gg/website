@@ -97,34 +97,38 @@ type CalVw = Readonly<{
 }>;
 
 /**
+ * Just the month nums, nice and boring.
  * @returns {readonly number[]}
  */
-function mkMos(): readonly number[] {
+function mos(): readonly number[] {
     return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 }
 
 /**
+ * Weekday labels for the cal grid.
  * @returns {readonly string[]}
  */
-function mkWk(): readonly string[] {
+function wk(): readonly string[] {
     return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 }
 
 /**
+ * Small Set helper so i stop typing the generic every time.
  * @param {Iterable<number>} src
  * @returns {Set<number>}
  */
-function mkSet(src: Iterable<number>): Set<number> {
+function setOf(src: Iterable<number>): Set<number> {
     return new Set<number>(src);
 }
 
 /**
+ * Makes the selection object from plain iterables and stuff.
  * @param {Iterable<number>} yrs
  * @param {Iterable<number>} mos
  * @param {Iterable<number>} dys
  * @returns {CalSel}
  */
-function mkSel(
+function selOf(
     yrs: Iterable<number>,
     mos: Iterable<number>,
     dys: Iterable<number>
@@ -137,22 +141,25 @@ function mkSel(
 }
 
 /**
+ * Unique years, newest first.
  * @param {readonly number[]} src
  * @returns {number[]}
  */
-function yrOrd(src: readonly number[]): number[] {
+function ordYrs(src: readonly number[]): number[] {
     return Array.from(new Set<number>(src)).sort((a, b) => b - a);
 }
 
 /**
+ * Unique nums, low to high.
  * @param {readonly number[]} src
  * @returns {number[]}
  */
-function nOrd(src: readonly number[]): number[] {
+function ordNums(src: readonly number[]): number[] {
     return Array.from(new Set<number>(src)).sort((a, b) => a - b);
 }
 
 /**
+ * Short month label.
  * @param {number} mo
  * @returns {string}
  */
@@ -161,6 +168,7 @@ function moLbl(mo: number): string {
 }
 
 /**
+ * Full month title with year.
  * @param {number} yr
  * @param {number} mo
  * @returns {string}
@@ -173,48 +181,49 @@ function moTtl(yr: number, mo: number): string {
 }
 
 /**
+ * Days in the month.
  * @param {number} yr
  * @param {number} mo
  * @returns {number}
  */
-function moDyCnt(yr: number, mo: number): number {
+function dyCnt(yr: number, mo: number): number {
     return new Date(yr, mo, 0).getDate();
 }
 
 /**
+ * Weekday index of the first day.
  * @param {number} yr
  * @param {number} mo
  * @returns {number}
  */
-function moFstWk(yr: number, mo: number): number {
+function fstWk(yr: number, mo: number): number {
     return new Date(yr, mo - 1, 1).getDay();
 }
 
 /**
+ * Readonly-ish copy of a Set.
  * @param {Set<number>} src
  * @returns {ReadonlySet<number>}
  */
-function roSet(src: Set<number>): ReadonlySet<number> {
+function ro(src: Set<number>): ReadonlySet<number> {
     return new Set<number>(src);
 }
 
 /**
+ * Any active sel at all.
  * @param {CalSel} sel
  * @returns {boolean}
  */
-function hasSel(sel: CalSel): boolean {
+function anySel(sel: CalSel): boolean {
     return sel.yrs.size > 0 || sel.mos.size > 0 || sel.dys.size > 0;
 }
 
 /**
- * @param {CalLvl} lvl
- * @param {number} val
- * @param {boolean} sel
- * @param {boolean} has
- * @param {string} txt
+ * Single selectable item button.
+ * @param {Readonly<{ lvl: CalLvl; val: number; sel: boolean; has: boolean; txt: string; }>} props
  * @returns {JSX.Element}
  */
-function CalItm({
+function Itm({
     lvl,
     val,
     sel,
@@ -248,10 +257,11 @@ function CalItm({
 }
 
 /**
- * @param {DyCell} cell
+ * One day cell, or a pad cell if needed for the grid.
+ * @param {Readonly<{ cell: DyCell }>} props
  * @returns {JSX.Element}
  */
-function CalDyCell({ cell }: Readonly<{ cell: DyCell }>): JSX.Element {
+function DyCellView({ cell }: Readonly<{ cell: DyCell }>): JSX.Element {
     if (cell.kind === "pad") {
         return <span className="cal__dyPad" aria-hidden="true" />;
     }
@@ -281,10 +291,11 @@ function CalDyCell({ cell }: Readonly<{ cell: DyCell }>): JSX.Element {
 }
 
 /**
- * @param {DyCalVw} vw
+ * Month calendar view for a single selected year+month.
+ * @param {Readonly<{ vw: DyCalVw }>} props
  * @returns {JSX.Element}
  */
-function CalDyCal({ vw }: Readonly<{ vw: DyCalVw }>): JSX.Element {
+function DyCal({ vw }: Readonly<{ vw: DyCalVw }>): JSX.Element {
     return (
         <section className="cal__mo" aria-label={vw.ttl}>
             <header className="cal__moHdr">
@@ -301,7 +312,7 @@ function CalDyCal({ vw }: Readonly<{ vw: DyCalVw }>): JSX.Element {
 
             <div className="cal__dyGrid">
                 {vw.cells.map((cell) => (
-                    <CalDyCell key={cell.key} cell={cell} />
+                    <DyCellView key={cell.key} cell={cell} />
                 ))}
             </div>
         </section>
@@ -309,10 +320,11 @@ function CalDyCal({ vw }: Readonly<{ vw: DyCalVw }>): JSX.Element {
 }
 
 /**
- * @param {DyGridVw} vw
+ * Bulk days grid when there are many year/month pairs selected.
+ * @param {Readonly<{ vw: DyGridVw }>} props
  * @returns {JSX.Element}
  */
-function CalDyGrid({ vw }: Readonly<{ vw: DyGridVw }>): JSX.Element {
+function DyGrid({ vw }: Readonly<{ vw: DyGridVw }>): JSX.Element {
     return (
         <section className="cal__dyBulk" aria-label={vw.ttl}>
             <header className="cal__moHdr">
@@ -321,7 +333,7 @@ function CalDyGrid({ vw }: Readonly<{ vw: DyGridVw }>): JSX.Element {
 
             <div className="cal__itmGrid cal__itmGrid--dys">
                 {vw.items.map((itm) => (
-                    <CalItm
+                    <Itm
                         key={itm.key}
                         lvl="dy"
                         val={itm.dy}
@@ -336,14 +348,11 @@ function CalDyGrid({ vw }: Readonly<{ vw: DyGridVw }>): JSX.Element {
 }
 
 /**
- * @param {string} ttl
- * @param {CalSct} sct
- * @param {boolean} open
- * @param {number} cnt
- * @param {JSX.Element | null} body
+ * One expandable section block.
+ * @param {Readonly<{ ttl: string; sct: CalSct; open: boolean; cnt: number; body: JSX.Element | null; }>} props
  * @returns {JSX.Element}
  */
-function CalSctBlk({
+function SctBlk({
     ttl,
     sct,
     open,
@@ -381,11 +390,11 @@ function CalSctBlk({
 }
 
 /**
- * @param {CalSel} sel
- * @param {boolean} showClr
+ * Selected pills + reset bits.
+ * @param {Readonly<{ sel: CalSel; showClr: boolean; }>} props
  * @returns {JSX.Element}
  */
-function CalSelBar({
+function SelBar({
     sel,
     showClr
 }: Readonly<{
@@ -455,13 +464,35 @@ function CalSelBar({
 }
 
 /**
- * @param {CalVw} vw
+ * Whole calendar filter root view.
+ * @param {Readonly<{ vw: CalVw }>} props
  * @returns {JSX.Element}
  */
-function CalRoot({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
+function Root({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
     const yrCnt = vw.sel.yrs.size;
     const moCnt = vw.sel.mos.size;
     const dyCnt = vw.sel.dys.size;
+
+    const moBody = vw.canMos ? (
+        <div className="cal__itmGrid cal__itmGrid--mos">
+            {vw.mos.map((mo) => (
+                <Itm
+                    key={`mo-${mo}`}
+                    lvl="mo"
+                    val={mo}
+                    sel={vw.sel.mos.has(mo)}
+                    has={true}
+                    txt={moLbl(mo)}
+                />
+            ))}
+        </div>
+    ) : null;
+
+    const dyBody = !vw.canDys || !vw.dyVw
+        ? null
+        : vw.dyVw.kind === "cal"
+            ? <DyCal vw={vw.dyVw} />
+            : <DyGrid vw={vw.dyVw} />;
 
     return (
         <section
@@ -487,12 +518,12 @@ function CalRoot({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
                 </span>
             </header>
 
-            <CalSelBar sel={vw.sel} showClr={vw.hasSel} />
+            <SelBar sel={vw.sel} showClr={vw.hasSel} />
 
             <div className="cal__rootBody" aria-hidden={vw.rootOpen ? "false" : "true"}>
                 <div className="cal__rootBodyInner">
                     <div className="cal__grid">
-                        <CalSctBlk
+                        <SctBlk
                             ttl="Years"
                             sct="yrs"
                             open={vw.open.yrs}
@@ -500,7 +531,7 @@ function CalRoot({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
                             body={
                                 <div className="cal__itmGrid cal__itmGrid--yrs">
                                     {vw.yrs.map((yr) => (
-                                        <CalItm
+                                        <Itm
                                             key={`yr-${yr}`}
                                             lvl="yr"
                                             val={yr}
@@ -513,43 +544,20 @@ function CalRoot({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
                             }
                         />
 
-                        <CalSctBlk
+                        <SctBlk
                             ttl="Months"
                             sct="mos"
                             open={vw.open.mos}
                             cnt={moCnt}
-                            body={
-                                vw.canMos ? (
-                                    <div className="cal__itmGrid cal__itmGrid--mos">
-                                        {vw.mos.map((mo) => (
-                                            <CalItm
-                                                key={`mo-${mo}`}
-                                                lvl="mo"
-                                                val={mo}
-                                                sel={vw.sel.mos.has(mo)}
-                                                has={true}
-                                                txt={moLbl(mo)}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : null
-                            }
+                            body={moBody}
                         />
 
-                        <CalSctBlk
+                        <SctBlk
                             ttl="Days"
                             sct="dys"
                             open={vw.open.dys}
                             cnt={dyCnt}
-                            body={
-                                vw.canDys && vw.dyVw ? (
-                                    vw.dyVw.kind === "cal" ? (
-                                        <CalDyCal vw={vw.dyVw} />
-                                    ) : (
-                                        <CalDyGrid vw={vw.dyVw} />
-                                    )
-                                ) : null
-                            }
+                            body={dyBody}
                         />
                     </div>
                 </div>
@@ -576,6 +584,10 @@ export class CalCtrl {
     private rootOpen: boolean;
     private isOn: boolean;
 
+    /**
+     * Sets the controller up and wires the event handlers.
+     * @param {CalCfg} cfg
+     */
     constructor(cfg: CalCfg) {
         const now = cfg.now ?? new Date();
 
@@ -583,13 +595,13 @@ export class CalCtrl {
         this.ttl = cfg.ttl ?? "Browse by date";
         this.now = now;
 
-        this.allYrs = yrOrd(cfg.yrs);
-        this.allMos = nOrd(cfg.mos ?? mkMos());
-        this.alwDys = cfg.dys ? mkSet(cfg.dys) : null;
+        this.allYrs = ordYrs(cfg.yrs);
+        this.allMos = ordNums(cfg.mos ?? mos());
+        this.alwDys = cfg.dys ? setOf(cfg.dys) : null;
 
-        this.selYrs = mkSet([]);
-        this.selMos = mkSet([]);
-        this.selDys = mkSet([]);
+        this.selYrs = setOf([]);
+        this.selMos = setOf([]);
+        this.selDys = setOf([]);
 
         this.hasFn = cfg.has ?? (() => false);
         this.onChg = cfg.onChg ?? null;
@@ -605,24 +617,26 @@ export class CalCtrl {
 
         this.seedSel();
 
+        /**
+         * Main click handler. Looks for whatever data attr got clicked and routes it.
+         * @param {Event} ev
+         * @returns {void}
+         */
         this.hnd = (ev: Event): void => {
             const trg = ev.target;
             if (!(trg instanceof Element)) return;
 
-            const rootTgl = trg.closest<HTMLElement>("[data-cal-act='tgl-root']");
-            if (rootTgl) {
+            if (trg.closest<HTMLElement>("[data-cal-act='tgl-root']")) {
                 this.tglRoot();
                 return;
             }
 
-            const rst = trg.closest<HTMLElement>("[data-cal-act='rst']");
-            if (rst) {
+            if (trg.closest<HTMLElement>("[data-cal-act='rst']")) {
                 this.rst();
                 return;
             }
 
-            const clr = trg.closest<HTMLElement>("[data-cal-act='clr']");
-            if (clr) {
+            if (trg.closest<HTMLElement>("[data-cal-act='clr']")) {
                 this.clr();
                 return;
             }
@@ -647,6 +661,11 @@ export class CalCtrl {
             this.tglVal(lvl, val);
         };
 
+        /**
+         * Keyboard handler for the root toggle header only.
+         * @param {KeyboardEvent} ev
+         * @returns {void}
+         */
         this.keyHnd = (ev: KeyboardEvent): void => {
             const trg = ev.target;
             if (!(trg instanceof Element)) return;
@@ -661,6 +680,7 @@ export class CalCtrl {
     }
 
     /**
+     * Mounts the thing and emits initial sel.
      * @returns {void}
      */
     init(): void {
@@ -676,17 +696,19 @@ export class CalCtrl {
     }
 
     /**
+     * Current selection snapshot.
      * @returns {CalSel}
      */
     getSel(): CalSel {
         return {
-            yrs: roSet(this.selYrs),
-            mos: roSet(this.selMos),
-            dys: roSet(this.selDys)
+            yrs: ro(this.selYrs),
+            mos: ro(this.selMos),
+            dys: ro(this.selDys)
         };
     }
 
     /**
+     * Replaces the has-content fn and refreshes the ui.
      * @param {CalHasFn} has
      * @returns {void}
      */
@@ -698,13 +720,14 @@ export class CalCtrl {
     }
 
     /**
+     * Sets parts of the selection directly.
      * @param {SelInp} nxt
      * @returns {void}
      */
     setSel(nxt: SelInp): void {
-        if (nxt.yrs) this.selYrs = mkSet(nxt.yrs);
-        if (nxt.mos) this.selMos = mkSet(nxt.mos);
-        if (nxt.dys) this.selDys = mkSet(this.fltDys(nxt.dys));
+        if (nxt.yrs) this.selYrs = setOf(nxt.yrs);
+        if (nxt.mos) this.selMos = setOf(nxt.mos);
+        if (nxt.dys) this.selDys = setOf(this.fltDys(nxt.dys));
 
         this.sanSel();
         this.rnd();
@@ -712,6 +735,7 @@ export class CalCtrl {
     }
 
     /**
+     * Raw delegated has() call with explicit sel + ctx.
      * @param {CalLvl} lvl
      * @param {number} val
      * @param {CalSel} sel
@@ -728,9 +752,10 @@ export class CalCtrl {
     }
 
     /**
+     * Convenience has() using the current selection.
      * @param {CalLvl} lvl
      * @param {number} val
-     * @param {CalCtx} [ctx]
+     * @param {CalCtx} ctx
      * @returns {boolean}
      */
     has(lvl: CalLvl, val: number, ctx: CalCtx = {}): boolean {
@@ -738,6 +763,7 @@ export class CalCtrl {
     }
 
     /**
+     * Reset back to the seeded selection.
      * @returns {void}
      */
     rst(): void {
@@ -747,6 +773,7 @@ export class CalCtrl {
     }
 
     /**
+     * Clears everything.
      * @returns {void}
      */
     clr(): void {
@@ -759,6 +786,7 @@ export class CalCtrl {
     }
 
     /**
+     * Re-sanitise and redraw without emitting.
      * @returns {void}
      */
     refresh(): void {
@@ -767,6 +795,7 @@ export class CalCtrl {
     }
 
     /**
+     * Unhooks listeners and wipes the host.
      * @returns {void}
      */
     destroy(): void {
@@ -781,56 +810,61 @@ export class CalCtrl {
     }
 
     /**
+     * Picks the underlying bag for a level.
      * @param {CalLvl} lvl
      * @returns {Set<number>}
      */
-    private pickSet(lvl: CalLvl): Set<number> {
+    private bag(lvl: CalLvl): Set<number> {
         if (lvl === "yr") return this.selYrs;
         if (lvl === "mo") return this.selMos;
         return this.selDys;
     }
 
     /**
+     * Filters day values against allowed-day cfg when needed.
      * @param {Iterable<number>} src
      * @returns {readonly number[]}
      */
     private fltDys(src: Iterable<number>): readonly number[] {
         const vals = Array.from(src);
-
         if (!this.alwDys) return vals;
+
         return vals.filter((dy) => this.alwDys?.has(dy) ?? false);
     }
 
     /**
+     * Visible years that actually have content under the current has fn.
      * @returns {readonly number[]}
      */
-    private mkVisYrs(): readonly number[] {
+    private visYrs(): readonly number[] {
         return this.allYrs.filter((yr) =>
-            this.rawHas("yr", yr, mkSel([yr], [], []), { yr })
+            this.rawHas("yr", yr, selOf([yr], [], []), { yr })
         );
     }
 
     /**
+     * Visible months for the given year set.
      * @param {Iterable<number>} yrs
      * @returns {readonly number[]}
      */
-    private mkVisMos(yrs: Iterable<number>): readonly number[] {
+    private visMos(yrs: Iterable<number>): readonly number[] {
         const yrBag = new Set<number>(yrs);
         if (yrBag.size === 0) return [];
 
         const yrSel = Array.from(yrBag);
 
         return this.allMos.filter((mo) =>
-            this.rawHas("mo", mo, mkSel(yrSel, [mo], []), { mo })
+            this.rawHas("mo", mo, selOf(yrSel, [mo], []), { mo })
         );
     }
 
     /**
+     * Cartesian pairs of years x months, in display order.
      * @param {Iterable<number>} yrs
      * @param {Iterable<number>} mos
      * @returns {readonly Readonly<{ yr: number; mo: number }>[]}
      */
-    private mkPairs(
+    private pairs(
         yrs: Iterable<number>,
         mos: Iterable<number>
     ): readonly Readonly<{ yr: number; mo: number }>[] {
@@ -848,16 +882,17 @@ export class CalCtrl {
     }
 
     /**
+     * Largest valid day count across the selected year/month pairs.
      * @param {Iterable<number>} yrs
      * @param {Iterable<number>} mos
      * @returns {number}
      */
-    private mkMaxDy(yrs: Iterable<number>, mos: Iterable<number>): number {
-        const pairs = this.mkPairs(yrs, mos);
+    private maxDy(yrs: Iterable<number>, mos: Iterable<number>): number {
+        const pairs = this.pairs(yrs, mos);
         let max = 0;
 
         for (const pair of pairs) {
-            const cnt = moDyCnt(pair.yr, pair.mo);
+            const cnt = dyCnt(pair.yr, pair.mo);
             if (cnt > max) max = cnt;
         }
 
@@ -865,10 +900,11 @@ export class CalCtrl {
     }
 
     /**
+     * Seeds the initial selection from now if possible, else the first visible slots.
      * @returns {void}
      */
     private seedSel(): void {
-        const visYrs = this.mkVisYrs();
+        const visYrs = this.visYrs();
         const nowYr = this.now.getFullYear();
         const nowMo = this.now.getMonth() + 1;
 
@@ -881,7 +917,7 @@ export class CalCtrl {
         const defYr = visYrs.includes(nowYr) ? nowYr : visYrs[0];
         this.selYrs.add(defYr);
 
-        const visMos = this.mkVisMos([defYr]);
+        const visMos = this.visMos([defYr]);
         if (visMos.length === 0) return;
 
         const defMo = visMos.includes(nowMo) ? nowMo : visMos[0];
@@ -889,10 +925,11 @@ export class CalCtrl {
     }
 
     /**
+     * Cleans selection so it only contains values that still make sense.
      * @returns {void}
      */
     private sanSel(): void {
-        const visYrs = new Set<number>(this.mkVisYrs());
+        const visYrs = new Set<number>(this.visYrs());
 
         for (const yr of Array.from(this.selYrs)) {
             if (!visYrs.has(yr)) this.selYrs.delete(yr);
@@ -904,7 +941,7 @@ export class CalCtrl {
             return;
         }
 
-        const visMos = new Set<number>(this.mkVisMos(this.selYrs));
+        const visMos = new Set<number>(this.visMos(this.selYrs));
 
         for (const mo of Array.from(this.selMos)) {
             if (!visMos.has(mo)) this.selMos.delete(mo);
@@ -915,7 +952,7 @@ export class CalCtrl {
             return;
         }
 
-        const maxDy = this.mkMaxDy(this.selYrs, this.selMos);
+        const maxDy = this.maxDy(this.selYrs, this.selMos);
 
         for (const dy of Array.from(this.selDys)) {
             const badByCnt = dy < 1 || dy > maxDy;
@@ -926,12 +963,18 @@ export class CalCtrl {
     }
 
     /**
+     * Plays the open/close max-height transition stuff.
      * @param {HTMLElement} body
      * @param {() => void} setOpenState
      * @param {boolean} open
      * @returns {void}
      */
     private playTgl(body: HTMLElement, setOpenState: () => void, open: boolean): void {
+        /**
+         * Ends the open transition by freeing max-height again.
+         * @param {TransitionEvent} ev
+         * @returns {void}
+         */
         const onEnd = (ev: TransitionEvent): void => {
             if (ev.target !== body || ev.propertyName !== "max-height") return;
             if (open) {
@@ -939,28 +982,29 @@ export class CalCtrl {
             }
         };
 
-        if (open) {
-            body.style.maxHeight = "0px";
+        if (!open) {
+            const curH = body.scrollHeight;
+            body.style.maxHeight = `${curH}px`;
+            void body.offsetHeight;
             setOpenState();
-            const nxtH = body.scrollHeight;
-            body.removeEventListener("transitionend", onEnd);
-            body.addEventListener("transitionend", onEnd, { once: true });
             window.requestAnimationFrame(() => {
-                body.style.maxHeight = `${nxtH}px`;
+                body.style.maxHeight = "0px";
             });
             return;
         }
 
-        const curH = body.scrollHeight;
-        body.style.maxHeight = `${curH}px`;
-        void body.offsetHeight;
+        body.style.maxHeight = "0px";
         setOpenState();
+        const nxtH = body.scrollHeight;
+        body.removeEventListener("transitionend", onEnd);
+        body.addEventListener("transitionend", onEnd, { once: true });
         window.requestAnimationFrame(() => {
-            body.style.maxHeight = "0px";
+            body.style.maxHeight = `${nxtH}px`;
         });
     }
 
     /**
+     * Toggles the whole root open/closed.
      * @returns {void}
      */
     private tglRoot(): void {
@@ -992,6 +1036,7 @@ export class CalCtrl {
     }
 
     /**
+     * Toggles one section block.
      * @param {CalSct} sct
      * @returns {void}
      */
@@ -1023,6 +1068,7 @@ export class CalCtrl {
     }
 
     /**
+     * Toggles one value in the current selection.
      * @param {CalLvl} lvl
      * @param {number} val
      * @returns {void}
@@ -1030,10 +1076,13 @@ export class CalCtrl {
     private tglVal(lvl: CalLvl, val: number): void {
         if (lvl === "dy" && this.alwDys && !this.alwDys.has(val)) return;
 
-        const bag = this.pickSet(lvl);
+        const bag = this.bag(lvl);
 
-        if (bag.has(val)) bag.delete(val);
-        else bag.add(val);
+        if (bag.has(val)) {
+            bag.delete(val);
+        } else {
+            bag.add(val);
+        }
 
         if (lvl === "yr" && this.selYrs.size === 0) {
             this.selMos.clear();
@@ -1050,6 +1099,7 @@ export class CalCtrl {
     }
 
     /**
+     * Day view as a real month calendar, only when exactly one year and one month are selected.
      * @returns {DyCalVw | null}
      */
     private mkDyCalVw(): DyCalVw | null {
@@ -1057,8 +1107,8 @@ export class CalCtrl {
 
         const yr = Array.from(this.selYrs)[0];
         const mo = Array.from(this.selMos)[0];
-        const fst = moFstWk(yr, mo);
-        const cnt = moDyCnt(yr, mo);
+        const fst = fstWk(yr, mo);
+        const cnt = dyCnt(yr, mo);
         const cells: DyCell[] = [];
 
         for (let ix = 0; ix < fst; ix += 1) {
@@ -1068,7 +1118,7 @@ export class CalCtrl {
             });
         }
 
-        const sel = mkSel(this.selYrs, this.selMos, []);
+        const sel = selOf(this.selYrs, this.selMos, []);
 
         for (let dy = 1; dy <= cnt; dy += 1) {
             cells.push({
@@ -1096,29 +1146,31 @@ export class CalCtrl {
             kind: "cal",
             key: `${yr}-${mo}`,
             ttl: moTtl(yr, mo),
-            wk: mkWk(),
+            wk: wk(),
             cells
         };
     }
 
     /**
+     * Day view as a flat grid across multiple selected months/years.
      * @returns {DyGridVw | null}
      */
     private mkDyGridVw(): DyGridVw | null {
-        const pairs = this.mkPairs(this.selYrs, this.selMos);
+        const pairs = this.pairs(this.selYrs, this.selMos);
         if (pairs.length === 0) return null;
 
-        const maxDy = this.mkMaxDy(this.selYrs, this.selMos);
+        const maxDy = this.maxDy(this.selYrs, this.selMos);
         if (maxDy === 0) return null;
 
         const items: DyGridItm[] = [];
-        const sel = mkSel(this.selYrs, this.selMos, []);
+        const sel = selOf(this.selYrs, this.selMos, []);
 
         for (let dy = 1; dy <= maxDy; dy += 1) {
             if (this.alwDys && !this.alwDys.has(dy)) continue;
 
             const has = pairs.some((pair) => {
-                if (dy > moDyCnt(pair.yr, pair.mo)) return false;
+                if (dy > dyCnt(pair.yr, pair.mo)) return false;
+
                 return this.rawHas("dy", dy, sel, {
                     yr: pair.yr,
                     mo: pair.mo,
@@ -1143,32 +1195,31 @@ export class CalCtrl {
     }
 
     /**
+     * Picks whichever day view shape fits the current selection.
      * @returns {DyVw | null}
      */
     private mkDyVw(): DyVw | null {
         if (this.selYrs.size === 0 || this.selMos.size === 0) return null;
-
-        if (this.selYrs.size === 1 && this.selMos.size === 1) {
-            return this.mkDyCalVw();
-        }
+        if (this.selYrs.size === 1 && this.selMos.size === 1) return this.mkDyCalVw();
 
         return this.mkDyGridVw();
     }
 
     /**
+     * Builds the full render view model.
      * @returns {CalVw}
      */
     private mkVw(): CalVw {
         const sel = this.getSel();
-        const yrs = this.mkVisYrs();
-        const mos = this.mkVisMos(this.selYrs);
+        const yrs = this.visYrs();
+        const mos = this.visMos(this.selYrs);
         const canMos = this.selYrs.size > 0;
         const canDys = this.selYrs.size > 0 && this.selMos.size > 0;
 
         return {
             ttl: this.ttl,
             rootOpen: this.rootOpen,
-            hasSel: hasSel(sel),
+            hasSel: anySel(sel),
             yrs,
             mos,
             sel,
@@ -1184,6 +1235,7 @@ export class CalCtrl {
     }
 
     /**
+     * Resets max-height styles after a full rerender so the sections match open state.
      * @returns {void}
      */
     private primeHeights(): void {
@@ -1193,25 +1245,35 @@ export class CalCtrl {
         }
 
         const scts = Array.from(this.host.querySelectorAll<HTMLElement>(".cal__sct"));
-        scts.forEach((sct) => {
+
+        /**
+         * Syncs one section body's max-height to the current open state.
+         * @param {HTMLElement} sct
+         * @returns {void}
+         */
+        const syncSct = (sct: HTMLElement): void => {
             const sctKey = sct.dataset.calSctRoot as CalSct | undefined;
             const body = sct.querySelector<HTMLElement>(".cal__sctBody");
             if (!sctKey || !body) return;
 
             body.style.maxHeight = this.opn[sctKey] ? "none" : "0px";
-        });
+        };
+
+        scts.forEach(syncSct);
     }
 
     /**
+     * Renders the current view into the host.
      * @returns {void}
      */
     private rnd(): void {
-        const frag = render2Frag(<CalRoot vw={this.mkVw()} />);
+        const frag = render2Frag(<Root vw={this.mkVw()} />);
         this.host.replaceChildren(frag);
         this.primeHeights();
     }
 
     /**
+     * Emits selection change if a callback exists.
      * @returns {void}
      */
     private emit(): void {

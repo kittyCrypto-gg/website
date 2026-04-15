@@ -3,9 +3,9 @@ import { smsEnterBounce } from "./physics.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
 import * as helpers from "./helpers.ts";
 
-const themes: Record<string, unknown> = {};
+const thms: Record<string, unknown> = {};
 
-type TooltipPortalOpenState = Readonly<{
+type TipState = Readonly<{
     wrapperEl: HTMLElement;
     triggerEl: HTMLElement;
     portalEl: HTMLElement;
@@ -16,6 +16,8 @@ type HtmlBits = Readonly<{
 }>;
 
 /**
+ * Tiny helper for dangerouslySetInnerHTML.
+ * yes the name is boring, sorry.
  * @param {string} raw
  * @returns {HtmlBits}
  */
@@ -24,35 +26,44 @@ function html(raw: string): HtmlBits {
 }
 
 /**
- * @param {string} url - URL to themes JSON.
+ * Loads the themes json and swaps the in-memory map over.
+ * pretty plain fetch really.
+ * @param {string} url
  * @returns {Promise<void>}
  */
-async function loadThemes(url: string = "../data/themes.json"): Promise<void> {
+async function loadThms(url: string = "../data/themes.json"): Promise<void> {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to load themes from ${url}`);
 
     const data: unknown = await res.json();
 
-    for (const key of Object.keys(themes)) delete themes[key];
-    for (const [key, value] of Object.entries(data as Record<string, unknown>)) themes[key] = value;
+    for (const key of Object.keys(thms)) delete thms[key];
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) thms[key] = value;
 }
 
 /**
- * @param {string} addr - Recipient address.
- * @returns {string} Theme name associated with the given recipient
+ * Looks up the theme for an email address.
+ * empty string if nothing matches.
+ * @param {string} addr
+ * @returns {string}
  */
-function getTheme(addr: string): string {
+function getThm(addr: string): string {
     const a = addr.toLowerCase();
-    for (const [theme, addrsRaw] of Object.entries(themes)) {
-        const addrs = addrsRaw as unknown as readonly string[];
-        if (addrs.some((x) => x.toLowerCase() === a)) return theme;
+
+    for (const [theme, addrsRaw] of Object.entries(thms)) {
+        const addrs = addrsRaw as readonly string[];
+        if (!addrs.some((x) => x.toLowerCase() === a)) continue;
+        return theme;
     }
+
     return "";
 }
 
 /**
- * @param {Node} node - Node whose children are serialised as mixed content.
- * @returns {string} A string representation of the mixed content of a node
+ * Serialises mixed node content into one html-ish string.
+ * text gets escaped, elements keep their outer html.
+ * @param {Node} node
+ * @returns {string}
  */
 export function serialiseMixedContent(node: Node): string {
     return Array.from(node.childNodes)
@@ -71,10 +82,12 @@ export function serialiseMixedContent(node: Node): string {
 }
 
 /**
- * @param {string} cssHref - CSS href substring to look for.
- * @returns {boolean | Element | null} True if a stylesheet with the given href substring is found, or the matching link element, or null if not found.
+ * Checks if a stylesheet is already around.
+ * name is a bit wonky but the job is simple enough.
+ * @param {string} cssHref
+ * @returns {boolean | Element | null}
  */
-function hassCss(cssHref: string): boolean | Element | null {
+function hasCss(cssHref: string): boolean | Element | null {
     return (
         Array.from(document.styleSheets).some((s) => (s.href || "").includes(cssHref)) ||
         document.querySelector(`link[rel="stylesheet"][href="${cssHref}"]`)
@@ -82,47 +95,56 @@ function hassCss(cssHref: string): boolean | Element | null {
 }
 
 /**
- * @param {ParentNode} node - Node to query within.
- * @param {string} tag - Tag name selector.
- * @returns {string} Text content of the first matching element for the given tag within the specified node, trimmed of whitespace.
+ * Gets the trimmed text of the first matching tag inside a node.
+ * blank string if missing.
+ * @param {ParentNode} node
+ * @param {string} tag
+ * @returns {string}
  */
-function getText(node: ParentNode, tag: string): string {
+function txt(node: ParentNode, tag: string): string {
     return (node.querySelector(tag)?.textContent || "").trim();
 }
 
 /**
- * @param {Element} parent - Parent element to scan.
- * @param {readonly string[]} tagNames - Allowed tag names (lowercase).
- * @returns {Element | null} First direct child element whose tag matches one of the provided tag names.
+ * Finds the first direct child whose tag matches one from the list.
+ * direct child only, not deep search.
+ * @param {Element} parent
+ * @param {readonly string[]} tagNames
+ * @returns {Element | null}
  */
-function getDirectChildByTag(parent: Element, tagNames: readonly string[]): Element | null {
+function getKidByTag(parent: Element, tagNames: readonly string[]): Element | null {
     for (const child of Array.from(parent.children)) {
         const tag = child.tagName.toLowerCase();
         if (tagNames.includes(tag)) return child;
     }
+
     return null;
 }
 
 type Escaper = (s: string | null | undefined) => string;
 
 /**
- * @param {ParentNode} root - Root node to search within.
- * @param {string} selector - Selector for rich content nodes.
- * @param {Escaper} escFn - Escaper (kept for signature parity).
- * @returns {string[]} An array of string representations of rich content nodes that match the given selector within the specified root node.
+ * Pulls rich content nodes out as serialised html strings.
+ * escFn is only here to keep the old shape, not actually used.
+ * @param {ParentNode} root
+ * @param {string} selector
+ * @param {Escaper} escFn
+ * @returns {string[]}
  */
-function mapRichContent(root: ParentNode, selector: string, escFn: Escaper): string[] {
+function mapRich(root: ParentNode, selector: string, escFn: Escaper): string[] {
     void escFn;
+
     return Array.from(root.querySelectorAll(selector))
         .map((n) => serialiseMixedContent(n))
         .filter(Boolean);
 }
 
 /**
+ * React bit for a parsed email signature.
  * @param {{ logo: string; company: string; lines: string[]; disclaimers: string[] }} props
  * @returns {ReactElement}
  */
-function SignatureMarkup(props: {
+function Sig(props: {
     logo: string;
     company: string;
     lines: string[];
@@ -162,11 +184,13 @@ function SignatureMarkup(props: {
 }
 
 /**
- * @param {Element} sig - Signature element.
- * @param {Escaper} escFn - Escaper function.
- * @returns {string} A string representation of an email signature constructed from the provided signature element and escaped using the given escaper function.
+ * Turns a <signature> node into rendered html.
+ * if the thing is basically empty, returns an empty string and moves on.
+ * @param {Element} sig
+ * @param {Escaper} escFn
+ * @returns {string}
  */
-function parseSignature(sig: Element, escFn: Escaper): string {
+function parseSig(sig: Element, escFn: Escaper): string {
     const t = (q: string): string => (sig.querySelector(q)?.textContent || "").trim();
 
     const name = t("name");
@@ -176,8 +200,8 @@ function parseSignature(sig: Element, escFn: Escaper): string {
     const emailAddress = t("emailAddress");
     const logo = (t("logo") || "").trim();
 
-    const positions = mapRichContent(sig, "position", escFn);
-    const disclaimers = mapRichContent(sig, "disclaimer", escFn);
+    const positions = mapRich(sig, "position", escFn);
+    const disclaimers = mapRich(sig, "disclaimer", escFn);
 
     const hasAny =
         name ||
@@ -201,7 +225,7 @@ function parseSignature(sig: Element, escFn: Escaper): string {
     ].filter(Boolean) as string[];
 
     return render2Mkup(
-        <SignatureMarkup
+        <Sig
             logo={logo}
             company={company}
             lines={lines}
@@ -210,35 +234,36 @@ function parseSignature(sig: Element, escFn: Escaper): string {
     );
 }
 
-type ReplaceSmsMessagesImpl = (htmlContent: string, cssHref?: string) => string;
-type ReplaceEmailsImpl = (htmlContent: string, cssHref?: string) => Promise<string>;
-type ReplaceSVGsImpl = (root?: Document | Element | string) => Promise<void>;
-type ReplaceTooltipsImpl = (htmlContent: string) => Promise<string>;
-type BindEmailActionsImpl = () => void;
+type ReplSms = (htmlContent: string, cssHref?: string) => string;
+type ReplEmails = (htmlContent: string, cssHref?: string) => Promise<string>;
+type ReplSvgs = (root?: Document | Element | string) => Promise<void>;
+type ReplTips = (htmlContent: string) => Promise<string>;
+type BindMailActs = () => void;
 
-type MediaStylerImpls = Readonly<{
-    replaceSmsMessages: ReplaceSmsMessagesImpl;
-    replaceEmails: ReplaceEmailsImpl;
-    replaceSVGs: ReplaceSVGsImpl;
+type Impls = Readonly<{
+    replaceSmsMessages: ReplSms;
+    replaceEmails: ReplEmails;
+    replaceSVGs: ReplSvgs;
     replaceImageTags: (htmlContent: string) => Promise<string>;
-    replaceTooltips: ReplaceTooltipsImpl;
-    bindEmailActions: BindEmailActionsImpl;
+    replaceTooltips: ReplTips;
+    bindEmailActions: BindMailActs;
 }>;
 
-type MediaStylerImplOverrides = Partial<{
-    replaceSmsMessages: ReplaceSmsMessagesImpl;
-    replaceEmails: ReplaceEmailsImpl;
-    replaceSVGs: ReplaceSVGsImpl;
+type ImplOverrides = Partial<{
+    replaceSmsMessages: ReplSms;
+    replaceEmails: ReplEmails;
+    replaceSVGs: ReplSvgs;
     replaceImageTags: (htmlContent: string) => Promise<string>;
-    replaceTooltips: ReplaceTooltipsImpl;
-    bindEmailActions: BindEmailActionsImpl;
+    replaceTooltips: ReplTips;
+    bindEmailActions: BindMailActs;
 }>;
 
 /**
+ * React bit for one sms bubble.
  * @param {{ type: "in" | "out"; nickname: string; contentHtml: string; timestamp: string }} props
  * @returns {ReactElement}
  */
-function SmsMarkup(props: {
+function Sms(props: {
     type: "in" | "out";
     nickname: string;
     contentHtml: string;
@@ -256,19 +281,19 @@ function SmsMarkup(props: {
 }
 
 /**
- * @param {string} htmlContent - HTML content to transform.
- * @param {string} cssHref - Stylesheet href for SMS rendering.
- * @returns {string} Transformed HTML content with SMS messages replaced by styled HTML structures.
+ * Replaces custom <message> blocks with the sms markup.
+ * also makes sure the sms stylesheet exists first.
+ * @param {string} htmlContent
+ * @param {string} cssHref
+ * @returns {string}
  */
-function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../styles/modules/sms.css"): string {
-    if (!hassCss(cssHref)) {
+function replSms(htmlContent: string, cssHref: string = "../styles/modules/sms.css"): string {
+    if (!hasCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = cssHref;
         document.head.appendChild(link);
     }
-
-    const raw = (doc: ParentNode, tag: string): string => getText(doc, tag);
 
     const re = /<message\b[^>]*\btype=["'](in|out)["'][^>]*>[\s\S]*?<\/message>/gi;
 
@@ -280,15 +305,13 @@ function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../style
         const msg = doc.querySelector("message");
         if (!msg) return block;
 
-        const nickname = raw(msg, "nickname");
-
-        const contentNode = getDirectChildByTag(msg, ["content"]);
+        const nickname = txt(msg, "nickname");
+        const contentNode = getKidByTag(msg, ["content"]);
         const contentHtml = contentNode ? serialiseMixedContent(contentNode) : "";
-
-        const timestamp = raw(msg, "timestamp");
+        const timestamp = txt(msg, "timestamp");
 
         return render2Mkup(
-            <SmsMarkup
+            <Sms
                 type={type}
                 nickname={nickname}
                 contentHtml={contentHtml}
@@ -299,10 +322,11 @@ function replaceSmsMessagesImpl(htmlContent: string, cssHref: string = "../style
 }
 
 /**
+ * React bit for one rendered email card.
  * @param {{ themeClass: string; recipientIp: string; fromNameHtml: string; fromAddr: string; toNameHtml: string; toAddr: string; subject: string; timestamp: string; contentHtml: string }} props
  * @returns {ReactElement}
  */
-function EmailMarkup(props: {
+function Mail(props: {
     themeClass: string;
     recipientIp: string;
     fromNameHtml: string;
@@ -361,34 +385,36 @@ function EmailMarkup(props: {
 }
 
 /**
- * @param {string} htmlContent - HTML content to transform.
- * @param {string} cssHref - Stylesheet href for email rendering.
- * @returns {Promise<string>} A promise that resolves to the transformed HTML content with email blocks replaced by styled HTML structures.
+ * Replaces custom <email> blocks with the styled email card html.
+ * loads themes on first go if they are not already there.
+ * @param {string} htmlContent
+ * @param {string} cssHref
+ * @returns {Promise<string>}
  */
-async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styles/modules/email.css"): Promise<string> {
-    if (!hassCss(cssHref)) {
+async function replEmails(htmlContent: string, cssHref: string = "../styles/modules/email.css"): Promise<string> {
+    if (!hasCss(cssHref)) {
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = cssHref;
         document.head.appendChild(link);
     }
 
-    if (Object.keys(themes).length === 0) {
+    if (Object.keys(thms).length === 0) {
         try {
-            await loadThemes();
+            await loadThms();
         } catch (err: unknown) {
             console.error("Failed to load themes:", err);
         }
     }
 
-    const raw = (doc: ParentNode, tag: string): string => getText(doc, tag);
-
     /**
-     * @param {Element} emailNode - Email XML element.
-     * @returns {string} HTML string for the email body, using only the email's own content element.
+     * Builds the email body html from just the email's own content block.
+     * signatures get the special treatment, the rest mostly passes through.
+     * @param {Element} emailNode
+     * @returns {string}
      */
     const buildContentHtml = (emailNode: Element): string => {
-        const contentEl = getDirectChildByTag(emailNode, ["content"]);
+        const contentEl = getKidByTag(emailNode, ["content"]);
         if (!contentEl) return "";
 
         return Array.from(contentEl.childNodes)
@@ -397,7 +423,7 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
                     case 1: {
                         const el = n as Element;
                         const tag = el.tagName.toLowerCase();
-                        return tag === "signature" ? parseSignature(el, helpers.escapeHtml) : el.outerHTML;
+                        return tag === "signature" ? parseSig(el, helpers.escapeHtml) : el.outerHTML;
                     }
                     case 3:
                         return helpers.escapeHtml(n.textContent || "");
@@ -423,26 +449,23 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
 
         const fromNameHtml = fromNameEl
             ? serialiseMixedContent(fromNameEl)
-            : helpers.escapeHtml(from ? raw(from, "name") : "");
+            : helpers.escapeHtml(from ? txt(from, "name") : "");
 
-        const fromAddr = from ? raw(from, "addr") : "";
+        const fromAddr = from ? txt(from, "addr") : "";
 
         const toNameHtml = toNameEl
             ? serialiseMixedContent(toNameEl)
-            : helpers.escapeHtml(to ? raw(to, "name") : "");
+            : helpers.escapeHtml(to ? txt(to, "name") : "");
 
-        const toAddr = to ? raw(to, "addr") : "";
-
-        const themeClass = getTheme(toAddr);
-
-        const recipientIp = raw(email, "toIp") || "";
-        const timestamp = raw(email, "timestamp");
-        const subject = raw(email, "subject");
-
+        const toAddr = to ? txt(to, "addr") : "";
+        const themeClass = getThm(toAddr);
+        const recipientIp = txt(email, "toIp") || "";
+        const timestamp = txt(email, "timestamp");
+        const subject = txt(email, "subject");
         const contentHtml = buildContentHtml(email);
 
         return render2Mkup(
-            <EmailMarkup
+            <Mail
                 themeClass={themeClass}
                 recipientIp={recipientIp}
                 fromNameHtml={fromNameHtml}
@@ -458,23 +481,25 @@ async function replaceEmailsImpl(htmlContent: string, cssHref: string = "../styl
 }
 
 /**
- * @param {Document | Element | string} root - Document/Element to process, or HTML string to wrap.
- * @returns {Promise<void>} A promise that resolves when all SVG images within the specified root have been replaced with their inline SVG content.
+ * Inlines svg <img> tags by fetching the svg text and swapping the node.
+ * string input gets wrapped in a temp div first.
+ * @param {Document | Element | string} root
+ * @returns {Promise<void>}
  */
-async function replaceSVGsImpl(root: Document | Element | string = document): Promise<void> {
-    let resolvedRoot: Document | Element | null = null;
+async function replSvgs(root: Document | Element | string = document): Promise<void> {
+    let doneRoot: Document | Element | null = null;
 
     if (typeof root === "string") {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = root;
-        resolvedRoot = wrapper;
+        doneRoot = wrapper;
     } else if (root instanceof Document || root instanceof Element) {
-        resolvedRoot = root;
+        doneRoot = root;
     }
 
-    if (!resolvedRoot) return;
+    if (!doneRoot) return;
 
-    const images = Array.from(resolvedRoot.querySelectorAll("img"));
+    const images = Array.from(doneRoot.querySelectorAll("img"));
 
     for (const img of images) {
         const src = img.getAttribute("src");
@@ -507,51 +532,55 @@ async function replaceSVGsImpl(root: Document | Element | string = document): Pr
     }
 }
 
-const CHAPTER_IMAGE_FALLBACK_SRC = "/images/fallback-image.png";
-const CHAPTER_IMAGE_FALLBACK_ALT = "Image not found";
-const CHAPTER_IMAGE_FALLBACK_SIZE_PX = 256;
+const CH_IMG_FALLBACK_SRC = "/images/fallback-image.png";
+const CH_IMG_FALLBACK_ALT = "Image not found";
+const CH_IMG_FALLBACK_SIZE = 256;
 
-let chapterImageFallbackInstalled = false;
+let chImgFallbackOn = false;
 
 /**
+ * Swaps a broken chapter image over to the fallback.
+ * only does it once per image.
  * @param {HTMLImageElement} image
  * @returns {void}
  */
-function applyChapterImageFallback(image: HTMLImageElement): void {
+function setChImgFallback(image: HTMLImageElement): void {
     if (image.dataset.fallbackApplied === "true") return;
 
     const currentSrc = image.getAttribute("src") || image.currentSrc || "";
-    if (currentSrc.includes(CHAPTER_IMAGE_FALLBACK_SRC)) return;
+    if (currentSrc.includes(CH_IMG_FALLBACK_SRC)) return;
 
     image.dataset.fallbackApplied = "true";
-    image.src = CHAPTER_IMAGE_FALLBACK_SRC;
-    image.alt = CHAPTER_IMAGE_FALLBACK_ALT;
-    image.width = CHAPTER_IMAGE_FALLBACK_SIZE_PX;
-    image.setAttribute("width", `${CHAPTER_IMAGE_FALLBACK_SIZE_PX}`);
-    image.style.width = `${CHAPTER_IMAGE_FALLBACK_SIZE_PX}px`;
+    image.src = CH_IMG_FALLBACK_SRC;
+    image.alt = CH_IMG_FALLBACK_ALT;
+    image.width = CH_IMG_FALLBACK_SIZE;
+    image.setAttribute("width", `${CH_IMG_FALLBACK_SIZE}`);
+    image.style.width = `${CH_IMG_FALLBACK_SIZE}px`;
 }
 
 /**
+ * Installs the global broken-image handler for chapter images.
  * @returns {void}
  */
-function ensureChapterImageFallbackHandling(): void {
-    if (chapterImageFallbackInstalled) return;
-    chapterImageFallbackInstalled = true;
+function ensureChImgFallback(): void {
+    if (chImgFallbackOn) return;
+    chImgFallbackOn = true;
 
     document.addEventListener("error", (event: Event) => {
         const target = event.target;
         if (!(target instanceof HTMLImageElement)) return;
         if (!target.classList.contains("chapter-image")) return;
 
-        applyChapterImageFallback(target);
+        setChImgFallback(target);
     }, true);
 }
 
 /**
+ * React bit for one chapter image block.
  * @param {{ src: string; alt: string; }} props
  * @returns {ReactElement}
  */
-function ChapterImageMarkup(props: { src: string; alt: string }): ReactElement {
+function ChImg(props: { src: string; alt: string }): ReactElement {
     return (
         <div className="chapter-image-container">
             <img
@@ -565,11 +594,13 @@ function ChapterImageMarkup(props: { src: string; alt: string }): ReactElement {
 }
 
 /**
+ * Replaces custom <chapter-image> tags with regular image markup.
+ * also makes sure the fallback handling exists first.
  * @param {string} htmlContent
  * @returns {Promise<string>}
  */
-async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
-    ensureChapterImageFallbackHandling();
+async function replImgs(htmlContent: string): Promise<string> {
+    ensureChImgFallback();
 
     const re = /<chapter-image\b[^>]*?(?:\/>|>[\s\S]*?<\/chapter-image>)/gi;
 
@@ -585,21 +616,25 @@ async function replaceImageTagsImpl(htmlContent: string): Promise<string> {
         const altFromText = (imageEl.textContent || "").trim();
         const alt = altAttr || altFromText || "Chapter Image";
 
-        return render2Mkup(<ChapterImageMarkup src={url} alt={alt} />);
+        return render2Mkup(<ChImg src={url} alt={alt} />);
     });
 }
 
-const TOOLTIP_PORTAL_ID = "tooltip-portal";
+const TIP_PORTAL_ID = "tooltip-portal";
 
-let tooltipPortalInstalled = false;
-let tooltipPortalOpenState: TooltipPortalOpenState | null = null;
+let tipOn = false;
+let tipState: TipState | null = null;
 
-function ensureTooltipPortalHost(): HTMLDivElement {
-    const existing = document.getElementById(TOOLTIP_PORTAL_ID);
+/**
+ * Gets or creates the tooltip portal host in the body.
+ * @returns {HTMLDivElement}
+ */
+function needTipHost(): HTMLDivElement {
+    const existing = document.getElementById(TIP_PORTAL_ID);
     if (existing instanceof HTMLDivElement) return existing;
 
     const host = document.createElement("div");
-    host.id = TOOLTIP_PORTAL_ID;
+    host.id = TIP_PORTAL_ID;
     host.style.position = "fixed";
     host.style.left = "0";
     host.style.top = "0";
@@ -612,7 +647,12 @@ function ensureTooltipPortalHost(): HTMLDivElement {
     return host;
 }
 
-function parseCssTimeMs(raw: string): number {
+/**
+ * Parses a css time string into milliseconds.
+ * @param {string} raw
+ * @returns {number}
+ */
+function cssMs(raw: string): number {
     const s = raw.trim();
     if (!s) return 0;
     if (s.endsWith("ms")) return Number.parseFloat(s);
@@ -620,17 +660,30 @@ function parseCssTimeMs(raw: string): number {
     return Number.parseFloat(s);
 }
 
-function getTooltipFadeMs(el: HTMLElement): number {
+/**
+ * Tries to work out the tooltip fade duration in ms.
+ * falls back to a small default if css gives nothing useful.
+ * @param {HTMLElement} el
+ * @returns {number}
+ */
+function getTipFadeMs(el: HTMLElement): number {
     const cssVar = getComputedStyle(el).getPropertyValue("--tooltip-fade-duration");
-    const fromVar = parseCssTimeMs(cssVar);
+    const fromVar = cssMs(cssVar);
     if (Number.isFinite(fromVar) && fromVar > 0) return fromVar;
 
     const first = (getComputedStyle(el).transitionDuration.split(",")[0] || "").trim();
-    const fromTransition = parseCssTimeMs(first);
-    return (Number.isFinite(fromTransition) && fromTransition > 0) ? fromTransition : 160;
+    const fromTransition = cssMs(first);
+    return Number.isFinite(fromTransition) && fromTransition > 0 ? fromTransition : 160;
 }
 
-function positionTooltipPortal(triggerEl: HTMLElement, portalEl: HTMLElement): void {
+/**
+ * Positions the open tooltip portal near its trigger.
+ * flips below if there is no room above.
+ * @param {HTMLElement} triggerEl
+ * @param {HTMLElement} portalEl
+ * @returns {void}
+ */
+function posTip(triggerEl: HTMLElement, portalEl: HTMLElement): void {
     const gap = 8;
     const pad = 8;
     const maxWidth = Math.max(0, window.innerWidth - (pad * 2));
@@ -655,31 +708,36 @@ function positionTooltipPortal(triggerEl: HTMLElement, portalEl: HTMLElement): v
     left = Math.max(pad, Math.min(left, maxLeft));
 
     let top = triggerRect.top - portalRect.height - gap;
-    const shouldFlipBelow = top < pad;
+    const flip = top < pad;
 
-    if (shouldFlipBelow) top = triggerRect.bottom + gap;
+    if (flip) top = triggerRect.bottom + gap;
 
     portalEl.style.left = `${Math.round(left)}px`;
     portalEl.style.top = `${Math.round(top)}px`;
 
-    if (shouldFlipBelow) portalEl.classList.add("below");
+    if (flip) portalEl.classList.add("below");
 }
 
-function closeTooltipPortal(opts: { immediate?: boolean } = {}): void {
-    const state = tooltipPortalOpenState;
+/**
+ * Closes the tooltip portal.
+ * can do it instantly or wait for the fade if we have one.
+ * @param {{ immediate?: boolean }} opts
+ * @returns {void}
+ */
+function closeTip(opts: { immediate?: boolean } = {}): void {
+    const state = tipState;
     if (!state) return;
 
     const { immediate = false } = opts;
-
     const portalEl = state.portalEl;
     const portalContent = portalEl.querySelector(".tooltip-content");
     const contentEl = portalContent instanceof HTMLElement ? portalContent : null;
 
     const cleanup = (): void => {
-        if (tooltipPortalOpenState !== state) return;
+        if (tipState !== state) return;
         state.wrapperEl.classList.remove("portal-active");
         portalEl.remove();
-        tooltipPortalOpenState = null;
+        tipState = null;
     };
 
     if (immediate || !contentEl) {
@@ -690,6 +748,7 @@ function closeTooltipPortal(opts: { immediate?: boolean } = {}): void {
     portalEl.classList.remove("show");
 
     let cleaned = false;
+
     const finish = (): void => {
         if (cleaned) return;
         cleaned = true;
@@ -704,10 +763,15 @@ function closeTooltipPortal(opts: { immediate?: boolean } = {}): void {
 
     portalEl.addEventListener("transitionend", onEnd);
 
-    window.setTimeout(finish, getTooltipFadeMs(contentEl) + 50);
+    window.setTimeout(finish, getTipFadeMs(contentEl) + 50);
 }
 
-function openTooltipPortal(triggerEl: HTMLElement): void {
+/**
+ * Opens the tooltip content in the portal near the trigger.
+ * @param {HTMLElement} triggerEl
+ * @returns {void}
+ */
+function openTip(triggerEl: HTMLElement): void {
     if (!triggerEl.isConnected) return;
 
     const wrapper = triggerEl.closest(".tooltip");
@@ -716,12 +780,12 @@ function openTooltipPortal(triggerEl: HTMLElement): void {
     const content = wrapper.querySelector(".tooltip-content");
     if (!(content instanceof HTMLElement)) return;
 
-    const existing = tooltipPortalOpenState;
+    const existing = tipState;
     if (existing?.triggerEl === triggerEl) return;
 
-    closeTooltipPortal({ immediate: true });
+    closeTip({ immediate: true });
 
-    const portalHost = ensureTooltipPortalHost();
+    const portalHost = needTipHost();
 
     const portalWrapper = document.createElement("span");
     portalWrapper.className = "tooltip portal";
@@ -743,87 +807,91 @@ function openTooltipPortal(triggerEl: HTMLElement): void {
     wrapper.classList.add("portal-active");
     portalHost.appendChild(portalWrapper);
 
-    positionTooltipPortal(triggerEl, portalWrapper);
-    
+    posTip(triggerEl, portalWrapper);
+
     const viewport = window.visualViewport;
     if (viewport) {
         portalWrapper.style.maxWidth = `${Math.max(0, viewport.width - 16)}px`;
-        positionTooltipPortal(triggerEl, portalWrapper);
+        posTip(triggerEl, portalWrapper);
     }
 
-    tooltipPortalOpenState = {
+    tipState = {
         wrapperEl: wrapper,
         triggerEl,
-        portalEl: portalWrapper,
+        portalEl: portalWrapper
     };
 
     requestAnimationFrame(() => {
-        if (tooltipPortalOpenState?.portalEl !== portalWrapper) return;
+        if (tipState?.portalEl !== portalWrapper) return;
         portalWrapper.classList.add("show");
     });
 }
 
-function ensureTooltipPortal(): void {
-    if (tooltipPortalInstalled) return;
-    tooltipPortalInstalled = true;
+/**
+ * Installs the global tooltip portal handlers once.
+ * @returns {void}
+ */
+function ensureTip(): void {
+    if (tipOn) return;
+    tipOn = true;
 
-    const closestTrigger = (t: EventTarget | null): HTMLElement | null => {
+    const findTrigger = (t: EventTarget | null): HTMLElement | null => {
         if (!(t instanceof Element)) return null;
         const el = t.closest(".tooltip-trigger");
         return el instanceof HTMLElement ? el : null;
     };
 
-    const isInsideOpenTooltip = (t: EventTarget | null): boolean => {
-        const state = tooltipPortalOpenState;
+    const isInsideOpenTip = (t: EventTarget | null): boolean => {
+        const state = tipState;
         if (!state) return false;
         if (!(t instanceof Node)) return false;
         return state.triggerEl.contains(t) || state.portalEl.contains(t);
     };
 
     const hideOnViewportChange = (): void => {
-        if (!tooltipPortalOpenState) return;
-        closeTooltipPortal();
+        if (!tipState) return;
+        closeTip();
     };
 
     document.addEventListener("mouseover", (ev: MouseEvent) => {
-        const trigger = closestTrigger(ev.target);
+        const trigger = findTrigger(ev.target);
         if (!trigger) return;
-        openTooltipPortal(trigger);
+        openTip(trigger);
     });
 
     document.addEventListener("focusin", (ev: FocusEvent) => {
-        const trigger = closestTrigger(ev.target);
+        const trigger = findTrigger(ev.target);
         if (!trigger) return;
-        openTooltipPortal(trigger);
+        openTip(trigger);
     });
 
     document.addEventListener("mouseout", (ev: MouseEvent) => {
-        if (!tooltipPortalOpenState) return;
+        if (!tipState) return;
 
         const from = ev.target;
         const to = ev.relatedTarget;
 
-        if (!isInsideOpenTooltip(from)) return;
-        if (isInsideOpenTooltip(to)) return;
+        if (!isInsideOpenTip(from)) return;
+        if (isInsideOpenTip(to)) return;
 
-        closeTooltipPortal();
+        closeTip();
     });
 
     document.addEventListener("focusout", (ev: FocusEvent) => {
-        if (!tooltipPortalOpenState) return;
+        if (!tipState) return;
 
         const from = ev.target;
         const to = ev.relatedTarget;
 
-        if (!isInsideOpenTooltip(from)) return;
-        if (isInsideOpenTooltip(to)) return;
+        if (!isInsideOpenTip(from)) return;
+        if (isInsideOpenTip(to)) return;
 
-        closeTooltipPortal();
+        closeTip();
     });
 
     document.addEventListener("keydown", (ev: KeyboardEvent) => {
         if (ev.key !== "Escape") return;
-        closeTooltipPortal();
+        closeTip();
     });
 
     document.addEventListener("scroll", hideOnViewportChange, true);
@@ -836,10 +904,11 @@ function ensureTooltipPortal(): void {
 }
 
 /**
+ * React bit for the tooltip markup.
  * @param {{ triggerHtml: string; contentHtml: string; isTranslation: boolean }} props
  * @returns {ReactElement}
  */
-function TooltipMarkup(props: {
+function Tip(props: {
     triggerHtml: string;
     contentHtml: string;
     isTranslation: boolean;
@@ -855,19 +924,21 @@ function TooltipMarkup(props: {
 }
 
 /**
- * @param {string} htmlContent - HTML content to transform.
- * @returns {Promise<string>} A promise that resolves to the
- * transformed HTML content with custom tooltip blocks replaced
- * by styled HTML structures.
+ * Replaces custom <tooltip> blocks with the rendered tooltip html.
+ * also boots the shared portal wiring.
+ * @param {string} htmlContent
+ * @returns {Promise<string>}
  */
-async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
+async function replTips(htmlContent: string): Promise<string> {
+    ensureTip();
 
-    ensureTooltipPortal();
     const re = /<tooltip\b[^>]*>[\s\S]*?<\/tooltip>/gi;
 
     /**
-     * @param {Node} n - Node to serialise.
-     * @returns {string} Serialised node string.
+     * Serialises one node for the tooltip parser.
+     * text is escaped, elements get serialised as xml.
+     * @param {Node} n
+     * @returns {string}
      */
     const serialise = (n: Node): string => {
         switch (n.nodeType) {
@@ -889,7 +960,6 @@ async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
         if (!contentEl) return block;
 
         const isHtml = contentEl.hasAttribute("html");
-
         const translationAttr = (contentEl.getAttribute("translation") || "").trim().toLowerCase();
         const isTranslation = translationAttr === "true";
 
@@ -908,7 +978,7 @@ async function replaceTooltipsImpl(htmlContent: string): Promise<string> {
             : helpers.escapeHtml(contentEl.textContent || "");
 
         return render2Mkup(
-            <TooltipMarkup
+            <Tip
                 triggerHtml={triggerHtml}
                 contentHtml={contentHtml}
                 isTranslation={isTranslation}
@@ -924,11 +994,16 @@ declare global {
 }
 
 /**
- * @returns {void} Binds click handler for email action buttons.
+ * Hooks the fake email action buttons.
+ * if the ip does not match, it yells instead.
+ * @returns {void}
  */
-function bindEmailActionsImpl(): void {
+function bindMailActs(): void {
     document.addEventListener("click", (e: MouseEvent) => {
-        const button = (e.target as Element).closest(".email-action");
+        const target = e.target;
+        if (!(target instanceof Element)) return;
+
+        const button = target.closest(".email-action");
         if (!button) return;
 
         const currentIP = window.ipAdress;
@@ -955,27 +1030,31 @@ function bindEmailActionsImpl(): void {
 }
 
 class MediaStyler {
-    private readonly impls: MediaStylerImpls;
+    private readonly impls: Impls;
 
     /**
-     * @param {MediaStylerImplOverrides} implOverrides - Optional overrides for internal implementations.
-     * @returns {MediaStyler} MediaStyler instance.
+     * Lets you swap internal implementations for tests or odd cases.
+     * normal usage probably leaves this alone.
+     * @param {ImplOverrides} implOverrides
+     * @returns {MediaStyler}
      */
-    constructor(implOverrides: MediaStylerImplOverrides = {}) {
+    constructor(implOverrides: ImplOverrides = {}) {
         this.impls = {
-            replaceSmsMessages: implOverrides.replaceSmsMessages ?? replaceSmsMessagesImpl,
-            replaceEmails: implOverrides.replaceEmails ?? replaceEmailsImpl,
-            replaceSVGs: implOverrides.replaceSVGs ?? replaceSVGsImpl,
-            replaceImageTags: implOverrides.replaceImageTags ?? replaceImageTagsImpl,
-            replaceTooltips: implOverrides.replaceTooltips ?? replaceTooltipsImpl,
-            bindEmailActions: implOverrides.bindEmailActions ?? bindEmailActionsImpl,
+            replaceSmsMessages: implOverrides.replaceSmsMessages ?? replSms,
+            replaceEmails: implOverrides.replaceEmails ?? replEmails,
+            replaceSVGs: implOverrides.replaceSVGs ?? replSvgs,
+            replaceImageTags: implOverrides.replaceImageTags ?? replImgs,
+            replaceTooltips: implOverrides.replaceTooltips ?? replTips,
+            bindEmailActions: implOverrides.bindEmailActions ?? bindMailActs
         };
     }
 
     /**
-     * @param {string} htmlContent - HTML content to transform.
-     * @param {string} cssHref - Stylesheet href for SMS rendering.
-     * @returns {string} Transformed HTML content with SMS blocks replaced by styled HTML structures.
+     * Replaces sms message tags with styled html.
+     * physics decorator still does its little bounce thing.
+     * @param {string} htmlContent
+     * @param {string} cssHref
+     * @returns {string}
      */
     @smsEnterBounce({
         durationMs: 520,
@@ -988,40 +1067,45 @@ class MediaStyler {
     }
 
     /**
-     * @param {string} htmlContent - HTML content to transform.
-     * @param {string} cssHref - Stylesheet href for email rendering.
-     * @returns {Promise<string>} Transformed HTML content with email blocks replaced by styled HTML structures.
+     * Replaces email tags with styled email cards.
+     * @param {string} htmlContent
+     * @param {string} cssHref
+     * @returns {Promise<string>}
      */
     replaceEmails(htmlContent: string, cssHref: string = "../styles/modules/email.css"): Promise<string> {
         return this.impls.replaceEmails(htmlContent, cssHref);
     }
 
     /**
-     * @param {Document | Element | string} root - Document/Element to process, or HTML string to wrap.
-     * @returns {Promise<void>} A promise that resolves when all SVG images have been replaced with inline SVG content.
+     * Inlines svg images under the given root.
+     * @param {Document | Element | string} root
+     * @returns {Promise<void>}
      */
     replaceSVGs(root: Document | Element | string = document): Promise<void> {
         return this.impls.replaceSVGs(root);
     }
 
     /**
-     * @param {string} htmlContent - HTML content to transform.
-     * @returns {Promise<string>} Transformed HTML content with <chapter-image> tags replaced by styled image structures.
+     * Replaces <chapter-image> tags with proper image markup.
+     * @param {string} htmlContent
+     * @returns {Promise<string>}
      */
     replaceImageTags(htmlContent: string): Promise<string> {
         return this.impls.replaceImageTags(htmlContent);
     }
 
     /**
-     * @param {string} htmlContent - HTML content to transform.
-     * @returns {Promise<string>} Transformed HTML content with tooltip blocks replaced by styled HTML structures.
+     * Replaces tooltip tags with the styled tooltip markup.
+     * @param {string} htmlContent
+     * @returns {Promise<string>}
      */
     replaceTooltips(htmlContent: string): Promise<string> {
         return this.impls.replaceTooltips(htmlContent);
     }
 
     /**
-     * @returns {void} Binds click handler for email action buttons.
+     * Hooks the email action click handling.
+     * @returns {void}
      */
     bindEmailActions(): void {
         this.impls.bindEmailActions();

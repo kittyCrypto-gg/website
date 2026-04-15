@@ -26,12 +26,14 @@ const getIpHashUrl = window.GET_IP_HASH_URL;
 
 let userHashedIp: string | null = null;
 
-const EDIT_MESSAGE_MODAL_ID = "edit-message-modal";
+const MOD_ID = "edit-message-modal";
 
 /**
- * @returns {ReactElement}
+ * little edit modal body. just the form bits really.
+ *
+ * @returns modal react bit
  */
-function EditMsgModal(): ReactElement {
+function EditMod(): ReactElement {
     return (
         <div id="edit-message-container">
             <input type="hidden" id="edit-message-id-hidden" />
@@ -53,9 +55,12 @@ function EditMsgModal(): ReactElement {
 }
 
 /**
- * @returns {ReactElement}
+ * tiny action buttons for each chat msg.
+ * edit + delete, nothing fancy.
+ *
+ * @returns action buttons chunk
  */
-function ChatActs(): ReactElement {
+function Acts(): ReactElement {
     return (
         <span className="chat-actions">
             <span
@@ -80,10 +85,13 @@ function ChatActs(): ReactElement {
 }
 
 /**
- * @param {{ userNick: string; messageContent: string }} props
- * @returns {ReactElement}
+ * temp message while delete is happening.
+ * gives the user something to look at instead of it just vanishing.
+ *
+ * @param props nick + message text
+ * @returns pending msg markup
  */
-function PendingMsg(props: { userNick: string; messageContent: string }): ReactElement {
+function Pending(props: { userNick: string; messageContent: string }): ReactElement {
     return (
         <>
             <span className="chat-header">
@@ -95,10 +103,13 @@ function PendingMsg(props: { userNick: string; messageContent: string }): ReactE
 }
 
 /**
- * @param {{ userNick: string; messageContent: string }} props
- * @returns {ReactElement}
+ * shown when delete falls over.
+ * bit grumpy, but useful.
+ *
+ * @param props nick + message text
+ * @returns failed msg markup
  */
-function FailedMsg(props: { userNick: string; messageContent: string }): ReactElement {
+function Failed(props: { userNick: string; messageContent: string }): ReactElement {
     return (
         <>
             <span className="chat-header">
@@ -110,140 +121,9 @@ function FailedMsg(props: { userNick: string; messageContent: string }): ReactEl
     );
 }
 
-const EDIT_MESSAGE_MODAL_HTML = render2Mkup(<EditMsgModal />);
+const MOD_HTML = render2Mkup(<EditMod />);
 
-const editMessageModal = modals.create({
-    id: EDIT_MESSAGE_MODAL_ID,
-    mode: "blocking",
-    content: EDIT_MESSAGE_MODAL_HTML,
-    decorators: [
-        onModalEvent("#edit-message-btn", "click", () => {
-            void editMessage();
-        }),
-        closeOnClick("#cancel-edit-btn")
-    ]
-});
-
-/**
- * @returns {Promise<void>}
- */
-async function fetchUserHashedIp(): Promise<void> {
-    try {
-        const response = await fetch(String(getIpHashUrl));
-        if (!response.ok) throw new Error("Failed to fetch hashed IP");
-
-        const data: unknown = await response.json();
-
-        if (!helpers.isRecord(data) || typeof data.hashedIp !== "string") {
-            throw new Error("Invalid hashed IP response");
-        }
-
-        userHashedIp = data.hashedIp;
-        console.log("🔑 User Hashed IP:", userHashedIp);
-    } catch (error: unknown) {
-        console.error("❌ Error fetching hashed IP:", error);
-    }
-}
-
-/**
- * @param {Element} messageDiv
- * @returns {string}
- */
-function getMsgId(messageDiv: Element): string {
-    const msgIdSpan = messageDiv.querySelector(".chat-msg-id");
-    return msgIdSpan?.textContent?.replace("ID: ", "").trim() || "";
-}
-
-/**
- * @param {Element} messageDiv
- * @returns {void}
- */
-function addActs(messageDiv: Element): void {
-    if (messageDiv.querySelector(".chat-actions")) return;
-
-    const chatHeaderDiv = messageDiv.querySelector(".chat-header");
-    if (!(chatHeaderDiv instanceof HTMLElement)) return;
-
-    const msgId = getMsgId(messageDiv);
-    if (!msgId) return;
-
-    const frag = render2Frag(<ChatActs />);
-    const actionSpan = frag.firstElementChild;
-    if (!(actionSpan instanceof HTMLSpanElement)) return;
-
-    const editButton = actionSpan.querySelector("[data-chat-action='edit']");
-    const deleteButton = actionSpan.querySelector("[data-chat-action='delete']");
-
-    if (editButton instanceof HTMLElement) {
-        editButton.onclick = () => {
-            void openEditModal(messageDiv);
-        };
-    }
-
-    if (deleteButton instanceof HTMLElement) {
-        deleteButton.onclick = () => {
-            void deleteMessage(msgId);
-        };
-    }
-
-    chatHeaderDiv.appendChild(actionSpan);
-}
-
-/**
- * @returns {void}
- */
-function enhanceMessages(): void {
-    const sessionToken = window.sessionToken;
-    if (!sessionToken) return;
-
-    const sessionTokenInt = BigInt(`0x${sessionToken}`);
-
-    document.querySelectorAll(".chat-message").forEach((messageDiv) => {
-        const rawMsgId = getMsgId(messageDiv);
-        if (!rawMsgId) return;
-
-        const msgId = BigInt(rawMsgId);
-        const residue = msgId % sessionTokenInt;
-
-        if (residue !== BigInt(0)) return;
-
-        console.log("✨ Enhancing message:", msgId.toString());
-        addActs(messageDiv);
-    });
-}
-
-/**
- * @returns {Promise<void>}
- */
-async function initialiseChat(): Promise<void> {
-    await fetchUserHashedIp();
-    document.addEventListener("chatUpdated", enhanceMessages);
-}
-
-void initialiseChat().then(() => {
-    console.log("🚀 Chat enhancements initialised.");
-});
-
-/**
- * @param {Element} messageDiv
- * @returns {Promise<void>}
- */
-async function openEditModal(messageDiv: Element): Promise<void> {
-    editMessageModal.open();
-    populateModalFields(messageDiv);
-}
-
-/**
- * @returns {void}
- */
-function closeEditModal(): void {
-    editMessageModal.close();
-}
-
-/**
- * @returns {Promise<void>}
- */
-async function editMessage(): Promise<void> {
+const editMsg = async (): Promise<void> => {
     const sessionToken = window.sessionToken;
 
     const msgId =
@@ -285,32 +165,176 @@ async function editMessage(): Promise<void> {
     }
 
     console.log("✅ Message edited successfully.");
-    closeEditModal();
+    closeMod();
+};
+
+const closeMod = (): void => {
+    mod.close();
+};
+
+const mod = modals.create({
+    id: MOD_ID,
+    mode: "blocking",
+    content: MOD_HTML,
+    decorators: [
+        onModalEvent("#edit-message-btn", "click", () => {
+            void editMsg();
+        }),
+        closeOnClick("#cancel-edit-btn")
+    ]
+});
+
+/**
+ * fetches the hashed ip the chat backend wants.
+ * if it fails, we just log it and carry on for now.
+ *
+ * @returns resolves when the fetch attempt is done
+ */
+async function fetchHash(): Promise<void> {
+    try {
+        const response = await fetch(String(getIpHashUrl));
+        if (!response.ok) throw new Error("Failed to fetch hashed IP");
+
+        const data: unknown = await response.json();
+
+        if (!helpers.isRecord(data) || typeof data.hashedIp !== "string") {
+            throw new Error("Invalid hashed IP response");
+        }
+
+        userHashedIp = data.hashedIp;
+        console.log("🔑 User Hashed IP:", userHashedIp);
+    } catch (error: unknown) {
+        console.error("❌ Error fetching hashed IP:", error);
+    }
 }
 
 /**
- * @param {Element} messageDiv
- * @returns {void}
+ * reads the visible msg id from a chat message node.
+ *
+ * @param msgEl chat message element
+ * @returns msg id text or empty string
  */
-function populateModalFields(messageDiv: Element): void {
-    const modal = document.getElementById("edit-message-modal");
-    if (!modal) return;
+function getId(msgEl: Element): string {
+    const msgIdSpan = msgEl.querySelector(".chat-msg-id");
+    return msgIdSpan?.textContent?.replace("ID: ", "").trim() || "";
+}
 
-    const messageText = messageDiv.querySelector(".chat-text")?.textContent || "";
-    const msgId = getMsgId(messageDiv);
-    const userNick = messageDiv.querySelector(".chat-nick")?.textContent?.split(" - ")[0] || "";
+/**
+ * adds edit/delete controls to one message, if it qualifies.
+ * skips it if actions are already there or if the node is missing key bits.
+ *
+ * @param msgEl one chat message element
+ * @returns nothing
+ */
+function addActs(msgEl: Element): void {
+    if (msgEl.querySelector(".chat-actions")) return;
+
+    const headEl = msgEl.querySelector(".chat-header");
+    if (!(headEl instanceof HTMLElement)) return;
+
+    const msgId = getId(msgEl);
+    if (!msgId) return;
+
+    const frag = render2Frag(<Acts />);
+    const actEl = frag.firstElementChild;
+    if (!(actEl instanceof HTMLSpanElement)) return;
+
+    const editBtn = actEl.querySelector("[data-chat-action='edit']");
+    const delBtn = actEl.querySelector("[data-chat-action='delete']");
+
+    if (editBtn instanceof HTMLElement) {
+        editBtn.onclick = () => {
+            void openMod(msgEl);
+        };
+    }
+
+    if (delBtn instanceof HTMLElement) {
+        delBtn.onclick = () => {
+            void delMsg(msgId);
+        };
+    }
+
+    headEl.appendChild(actEl);
+}
+
+/**
+ * looks through rendered chat messages and adds controls to the ones
+ * that belong to the current session token maths-wise.
+ *
+ * @returns nothing
+ */
+function enhance(): void {
+    const sessionToken = window.sessionToken;
+    if (!sessionToken) return;
+
+    const sessionTokenInt = BigInt(`0x${sessionToken}`);
+
+    document.querySelectorAll(".chat-message").forEach((msgEl) => {
+        const rawMsgId = getId(msgEl);
+        if (!rawMsgId) return;
+
+        const msgId = BigInt(rawMsgId);
+        const residue = msgId % sessionTokenInt;
+
+        if (residue !== BigInt(0)) return;
+
+        console.log("✨ Enhancing message:", msgId.toString());
+        addActs(msgEl);
+    });
+}
+
+/**
+ * bootstraps the chat extras.
+ * right now that means hashed ip + re-enhancing on chat updates.
+ *
+ * @returns resolves when setup is done
+ */
+async function init(): Promise<void> {
+    await fetchHash();
+    document.addEventListener("chatUpdated", enhance);
+}
+
+void init().then(() => {
+    console.log("🚀 Chat enhancements initialised.");
+});
+
+/**
+ * opens the edit modal and fills it from the clicked message.
+ *
+ * @param msgEl source chat message
+ * @returns resolves after modal open/fill stuff
+ */
+async function openMod(msgEl: Element): Promise<void> {
+    mod.open();
+    fillMod(msgEl);
+}
+
+/**
+ * fills the modal fields from a chat message node.
+ * bit scrappy, but gets the job done.
+ *
+ * @param msgEl source chat message
+ * @returns nothing
+ */
+function fillMod(msgEl: Element): void {
+    const modalEl = document.getElementById(MOD_ID);
+    if (!modalEl) return;
+
+    const messageText = msgEl.querySelector(".chat-text")?.textContent || "";
+    const msgId = getId(msgEl);
+    const userNick = msgEl.querySelector(".chat-nick")?.textContent?.split(" - ")[0] || "";
     const userId =
-        messageDiv.querySelector(".chat-nick")?.textContent?.match(/\((0x[a-f0-9]+)\)/)?.[1] || "";
+        msgEl.querySelector(".chat-nick")?.textContent?.match(/\((0x[a-f0-9]+)\)/)?.[1] || "";
 
     const messageInput =
-        modal.querySelector<HTMLInputElement | HTMLTextAreaElement>("#edit-message-input");
+        modalEl.querySelector<HTMLInputElement | HTMLTextAreaElement>("#edit-message-input");
 
-    const messageIdField = modal.querySelector<HTMLElement>("#edit-message-id");
+    const messageIdField = modalEl.querySelector<HTMLElement>("#edit-message-id");
 
     const userInfoField =
-        modal.querySelector<HTMLInputElement | HTMLTextAreaElement>("#edit-user-info");
+        modalEl.querySelector<HTMLInputElement | HTMLTextAreaElement>("#edit-user-info");
 
-    const msgIdHidden = modal.querySelector<HTMLInputElement>("#edit-message-id-hidden");
+    const msgIdHidden = modalEl.querySelector<HTMLInputElement>("#edit-message-id-hidden");
 
     if (messageInput) messageInput.value = messageText;
     if (messageIdField) messageIdField.textContent = `Editing Message ID: ${msgId}`;
@@ -319,47 +343,52 @@ function populateModalFields(messageDiv: Element): void {
 }
 
 /**
- * @param {HTMLElement} container
- * @param {ReactElement} content
- * @returns {void}
+ * swaps the inner markup of a chat message container.
+ *
+ * @param container target element
+ * @param content react content to render
+ * @returns nothing
  */
-function setMsgContent(container: HTMLElement, content: ReactElement): void {
+function setMsg(container: HTMLElement, content: ReactElement): void {
     container.innerHTML = render2Mkup(content);
 }
 
 /**
- * @param {string} msgId
- * @returns {Promise<void>}
+ * deletes a message through the backend and shows a temporary pending block.
+ * if it fails it puts the original back and shows a failure state for a bit.
+ *
+ * @param msgId message id to delete
+ * @returns resolves when the delete flow finishes
  */
-async function deleteMessage(msgId: string): Promise<void> {
+async function delMsg(msgId: string): Promise<void> {
     const sessionToken = window.sessionToken;
     console.log("🗑️ Deleting message:", msgId);
 
-    const messageDiv = [...document.querySelectorAll(".chat-message")].find((div) =>
+    const msgEl = [...document.querySelectorAll(".chat-message")].find((div) =>
         div.querySelector(".chat-msg-id")?.textContent?.includes(msgId)
     );
 
     let messageContent = "Message is being deleted...";
     let userNick = "Unknown";
 
-    if (messageDiv instanceof HTMLElement) {
-        const messageTextDiv = messageDiv.querySelector(".chat-text");
-        const messageNickDiv = messageDiv.querySelector(".chat-nick");
+    if (msgEl instanceof HTMLElement) {
+        const messageTextDiv = msgEl.querySelector(".chat-text");
+        const messageNickDiv = msgEl.querySelector(".chat-nick");
 
         messageContent = messageTextDiv?.textContent || messageContent;
         userNick = messageNickDiv?.textContent || userNick;
 
-        messageDiv.remove();
+        msgEl.remove();
     }
 
-    const pendingMessageDiv = document.createElement("div");
-    pendingMessageDiv.classList.add("chat-message", "pending");
-    setMsgContent(
-        pendingMessageDiv,
-        <PendingMsg userNick={userNick} messageContent={messageContent} />
+    const pendingEl = document.createElement("div");
+    pendingEl.classList.add("chat-message", "pending");
+    setMsg(
+        pendingEl,
+        <Pending userNick={userNick} messageContent={messageContent} />
     );
 
-    document.getElementById("chatroom")?.appendChild(pendingMessageDiv);
+    document.getElementById("chatroom")?.appendChild(pendingEl);
 
     const body = {
         msgId,
@@ -381,22 +410,22 @@ async function deleteMessage(msgId: string): Promise<void> {
         const responseData: unknown = await response.json();
         console.log("✅ Message deleted successfully:", responseData);
 
-        pendingMessageDiv.remove();
+        pendingEl.remove();
     } catch (error: unknown) {
         console.error("❌ Error deleting message:", error);
 
-        if (messageDiv instanceof HTMLElement) {
-            document.getElementById("chatroom")?.appendChild(messageDiv);
+        if (msgEl instanceof HTMLElement) {
+            document.getElementById("chatroom")?.appendChild(msgEl);
         }
 
-        setMsgContent(
-            pendingMessageDiv,
-            <FailedMsg userNick={userNick} messageContent={messageContent} />
+        setMsg(
+            pendingEl,
+            <Failed userNick={userNick} messageContent={messageContent} />
         );
 
-        setTimeout(() => pendingMessageDiv.remove(), 5000);
+        setTimeout(() => pendingEl.remove(), 5000);
     }
 }
 
-window.editMessage = editMessage;
-window.closeEditModal = closeEditModal;
+window.editMessage = editMsg;
+window.closeEditModal = closeMod;

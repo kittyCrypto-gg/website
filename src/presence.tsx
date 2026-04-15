@@ -50,8 +50,10 @@ interface PresenceRuntimeState {
 }
 
 /**
+ * Checks whether the API payload looks like a presence snapshot.
+ *
  * @param {unknown} value - JSON payload returned by the presence endpoint.
- * @returns {value is PresenceSnapshot} True when the payload matches the expected presence shape.
+ * @returns {value is PresenceSnapshot} True when the payload matches the expected shape.
  */
 function isPresenceSnapshot(value: unknown): value is PresenceSnapshot {
     if (!helpers.isRecord(value)) return false;
@@ -65,14 +67,18 @@ function isPresenceSnapshot(value: unknown): value is PresenceSnapshot {
 }
 
 /**
+ * Normalises an API token so comparisons are predictable.
+ *
  * @param {string} value - Raw token from the API.
- * @returns {string} Lower-cased, trimmed token for comparisons.
+ * @returns {string} Lower-cased, trimmed token.
  */
 function normaliseToken(value: string): string {
     return value.trim().toLowerCase();
 }
 
 /**
+ * Turns a machine-ish token into something nicer to read.
+ *
  * @param {string} value - Raw token from the API.
  * @returns {string} Human-readable label with spacing and title casing.
  */
@@ -88,6 +94,8 @@ function humaniseToken(value: string): string {
 }
 
 /**
+ * Pads a date part to two digits.
+ *
  * @param {number} value - Numeric date part.
  * @returns {string} Two-digit string.
  */
@@ -96,7 +104,10 @@ function padDatePart(value: number): string {
 }
 
 /**
- * @param {string} value - API timestamp in "YYYY-MM-DD HH:mm:ss" form, interpreted as GMT/UTC.
+ * Parses a presence timestamp from the API.
+ * The API sends "YYYY-MM-DD HH:mm:ss" and we treat it as UTC.
+ *
+ * @param {string} value - API timestamp.
  * @returns {Date | null} Parsed Date instance, or null when invalid.
  */
 function parsePresenceDate(value: string): Date | null {
@@ -124,7 +135,9 @@ function parsePresenceDate(value: string): Date | null {
 }
 
 /**
- * @param {Date} value - Date instance to format in the browser's local timezone.
+ * Formats a Date in the browser's local timezone.
+ *
+ * @param {Date} value - Date instance to format.
  * @returns {string} Local display value in "YYYY.MM.DD HH:MM:SS" format.
  */
 function formatLocalDateTime(value: Date): string {
@@ -139,6 +152,8 @@ function formatLocalDateTime(value: Date): string {
 }
 
 /**
+ * Formats the current local UTC offset for display.
+ *
  * @param {Date} value - Date instance in the browser's local timezone.
  * @returns {string} UTC offset in "UTC+HH:MM" or "UTC-HH:MM" format.
  */
@@ -153,8 +168,10 @@ function formatUtcOffset(value: Date): string {
 }
 
 /**
+ * Converts a timestamp into an ISO string for a <time> element.
+ *
  * @param {string | null} value - API timestamp in "YYYY-MM-DD HH:mm:ss" form.
- * @returns {string} ISO datetime for the <time> element when parsing succeeds, otherwise an empty string.
+ * @returns {string} ISO datetime when parsing works, otherwise an empty string.
  */
 function toDateTimeAttribute(value: string | null): string {
     if (!value) return "";
@@ -164,13 +181,13 @@ function toDateTimeAttribute(value: string | null): string {
 }
 
 /**
+ * Formats a presence timestamp for display.
+ *
  * @param {string | null} value - API timestamp in "YYYY-MM-DD HH:mm:ss" form.
- * @returns {string} Local display value in "YYYY.MM.DD HH:MM:SS" format, or the raw input when parsing fails.
+ * @returns {string} Local display value, or a fallback when unavailable.
  */
 function formatPresenceTimestamp(value: string | null): string {
-    if (!value) return "Not available";
-
-    const trimmed = value.trim();
+    const trimmed = value?.trim() ?? "";
     if (!trimmed) return "Not available";
 
     const parsed = parsePresenceDate(trimmed);
@@ -180,6 +197,8 @@ function formatPresenceTimestamp(value: string | null): string {
 }
 
 /**
+ * Builds the current local clock details for the card.
+ *
  * @returns {{ currentDateTime: string; utcOffset: string; isoDateTime: string }} Current local clock details.
  */
 function getCurrentLocalClock(): {
@@ -197,8 +216,10 @@ function getCurrentLocalClock(): {
 }
 
 /**
+ * Converts a raw snapshot into the badge, tone, and text we want to show.
+ *
  * @param {PresenceSnapshot} snapshot - Validated presence payload.
- * @returns {PresencePresentation} Visual presentation details derived from the current presence state.
+ * @returns {PresencePresentation} Presentation details derived from the current state.
  */
 function resolvePresencePresentation(snapshot: PresenceSnapshot): PresencePresentation {
     const status = normaliseToken(snapshot.status);
@@ -221,7 +242,7 @@ function resolvePresencePresentation(snapshot: PresenceSnapshot): PresencePresen
             emoji: "🟥",
             badge: "AFK on terminal",
             statusText: "Away",
-            subline: "Terminal session still visible, but Kitty seems away."
+            subline: "Terminal session is still visible, but Kitty seems away."
         };
     }
 
@@ -241,7 +262,7 @@ function resolvePresencePresentation(snapshot: PresenceSnapshot): PresencePresen
             emoji: "🟩",
             badge: "Online",
             statusText: "Programming",
-            subline: "Locked in VS Code"
+            subline: "Locked in VS Code."
         };
     }
 
@@ -265,8 +286,10 @@ function resolvePresencePresentation(snapshot: PresenceSnapshot): PresencePresen
 }
 
 /**
+ * Renders one metric row in the details grid.
+ *
  * @param {PresenceMetricProps} props - Metric label/value pair.
- * @returns {JSX.Element} Structured metric card for the presence details grid.
+ * @returns {JSX.Element} Structured metric card.
  */
 function PresenceMetric(props: PresenceMetricProps): JSX.Element {
     return (
@@ -280,8 +303,10 @@ function PresenceMetric(props: PresenceMetricProps): JSX.Element {
 }
 
 /**
- * @param {PresencePresentation} presentation - Current visual presentation details.
- * @returns {JSX.Element} Status pill rendered above the hero.
+ * Renders the status pill shown above the hero.
+ *
+ * @param {PresencePresentation} presentation - Current visual presentation.
+ * @returns {JSX.Element} Status pill.
  */
 function PresencePill(presentation: PresencePresentation): JSX.Element {
     return (
@@ -293,7 +318,9 @@ function PresencePill(presentation: PresencePresentation): JSX.Element {
 }
 
 /**
- * @returns {JSX.Element} Secondary hero showing the current local clock and UTC offset.
+ * Renders the local clock section.
+ *
+ * @returns {JSX.Element} Secondary hero showing the local clock and UTC offset.
  */
 function PresenceLocalTimeHero(): JSX.Element {
     const localClock = getCurrentLocalClock();
@@ -312,6 +339,8 @@ function PresenceLocalTimeHero(): JSX.Element {
 }
 
 /**
+ * Renders the full presence card from a snapshot.
+ *
  * @param {PresenceSnapshot} snapshot - Current presence payload.
  * @returns {JSX.Element} Rendered presence card.
  */
@@ -348,8 +377,10 @@ function PresenceCard(snapshot: PresenceSnapshot): JSX.Element {
 }
 
 /**
+ * Renders the lightweight loading state.
+ *
  * @param {{ message: string }} props - Component props.
- * @returns {JSX.Element} Lightweight loading state card.
+ * @returns {JSX.Element} Loading state card.
  */
 function PresenceLoadingCard(props: { message: string }): JSX.Element {
     const presentation: PresencePresentation = {
@@ -379,8 +410,10 @@ function PresenceLoadingCard(props: { message: string }): JSX.Element {
 }
 
 /**
+ * Renders the error state shown when the fetch fails.
+ *
  * @param {{ message: string }} props - Component props.
- * @returns {JSX.Element} Error state card for failed presence requests.
+ * @returns {JSX.Element} Error state card.
  */
 function PresenceErrorCard(props: { message: string }): JSX.Element {
     const presentation: PresencePresentation = {
@@ -410,7 +443,9 @@ function PresenceErrorCard(props: { message: string }): JSX.Element {
 }
 
 /**
- * @returns {HTMLElement[]} All dedicated presence content mount points.
+ * Finds every place where presence content can be mounted.
+ *
+ * @returns {HTMLElement[]} All dedicated presence mount points.
  */
 function getPresenceMounts(): HTMLElement[] {
     return Array.from(document.querySelectorAll("[data-presence-mount='true'], .presence-window__mount"))
@@ -418,8 +453,11 @@ function getPresenceMounts(): HTMLElement[] {
 }
 
 /**
+ * Picks the effective refresh interval from the visible mounts.
+ * If several mounts are configured, the shortest valid interval wins.
+ *
  * @param {readonly HTMLElement[]} mounts - Presence content mount points.
- * @returns {number} Refresh interval in milliseconds, using the lowest valid configured value across mount points.
+ * @returns {number} Refresh interval in milliseconds.
  */
 function getPresenceRefreshInterval(mounts: readonly HTMLElement[]): number {
     const configuredIntervals = mounts
@@ -435,8 +473,10 @@ function getPresenceRefreshInterval(mounts: readonly HTMLElement[]): number {
 }
 
 /**
+ * Renders the same TSX node into every presence mount.
+ *
  * @param {readonly HTMLElement[]} mounts - Presence content mount points.
- * @param {JSX.Element} node - TSX node to render into each mount point.
+ * @param {JSX.Element} node - TSX node to render into each mount.
  * @returns {void}
  */
 function renderIntoPresenceMounts(mounts: readonly HTMLElement[], node: JSX.Element): void {
@@ -446,7 +486,9 @@ function renderIntoPresenceMounts(mounts: readonly HTMLElement[], node: JSX.Elem
 }
 
 /**
- * @returns {Promise<PresenceSnapshot>} Fresh presence payload from the API.
+ * Fetches a fresh presence snapshot from the API.
+ *
+ * @returns {Promise<PresenceSnapshot>} Fresh presence payload.
  */
 async function fetchPresence(): Promise<PresenceSnapshot> {
     const response = await fetch(PRESENCE_ENDPOINT, {
@@ -468,6 +510,8 @@ async function fetchPresence(): Promise<PresenceSnapshot> {
 }
 
 /**
+ * Clears the refresh timer if one is running.
+ *
  * @returns {void}
  */
 function clearPresenceRefreshTimer(): void {
@@ -478,6 +522,8 @@ function clearPresenceRefreshTimer(): void {
 }
 
 /**
+ * Clears the clock timer if one is running.
+ *
  * @returns {void}
  */
 function clearPresenceClockTimer(): void {
@@ -488,6 +534,8 @@ function clearPresenceClockTimer(): void {
 }
 
 /**
+ * Checks whether at least one mount is visible.
+ *
  * @param {PresenceRuntimeState} state - Current runtime state for the presence module.
  * @returns {boolean} True when at least one mount point is visible in the viewport.
  */
@@ -496,6 +544,8 @@ function hasVisiblePresenceMount(state: PresenceRuntimeState): boolean {
 }
 
 /**
+ * Keeps the local clock ticking while we have visible mounts and a snapshot to show.
+ *
  * @param {readonly HTMLElement[]} mounts - Presence content mount points.
  * @param {PresenceRuntimeState} state - Runtime state for the presence module.
  * @returns {void}
@@ -515,9 +565,11 @@ function synchronisePresenceClock(mounts: readonly HTMLElement[], state: Presenc
 }
 
 /**
+ * Fetches and renders the latest presence state.
+ *
  * @param {readonly HTMLElement[]} mounts - Presence content mount points.
  * @param {PresenceRuntimeState} state - Runtime state for the presence module.
- * @returns {Promise<void>} Resolves after fetching and rendering the latest presence.
+ * @returns {Promise<void>} Resolves after the refresh finishes.
  */
 async function refreshPresence(mounts: readonly HTMLElement[], state: PresenceRuntimeState): Promise<void> {
     if (state.isRefreshing) return;
@@ -544,6 +596,8 @@ async function refreshPresence(mounts: readonly HTMLElement[], state: PresenceRu
 }
 
 /**
+ * Sets up or reschedules the refresh timer.
+ *
  * @param {readonly HTMLElement[]} mounts - Presence content mount points.
  * @param {number} refreshIntervalMs - Effective refresh interval in milliseconds.
  * @param {PresenceRuntimeState} state - Runtime state for the presence module.
@@ -574,6 +628,8 @@ function synchronisePresenceRefresh(
 }
 
 /**
+ * Watches mount visibility so we only refresh while something is on screen.
+ *
  * @param {readonly HTMLElement[]} mounts - Presence content mount points.
  * @param {number} refreshIntervalMs - Effective refresh interval in milliseconds.
  * @param {PresenceRuntimeState} state - Runtime state for the presence module.

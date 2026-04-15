@@ -17,85 +17,116 @@ export type DisconnectionGuard = Readonly<{
     noteStreamConnected: (message?: string) => void;
 }>;
 
-const DEFAULT_RETRYABLE_STATUSES = [408, 425, 429, 500, 502, 503, 504, 522, 524] as const;
+const DEF_RETRYABLE = [408, 425, 429, 500, 502, 503, 504, 522, 524] as const;
 
 /**
- * @param {unknown} error - Unknown fetch error.
- * @returns {boolean} True when the error looks transient and worth retrying.
+ * Checks if a thrown fetch error smells temporary.
+ * Bit hand-wavey, but good enough for browser fetch weirdness.
+ * @param {unknown} error
+ * @returns {boolean}
  */
-function isTransientFetchError(error: unknown): boolean {
+function isTransientErr(error: unknown): boolean {
     if (!(error instanceof Error)) return false;
 
     const message = error.message.toLowerCase();
 
-    if (message.includes("failed to fetch")) return true;
-    if (message.includes("networkerror")) return true;
-    if (message.includes("network error")) return true;
-    if (message.includes("load failed")) return true;
-    if (message.includes("network connection was lost")) return true;
-    if (message.includes("fetch")) return true;
-
-    return false;
+    return [
+        "failed to fetch",
+        "networkerror",
+        "network error",
+        "load failed",
+        "network connection was lost",
+        "fetch"
+    ].some((part) => message.includes(part));
 }
 
 /**
- * @param {Response} response - Fetch response.
- * @param {readonly number[]} retryableStatuses - Statuses that should be retried.
- * @returns {boolean} True when the response should be retried.
+ * Says whether this response should be retried.
+ * @param {Response} response
+ * @param {readonly number[]} retryableStatuses
+ * @returns {boolean}
  */
-function isRetryableResponse(response: Response, retryableStatuses: readonly number[]): boolean {
+function isRetryableRes(response: Response, retryableStatuses: readonly number[]): boolean {
     return retryableStatuses.includes(response.status);
 }
 
 /**
- * @param {DisconnectionGuardOptions} options - Guard configuration.
- * @returns {DisconnectionGuard} A guard for quieting short disconnects and decorating fetch.
+ * Makes the disconnect/fetch retry guard thing.
+ * Main point is to hush short blips and retry flaky fetches a couple times.
+ * @param {DisconnectionGuardOptions} options
+ * @returns {DisconnectionGuard}
  */
 export function createDisconnectionGuard(options: DisconnectionGuardOptions = {}): DisconnectionGuard {
     const gracePeriodMS = options.gracePeriodMS ?? 4000;
     const fetchRetries = options.fetch?.retries ?? 2;
     const fetchRetryDelayMS = options.fetch?.retryDelayMS ?? 750;
-    const retryableStatuses = options.fetch?.retryableStatuses ?? DEFAULT_RETRYABLE_STATUSES;
+    const retryableStatuses = options.fetch?.retryableStatuses ?? DEF_RETRYABLE;
 
-    let disconnectTimerId: number | null = null;
-    let disconnectedSince: number | null = null;
-    let outageWasLogged = false;
+    let tmrId: number | null = null;
+    let downSince: number | null = null;
+    let outageLogged = false;
 
-    function clearDisconnectTimer(): void {
-        if (disconnectTimerId === null) return;
-        window.clearTimeout(disconnectTimerId);
-        disconnectTimerId = null;
+    /**
+     * Clears the pending grace timer, if one exists.
+     * @returns {void}
+     */
+    function clrTmr(): void {
+        if (tmrId === null) return;
+        window.clearTimeout(tmrId);
+        tmrId = null;
     }
 
-    function noteStreamInterrupted(message: string = "⚠️ Chat stream interrupted. Reconnecting quietly..."): void {
-        if (disconnectedSince !== null) return;
+    /**
+     * Notes that the stream dropped.
+     * It waits a bit before logging so tiny blips dont spam the console.
+     * @param {string} message
+     * @returns {void}
+     */
+    function noteDrop(message: string = "⚠️ Chat stream interrupted. Reconnecting quietly..."): void {
+        if (downSince !== null) return;
 
-        disconnectedSince = Date.now();
+        downSince = Date.now();
 
-        clearDisconnectTimer();
-        disconnectTimerId = window.setTimeout(() => {
-            disconnectTimerId = null;
-            if (disconnectedSince === null) return;
-            if (outageWasLogged) return;
+        clrTmr();
+        tmrId = window.setTimeout(() => {
+            tmrId = null;
+            if (downSince === null || outageLogged) return;
 
-            outageWasLogged = true;
+            outageLogged = true;
             console.warn(message);
         }, gracePeriodMS);
     }
 
-    function noteStreamConnected(message: string = "✅ Chat stream reconnected."): void {
-        const hadDisconnect = disconnectedSince !== null;
-        const shouldLogRecovery = hadDisconnect && outageWasLogged;
+    /**
+     * Notes that the stream came back.
+     * Only logs recovery if we already logged the outage.
+     * @param {string} message
+     * @returns {void}
+     */
+    function noteBack(message: string = "✅ Chat stream reconnected."): void {
+        const hadDisconnect = downSince !== null;
+        const shouldLogRecovery = hadDisconnect && outageLogged;
 
-        clearDisconnectTimer();
-        disconnectedSince = null;
-        outageWasLogged = false;
+        clrTmr();
+        downSince = null;
+        outageLogged = false;
 
         if (!shouldLogRecovery) return;
         console.info(message);
     }
 
-    function decorateFetch(fetchImpl: typeof fetch = window.fetch.bind(window)): typeof fetch {
+    /**
+     * Wraps fetch with a few retries for transient failures/statuses.
+     * @param {typeof fetch} fetchImpl
+     * @returns {typeof fetch}
+     */
+    function decoFetch(fetchImpl: typeof fetch = window.fetch.bind(window)): typeof fetch {
+        /**
+         * Guarded fetch with retry logic.
+         * @param {RequestInfo | URL} input
+         * @param {RequestInit | undefined} init
+         * @returns {Promise<Response>}
+         */
         const guardedFetch: typeof fetch = async (
             input: RequestInfo | URL,
             init?: RequestInit
@@ -106,7 +137,7 @@ export function createDisconnectionGuard(options: DisconnectionGuardOptions = {}
                 try {
                     const response = await fetchImpl(input, init);
 
-                    if (!isRetryableResponse(response, retryableStatuses)) {
+                    if (!isRetryableRes(response, retryableStatuses)) {
                         return response;
                     }
 
@@ -114,7 +145,7 @@ export function createDisconnectionGuard(options: DisconnectionGuardOptions = {}
                         return response;
                     }
                 } catch (error) {
-                    if (!isTransientFetchError(error)) {
+                    if (!isTransientErr(error)) {
                         throw error;
                     }
 
@@ -134,8 +165,8 @@ export function createDisconnectionGuard(options: DisconnectionGuardOptions = {}
     }
 
     return {
-        decorateFetch,
-        noteStreamInterrupted,
-        noteStreamConnected
+        decorateFetch: decoFetch,
+        noteStreamInterrupted: noteDrop,
+        noteStreamConnected: noteBack
     };
 }

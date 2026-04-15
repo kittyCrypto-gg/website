@@ -1,9 +1,11 @@
 import type { MainJson } from "./uiFetch.ts";
 
 /**
- * @param {MainJson} data UI data.
- * @param {Document} [root=document] Document to operate on.
- * @returns {Promise<void>} Resolves after footer creation.
+ * Writes the footer text into #main-footer and swaps in the current year.
+ * very small thing, but keeps that placeholder rubbish out of the html.
+ * @param {MainJson} data
+ * @param {Document} root
+ * @returns {Promise<void>}
  */
 export async function createFooter(data: MainJson, root: Document = document): Promise<void> {
     const footer = root.getElementById("main-footer");

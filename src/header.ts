@@ -1,9 +1,11 @@
 import type { MainJson } from "./uiFetch.ts";
 
 /**
- * @param {MainJson} data UI data.
- * @param {Document} [root=document] Document to operate on.
- * @returns {Promise<void>} Resolves after header creation.
+ * Sticks the header text into #main-header if its still empty.
+ * Doesnt overwrite stuff thats already there.
+ * @param {MainJson} data
+ * @param {Document} root
+ * @returns {Promise<void>}
  */
 export async function createHeader(data: MainJson, root: Document = document): Promise<void> {
     const header = root.getElementById("main-header");

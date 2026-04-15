@@ -16,34 +16,38 @@ type StrokeProps = Readonly<{
     strokeLinejoin: "round";
 }>;
 
-const svgSourceCache = new Map<string, Promise<string>>();
-const SVG_STRIP_TAGS = new Set(["metadata", "title", "desc", "script"]);
-const SVG_STRIP_ATTRS = new Set([
+const srcCache = new Map<string, Promise<string>>();
+const STRIP_TAGS = new Set(["metadata", "title", "desc", "script"]);
+const STRIP_ATTRS = new Set([
     "xmlns:inkscape",
     "xmlns:sodipodi",
     "version",
     "xml:space",
     "enable-background"
 ]);
-const SVG_STRIP_PREFIXES = ["inkscape:", "sodipodi:", "on"];
+const STRIP_PREFIXES = ["inkscape:", "sodipodi:", "on"];
 
-let iconFilterCounter = 0;
+let idCtr = 0;
 
 /**
+ * Just makes a kinda unique-ish id.
+ * good enough for filter ids and that sort of faff.
  * @param {string} prefix
  * @returns {string}
  */
-function nextFilterId(prefix: string): string {
-    iconFilterCounter += 1;
-    return `${prefix}-${iconFilterCounter}`;
+function nextId(prefix: string): string {
+    idCtr += 1;
+    return `${prefix}-${idCtr}`;
 }
 
 /**
+ * Tiny colour shift filter builder.
+ * mostly for brightening/darkening the icon bits.
  * @param {number} slope
  * @param {number} intercept
  * @returns {ReactElement}
  */
-function MakeColourShiftFilter(slope: number, intercept: number): ReactElement {
+function mkShiftFilter(slope: number, intercept: number): ReactElement {
     return (
         <feComponentTransfer>
             <feFuncR type="linear" slope={slope} intercept={intercept} />
@@ -55,10 +59,12 @@ function MakeColourShiftFilter(slope: number, intercept: number): ReactElement {
 }
 
 /**
+ * Makes the white filter thing.
+ * name says it really.
  * @param {string} id
  * @returns {ReactElement}
  */
-function MakeWhiteFilter(id: string): ReactElement {
+function mkWhiteFilter(id: string): ReactElement {
     return (
         <filter id={id}>
             <feColorMatrix
@@ -75,10 +81,12 @@ function MakeWhiteFilter(id: string): ReactElement {
 }
 
 /**
+ * Shared stroke props for the line icons.
+ * saves repeating the same lot everywhere.
  * @param {string} colourVar
  * @returns {StrokeProps}
  */
-function makeStrokeProps(colourVar: string): StrokeProps {
+function mkStrokeProps(colourVar: string): StrokeProps {
     return {
         fill: "none",
         stroke: `var(${colourVar})`,
@@ -89,29 +97,33 @@ function makeStrokeProps(colourVar: string): StrokeProps {
 }
 
 /**
+ * Joins class names and bins empty rubbish.
  * @param {...(string | null | undefined)} parts
  * @returns {string}
  */
-function joinClassNames(...parts: Array<string | null | undefined>): string {
+function joinCls(...parts: Array<string | null | undefined>): string {
     return parts
         .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
         .join(" ");
 }
 
 /**
+ * Escapes text for regex use.
+ * tiny helper, boring but needed.
  * @param {string} text
  * @returns {string}
  */
-function escapeRegExp(text: string): string {
+function escRe(text: string): string {
     return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
+ * Fetches the raw svg source, with a cache in front so we do not keep re-fetching it.
  * @param {string} src
  * @returns {Promise<string>}
  */
-async function fetchSvgSource(src: string): Promise<string> {
-    const cached = svgSourceCache.get(src);
+async function getSrc(src: string): Promise<string> {
+    const cached = srcCache.get(src);
     if (cached) return cached;
 
     const pending = fetch(src).then(async (res) => {
@@ -122,40 +134,43 @@ async function fetchSvgSource(src: string): Promise<string> {
         return res.text();
     });
 
-    svgSourceCache.set(src, pending);
+    srcCache.set(src, pending);
 
     try {
         return await pending;
     } catch (err) {
-        svgSourceCache.delete(src);
+        srcCache.delete(src);
         throw err;
     }
 }
 
 /**
+ * Removes tags we do not want hanging around in imported svg.
+ * metadata, scripts, that sort of nonsense.
  * @param {Element} svg
  * @returns {void}
  */
-function stripSvgNodes(svg: Element): void {
-    const selector = Array.from(SVG_STRIP_TAGS).join(",");
+function stripNodes(svg: Element): void {
+    const selector = Array.from(STRIP_TAGS).join(",");
     if (!selector) return;
 
     svg.querySelectorAll(selector).forEach((node) => node.remove());
 }
 
 /**
+ * Strips a few attrs we do not care about, plus event-ish attrs.
  * @param {Element} svg
  * @returns {void}
  */
-function stripSvgAttrs(svg: Element): void {
+function stripAttrs(svg: Element): void {
     const nodes: Element[] = [svg, ...Array.from(svg.querySelectorAll("*"))];
 
     for (const node of nodes) {
         for (const attr of Array.from(node.attributes)) {
             const attrName = attr.name;
             const shouldStrip =
-                SVG_STRIP_ATTRS.has(attrName) ||
-                SVG_STRIP_PREFIXES.some((prefix) => attrName.startsWith(prefix));
+                STRIP_ATTRS.has(attrName) ||
+                STRIP_PREFIXES.some((prefix) => attrName.startsWith(prefix));
 
             if (!shouldStrip) continue;
             node.removeAttribute(attrName);
@@ -164,20 +179,22 @@ function stripSvgAttrs(svg: Element): void {
 }
 
 /**
+ * Rewrites internal ids so multiple copies of the same svg do not clash.
+ * messy if this is missing.
  * @param {Element} svg
  * @param {string} instanceId
  * @returns {void}
  */
-function rebaseSvgIds(svg: Element, instanceId: string): void {
+function rebaseIds(svg: Element, instanceId: string): void {
     const idMap = new Map<string, string>();
 
     svg.querySelectorAll("[id]").forEach((node) => {
         const prevId = node.getAttribute("id");
         if (!prevId) return;
 
-        const nextId = `${instanceId}-${prevId}`;
-        node.setAttribute("id", nextId);
-        idMap.set(prevId, nextId);
+        const nextIdValue = `${instanceId}-${prevId}`;
+        node.setAttribute("id", nextIdValue);
+        idMap.set(prevId, nextIdValue);
     });
 
     if (idMap.size === 0) return;
@@ -188,14 +205,14 @@ function rebaseSvgIds(svg: Element, instanceId: string): void {
         for (const attr of Array.from(node.attributes)) {
             let nextValue = attr.value;
 
-            for (const [prevId, nextId] of idMap) {
+            for (const [prevId, nextIdValue] of idMap) {
                 nextValue = nextValue.replace(
-                    new RegExp(`url\\(#${escapeRegExp(prevId)}\\)`, "g"),
-                    `url(#${nextId})`
+                    new RegExp(`url\\(#${escRe(prevId)}\\)`, "g"),
+                    `url(#${nextIdValue})`
                 );
 
                 if (nextValue === `#${prevId}`) {
-                    nextValue = `#${nextId}`;
+                    nextValue = `#${nextIdValue}`;
                 }
             }
 
@@ -206,10 +223,12 @@ function rebaseSvgIds(svg: Element, instanceId: string): void {
 }
 
 /**
+ * Makes sure the svg has a viewBox.
+ * if width/height exist we can fake one from those.
  * @param {Element} svg
  * @returns {void}
  */
-function ensureSvgViewBox(svg: Element): void {
+function ensureViewBox(svg: Element): void {
     if (svg.getAttribute("viewBox")) return;
 
     const width = parseFloat(svg.getAttribute("width") || "");
@@ -220,12 +239,13 @@ function ensureSvgViewBox(svg: Element): void {
 }
 
 /**
+ * Normalises the root svg attrs so it behaves nicely as an icon.
  * @param {Element} svg
  * @param {string} className
  * @returns {void}
  */
-function normaliseSvgRoot(svg: Element, className: string): void {
-    ensureSvgViewBox(svg);
+function normRoot(svg: Element, className: string): void {
+    ensureViewBox(svg);
 
     svg.removeAttribute("width");
     svg.removeAttribute("height");
@@ -237,20 +257,21 @@ function normaliseSvgRoot(svg: Element, className: string): void {
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     svg.setAttribute(
         "class",
-        joinClassNames(svg.getAttribute("class"), className)
+        joinCls(svg.getAttribute("class"), className)
     );
 }
 
 /**
+ * Cleans and normalises raw svg markup so we can safely-ish stuff it into the page.
  * @param {string} rawSvg
- * @param {string} [className="reader-ui-icon"]
- * @param {string} [instanceId]
+ * @param {string} className
+ * @param {string} instanceId
  * @returns {string}
  */
 export function prepareSvgMarkup(
     rawSvg: string,
     className = "reader-ui-icon",
-    instanceId = nextFilterId("kc-svg-path-icon")
+    instanceId = nextId("kc-svg-path-icon")
 ): string {
     const doc = new DOMParser().parseFromString(rawSvg, "image/svg+xml");
     const parseError = doc.querySelector("parsererror");
@@ -263,53 +284,58 @@ export function prepareSvgMarkup(
         throw new Error("Expected an <svg> root element");
     }
 
-    stripSvgNodes(svg);
-    stripSvgAttrs(svg);
-    rebaseSvgIds(svg, instanceId);
-    normaliseSvgRoot(svg, className);
+    stripNodes(svg);
+    stripAttrs(svg);
+    rebaseIds(svg, instanceId);
+    normRoot(svg, className);
 
     return new XMLSerializer().serializeToString(svg);
 }
 
 /**
+ * Renders whatever fallback we were given.
+ * string, element, or just nothing.
  * @param {ReaderIcon | undefined} fallback
  * @returns {ReactElement}
  */
-function renderIconFallback(fallback: ReaderIcon | undefined): ReactElement {
+function rndrFallback(fallback: ReaderIcon | undefined): ReactElement {
     if (typeof fallback === "string") return <>{fallback}</>;
     return fallback ?? <></>;
 }
 
 /**
+ * Loads an svg icon and gives back a react element wrapper for it.
  * @param {string} src
- * @param {string} [className="reader-ui-icon"]
+ * @param {string} className
  * @returns {Promise<ReactElement>}
  */
 export async function loadSvgPathIcon(
     src: string,
     className = "reader-ui-icon"
 ): Promise<ReactElement> {
-    const rawSvg = await fetchSvgSource(src);
+    const rawSvg = await getSrc(src);
     const markup = prepareSvgMarkup(rawSvg, className);
 
     return <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: markup }} />;
 }
 
 /**
+ * React component wrapper for a fetched svg icon.
+ * falls back while empty or when fetch/parsing blows up.
  * @param {SvgPathIconProps} props
  * @returns {ReactElement}
  */
 export function SvgPathIcon(props: SvgPathIconProps): ReactElement {
     const className = props.className || "reader-ui-icon";
     const [markup, setMarkup] = useState<string>("");
-    const [instanceId] = useState<string>(() => nextFilterId("kc-svg-path-icon"));
+    const [instanceId] = useState<string>(() => nextId("kc-svg-path-icon"));
 
     useEffect(() => {
         let disposed = false;
 
         setMarkup("");
 
-        void fetchSvgSource(props.src)
+        void getSrc(props.src)
             .then((rawSvg) => prepareSvgMarkup(rawSvg, className, instanceId))
             .then((nextMarkup) => {
                 if (disposed) return;
@@ -325,18 +351,19 @@ export function SvgPathIcon(props: SvgPathIconProps): ReactElement {
         };
     }, [className, instanceId, props.src]);
 
-    if (!markup) return renderIconFallback(props.fallback);
+    if (!markup) return rndrFallback(props.fallback);
 
     return <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: markup }} />;
 }
 
 /**
+ * Paragraph numbers toggle icon.
  * @returns {ReactElement}
  */
 export function MakeToggleParagraphNumbersIcon(): ReactElement {
-    const lightenFilterId = nextFilterId("kc-toggle-pnum-lighten");
-    const darkenFilterId = nextFilterId("kc-toggle-pnum-darken");
-    const whiteFilterId = nextFilterId("kc-toggle-pnum-white");
+    const lightenFilterId = nextId("kc-toggle-pnum-lighten");
+    const darkenFilterId = nextId("kc-toggle-pnum-darken");
+    const whiteFilterId = nextId("kc-toggle-pnum-white");
 
     return (
         <svg
@@ -349,14 +376,14 @@ export function MakeToggleParagraphNumbersIcon(): ReactElement {
         >
             <defs>
                 <filter id={lightenFilterId}>
-                    {MakeColourShiftFilter(0.72, 0.28)}
+                    {mkShiftFilter(0.72, 0.28)}
                 </filter>
 
                 <filter id={darkenFilterId}>
-                    {MakeColourShiftFilter(0.68, 0)}
+                    {mkShiftFilter(0.68, 0)}
                 </filter>
 
-                {MakeWhiteFilter(whiteFilterId)}
+                {mkWhiteFilter(whiteFilterId)}
             </defs>
 
             <g fill="var(--togglePnum-icon-colour)">
@@ -459,10 +486,11 @@ export function MakeToggleParagraphNumbersIcon(): ReactElement {
 }
 
 /**
+ * Clear bookmark icon.
  * @returns {ReactElement}
  */
 export function MakeClearBookmarkIcon(): ReactElement {
-    const whiteFilterId = nextFilterId("kc-clear-bookmark-white");
+    const whiteFilterId = nextId("kc-clear-bookmark-white");
 
     return (
         <svg
@@ -474,7 +502,7 @@ export function MakeClearBookmarkIcon(): ReactElement {
             focusable="false"
         >
             <defs>
-                {MakeWhiteFilter(whiteFilterId)}
+                {mkWhiteFilter(whiteFilterId)}
             </defs>
 
             <g fill="var(--clearBookmark-icon-colour)">
@@ -498,11 +526,13 @@ export function MakeClearBookmarkIcon(): ReactElement {
 }
 
 /**
- * @param {number} [rotationDeg=0]
+ * Double-arrow chapter icon.
+ * rotation lets you flip it around for next/prev without another icon.
+ * @param {number} rotationDeg
  * @returns {ReactElement}
  */
 export function MakePrevChapterIcon(rotationDeg = 0): ReactElement {
-    const whiteFilterId = nextFilterId("kc-prev-chapter-white");
+    const whiteFilterId = nextId("kc-prev-chapter-white");
 
     return (
         <svg
@@ -514,7 +544,7 @@ export function MakePrevChapterIcon(rotationDeg = 0): ReactElement {
             focusable="false"
         >
             <defs>
-                {MakeWhiteFilter(whiteFilterId)}
+                {mkWhiteFilter(whiteFilterId)}
             </defs>
 
             <g fill="var(--prevChapter-icon-colour)">
@@ -535,10 +565,11 @@ export function MakePrevChapterIcon(rotationDeg = 0): ReactElement {
 }
 
 /**
+ * Jump-to-chapter icon.
  * @returns {ReactElement}
  */
 export function MakeJumpToChapterIcon(): ReactElement {
-    const whiteFilterId = nextFilterId("kc-jump-to-chapter-white");
+    const whiteFilterId = nextId("kc-jump-to-chapter-white");
 
     return (
         <svg
@@ -550,7 +581,7 @@ export function MakeJumpToChapterIcon(): ReactElement {
             focusable="false"
         >
             <defs>
-                {MakeWhiteFilter(whiteFilterId)}
+                {mkWhiteFilter(whiteFilterId)}
             </defs>
 
             <g fill="var(--jumpToChapter-icon-colour)">
@@ -570,10 +601,11 @@ export function MakeJumpToChapterIcon(): ReactElement {
 }
 
 /**
+ * Info icon.
  * @returns {ReactElement}
  */
 export function MakeShowInfoIcon(): ReactElement {
-    const whiteFilterId = nextFilterId("kc-show-info-white");
+    const whiteFilterId = nextId("kc-show-info-white");
 
     return (
         <svg
@@ -585,7 +617,7 @@ export function MakeShowInfoIcon(): ReactElement {
             focusable="false"
         >
             <defs>
-                {MakeWhiteFilter(whiteFilterId)}
+                {mkWhiteFilter(whiteFilterId)}
             </defs>
 
             <g fill="var(--showInfo-icon-colour)">
@@ -602,10 +634,11 @@ export function MakeShowInfoIcon(): ReactElement {
 }
 
 /**
+ * Minus icon for smaller font.
  * @returns {ReactElement}
  */
 export function MakeDecreaseFontIcon(): ReactElement {
-    const strokeProps = makeStrokeProps("--decreaseFont-icon-colour");
+    const strokeProps = mkStrokeProps("--decreaseFont-icon-colour");
 
     return (
         <svg
@@ -622,10 +655,11 @@ export function MakeDecreaseFontIcon(): ReactElement {
 }
 
 /**
+ * Reset font icon with the little loop arrows.
  * @returns {ReactElement}
  */
 export function MakeResetFontIcon(): ReactElement {
-    const strokeProps = makeStrokeProps("--resetFont-icon-colour");
+    const strokeProps = mkStrokeProps("--resetFont-icon-colour");
 
     return (
         <svg
@@ -645,10 +679,11 @@ export function MakeResetFontIcon(): ReactElement {
 }
 
 /**
+ * Plus icon for bigger font.
  * @returns {ReactElement}
  */
 export function MakeIncreaseFontIcon(): ReactElement {
-    const strokeProps = makeStrokeProps("--increaseFont-icon-colour");
+    const strokeProps = mkStrokeProps("--increaseFont-icon-colour");
 
     return (
         <svg
@@ -666,6 +701,8 @@ export function MakeIncreaseFontIcon(): ReactElement {
 }
 
 /**
+ * Pulls plain text out of a ReaderIcon.
+ * returns empty string if it was a React element.
  * @param {ReaderIcon} icon
  * @returns {string}
  */

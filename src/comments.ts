@@ -1,6 +1,6 @@
 import { drawSpiralIdenticon } from "./avatar.ts";
 import * as config from "./config.ts";
-import { createLocationApi, type locApi } from "./locations.ts";
+import { createLocationApi, type locApi as LocationApi } from "./locations.ts";
 import * as helpers from "./helpers.ts";
 
 declare global {
@@ -9,18 +9,18 @@ declare global {
     }
 }
 
-const COMMENT_POST_URL = `${config.commentPostURL}`;
-const COMMENT_LOAD_URL = `${config.commentLoadURL}`;
-const SESSION_TOKEN_URL = `${config.sessionTokenURL}`;
-const USER_IP_URL = `${config.getIpURL}`;
+const POST_URL = `${config.commentPostURL}`;
+const LOAD_URL = `${config.commentLoadURL}`;
+const TOKEN_URL = `${config.sessionTokenURL}`;
+const IP_URL = `${config.getIpURL}`;
 
-const LOCATION_DATA_URL = "../data/locations.json";
-const LOCATION_FLAGS_URL = "../images/flags";
+const LOC_DATA_URL = "../data/locations.json";
+const LOC_FLAGS_URL = "../images/flags";
 
-const NICKNAME_STORAGE_KEY = "nickname";
-const LOCATION_STORAGE_KEY = "comment-location";
+const NICK_KEY = "nickname";
+const LOC_KEY = "comment-location";
 
-type PostCommentInput = Readonly<{
+type PostInp = Readonly<{
     nick: string;
     msg: string;
     ip: string | null;
@@ -29,19 +29,19 @@ type PostCommentInput = Readonly<{
     location: string;
 }>;
 
-type PostCommentSuccess = Readonly<{
+type PostOk = Readonly<{
     success: true;
     id: string;
 }>;
 
-type PostCommentFailure = Readonly<{
+type PostFail = Readonly<{
     success: false;
     error: string | undefined;
 }>;
 
-type PostCommentResult = PostCommentSuccess | PostCommentFailure;
+type PostRes = PostOk | PostFail;
 
-type LoadedComment = Readonly<{
+type LoadCmt = Readonly<{
     nick: string;
     ip: string;
     msg: string;
@@ -50,11 +50,16 @@ type LoadedComment = Readonly<{
     location?: string;
 }>;
 
-let sessionToken: string | null = null;
-let userIP: string | null = null;
-let locAPI: locApi | null = null;
+let sTok: string | null = null;
+let userIp: string | null = null;
+let locApi: LocationApi | null = null;
 
-function isValidURL(value: string): boolean {
+/**
+ * Tiny url check.
+ * @param {string} value
+ * @returns {boolean}
+ */
+function isUrl(value: string): boolean {
     try {
         new URL(value);
         return true;
@@ -63,22 +68,30 @@ function isValidURL(value: string): boolean {
     }
 }
 
-function normaliseWebsite(rawValue: string): string | undefined {
+/**
+ * Normalises the website field and adds https if needed.
+ * blank becomes undefined, bad rubbish stays rejected.
+ * @param {string} rawValue
+ * @returns {string | undefined}
+ */
+function normSite(rawValue: string): string | undefined {
     const trimmed = rawValue.trim();
     if (trimmed.length === 0) return undefined;
 
     const hasScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed);
     const candidate = hasScheme ? trimmed : `https://${trimmed}`;
 
-    if (!isValidURL(candidate)) return undefined;
+    if (!isUrl(candidate)) return undefined;
     return candidate;
 }
 
 /**
- * @param {unknown} value - Unknown JSON payload to validate.
- * @returns {void} This function does not return a value; it either completes successfully if the validation passes or throws an error if it fails. The use of "asserts value is LoadedComment" in the function signature allows TypeScript to narrow the type of the value to LoadedComment after this function is called, enabling safer access to the properties of the comment in subsequent code.
+ * Checks one loaded comment payload.
+ * throws if the shape is off.
+ * @param {unknown} value
+ * @returns {void}
  */
-function assertLoadedComment(value: unknown): asserts value is LoadedComment {
+function assertCmt(value: unknown): asserts value is LoadCmt {
     if (!helpers.isRecord(value)) throw new Error("Invalid data format in comment data");
     if (typeof value.nick !== "string") throw new Error("Invalid nickname format in comment data");
     if (typeof value.ip !== "string") throw new Error("Invalid comment metadata format in comment data");
@@ -86,7 +99,9 @@ function assertLoadedComment(value: unknown): asserts value is LoadedComment {
     if (typeof value.timestamp !== "string") throw new Error("Invalid comment metadata format");
 
     const website = value.website;
-    if (website !== undefined && typeof website !== "string") throw new Error("Invalid website format in comment data");
+    if (website !== undefined && typeof website !== "string") {
+        throw new Error("Invalid website format in comment data");
+    }
 
     const location = value.location;
     if (location !== undefined && location !== null && typeof location !== "string") {
@@ -95,20 +110,23 @@ function assertLoadedComment(value: unknown): asserts value is LoadedComment {
 }
 
 /**
- * @param {string | null | undefined} rawValue - Location key from the form or loaded comment.
- * @returns {string} The original location key when present, otherwise "world".
+ * Makes sure empty location vals become "world".
+ * @param {string | null | undefined} rawValue
+ * @returns {string}
  */
-function normaliseLocationKey(rawValue: string | null | undefined): string {
+function normLoc(rawValue: string | null | undefined): string {
     const trimmed = rawValue?.trim() ?? "";
     return trimmed.length === 0 ? "world" : trimmed;
 }
 
 /**
- * @param {HTMLSelectElement} locationSelect - The location select element.
- * @returns {void} Restores the saved location from localStorage when possible, otherwise falls back to "world".
+ * Restores the saved location selection if possible.
+ * otherwise just falls back to world and moves on.
+ * @param {HTMLSelectElement} locationSelect
+ * @returns {void}
  */
-function restoreStoredLocation(locationSelect: HTMLSelectElement): void {
-    const storedLocation = normaliseLocationKey(localStorage.getItem(LOCATION_STORAGE_KEY));
+function restoreLoc(locationSelect: HTMLSelectElement): void {
+    const storedLocation = normLoc(localStorage.getItem(LOC_KEY));
     const hasStoredOption = Array.from(locationSelect.options).some((option) => option.value === storedLocation);
 
     locationSelect.value = hasStoredOption ? storedLocation : "world";
@@ -116,99 +134,117 @@ function restoreStoredLocation(locationSelect: HTMLSelectElement): void {
 }
 
 /**
- * @returns {Promise<void>} Resolves when the location dropdown has been initialised, or immediately if the required DOM elements are not present.
+ * Inits the location picker bits if the dom nodes exist.
+ * @returns {Promise<void>}
  */
-async function setupLocationPicker(): Promise<void> {
+async function initLocPicker(): Promise<void> {
     const locationSelect = document.getElementById("comment-location") as HTMLSelectElement | null;
     const locationFlag = document.getElementById("comment-location-flag") as HTMLElement | null;
 
     if (!locationSelect || !locationFlag) return;
 
-    locAPI = createLocationApi({
+    locApi = createLocationApi({
         selectElement: locationSelect,
         flagElement: locationFlag,
-        locationsUrl: LOCATION_DATA_URL,
-        flagsBaseUrl: LOCATION_FLAGS_URL,
+        locationsUrl: LOC_DATA_URL,
+        flagsBaseUrl: LOC_FLAGS_URL,
         emptyFlagLabel: "🌎"
     });
 
-    await locAPI.init();
-    restoreStoredLocation(locationSelect);
+    await locApi.init();
+    restoreLoc(locationSelect);
 
-    locationSelect.addEventListener("change", () => {
-        localStorage.setItem(LOCATION_STORAGE_KEY, normaliseLocationKey(locationSelect.value));
-    });
+    /**
+     * Persists the selected location locally.
+     * @returns {void}
+     */
+    const onLocChange = (): void => {
+        localStorage.setItem(LOC_KEY, normLoc(locationSelect.value));
+    };
+
+    locationSelect.addEventListener("change", onLocChange);
 }
 
 /**
- * @param {string | null | undefined} locationKeyRaw - Location key from the loaded comment payload.
- * @returns {HTMLElement} A badge element containing either the location flag image or the world fallback icon.
+ * Makes the boring world badge.
+ * @returns {HTMLElement}
  */
-function buildCommentLocationBadge(locationKeyRaw: string | null | undefined): HTMLElement {
-    const locationKey = normaliseLocationKey(locationKeyRaw);
+function mkWorldBadge(): HTMLElement {
     const badge = document.createElement("span");
     badge.className = "chat-location-badge";
-    badge.dataset.location = locationKey;
+    badge.dataset.location = "world";
+    badge.textContent = "🌎";
+    badge.setAttribute("aria-label", "World");
+    badge.title = "World";
+    return badge;
+}
 
-    if (locationKey === "world") {
-        badge.textContent = "🌎";
-        badge.setAttribute("aria-label", "World");
-        badge.title = "World";
-        return badge;
-    }
-
-    if (!locAPI) {
-        badge.textContent = "🌎";
-        badge.setAttribute("aria-label", "World");
-        badge.title = "World";
-        return badge;
-    }
+/**
+ * Makes a location badge for a comment header.
+ * falls back to the world icon if anything is missing or weird.
+ * @param {string | null | undefined} locationKeyRaw
+ * @returns {HTMLElement}
+ */
+function mkLocBadge(locationKeyRaw: string | null | undefined): HTMLElement {
+    const locationKey = normLoc(locationKeyRaw);
+    if (locationKey === "world") return mkWorldBadge();
+    if (!locApi) return mkWorldBadge();
 
     try {
+        const badge = document.createElement("span");
+        badge.className = "chat-location-badge";
+        badge.dataset.location = locationKey;
+
         const image = document.createElement("img");
         image.className = "chat-location-flag";
-        image.src = locAPI.getFlagUrl(locationKey);
-        image.alt = `${locAPI.getLabel(locationKey)} flag`;
+        image.src = locApi.getFlagUrl(locationKey);
+        image.alt = `${locApi.getLabel(locationKey)} flag`;
         image.loading = "lazy";
 
         badge.appendChild(image);
-        badge.title = locAPI.getLabel(locationKey);
+        badge.title = locApi.getLabel(locationKey);
         return badge;
     } catch {
-        badge.textContent = "🌎";
-        badge.setAttribute("aria-label", "World");
-        badge.title = "World";
-        return badge;
+        return mkWorldBadge();
     }
 }
 
-// Get full page identifier
-function getPageIdentifier(): string {
+/**
+ * Full page id used by the comments api.
+ * @returns {string}
+ */
+function getPageId(): string {
     const path = window.location.pathname;
     const query = window.location.search;
     return `${path}${query}`;
 }
 
-// Fetch Session Token
-async function fetchSessionToken(): Promise<void> {
+/**
+ * Fetches a session token for comment posting.
+ * @returns {Promise<void>}
+ */
+async function fetchTok(): Promise<void> {
     try {
-        const response = await fetch(SESSION_TOKEN_URL);
+        const response = await fetch(TOKEN_URL);
         if (!response.ok) throw new Error(`Failed to fetch session token: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
         helpers.assertSessionTokenResponse(data);
 
-        sessionToken = data.sessionToken;
-        console.log("🔑 Session Token received:", sessionToken);
+        sTok = data.sessionToken;
+        console.log("🔑 Session Token received:", sTok);
     } catch (error) {
         console.error("❌ Error fetching session token:", error);
     }
 }
 
-// Fetch User IP
-async function fetchUserIP(): Promise<string | null> {
+/**
+ * Fetches the current user ip.
+ * @returns {Promise<string | null>}
+ */
+async function fetchIp(): Promise<string | null> {
     try {
-        const response = await fetch(USER_IP_URL);
+        const response = await fetch(IP_URL);
         if (!response.ok) throw new Error(`Failed to fetch IP: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
@@ -224,12 +260,14 @@ async function fetchUserIP(): Promise<string | null> {
 }
 
 /**
- * @param {string | null} ip - User IP address (may be null).
- * @param {string | null} sessionToken - Session token (may be null).
- * @param {string} timestamp - ISO timestamp string.
- * @returns {Promise<string>} A promise that resolves to an 8-character hexadecimal string that serves as a unique identifier for a comment. The ID is generated by hashing a combination of the user's IP address, session token, timestamp, and a random value using SHA-256, and then taking the first 8 characters of the resulting hash. This approach ensures a high likelihood of uniqueness while keeping the ID concise.
+ * Makes a short-ish deterministic comment id.
+ * not magic, just hash a few bits and take the front slice.
+ * @param {string | null} ip
+ * @param {string | null} sessionToken
+ * @param {string} timestamp
+ * @returns {Promise<string>}
  */
-async function generateCommentId(ip: string | null, sessionToken: string | null, timestamp: string): Promise<string> {
+async function mkCmtId(ip: string | null, sessionToken: string | null, timestamp: string): Promise<string> {
     const randomValue = Math.floor(Math.random() * 255) + 1;
     const raw = `${ip}-${sessionToken}-${timestamp}-${randomValue}`;
     const msgUint8 = new TextEncoder().encode(raw);
@@ -240,21 +278,25 @@ async function generateCommentId(ip: string | null, sessionToken: string | null,
 }
 
 /**
- * @param isoString - ISO timestamp string.
+ * Formats a timestamp for display.
+ * @param {string} isoString
  * @returns {string}
  */
-function formatTimestamp(isoString: string): string {
+function fmtTs(isoString: string): string {
     const date = new Date(isoString);
     return date.toLocaleString();
 }
 
-// Load comments for current page
-async function loadCommentsForPage(): Promise<unknown[]> {
-    const currentPage = getPageIdentifier();
+/**
+ * Loads comments for the current page.
+ * @returns {Promise<unknown[]>}
+ */
+async function loadCmts(): Promise<unknown[]> {
+    const currentPage = getPageId();
+
     try {
         const encodedPage = encodeURIComponent(currentPage);
-        const response = await fetch(`${COMMENT_LOAD_URL}?page=${encodedPage}`);
-
+        const response = await fetch(`${LOAD_URL}?page=${encodedPage}`);
         if (!response.ok) throw new Error(`Failed to load comments: ${response.status}`);
 
         const comments: unknown = await (response.json() as Promise<unknown>);
@@ -268,16 +310,42 @@ async function loadCommentsForPage(): Promise<unknown[]> {
     }
 }
 
-async function renderComments(): Promise<void> {
+/**
+ * Builds either a plain nick span or a website link.
+ * @param {LoadCmt} comment
+ * @returns {HTMLElement}
+ */
+function mkNick(comment: LoadCmt): HTMLElement {
+    if (!comment.website) {
+        const nickSpan = document.createElement("span");
+        nickSpan.className = "chat-nick";
+        nickSpan.textContent = comment.nick;
+        return nickSpan;
+    }
+
+    const nickLink = document.createElement("a");
+    nickLink.className = "chat-nick";
+    nickLink.textContent = comment.nick;
+    nickLink.href = comment.website;
+    nickLink.target = "_blank";
+    nickLink.rel = "nofollow noopener noreferrer";
+    return nickLink;
+}
+
+/**
+ * Renders all comments into the comments box.
+ * @returns {Promise<void>}
+ */
+async function rndCmts(): Promise<void> {
     await helpers.waitForDomReady();
-    const comments = await loadCommentsForPage();
+    const comments = await loadCmts();
     const box = document.getElementById("comments-box");
     if (!box) return;
 
     box.innerHTML = "";
 
     for (const commentUnknown of comments) {
-        assertLoadedComment(commentUnknown);
+        assertCmt(commentUnknown);
         const comment = commentUnknown;
 
         const wrapper = document.createElement("div");
@@ -291,38 +359,19 @@ async function renderComments(): Promise<void> {
 
         const identicon = await drawSpiralIdenticon(`${comment.nick}@${comment.ip}`, 48);
         avatarWrapper.appendChild(identicon);
+        avatarWrapper.appendChild(mkLocBadge(comment.location));
 
         const timestampSpan = document.createElement("span");
         timestampSpan.className = "chat-timestamp";
-        timestampSpan.textContent = formatTimestamp(comment.timestamp);
-
-        const nickNode: HTMLElement = (() => {
-            if (!comment.website) {
-                const nickSpan = document.createElement("span");
-                nickSpan.className = "chat-nick";
-                nickSpan.textContent = comment.nick;
-                return nickSpan;
-            }
-
-            const nickLink = document.createElement("a");
-            nickLink.className = "chat-nick";
-            nickLink.textContent = comment.nick;
-            nickLink.href = comment.website;
-            nickLink.target = "_blank";
-            nickLink.rel = "nofollow noopener noreferrer";
-            return nickLink;
-        })();
-
-        const locationBadge = buildCommentLocationBadge(comment.location);
-
-        header.appendChild(avatarWrapper);
-        header.appendChild(nickNode);
-        header.appendChild(timestampSpan);
-        avatarWrapper.appendChild(locationBadge);
+        timestampSpan.textContent = fmtTs(comment.timestamp);
 
         const message = document.createElement("span");
         message.className = "chat-text";
         message.textContent = comment.msg;
+
+        header.appendChild(avatarWrapper);
+        header.appendChild(mkNick(comment));
+        header.appendChild(timestampSpan);
 
         wrapper.appendChild(header);
         wrapper.appendChild(message);
@@ -331,17 +380,21 @@ async function renderComments(): Promise<void> {
 }
 
 /**
- * @param {string} nick - Comment nickname.
- * @param {string} msg - Comment text.
- * @param {string | null} ip - User IP address (may be null).
- * @param {string | null} sessionToken - Session token (may be null).
- * @param {string | undefined} website - Optional website URL for the nickname link.
- * @returns {Promise<PostCommentResult>} Result of the comment posting operation, indicating success or failure and any associated error message.
+ * Posts one comment to the api.
+ * @param {PostInp} input
+ * @returns {Promise<PostRes>}
  */
-async function postComment({ nick, msg, ip, sessionToken, website, location }: PostCommentInput): Promise<PostCommentResult> {
-    const page = getPageIdentifier();
+async function postCmt({
+    nick,
+    msg,
+    ip,
+    sessionToken,
+    website,
+    location
+}: PostInp): Promise<PostRes> {
+    const page = getPageId();
     const timestamp = new Date().toISOString();
-    const id = await generateCommentId(ip, sessionToken, timestamp);
+    const id = await mkCmtId(ip, sessionToken, timestamp);
 
     const payload: Readonly<{
         page: string;
@@ -366,7 +419,7 @@ async function postComment({ nick, msg, ip, sessionToken, website, location }: P
     };
 
     try {
-        const response = await fetch(COMMENT_POST_URL, {
+        const response = await fetch(POST_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -391,7 +444,11 @@ async function postComment({ nick, msg, ip, sessionToken, website, location }: P
     }
 }
 
-function setupCommentPosting(): void {
+/**
+ * Wires the comment posting form.
+ * @returns {void}
+ */
+function initPosting(): void {
     const nickInput = document.getElementById("comment-nick") as HTMLInputElement | null;
     const locationSelect = document.getElementById("comment-location") as HTMLSelectElement | null;
     const textarea = document.getElementById("new-comment") as HTMLTextAreaElement | null;
@@ -400,10 +457,14 @@ function setupCommentPosting(): void {
 
     if (!nickInput || !textarea || !button) return;
 
-    const storedNick = localStorage.getItem(NICKNAME_STORAGE_KEY);
+    const storedNick = localStorage.getItem(NICK_KEY);
     if (storedNick) nickInput.value = storedNick;
 
-    button.addEventListener("click", async () => {
+    /**
+     * Handles posting from the comment form.
+     * @returns {Promise<void>}
+     */
+    const onPost = async (): Promise<void> => {
         const nick = nickInput.value.trim();
         const msg = textarea.value.trim();
 
@@ -418,23 +479,23 @@ function setupCommentPosting(): void {
         }
 
         const rawWebsite = websiteInput?.value ?? "";
-        const website = normaliseWebsite(rawWebsite);
+        const website = normSite(rawWebsite);
 
         if (rawWebsite.trim().length > 0 && website === undefined) {
             alert("Website must be a valid URL (for example https://example.com).");
             return;
         }
 
-        const location = normaliseLocationKey(locationSelect?.value);
+        const location = normLoc(locationSelect?.value);
 
-        localStorage.setItem(NICKNAME_STORAGE_KEY, nick);
-        localStorage.setItem(LOCATION_STORAGE_KEY, location);
+        localStorage.setItem(NICK_KEY, nick);
+        localStorage.setItem(LOC_KEY, location);
 
-        const result = await postComment({
+        const result = await postCmt({
             nick,
             msg,
-            ip: userIP,
-            sessionToken,
+            ip: userIp,
+            sessionToken: sTok,
             website,
             location
         });
@@ -445,15 +506,31 @@ function setupCommentPosting(): void {
         }
 
         textarea.value = "";
-        if (websiteInput) websiteInput.value = rawWebsite.trim().length > 0 ? rawWebsite.trim() : "";
-        await renderComments();
+
+        if (websiteInput) {
+            websiteInput.value = rawWebsite.trim().length > 0 ? rawWebsite.trim() : "";
+        }
+
+        await rndCmts();
+    };
+
+    button.addEventListener("click", () => {
+        void onPost();
     });
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await fetchSessionToken();
-    userIP = await fetchUserIP();
-    await setupLocationPicker();
-    await renderComments();
-    setupCommentPosting();
+/**
+ * Boots the comment page bits once dom is ready.
+ * @returns {Promise<void>}
+ */
+const boot = async (): Promise<void> => {
+    await fetchTok();
+    userIp = await fetchIp();
+    await initLocPicker();
+    await rndCmts();
+    initPosting();
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+    void boot();
 });

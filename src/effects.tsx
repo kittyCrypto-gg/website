@@ -5,7 +5,7 @@ import { prepareSvgMarkup } from "./icons.tsx";
 import { closeOnClick, modals, onModalEvent, type Modal } from "./modals.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
 
-type EffectsPrefs = Readonly<{
+type Prefs = Readonly<{
     phosphorEnabled: boolean;
     phosphorOpacity: number;
     scanlinesEnabled: boolean;
@@ -13,46 +13,51 @@ type EffectsPrefs = Readonly<{
     scanlineSpeed: number;
 }>;
 
-type StoredEffectsPrefs = Readonly<Partial<EffectsPrefs>>;
+type StoredPrefs = Readonly<Partial<Prefs>>;
 
-type EffectsPanelProps = Readonly<{
-    prefs: EffectsPrefs;
+type Props = Readonly<{
+    prefs: Prefs;
     ui: EffectsUiConfig;
 }>;
 
-const EFFECTS_STORAGE_KEY = "kcEffectsPrefs";
-const EFFECTS_BUTTON_ID = "effects-toggle";
-const EFFECTS_MODAL_ID = "screen-effects";
-const EFFECTS_BUTTON_BOTTOM = "80px";
+type Ctx = Readonly<{
+    modalEl: HTMLDivElement;
+}>;
 
-const PHOSPHOR_OPACITY_MIN = 0;
-const PHOSPHOR_OPACITY_MAX = 0.12;
+const STORAGE_KEY = "kcEffectsPrefs";
+const BTN_ID = "effects-toggle";
+const MOD_ID = "screen-effects";
+const BTN_BOTTOM = "80px";
 
-const SCANLINE_OPACITY_MIN = 0;
-const SCANLINE_OPACITY_MAX = 0.3;
+const PHOS_OP_MIN = 0;
+const PHOS_OP_MAX = 0.12;
 
-const SCANLINE_SPEED_MIN = 0;
-const SCANLINE_SPEED_MAX = 100;
-const DEFAULT_SCANLINE_SPEED = 90;
+const SCAN_OP_MIN = 0;
+const SCAN_OP_MAX = 0.3;
 
-const SCANLINE_TRAVEL_DURATION_MIN_MS = 1;
-const SCANLINE_TRAVEL_DURATION_MAX_MS = 22000;
+const SCAN_SPD_MIN = 0;
+const SCAN_SPD_MAX = 100;
+const DEF_SCAN_SPD = 90;
 
-const SLIDER_PERCENT_MIN = 0;
-const SLIDER_PERCENT_MAX = 100;
-const SLIDER_PERCENT_STEP = 1;
+const SCAN_MS_MIN = 1;
+const SCAN_MS_MAX = 22000;
 
-let defaultPrefs: EffectsPrefs | null = null;
-let effectsModal: Modal | null = null;
-let storageSyncInstalled = false;
-let effectsUiConfig: EffectsUiConfig | null = null;
-let buttonIconRequestToken = 0;
+const SLIDER_MIN = 0;
+const SLIDER_MAX = 100;
+const SLIDER_STEP = 1;
+
+let defPrefs: Prefs | null = null;
+let mod: Modal | null = null;
+let syncOn = false;
+let uiCfg: EffectsUiConfig | null = null;
+let iconReqTok = 0;
 
 /**
- * @param {number} value - Value to clamp.
- * @param {number} min - Lower bound.
- * @param {number} max - Upper bound.
- * @returns {number} Clamped number.
+ * Clamp thing. Keeps slider rubbish in bounds and stops NaN being annoying.
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
  */
 function clamp(value: number, min: number, max: number): number {
     if (Number.isNaN(value)) return min;
@@ -62,143 +67,157 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * @param {string} raw - Raw CSS variable or storage text.
- * @param {number} fallback - Fallback number.
- * @returns {number} Parsed number.
+ * Pulls a num out of css/storage text.
+ * if it cant, just uses fallback and shrugs.
+ * @param {string} raw
+ * @param {number} fallback
+ * @returns {number}
  */
-function parseNumber(raw: string, fallback: number): number {
+function num(raw: string, fallback: number): number {
     const parsed = Number.parseFloat(raw.trim());
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 /**
- * @param {number} value - Percentage value from 0 to 100.
- * @returns {string} Readable percentage.
+ * Makes a readable percent string.
+ * @param {number} value
+ * @returns {string}
  */
-function formatPercent(value: number): string {
+function pct(value: number): string {
     return `${Math.round(clamp(value, 0, 100))}%`;
 }
 
 /**
- * @param {number} value - Numeric value.
- * @returns {string} Stable CSS-safe number string.
+ * Small css-safe-ish number formatter.
+ * trims float gunk a bit.
+ * @param {number} value
+ * @returns {string}
  */
-function formatCssNumber(value: number): string {
+function cssNum(value: number): string {
     return String(Number(value.toFixed(3)));
 }
 
 /**
- * @param {number} opacity - Effect opacity.
- * @param {number} maxOpacity - Maximum opacity for that effect.
- * @returns {number} Slider percentage.
+ * Maps opacity to slider percent.
+ * @param {number} opacity
+ * @param {number} maxOpacity
+ * @returns {number}
  */
-function opacityToSliderPercent(opacity: number, maxOpacity: number): number {
+function opToPct(opacity: number, maxOpacity: number): number {
     if (maxOpacity <= 0) return 0;
     return clamp((clamp(opacity, 0, maxOpacity) / maxOpacity) * 100, 0, 100);
 }
 
 /**
- * @param {number} percent - Slider percentage.
- * @param {number} maxOpacity - Maximum opacity for that effect.
- * @returns {number} Effect opacity.
+ * Maps slider percent back to actual opacity.
+ * @param {number} percent
+ * @param {number} maxOpacity
+ * @returns {number}
  */
-function sliderPercentToOpacity(percent: number, maxOpacity: number): number {
+function pctToOp(percent: number, maxOpacity: number): number {
     return clamp((clamp(percent, 0, 100) / 100) * maxOpacity, 0, maxOpacity);
 }
 
 /**
- * @param {number} value - Duration in milliseconds.
- * @returns {string} CSS duration string.
+ * Turns ms into a css duration string.
+ * @param {number} value
+ * @returns {string}
  */
-function formatDurationMs(value: number): string {
+function ms(value: number): string {
     return `${Math.round(
-        clamp(value, SCANLINE_TRAVEL_DURATION_MIN_MS, SCANLINE_TRAVEL_DURATION_MAX_MS)
+        clamp(value, SCAN_MS_MIN, SCAN_MS_MAX)
     )}ms`;
 }
 
 /**
- * @param {number} speed - Speed percentage from 0 to 100.
- * @returns {number} Travel duration in milliseconds.
+ * Speed percent to travel duration. Faster speed means less ms, obv.
+ * @param {number} speed
+ * @returns {number}
  */
-function scanlineSpeedToDurationMs(speed: number): number {
-    const clampedSpeed = clamp(speed, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
-    if (clampedSpeed <= 0) return SCANLINE_TRAVEL_DURATION_MAX_MS;
+function spdToMs(speed: number): number {
+    const clampedSpeed = clamp(speed, SCAN_SPD_MIN, SCAN_SPD_MAX);
+    if (clampedSpeed <= 0) return SCAN_MS_MAX;
 
     const progress = (clampedSpeed - 1) / 99;
 
     return (
-        SCANLINE_TRAVEL_DURATION_MAX_MS -
-        progress * (SCANLINE_TRAVEL_DURATION_MAX_MS - SCANLINE_TRAVEL_DURATION_MIN_MS)
+        SCAN_MS_MAX -
+        progress * (SCAN_MS_MAX - SCAN_MS_MIN)
     );
 }
 
 /**
- * @param {number} durationMs - Travel duration in milliseconds.
- * @returns {number} Speed percentage from 0 to 100.
+ * Duration back into speed percent.
+ * @param {number} durationMs
+ * @returns {number}
  */
-function durationMsToScanlineSpeed(durationMs: number): number {
+function msToSpd(durationMs: number): number {
     const clampedDuration = clamp(
         durationMs,
-        SCANLINE_TRAVEL_DURATION_MIN_MS,
-        SCANLINE_TRAVEL_DURATION_MAX_MS
+        SCAN_MS_MIN,
+        SCAN_MS_MAX
     );
 
     const progress =
-        (SCANLINE_TRAVEL_DURATION_MAX_MS - clampedDuration) /
-        (SCANLINE_TRAVEL_DURATION_MAX_MS - SCANLINE_TRAVEL_DURATION_MIN_MS);
+        (SCAN_MS_MAX - clampedDuration) /
+        (SCAN_MS_MAX - SCAN_MS_MIN);
 
-    return clamp(1 + progress * 99, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
+    return clamp(1 + progress * 99, SCAN_SPD_MIN, SCAN_SPD_MAX);
 }
 
 /**
- * @returns {EffectsUiConfig} Active UI config.
+ * Current ui config getter. Throws if init got skipped somewhere.
+ * @returns {EffectsUiConfig}
  */
-function getUiConfig(): EffectsUiConfig {
-    if (!effectsUiConfig) {
+function ui(): EffectsUiConfig {
+    if (!uiCfg) {
         throw new Error("Effects UI config has not been initialised.");
     }
 
-    return effectsUiConfig;
+    return uiCfg;
 }
 
 /**
- * @returns {EffectsPrefs} Defaults taken from CSS and current body classes.
+ * Reads the css/body defaults as the baseline prefs.
+ * @returns {Prefs}
  */
-function readCssDefaults(): EffectsPrefs {
+function readCss(): Prefs {
     const rootStyle = window.getComputedStyle(document.documentElement);
     const body = document.body;
 
     return {
         phosphorEnabled: !body.classList.contains("effect-disable-phosphor"),
         phosphorOpacity: clamp(
-            parseNumber(rootStyle.getPropertyValue("--effect-crt-phosphor-opacity"), 0.02),
-            PHOSPHOR_OPACITY_MIN,
-            PHOSPHOR_OPACITY_MAX
+            num(rootStyle.getPropertyValue("--effect-crt-phosphor-opacity"), 0.02),
+            PHOS_OP_MIN,
+            PHOS_OP_MAX
         ),
         scanlinesEnabled: !body.classList.contains("effect-disable-scanlines"),
         scanlineOpacity: clamp(
-            parseNumber(rootStyle.getPropertyValue("--effect-crt-scanline-opacity"), 0.1),
-            SCANLINE_OPACITY_MIN,
-            SCANLINE_OPACITY_MAX
+            num(rootStyle.getPropertyValue("--effect-crt-scanline-opacity"), 0.1),
+            SCAN_OP_MIN,
+            SCAN_OP_MAX
         ),
-        scanlineSpeed: DEFAULT_SCANLINE_SPEED
+        scanlineSpeed: DEF_SCAN_SPD
     };
 }
 
 /**
- * @returns {EffectsPrefs} Captured defaults.
+ * Memoised defaults getter.
+ * @returns {Prefs}
  */
-function getDefaultPrefs(): EffectsPrefs {
-    if (defaultPrefs) return defaultPrefs;
-    defaultPrefs = readCssDefaults();
-    return defaultPrefs;
+function defs(): Prefs {
+    if (defPrefs) return defPrefs;
+    defPrefs = readCss();
+    return defPrefs;
 }
 
 /**
- * @returns {StoredEffectsPrefs | null} Stored preferences, if valid enough to use.
+ * Reads saved prefs from storage if they look sane enough.
+ * @returns {StoredPrefs | null}
  */
-function readStoredPrefs(): StoredEffectsPrefs | null {
-    const raw = localStorage.getItem(EFFECTS_STORAGE_KEY);
+function stored(): StoredPrefs | null {
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
 
     try {
@@ -218,7 +237,6 @@ function readStoredPrefs(): StoredEffectsPrefs | null {
                 typeof record.scanlineOpacity === "number" ? record.scanlineOpacity : undefined,
             scanlineSpeed:
                 typeof record.scanlineSpeed === "number" ? record.scanlineSpeed : undefined
-
         };
     } catch {
         return null;
@@ -226,216 +244,234 @@ function readStoredPrefs(): StoredEffectsPrefs | null {
 }
 
 /**
- * @param {EffectsPrefs} base - Base preference object.
- * @param {StoredEffectsPrefs | null} stored - Stored partial override.
- * @returns {EffectsPrefs} Resolved preferences.
+ * Merges stored prefs over base prefs, with clamping and the enable/opacity coupling.
+ * bit fiddly but its fine.
+ * @param {Prefs} base
+ * @param {StoredPrefs | null} fromStore
+ * @returns {Prefs}
  */
-function mergePrefs(base: EffectsPrefs, stored: StoredEffectsPrefs | null): EffectsPrefs {
-    if (!stored) return base;
+function merge(base: Prefs, fromStore: StoredPrefs | null): Prefs {
+    if (!fromStore) return base;
 
     const phosphorOpacity = clamp(
-        stored.phosphorOpacity ?? base.phosphorOpacity,
-        PHOSPHOR_OPACITY_MIN,
-        PHOSPHOR_OPACITY_MAX
+        fromStore.phosphorOpacity ?? base.phosphorOpacity,
+        PHOS_OP_MIN,
+        PHOS_OP_MAX
     );
     const scanlineOpacity = clamp(
-        stored.scanlineOpacity ?? base.scanlineOpacity,
-        SCANLINE_OPACITY_MIN,
-        SCANLINE_OPACITY_MAX
+        fromStore.scanlineOpacity ?? base.scanlineOpacity,
+        SCAN_OP_MIN,
+        SCAN_OP_MAX
     );
     const scanlineSpeed = clamp(
-        stored.scanlineSpeed ?? base.scanlineSpeed,
-        SCANLINE_SPEED_MIN,
-        SCANLINE_SPEED_MAX
+        fromStore.scanlineSpeed ?? base.scanlineSpeed,
+        SCAN_SPD_MIN,
+        SCAN_SPD_MAX
     );
 
     return {
-        phosphorEnabled: phosphorOpacity > 0 && (stored.phosphorEnabled ?? base.phosphorEnabled),
+        phosphorEnabled: phosphorOpacity > 0 && (fromStore.phosphorEnabled ?? base.phosphorEnabled),
         phosphorOpacity,
-        scanlinesEnabled: scanlineOpacity > 0 && (stored.scanlinesEnabled ?? base.scanlinesEnabled),
+        scanlinesEnabled: scanlineOpacity > 0 && (fromStore.scanlinesEnabled ?? base.scanlinesEnabled),
         scanlineOpacity,
         scanlineSpeed
     };
 }
 
 /**
- * @returns {EffectsPrefs} Current live preferences as applied in the DOM.
+ * Reads whats currently live in the DOM right now.
+ * @returns {Prefs}
  */
-function readLivePrefs(): EffectsPrefs {
+function live(): Prefs {
     const rootStyle = window.getComputedStyle(document.documentElement);
     const body = document.body;
+    const base = defs();
 
     const phosphorOpacity = clamp(
-        parseNumber(
+        num(
             rootStyle.getPropertyValue("--effect-crt-phosphor-opacity"),
-            getDefaultPrefs().phosphorOpacity
+            base.phosphorOpacity
         ),
-        PHOSPHOR_OPACITY_MIN,
-        PHOSPHOR_OPACITY_MAX
+        PHOS_OP_MIN,
+        PHOS_OP_MAX
     );
 
     const scanlineOpacity = clamp(
-        parseNumber(
+        num(
             rootStyle.getPropertyValue("--effect-crt-scanline-opacity"),
-            getDefaultPrefs().scanlineOpacity
+            base.scanlineOpacity
         ),
-        SCANLINE_OPACITY_MIN,
-        SCANLINE_OPACITY_MAX
+        SCAN_OP_MIN,
+        SCAN_OP_MAX
     );
 
     const scanlineSpeed = body.classList.contains("effect-static-scanlines")
         ? 0
-        : durationMsToScanlineSpeed(
-            parseNumber(
+        : msToSpd(
+            num(
                 rootStyle.getPropertyValue("--effect-crt-scanline-travel-duration"),
-                scanlineSpeedToDurationMs(getDefaultPrefs().scanlineSpeed)
+                spdToMs(base.scanlineSpeed)
             )
         );
 
     return {
         phosphorEnabled: phosphorOpacity > 0 && !body.classList.contains("effect-disable-phosphor"),
-        phosphorOpacity,
         scanlinesEnabled: scanlineOpacity > 0 && !body.classList.contains("effect-disable-scanlines"),
+        phosphorOpacity,
         scanlineOpacity,
         scanlineSpeed
     };
 }
 
 /**
- * @returns {EffectsPrefs} Stored preferences merged over defaults.
+ * Defaults + stored prefs.
+ * @returns {Prefs}
  */
-function readResolvedPrefs(): EffectsPrefs {
-    return mergePrefs(getDefaultPrefs(), readStoredPrefs());
+function resolved(): Prefs {
+    return merge(defs(), stored());
 }
 
 /**
- * @param {EffectsPrefs} prefs - Preferences to persist.
- * @returns {void} Nothing.
+ * Saves prefs to localStorage.
+ * @param {Prefs} prefs
+ * @returns {void}
  */
-function savePrefs(prefs: EffectsPrefs): void {
-    localStorage.setItem(EFFECTS_STORAGE_KEY, JSON.stringify(prefs));
+function save(prefs: Prefs): void {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
 }
 
 /**
- * @param {EffectsPrefs} prefs - Preferences to apply.
- * @returns {void} Nothing.
+ * Applies prefs into css vars and body classes and the whole lot.
+ * @param {Prefs} prefs
+ * @returns {void}
  */
-function applyPrefs(prefs: EffectsPrefs): void {
+function apply(prefs: Prefs): void {
     document.documentElement.style.setProperty(
         "--effect-crt-phosphor-opacity",
-        formatCssNumber(prefs.phosphorOpacity)
+        cssNum(prefs.phosphorOpacity)
     );
     document.documentElement.style.setProperty(
         "--effect-crt-scanline-opacity",
-        formatCssNumber(prefs.scanlineOpacity)
+        cssNum(prefs.scanlineOpacity)
     );
     document.documentElement.style.setProperty(
         "--effect-crt-scanline-travel-duration",
-        formatDurationMs(scanlineSpeedToDurationMs(prefs.scanlineSpeed))
+        ms(spdToMs(prefs.scanlineSpeed))
     );
 
-    document.body.classList.toggle("effect-disable-phosphor", !prefs.phosphorEnabled || prefs.phosphorOpacity <= 0);
-    document.body.classList.toggle("effect-disable-scanlines", !prefs.scanlinesEnabled || prefs.scanlineOpacity <= 0);
+    document.body.classList.toggle(
+        "effect-disable-phosphor",
+        !prefs.phosphorEnabled || prefs.phosphorOpacity <= 0
+    );
+    document.body.classList.toggle(
+        "effect-disable-scanlines",
+        !prefs.scanlinesEnabled || prefs.scanlineOpacity <= 0
+    );
     document.body.classList.toggle("effect-static-scanlines", prefs.scanlineSpeed <= 0);
 }
 
 /**
- * @param {EffectsPrefs} prefs - Preferences to save and apply.
- * @returns {void} Nothing.
+ * Save then apply. tiny wrapper but keeps the call sites nicer.
+ * @param {Prefs} prefs
+ * @returns {void}
  */
-function saveAndApplyPrefs(prefs: EffectsPrefs): void {
-    savePrefs(prefs);
-    applyPrefs(prefs);
+function commit(prefs: Prefs): void {
+    save(prefs);
+    apply(prefs);
 }
 
 /**
- * @param {HTMLDivElement} modalEl - Modal root.
- * @param {string} selector - Selector for the checkbox.
- * @param {boolean} checked - Checked state.
- * @returns {void} Nothing.
+ * Syncs a checkbox in the modal.
+ * @param {HTMLDivElement} modalEl
+ * @param {string} selector
+ * @param {boolean} checked
+ * @returns {void}
  */
-function syncCheckbox(modalEl: HTMLDivElement, selector: string, checked: boolean): void {
+function syncChk(modalEl: HTMLDivElement, selector: string, checked: boolean): void {
     const el = modalEl.querySelector(selector);
     if (!(el instanceof HTMLInputElement)) return;
     el.checked = checked;
 }
 
 /**
- * @param {HTMLDivElement} modalEl - Modal root.
- * @param {string} selector - Selector for the range input.
- * @param {number} value - Slider percentage.
- * @returns {void} Nothing.
+ * Syncs a range input.
+ * @param {HTMLDivElement} modalEl
+ * @param {string} selector
+ * @param {number} value
+ * @returns {void}
  */
-function syncRange(modalEl: HTMLDivElement, selector: string, value: number): void {
+function syncRng(modalEl: HTMLDivElement, selector: string, value: number): void {
     const el = modalEl.querySelector(selector);
     if (!(el instanceof HTMLInputElement)) return;
     el.value = String(Math.round(clamp(value, 0, 100)));
 }
 
 /**
- * @param {HTMLDivElement} modalEl - Modal root.
- * @param {string} selector - Selector for the output element.
- * @param {number} value - Percentage value.
- * @returns {void} Nothing.
+ * Syncs one little output label.
+ * @param {HTMLDivElement} modalEl
+ * @param {string} selector
+ * @param {number} value
+ * @returns {void}
  */
-function syncOutput(modalEl: HTMLDivElement, selector: string, value: number): void {
+function syncOut(modalEl: HTMLDivElement, selector: string, value: number): void {
     const el = modalEl.querySelector(selector);
     if (!(el instanceof HTMLOutputElement) && !(el instanceof HTMLElement)) return;
-    el.textContent = formatPercent(value);
+    el.textContent = pct(value);
 }
 
 /**
- * @param {HTMLDivElement} modalEl - Modal root.
- * @param {EffectsPrefs} prefs - Preferences to reflect in the modal.
- * @returns {void} Nothing.
+ * Reflects prefs into the currently open modal controls.
+ * @param {HTMLDivElement} modalEl
+ * @param {Prefs} prefs
+ * @returns {void}
  */
-function syncModalUi(modalEl: HTMLDivElement, prefs: EffectsPrefs): void {
-    const phosphorPercent = opacityToSliderPercent(prefs.phosphorOpacity, PHOSPHOR_OPACITY_MAX);
-    const scanlinePercent = opacityToSliderPercent(prefs.scanlineOpacity, SCANLINE_OPACITY_MAX);
-    const scanlineSpeed = clamp(prefs.scanlineSpeed, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
+function syncMod(modalEl: HTMLDivElement, prefs: Prefs): void {
+    const phosphorPercent = opToPct(prefs.phosphorOpacity, PHOS_OP_MAX);
+    const scanlinePercent = opToPct(prefs.scanlineOpacity, SCAN_OP_MAX);
+    const scanlineSpeed = clamp(prefs.scanlineSpeed, SCAN_SPD_MIN, SCAN_SPD_MAX);
 
-    syncCheckbox(modalEl, "#effects-phosphor-enabled", !prefs.phosphorEnabled || phosphorPercent === 0);
-    syncCheckbox(modalEl, "#effects-scanlines-enabled", !prefs.scanlinesEnabled || scanlinePercent === 0);
+    syncChk(modalEl, "#effects-phosphor-enabled", !prefs.phosphorEnabled || phosphorPercent === 0);
+    syncChk(modalEl, "#effects-scanlines-enabled", !prefs.scanlinesEnabled || scanlinePercent === 0);
 
-    syncRange(modalEl, "#effects-phosphor-opacity", phosphorPercent);
-    syncRange(modalEl, "#effects-scanline-opacity", scanlinePercent);
-    syncRange(modalEl, "#effects-scanline-speed", scanlineSpeed);
+    syncRng(modalEl, "#effects-phosphor-opacity", phosphorPercent);
+    syncRng(modalEl, "#effects-scanline-opacity", scanlinePercent);
+    syncRng(modalEl, "#effects-scanline-speed", scanlineSpeed);
 
-    syncOutput(modalEl, "#effects-phosphor-opacity-value", phosphorPercent);
-    syncOutput(modalEl, "#effects-scanline-opacity-value", scanlinePercent);
-    syncOutput(modalEl, "#effects-scanline-speed-value", scanlineSpeed);
+    syncOut(modalEl, "#effects-phosphor-opacity-value", phosphorPercent);
+    syncOut(modalEl, "#effects-scanline-opacity-value", scanlinePercent);
+    syncOut(modalEl, "#effects-scanline-speed-value", scanlineSpeed);
 }
 
 /**
- * @returns {void} Nothing.
+ * If the modal is open, updates it from the live prefs.
+ * @returns {void}
  */
-function syncOpenModalFromLivePrefs(): void {
-    const session = modals.getOpenSession(EFFECTS_MODAL_ID);
+function syncOpen(): void {
+    const session = modals.getOpenSession(MOD_ID);
     if (!session) return;
-    syncModalUi(session.modalEl, readLivePrefs());
+    syncMod(session.modalEl, live());
 }
 
 /**
- * @param {HTMLButtonElement} button - Button to update.
- * @param {string} emoji - Emoji fallback.
- * @returns {void} Nothing.
+ * Fallback icon when svg fails or doesnt exist.
+ * @param {HTMLButtonElement} button
+ * @param {string} emoji
+ * @returns {void}
  */
-function applyEmojiButtonIcon(button: HTMLButtonElement, emoji: string): void {
+function emojiIcon(button: HTMLButtonElement, emoji: string): void {
     button.replaceChildren();
     button.textContent = emoji;
 }
 
 /**
- * @param {string} src - SVG source path.
- * @returns {Promise<string | null>} Prepared SVG markup or null on failure.
+ * Tries to fetch and prep svg markup for the floating button.
+ * @param {string} src
+ * @returns {Promise<string | null>}
  */
-async function tryLoadSvgMarkup(src: string): Promise<string | null> {
+async function loadSvg(src: string): Promise<string | null> {
     try {
         const response = await fetch(src, { cache: "force-cache" });
-
-        if (!response.ok) {
-            return null;
-        }
+        if (!response.ok) return null;
 
         const rawSvg = await response.text();
         return prepareSvgMarkup(rawSvg, "effects-toggle-button__svg");
@@ -445,26 +481,24 @@ async function tryLoadSvgMarkup(src: string): Promise<string | null> {
 }
 
 /**
- * @param {HTMLButtonElement} button - Button to update.
- * @param {EffectsUiConfig} ui - Effects UI config.
- * @returns {Promise<void>} Resolves when the icon has been applied.
+ * Applies either the svg icon or the emoji fallback.
+ * @param {HTMLButtonElement} button
+ * @param {EffectsUiConfig} nextUi
+ * @returns {Promise<void>}
  */
-async function applyButtonIcon(button: HTMLButtonElement, ui: EffectsUiConfig): Promise<void> {
-    const requestToken = ++buttonIconRequestToken;
+async function setBtnIcon(button: HTMLButtonElement, nextUi: EffectsUiConfig): Promise<void> {
+    const requestToken = ++iconReqTok;
 
-    if (!ui.iconPath) {
-        applyEmojiButtonIcon(button, ui.icon);
+    if (!nextUi.iconPath) {
+        emojiIcon(button, nextUi.icon);
         return;
     }
 
-    const markup = await tryLoadSvgMarkup(ui.iconPath);
-
-    if (requestToken !== buttonIconRequestToken) {
-        return;
-    }
+    const markup = await loadSvg(nextUi.iconPath);
+    if (requestToken !== iconReqTok) return;
 
     if (!markup) {
-        applyEmojiButtonIcon(button, ui.icon);
+        emojiIcon(button, nextUi.icon);
         return;
     }
 
@@ -477,27 +511,29 @@ async function applyButtonIcon(button: HTMLButtonElement, ui: EffectsUiConfig): 
 }
 
 /**
- * @param {EffectsUiConfig} ui - Effects UI config.
- * @param {HTMLButtonElement} button - Button to update.
- * @returns {void} Nothing.
+ * Applies title/aria/icon stuff to the floating button.
+ * @param {EffectsUiConfig} nextUi
+ * @param {HTMLButtonElement} button
+ * @returns {void}
  */
-function applyButtonUi(ui: EffectsUiConfig, button: HTMLButtonElement): void {
-    button.title = ui.title;
-    button.setAttribute("aria-label", ui.title);
-    button.style.bottom = EFFECTS_BUTTON_BOTTOM;
+function setBtnUi(nextUi: EffectsUiConfig, button: HTMLButtonElement): void {
+    button.title = nextUi.title;
+    button.setAttribute("aria-label", nextUi.title);
+    button.style.bottom = BTN_BOTTOM;
 
-    void applyButtonIcon(button, ui);
+    void setBtnIcon(button, nextUi);
 }
 
 /**
- * @param {EffectsPanelProps} props - Panel props.
- * @returns {ReactElement} Modal content.
+ * Little react panel for the modal.
+ * @param {Props} props
+ * @returns {ReactElement}
  */
-function EffectsPanel(props: EffectsPanelProps): ReactElement {
+function Panel(props: Props): ReactElement {
     const text = props.ui.modal;
-    const phosphorPercent = opacityToSliderPercent(props.prefs.phosphorOpacity, PHOSPHOR_OPACITY_MAX);
-    const scanlinePercent = opacityToSliderPercent(props.prefs.scanlineOpacity, SCANLINE_OPACITY_MAX);
-    const scanlineSpeed = clamp(props.prefs.scanlineSpeed, SCANLINE_SPEED_MIN, SCANLINE_SPEED_MAX);
+    const phosphorPercent = opToPct(props.prefs.phosphorOpacity, PHOS_OP_MAX);
+    const scanlinePercent = opToPct(props.prefs.scanlineOpacity, SCAN_OP_MAX);
+    const scanlineSpeed = clamp(props.prefs.scanlineSpeed, SCAN_SPD_MIN, SCAN_SPD_MAX);
 
     return (
         <>
@@ -508,14 +544,14 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
                 </div>
 
                 {/* <button
-                    type="button"
-                    className="effects-modal__close"
-                    data-effects-close=""
-                    title={text.closeTitle}
-                    aria-label={text.closeTitle}
-                >
-                    ✕
-                </button> */}
+          type="button"
+          className="effects-modal__close"
+          data-effects-close=""
+          title={text.closeTitle}
+          aria-label={text.closeTitle}
+        >
+          ✕
+        </button> */}
             </div>
 
             <div className="effects-modal__grid">
@@ -537,15 +573,15 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
                     <div className="effects-modal__control">
                         <div className="effects-modal__control-meta">
                             <label htmlFor="effects-phosphor-opacity">{text.intensityLabel}</label>
-                            <output id="effects-phosphor-opacity-value">{formatPercent(phosphorPercent)}</output>
+                            <output id="effects-phosphor-opacity-value"><span>&nbsp;</span>{pct(phosphorPercent)}</output>
                         </div>
 
                         <input
                             id="effects-phosphor-opacity"
                             type="range"
-                            min={String(SLIDER_PERCENT_MIN)}
-                            max={String(SLIDER_PERCENT_MAX)}
-                            step={String(SLIDER_PERCENT_STEP)}
+                            min={String(SLIDER_MIN)}
+                            max={String(SLIDER_MAX)}
+                            step={String(SLIDER_STEP)}
                             defaultValue={String(Math.round(phosphorPercent))}
                         />
 
@@ -571,15 +607,15 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
                     <div className="effects-modal__control">
                         <div className="effects-modal__control-meta">
                             <label htmlFor="effects-scanline-opacity">{text.intensityLabel}</label>
-                            <output id="effects-scanline-opacity-value">{formatPercent(scanlinePercent)}</output>
+                            <output id="effects-scanline-opacity-value"><span>&nbsp;</span>{pct(scanlinePercent)}</output>
                         </div>
 
                         <input
                             id="effects-scanline-opacity"
                             type="range"
-                            min={String(SLIDER_PERCENT_MIN)}
-                            max={String(SLIDER_PERCENT_MAX)}
-                            step={String(SLIDER_PERCENT_STEP)}
+                            min={String(SLIDER_MIN)}
+                            max={String(SLIDER_MAX)}
+                            step={String(SLIDER_STEP)}
                             defaultValue={String(Math.round(scanlinePercent))}
                         />
 
@@ -589,15 +625,15 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
                     <div className="effects-modal__control">
                         <div className="effects-modal__control-meta">
                             <label htmlFor="effects-scanline-speed">{text.scanlineSpeedLabel}</label>
-                            <output id="effects-scanline-speed-value">{formatPercent(scanlineSpeed)}</output>
+                            <output id="effects-scanline-speed-value"><span>&nbsp;</span>{pct(scanlineSpeed)}</output>
                         </div>
 
                         <input
                             id="effects-scanline-speed"
                             type="range"
-                            min={String(SCANLINE_SPEED_MIN)}
-                            max={String(SCANLINE_SPEED_MAX)}
-                            step={String(SLIDER_PERCENT_STEP)}
+                            min={String(SCAN_SPD_MIN)}
+                            max={String(SCAN_SPD_MAX)}
+                            step={String(SLIDER_STEP)}
                             defaultValue={String(Math.round(scanlineSpeed))}
                         />
 
@@ -620,206 +656,266 @@ function EffectsPanel(props: EffectsPanelProps): ReactElement {
 }
 
 /**
- * @returns {string} Rendered modal HTML.
+ * Renders the modal html string from the current live prefs.
+ * @returns {string}
  */
-function renderEffectsModal(): string {
-    return render2Mkup(<EffectsPanel prefs={readLivePrefs()} ui={getUiConfig()} />);
+function rndrMod(): string {
+    return render2Mkup(<Panel prefs={live()} ui={ui()} />);
 }
 
 /**
- * @returns {Modal} Singleton modal instance.
+ * Handles phosphor toggle checkbox.
+ * @param {Event} ev
+ * @param {Ctx} ctx
+ * @returns {void}
  */
-function ensureEffectsModal(): Modal {
-    if (effectsModal) return effectsModal;
+const onPhosTgl = (ev: Event, ctx: Ctx): void => {
+    const target = ev.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
 
-    effectsModal = modals.create({
-        id: EFFECTS_MODAL_ID,
+    const cur = live();
+    const nextOpacity = target.checked
+        ? 0
+        : cur.phosphorOpacity > 0
+            ? cur.phosphorOpacity
+            : defs().phosphorOpacity;
+
+    const next: Prefs = {
+        ...cur,
+        phosphorEnabled: !target.checked,
+        phosphorOpacity: nextOpacity
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
+ * Handles scanline toggle checkbox.
+ * @param {Event} ev
+ * @param {Ctx} ctx
+ * @returns {void}
+ */
+const onScanTgl = (ev: Event, ctx: Ctx): void => {
+    const target = ev.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    const cur = live();
+    const nextOpacity = target.checked
+        ? 0
+        : cur.scanlineOpacity > 0
+            ? cur.scanlineOpacity
+            : defs().scanlineOpacity;
+
+    const next: Prefs = {
+        ...cur,
+        scanlinesEnabled: !target.checked,
+        scanlineOpacity: nextOpacity
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
+ * Handles phosphor opacity slider.
+ * @param {Event} ev
+ * @param {Ctx} ctx
+ * @returns {void}
+ */
+const onPhosOp = (ev: Event, ctx: Ctx): void => {
+    const target = ev.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    const percent = clamp(
+        Number.parseFloat(target.value),
+        SLIDER_MIN,
+        SLIDER_MAX
+    );
+    const opacity = pctToOp(percent, PHOS_OP_MAX);
+
+    const next: Prefs = {
+        ...live(),
+        phosphorEnabled: percent > 0,
+        phosphorOpacity: opacity
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
+ * Handles scanline opacity slider.
+ * @param {Event} ev
+ * @param {Ctx} ctx
+ * @returns {void}
+ */
+const onScanOp = (ev: Event, ctx: Ctx): void => {
+    const target = ev.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    const percent = clamp(
+        Number.parseFloat(target.value),
+        SLIDER_MIN,
+        SLIDER_MAX
+    );
+    const opacity = pctToOp(percent, SCAN_OP_MAX);
+
+    const next: Prefs = {
+        ...live(),
+        scanlinesEnabled: percent > 0,
+        scanlineOpacity: opacity
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
+ * Handles scanline speed slider.
+ * @param {Event} ev
+ * @param {Ctx} ctx
+ * @returns {void}
+ */
+const onScanSpd = (ev: Event, ctx: Ctx): void => {
+    const target = ev.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    const speed = clamp(
+        Number.parseFloat(target.value),
+        SCAN_SPD_MIN,
+        SCAN_SPD_MAX
+    );
+
+    const next: Prefs = {
+        ...live(),
+        scanlineSpeed: speed
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
+ * Reset button handler. Goes back to the css-ish defaults.
+ * @param {Event} _ev
+ * @param {Ctx} ctx
+ * @returns {void}
+ */
+const onReset = (_ev: Event, ctx: Ctx): void => {
+    const base = defs();
+    const next: Prefs = {
+        phosphorEnabled: true,
+        phosphorOpacity: base.phosphorOpacity,
+        scanlinesEnabled: true,
+        scanlineOpacity: base.scanlineOpacity,
+        scanlineSpeed: base.scanlineSpeed
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
+ * Creates the modal singleton on first use.
+ * @returns {Modal}
+ */
+function ensureMod(): Modal {
+    if (mod) return mod;
+
+    mod = modals.create({
+        id: MOD_ID,
         mode: "blocking",
         window: true,
         modalClassName: "effects-modal",
-        content: renderEffectsModal,
+        content: rndrMod,
         decorators: [
             closeOnClick("[data-effects-close]"),
-
-            onModalEvent("#effects-phosphor-enabled", "change", (ev, ctx) => {
-                const target = ev.currentTarget;
-                if (!(target instanceof HTMLInputElement)) return;
-
-                const livePrefs = readLivePrefs();
-                const nextOpacity = target.checked
-                    ? 0
-                    : livePrefs.phosphorOpacity > 0
-                        ? livePrefs.phosphorOpacity
-                        : getDefaultPrefs().phosphorOpacity;
-
-                const next: EffectsPrefs = {
-                    ...livePrefs,
-                    phosphorEnabled: !target.checked,
-                    phosphorOpacity: nextOpacity
-                };
-
-                saveAndApplyPrefs(next);
-                syncModalUi(ctx.modalEl, next);
-            }),
-
-            onModalEvent("#effects-scanlines-enabled", "change", (ev, ctx) => {
-                const target = ev.currentTarget;
-                if (!(target instanceof HTMLInputElement)) return;
-
-                const livePrefs = readLivePrefs();
-                const nextOpacity = target.checked
-                    ? 0
-                    : livePrefs.scanlineOpacity > 0
-                        ? livePrefs.scanlineOpacity
-                        : getDefaultPrefs().scanlineOpacity;
-
-                const next: EffectsPrefs = {
-                    ...livePrefs,
-                    scanlinesEnabled: !target.checked,
-                    scanlineOpacity: nextOpacity
-                };
-
-                saveAndApplyPrefs(next);
-                syncModalUi(ctx.modalEl, next);
-            }),
-
-            onModalEvent("#effects-phosphor-opacity", "input", (ev, ctx) => {
-                const target = ev.currentTarget;
-                if (!(target instanceof HTMLInputElement)) return;
-
-                const percent = clamp(
-                    Number.parseFloat(target.value),
-                    SLIDER_PERCENT_MIN,
-                    SLIDER_PERCENT_MAX
-                );
-                const opacity = sliderPercentToOpacity(percent, PHOSPHOR_OPACITY_MAX);
-
-                const next: EffectsPrefs = {
-                    ...readLivePrefs(),
-                    phosphorEnabled: percent > 0,
-                    phosphorOpacity: opacity
-                };
-
-                saveAndApplyPrefs(next);
-                syncModalUi(ctx.modalEl, next);
-            }),
-
-            onModalEvent("#effects-scanline-opacity", "input", (ev, ctx) => {
-                const target = ev.currentTarget;
-                if (!(target instanceof HTMLInputElement)) return;
-
-                const percent = clamp(
-                    Number.parseFloat(target.value),
-                    SLIDER_PERCENT_MIN,
-                    SLIDER_PERCENT_MAX
-                );
-                const opacity = sliderPercentToOpacity(percent, SCANLINE_OPACITY_MAX);
-
-                const next: EffectsPrefs = {
-                    ...readLivePrefs(),
-                    scanlinesEnabled: percent > 0,
-                    scanlineOpacity: opacity
-                };
-
-                saveAndApplyPrefs(next);
-                syncModalUi(ctx.modalEl, next);
-            }),
-
-            onModalEvent("#effects-scanline-speed", "input", (ev, ctx) => {
-                const target = ev.currentTarget;
-                if (!(target instanceof HTMLInputElement)) return;
-
-                const speed = clamp(
-                    Number.parseFloat(target.value),
-                    SCANLINE_SPEED_MIN,
-                    SCANLINE_SPEED_MAX
-                );
-
-                const next: EffectsPrefs = {
-                    ...readLivePrefs(),
-                    scanlineSpeed: speed
-                };
-
-                saveAndApplyPrefs(next);
-                syncModalUi(ctx.modalEl, next);
-            }),
-
-            onModalEvent("#effects-reset", "click", (_ev, ctx) => {
-                const defaults = getDefaultPrefs();
-                const next: EffectsPrefs = {
-                    phosphorEnabled: true,
-                    phosphorOpacity: defaults.phosphorOpacity,
-                    scanlinesEnabled: true,
-                    scanlineOpacity: defaults.scanlineOpacity,
-                    scanlineSpeed: defaults.scanlineSpeed
-                };
-
-                saveAndApplyPrefs(next);
-                syncModalUi(ctx.modalEl, next);
-            })
+            onModalEvent("#effects-phosphor-enabled", "change", onPhosTgl),
+            onModalEvent("#effects-scanlines-enabled", "change", onScanTgl),
+            onModalEvent("#effects-phosphor-opacity", "input", onPhosOp),
+            onModalEvent("#effects-scanline-opacity", "input", onScanOp),
+            onModalEvent("#effects-scanline-speed", "input", onScanSpd),
+            onModalEvent("#effects-reset", "click", onReset)
         ]
     });
 
-    return effectsModal;
+    return mod;
 }
 
 /**
- * @returns {void} Nothing.
+ * Opens the effects modal and refreshes its content first.
+ * @returns {void}
  */
-function openEffectsModal(): void {
-    const modal = ensureEffectsModal();
-    modal.setContent(renderEffectsModal());
+function openMod(): void {
+    const modal = ensureMod();
+    modal.setContent(rndrMod());
     modal.open();
 }
 
 /**
- * @returns {void} Nothing.
+ * Installs the storage event sync once.
+ * @returns {void}
  */
-function ensureStorageSync(): void {
-    if (storageSyncInstalled) return;
-    storageSyncInstalled = true;
+function ensureSync(): void {
+    if (syncOn) return;
+    syncOn = true;
 
-    window.addEventListener("storage", (event: StorageEvent) => {
-        if (event.key !== EFFECTS_STORAGE_KEY) return;
-        applyPrefs(readResolvedPrefs());
-        syncOpenModalFromLivePrefs();
-    });
+    /**
+     * Keeps tabs/windows in sync when storage changes elsewhere.
+     * @param {StorageEvent} event
+     * @returns {void}
+     */
+    const onStore = (event: StorageEvent): void => {
+        if (event.key !== STORAGE_KEY) return;
+        apply(resolved());
+        syncOpen();
+    };
+
+    window.addEventListener("storage", onStore);
 }
 
 /**
  * Creates the floating CRT effects button, applies saved preferences,
  * and wires the effects modal.
- *
- * @param {EffectsUiConfig} ui - Effects UI strings and icon config.
- * @returns {void} Nothing.
+ * @param {EffectsUiConfig} nextUi
+ * @returns {void}
  */
-export function initEffectsControls(ui: EffectsUiConfig): void {
-    effectsUiConfig = ui;
+export function initEffectsControls(nextUi: EffectsUiConfig): void {
+    uiCfg = nextUi;
 
-    getDefaultPrefs();
-    applyPrefs(readResolvedPrefs());
+    defs();
+    apply(resolved());
 
     const buttonNode = recreateSingleton(
-        EFFECTS_BUTTON_ID,
+        BTN_ID,
         () => document.createElement("button"),
         document
     );
 
     if (!(buttonNode instanceof HTMLButtonElement)) return;
 
+    /**
+     * Button click opens the modal. tiny wrapper but whatever.
+     * @returns {void}
+     */
+    const onClick = (): void => {
+        openMod();
+    };
+
     buttonNode.classList.add("theme-toggle-button", "effects-toggle-button");
     buttonNode.type = "button";
-    buttonNode.onclick = () => openEffectsModal();
+    buttonNode.onclick = onClick;
 
-    applyButtonUi(ui, buttonNode);
+    setBtnUi(nextUi, buttonNode);
 
     if (buttonNode.parentElement !== document.body) {
         document.body.appendChild(buttonNode);
     }
 
-    if (effectsModal?.isOpen()) {
-        effectsModal.setContent(renderEffectsModal());
+    if (mod?.isOpen()) {
+        mod.setContent(rndrMod());
     }
 
-    ensureStorageSync();
+    ensureSync();
 }

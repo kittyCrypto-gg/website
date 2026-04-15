@@ -19,44 +19,51 @@ export interface ChatMessage {
     edited?: boolean;
 }
 
-type ChatMessageLocal = ChatMessage & Readonly<{
+type MsgLocal = ChatMessage & Readonly<{
     pending?: boolean;
 }>;
 
-const CHAT_SERVER = `${config.chatURL}`;
-const CHAT_STREAM_URL = `${config.chatStreamURL}`;
-const SESSION_TOKEN_URL = `${config.sessionTokenURL}`;
-const SESSION_REREGISTER_URL = `${config.sessionReregisterURL}`;
+const CHAT_URL = `${config.chatURL}`;
+const STREAM_URL = `${config.chatStreamURL}`;
+const TOKEN_URL = `${config.sessionTokenURL}`;
+const REREG_URL = `${config.sessionReregisterURL}`;
 
-const chatroom = document.getElementById("chatroom") as HTMLElement;
-const nicknameInput = document.getElementById("nickname") as HTMLInputElement;
-const messageInput = document.getElementById("message") as HTMLInputElement;
-const sendButton = document.getElementById("send-button") as HTMLElement;
+const roomEl = document.getElementById("chatroom") as HTMLElement;
+const nickEl = document.getElementById("nickname") as HTMLInputElement;
+const msgEl = document.getElementById("message") as HTMLInputElement;
+const sendBtn = document.getElementById("send-button") as HTMLElement;
 
-let sessionToken: string | null = null;
-let eventSource: EventSource | null = null;
-let reconnecting = false;
-let chatClusteriser: Clusteriser | null = null;
-
-nicknameInput.addEventListener("input", () => {
-    setChatCookie("nickname", nicknameInput.value.trim());
-});
-
-const disconnectionGuard = createDisconnectionGuard({
-  gracePeriodMS: 4000,
-  fetch: {
-    retries: 2,
-    retryDelayMS: 750
-  }
-});
-
-const guardedFetch = disconnectionGuard.decorateFetch();
+let sessTok: string | null = null;
+let evtSrc: EventSource | null = null;
+let isReconn = false;
+let cluster: Clusteriser | null = null;
 
 /**
- * @param {unknown} value - Unknown JSON value to validate.
- * @returns {boolean} True if the value conforms to the ChatMessage structure, false otherwise.
+ * Saves nickname as the user types. tiny but handy.
+ * @returns {void}
  */
-function isChatMessage(value: unknown): value is ChatMessage {
+const onNickInput = (): void => {
+    setCookie("nickname", nickEl.value.trim());
+};
+
+nickEl.addEventListener("input", onNickInput);
+
+const discGuard = createDisconnectionGuard({
+    gracePeriodMS: 4000,
+    fetch: {
+        retries: 2,
+        retryDelayMS: 750
+    }
+});
+
+const guardedFetch = discGuard.decorateFetch();
+
+/**
+ * Checks if a json-ish thing looks like a chat msg.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isMsg(value: unknown): value is ChatMessage {
     if (!helpers.isRecord(value)) return false;
 
     const nickOk = typeof value.nick === "string";
@@ -70,75 +77,77 @@ function isChatMessage(value: unknown): value is ChatMessage {
 }
 
 /**
- * @param {unknown} value - Unknown JSON value to validate.
- * @returns {void} Asserts that the value is an array of ChatMessage objects, otherwise throws an error.
+ * Asserts an sse payload is an array of chat msgs.
+ * throws if its not, obviously.
+ * @param {unknown} value
+ * @returns {void}
  */
-function assertChatMessageArray(value: unknown): asserts value is ChatMessage[] {
+function assertMsgArr(value: unknown): asserts value is ChatMessage[] {
     if (!Array.isArray(value)) throw new Error("Invalid SSE payload: expected an array");
 
     for (const item of value) {
-        if (!isChatMessage(item)) {
+        if (!isMsg(item)) {
             throw new Error("Invalid SSE payload: array contained non-ChatMessage items");
         }
     }
 }
 
 /**
- * @returns {void} Closes the active SSE connection if one exists.
+ * Closes the active event source if there is one.
+ * @returns {void}
  */
-function closeEventSource(): void {
-    if (!eventSource) return;
-    eventSource.close();
-    eventSource = null;
+function closeSrc(): void {
+    if (!evtSrc) return;
+    evtSrc.close();
+    evtSrc = null;
 }
 
 /**
- * @param {number} retryMS - Milliseconds between reconnect attempts.
- * @returns {Promise<void>} Attempts to reconnect to the chat stream by fetching a new session token if necessary, and re-establishing the SSE connection. Retries indefinitely on failure with a delay of retryMS.
+ * Keeps trying to re-register and reconnect. A bit stubborn on purpose.
+ * @param {number} retryMS
+ * @returns {Promise<void>}
  */
-async function attemptReconnect(retryMS: number = 3000): Promise<void> {
-    if (reconnecting) return;
-    reconnecting = true;
+async function reconn(retryMS: number = 3000): Promise<void> {
+    if (isReconn) return;
+    isReconn = true;
 
+    /**
+     * Queues another reconnect attempt later.
+     * @returns {void}
+     */
     const retry = (): void => {
-        reconnecting = false;
+        isReconn = false;
         setTimeout(() => {
-            void attemptReconnect(retryMS);
+            void reconn(retryMS);
         }, retryMS);
     };
 
+    const token = typeof sessTok === "string" ? sessTok : "";
+
+    if (!token) {
+        isReconn = false;
+        void fetchTok();
+        return;
+    }
+
     try {
-        const token = typeof sessionToken === "string" ? sessionToken : "";
-
-        if (!token) {
-            reconnecting = false;
-            void fetchSessionToken();
-            return;
-        }
-
-        let response: Response;
-        try {
-            response = await guardedFetch(SESSION_REREGISTER_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sessionToken: token })
-            });
-        } catch {
-            retry();
-            return;
-        }
+        const response = await guardedFetch(REREG_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionToken: token })
+        });
 
         console.log("🔁 reregister status:", response.status);
 
         if (response.status === 200) {
-            reconnecting = false;
-            connectToChatStream();
+            isReconn = false;
+            connectStream();
             return;
         }
 
         if (response.status === 403) {
-            reconnecting = false;
-            void fetchSessionToken();
+            isReconn = false;
+            void fetchTok();
             return;
         }
 
@@ -149,141 +158,168 @@ async function attemptReconnect(retryMS: number = 3000): Promise<void> {
 }
 
 /**
- * @returns {HTMLElement} The current content root used for chat messages.
+ * Current content root for the chat rows.
+ * @returns {HTMLElement}
  */
-function getChatContentRoot(): HTMLElement {
-    if (!chatClusteriser) return chatroom;
+function getCntRoot(): HTMLElement {
+    if (!cluster) return roomEl;
 
-    const contentElement = document.getElementById(chatClusteriser.contentId);
-    return contentElement instanceof HTMLElement ? contentElement : chatroom;
+    const contentElement = document.getElementById(cluster.contentId);
+    return contentElement instanceof HTMLElement ? contentElement : roomEl;
 }
 
 /**
- * @returns {HTMLElement} The current scroll root used for chat scrolling.
+ * Current scroll root for the chat area.
+ * @returns {HTMLElement}
  */
-function getChatScrollRoot(): HTMLElement {
-    if (!chatClusteriser) return chatroom;
+function getScrRoot(): HTMLElement {
+    if (!cluster) return roomEl;
 
-    const scrollElement = document.getElementById(chatClusteriser.scrollId);
-    return scrollElement instanceof HTMLElement ? scrollElement : chatroom;
+    const scrollElement = document.getElementById(cluster.scrollId);
+    return scrollElement instanceof HTMLElement ? scrollElement : roomEl;
 }
 
 /**
- * @returns {void} Pushes current DOM rows into Clusterize when initialised.
+ * Pushes current dom rows into Clusterize when its live.
+ * @returns {void}
  */
-function updateClusterisedChat(): void {
-    if (!chatClusteriser?.isInitialised) return;
+function syncCluster(): void {
+    if (!cluster?.isInitialised) return;
 
-    const contentRoot = getChatContentRoot();
+    const contentRoot = getCntRoot();
     const rows = Array.from(contentRoot.querySelectorAll(".chat-message"))
         .map((element) => element.outerHTML);
 
-    chatClusteriser.update(rows);
+    cluster.update(rows);
 }
 
 /**
- * @param {string} name - Cookie name.
- * @returns {string | null} The cookie value if found, or null if not found.
+ * Reads a cookie by name.
+ * @param {string} name
+ * @returns {string | null}
  */
-function getChatCookie(name: string): string | null {
+function getCookie(name: string): string | null {
     const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
     return match ? decodeURIComponent(match[2]) : null;
 }
 
 /**
- * @param {string} name - Cookie name.
- * @param {string} value - Cookie value.
- * @param {number} days - Expiry in days.
- * @returns {void} Sets a cookie with the given name and value, expiring in the specified number of days, with path=/ and SameSite=Lax.
+ * Sets a cookie for the chat ui bits.
+ * @param {string} name
+ * @param {string} value
+ * @param {number} days
+ * @returns {void}
  */
-function setChatCookie(name: string, value: string, days: number = 365): void {
+function setCookie(name: string, value: string, days: number = 365): void {
     const date = new Date();
     date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
 }
 
 /**
- * @returns {void} Loads the saved nickname from cookies into the input field.
+ * Restores saved nickname into the input.
+ * @returns {void}
  */
-function loadNickname(): void {
-    const savedNick = getChatCookie("nickname");
+function loadNick(): void {
+    const savedNick = getCookie("nickname");
     if (!savedNick) return;
-    nicknameInput.value = savedNick;
+    nickEl.value = savedNick;
 }
 
 /**
- * @returns {Promise<void>} Fetches a session token and connects to the chat stream.
+ * Fetches a fresh session token and then opens the stream.
+ * @returns {Promise<void>}
  */
-async function fetchSessionToken(): Promise<void> {
+async function fetchTok(): Promise<void> {
     try {
-        const response = await fetch(SESSION_TOKEN_URL);
+        const response = await fetch(TOKEN_URL);
         if (!response.ok) throw new Error(`Failed to fetch session token: ${response.status}`);
 
         const data: unknown = await (response.json() as Promise<unknown>);
         helpers.assertSessionTokenResponse(data);
 
-        sessionToken = data.sessionToken;
-        window.sessionToken = sessionToken;
-        console.log("🔑 Session Token received:", sessionToken);
+        sessTok = data.sessionToken;
+        window.sessionToken = sessTok;
+        console.log("🔑 Session Token received:", sessTok);
 
-        connectToChatStream();
+        connectStream();
     } catch (error) {
         console.error("❌ Error fetching session token:", error);
     }
 }
 
 /**
- * @param {number} seed - Seed value.
- * @returns {number} A pseudo-random number in the range [0, 1) derived from the seed, using a simple seeded RNG algorithm.
- * @remarks This function is not cryptographically secure and is retained only for deterministic visual variation.
+ * Old seeded rng helper. Not crypto-safe, just deterministic visual fluff.
+ * still parked here for compat reasons.
+ * @param {number} seed
+ * @returns {number}
  */
-function seededRandom(seed: number): number {
+function randSeed(seed: number): number {
     let t = seed += 0x6D2B79F5;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
-void seededRandom;
+void randSeed;
 
 /**
- * @returns {void} Connects to the SSE chat stream using the current session token.
+ * Opens the sse stream using the current token.
+ * @returns {void}
  */
-function connectToChatStream(): void {
-    if (!sessionToken) return;
+function connectStream(): void {
+    if (!sessTok) return;
 
-    if (eventSource) {
+    if (evtSrc) {
         console.log("⚠️ SSE connection already exists, closing old connection...");
-        closeEventSource();
+        closeSrc();
     }
 
     console.log("🔄 Attempting to connect to chat stream...");
-    eventSource = new EventSource(`${CHAT_STREAM_URL}?token=${sessionToken}`);
+    evtSrc = new EventSource(`${STREAM_URL}?token=${sessTok}`);
 
-    eventSource.onopen = () => {
+    /**
+     * Stream opened ok.
+     * @returns {void}
+     */
+    const onOpen = (): void => {
         console.log("✅ Successfully connected to chat stream.");
     };
 
-    eventSource.onmessage = (event: MessageEvent<string>) => {
+    /**
+     * Handles incoming sse chat payloads.
+     * @param {MessageEvent<string>} event
+     * @returns {void}
+     */
+    const onMsg = (event: MessageEvent<string>): void => {
         try {
             const messagesUnknown: unknown = JSON.parse(event.data) as unknown;
             console.log("📩 Raw SSE Data:", messagesUnknown);
 
-            assertChatMessageArray(messagesUnknown);
-            void displayChat(messagesUnknown);
+            assertMsgArr(messagesUnknown);
+            void showChat(messagesUnknown);
         } catch (error) {
             console.error("❌ Error parsing chat update:", error, "\n📩 Raw data received:", event.data);
         }
     };
 
-    eventSource.onerror = () => {
+    /**
+     * Handles stream errors and starts reconnect flow.
+     * @returns {void}
+     */
+    const onErr = (): void => {
         console.log("❌ Connection to chat stream lost. Retrying...");
-        closeEventSource();
-        void attemptReconnect();
+        closeSrc();
+        void reconn();
     };
+
+    evtSrc.onopen = onOpen;
+    evtSrc.onmessage = onMsg;
+    evtSrc.onerror = onErr;
 }
 
 /**
- * @returns {Promise<string | null>} Fetches the user's IP address, or null on failure.
+ * Fetches the user's IP, or null if it all goes sideways.
+ * @returns {Promise<string | null>}
  */
 export async function fetchUserIP(): Promise<string | null> {
     try {
@@ -303,23 +339,25 @@ export async function fetchUserIP(): Promise<string | null> {
 }
 
 /**
- * @returns {Promise<void>} Sends the current chat message to the server.
+ * Sends the current message to the server.
+ * includes the optimistic pending row and all that jazz.
+ * @returns {Promise<void>}
  */
-async function sendMessage(): Promise<void> {
-    const nick = nicknameInput.value.trim();
-    const msg = messageInput.value.trim();
+async function sendMsg(): Promise<void> {
+    const nick = nickEl.value.trim();
+    const msg = msgEl.value.trim();
 
     if (!nick || !msg) {
         alert("Please enter a nickname and a message.");
         return;
     }
 
-    if (!sessionToken) {
+    if (!sessTok) {
         alert("Session token is missing. Please refresh the page.");
         return;
     }
 
-    setChatCookie("nickname", nick);
+    setCookie("nickname", nick);
 
     console.log("📡 Fetching IP address...");
     const userIp = await fetchUserIP();
@@ -331,7 +369,7 @@ async function sendMessage(): Promise<void> {
 
     const tempId = `pending-${Date.now()}`;
 
-    const pendingMessage: ChatMessageLocal = {
+    const pendingMessage: MsgLocal = {
         nick,
         id: tempId,
         msg,
@@ -340,21 +378,21 @@ async function sendMessage(): Promise<void> {
         pending: true
     };
 
-    await displayChat([pendingMessage], true);
+    await showChat([pendingMessage], true);
 
     const chatRequest = {
         chatRequest: {
             nick,
             msg,
             ip: userIp,
-            sessionToken
+            sessionToken: sessTok
         }
     };
 
     console.log("📡 Sending chat message:", chatRequest);
 
     try {
-        const response = await fetch(CHAT_SERVER, {
+        const response = await fetch(CHAT_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(chatRequest)
@@ -365,25 +403,27 @@ async function sendMessage(): Promise<void> {
         }
 
         console.log("✅ Message sent successfully.");
-        messageInput.value = "";
+        msgEl.value = "";
     } catch (error) {
         console.error("❌ Error sending message:", error);
 
         const errorMessage = error instanceof Error ? error.message : String(error);
         alert(`Failed to send message: ${errorMessage}`);
 
-        removePendingMessage(tempId);
-        updateClusterisedChat();
+        rmPending(tempId);
+        syncCluster();
     }
 }
 
 /**
- * @param {readonly ChatMessageLocal[]} messages - Chat messages to render.
- * @param {boolean} isLocalUpdate - Whether this render is a local append (does not clear chat first).
- * @returns {Promise<void>} Renders the provided chat messages into the chatroom. If isLocalUpdate is false, it clears existing messages first. If true, it appends to existing messages. After rendering, it scrolls to the bottom and dispatches a "chatUpdated" event.
+ * Renders chat rows into the room.
+ * local mode appends, non-local mode clears and redraws.
+ * @param {readonly MsgLocal[]} messages
+ * @param {boolean} isLocalUpdate
+ * @returns {Promise<void>}
  */
-async function displayChat(messages: readonly ChatMessageLocal[], isLocalUpdate: boolean = false): Promise<void> {
-    const contentRoot = getChatContentRoot();
+async function showChat(messages: readonly MsgLocal[], isLocalUpdate: boolean = false): Promise<void> {
+    const contentRoot = getCntRoot();
 
     if (!isLocalUpdate) {
         contentRoot.querySelectorAll(".chat-message.pending").forEach((element) => element.remove());
@@ -454,54 +494,81 @@ async function displayChat(messages: readonly ChatMessageLocal[], isLocalUpdate:
         contentRoot.appendChild(messageDiv);
     });
 
-    requestAnimationFrame(() => {
-        const scrollRoot = getChatScrollRoot();
+    /**
+     * Scrolls the chat to the newest row on the next frame.
+     * @returns {void}
+     */
+    const syncScroll = (): void => {
+        const scrollRoot = getScrRoot();
         scrollRoot.scrollTop = scrollRoot.scrollHeight;
-    });
+    };
+
+    requestAnimationFrame(syncScroll);
 
     document.dispatchEvent(new Event("chatUpdated"));
     console.log(`Chat updated with ${messages.length} new messages.`);
-    updateClusterisedChat();
+    syncCluster();
 }
 
 /**
- * @param {string} tempId - Temporary ID used for the pending message.
- * @returns {void} Removes the pending message with the specified temporary ID from the chatroom.
+ * Removes one optimistic pending row by temp id.
+ * @param {string} tempId
+ * @returns {void}
  */
-function removePendingMessage(tempId: string): void {
-    const contentRoot = getChatContentRoot();
+function rmPending(tempId: string): void {
+    const contentRoot = getCntRoot();
     const pendingMessage = contentRoot.querySelector(`.chat-message[data-id="${tempId}"]`);
     if (!pendingMessage) return;
     pendingMessage.remove();
 }
 
 /**
- * @returns {Promise<void>} Initialises the chat clusteriser if available.
+ * Boots the clusteriser if available.
+ * @returns {Promise<void>}
  */
-async function initialiseClusteriser(): Promise<void> {
+async function initCluster(): Promise<void> {
     try {
-        chatClusteriser = new Clusteriser(chatroom);
-        await chatClusteriser.init();
-        updateClusterisedChat();
+        cluster = new Clusteriser(roomEl);
+        await cluster.init();
+        syncCluster();
     } catch (error) {
         console.error("❌ Failed to initialise Clusterize:", error);
-        chatClusteriser = null;
+        cluster = null;
     }
 }
 
-sendButton.addEventListener("click", () => {
-    void sendMessage();
-});
+/**
+ * Send button click handler.
+ * @returns {void}
+ */
+const onSendClick = (): void => {
+    void sendMsg();
+};
 
-messageInput.addEventListener("keypress", (event: KeyboardEvent) => {
+sendBtn.addEventListener("click", onSendClick);
+
+/**
+ * Enter key sends the msg too.
+ * @param {KeyboardEvent} event
+ * @returns {void}
+ */
+const onMsgKey = (event: KeyboardEvent): void => {
     if (event.key !== "Enter") return;
-    void sendMessage();
-});
+    void sendMsg();
+};
 
-document.addEventListener("DOMContentLoaded", () => {
+msgEl.addEventListener("keypress", onMsgKey);
+
+/**
+ * Scroll page to the bottom after dom is ready.
+ * @returns {void}
+ */
+const onDomReady = (): void => {
     window.scrollTo(0, document.body.scrollHeight);
-});
+};
 
-loadNickname();
-void initialiseClusteriser();
-void fetchSessionToken();
+document.addEventListener("DOMContentLoaded", onDomReady);
+
+loadNick();
+void initCluster();
+void fetchTok();

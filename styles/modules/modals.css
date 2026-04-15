@@ -50,6 +50,7 @@
     --modal-btn-bg: color-mix(in srgb, var(--menu-button-bg-colour) 78%, var(--frame-bg-colour));
     --modal-btn-fg: var(--menu-button-text-colour);
     --modal-btn-border: color-mix(in srgb, var(--nav-border-colour) 45%, transparent);
+    --modal-btn-margin: 1rem;
 
     --modal-btn-hover-bg: var(--menu-button-hover-bg-colour);
     --modal-btn-active-scale: 0.98;
@@ -227,6 +228,17 @@
         min-width: 0;
         margin: 0;
     }
+
+    .kc-modal-actions>div {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+
+        width: fit-content;
+        max-width: 100%;
+        margin-inline: auto;
+    }
 }
 
 /* =========================
@@ -347,6 +359,8 @@
         user-select: none;
 
         box-shadow: var(--modal-btn-shadow);
+
+        margin: 0 calc(var(--modal-btn-margin) / 2) var(--modal-gap) calc(var(--modal-btn-margin) / 2);
 
         transition:
             transform 0.14s ease,

@@ -1,119 +1,136 @@
-const urlPending = new Map<string, Promise<HTMLScriptElement>>();
-const LOADED_ATTR = "data-script-loaded";
 import * as helpers from "./helpers.ts";
 
-type ScriptAttrs = Readonly<Record<string, string>>;
+const pendByUrl = new Map<string, Promise<HTMLScriptElement>>();
+const LD_ATTR = "data-script-loaded";
+
+type Attrs = Readonly<Record<string, string>>;
 
 type LoadScriptOpts = Readonly<{
     retries?: number;
     asModule?: boolean;
-    attrs?: ScriptAttrs;
+    attrs?: Attrs;
+}>;
+
+type TagOpts = Readonly<{
+    asModule: boolean;
+    attrs: Attrs | null;
 }>;
 
 /**
- * @param {string} url - Script URL to load.
- * @param {LoadScriptOpts} opts - Options (retries, module mode, extra attributes).
- * @returns {Promise<HTMLScriptElement>} Promise that resolves to the loaded script element. This function manages the loading of external JavaScript files by creating or reusing script tags in the document head. It handles multiple concurrent requests for the same URL by maintaining a map of pending promises, ensuring that only one script tag is created per URL. The function also supports options for retrying the loading process, treating the script as a module, and applying additional attributes to the script tag. It returns a promise that resolves when the script is successfully loaded or rejects if it fails to load after the specified retries.
+ * Loads a script into <head>, or reuses the one already there.
+ * Also keeps duplicate callers from all racing each other like idiots.
+ * @param {string} url
+ * @param {LoadScriptOpts} opts
+ * @returns {Promise<HTMLScriptElement>}
  */
 export async function loadScript(url: string, opts: LoadScriptOpts = {}): Promise<HTMLScriptElement> {
     const src = typeof url === "string" ? url.trim() : "";
     if (!src) throw new Error("loadScrpt: url must be a non-empty string");
 
-    const pending = urlPending.get(src);
-    if (pending) return await pending;
+    const pend = pendByUrl.get(src);
+    if (pend) return await pend;
 
     const retries = typeof opts.retries === "number" ? opts.retries : -1;
     const asModule = opts.asModule === true;
-    const attrs = helpers.isRecord(opts.attrs) ? (opts.attrs as ScriptAttrs) : null;
+    const attrs = helpers.isRecord(opts.attrs) ? (opts.attrs as Attrs) : null;
 
     const run = (async (): Promise<HTMLScriptElement> => {
-        const tag = scrptTaginHead(src, { asModule, attrs });
-        await dontRush(tag, retries);
-        await waitForIt(tag, src);
+        const tag = getTag(src, { asModule, attrs });
+        await waitHead(tag, retries);
+        await waitLoad(tag, src);
         return tag;
     })();
 
-    urlPending.set(src, run);
+    pendByUrl.set(src, run);
 
     try {
         return await run;
     } finally {
-        urlPending.delete(src);
+        pendByUrl.delete(src);
     }
 }
 
-type ScriptTagOpts = Readonly<{
-    asModule: boolean;
-    attrs: ScriptAttrs | null;
-}>;
-
 /**
- * @param {string} src - Script URL.
- * @param {ScriptTagOpts} param1 - Options for tag creation.
- * @returns {HTMLScriptElement} The created or existing script element.
+ * Gets the script tag for this src, or makes one if needed.
+ * Then makes sure it is sitting in <head>.
+ * @param {string} src
+ * @param {TagOpts} opts
+ * @returns {HTMLScriptElement}
  */
-function scrptTaginHead(src: string, { asModule, attrs }: ScriptTagOpts): HTMLScriptElement {
-    const tag = whereTag(src) || makeTag(src);
+function getTag(src: string, opts: TagOpts): HTMLScriptElement {
+    const tag = findTag(src) || mkTag(src);
 
-    if (asModule) tag.type = "module";
+    if (opts.asModule) tag.type = "module";
     else tag.async = true;
 
-    if (attrs) attrApply(tag, attrs);
-
+    if (opts.attrs) setAttrs(tag, opts.attrs);
     if (!tag.parentNode) document.head.appendChild(tag);
 
     return tag;
 }
 
 /**
- * @param {string} src - Script URL.
- * @returns {HTMLScriptElement | null} The existing script element with the given src, or null if not found.
+ * Looks for an existing script tag with this src.
+ * @param {string} src
+ * @returns {HTMLScriptElement | null}
  */
-function whereTag(src: string): HTMLScriptElement | null {
-    const scripts = document.getElementsByTagName("script");
-    for (let i = 0; i < scripts.length; i += 1) {
-        const s = scripts[i];
-        if (s.src === src || s.getAttribute("src") === src) return s;
+function findTag(src: string): HTMLScriptElement | null {
+    const tags = document.getElementsByTagName("script");
+
+    for (let i = 0; i < tags.length; i += 1) {
+        const tag = tags[i];
+        if (tag.src === src || tag.getAttribute("src") === src) return tag;
     }
+
     return null;
 }
 
 /**
- * @param {string} src - Script URL.
+ * Makes a plain script tag with the given src.
+ * no drama.
+ * @param {string} src
+ * @returns {HTMLScriptElement}
  */
-function makeTag(src: string): HTMLScriptElement {
-    const s = document.createElement("script");
-    s.src = src;
-    return s;
+function mkTag(src: string): HTMLScriptElement {
+    const tag = document.createElement("script");
+    tag.src = src;
+    return tag;
 }
 
 /**
- * @param {HTMLScriptElement} tag - Script element.
- * @param {ScriptAttrs} attrs - Attributes to apply.
- * @returns {void} This function applies a set of attributes to a given HTMLScriptElement. It iterates over the provided attributes object, checks for own properties, ensures the attribute values are strings, trims them, and sets them on the script element if they are non-empty. This is useful for dynamically adding attributes to script tags before they are added to the document.
+ * Applies extra attrs onto the tag.
+ * Skips blank values and anything not string-ish.
+ * @param {HTMLScriptElement} tag
+ * @param {Attrs} attrs
+ * @returns {void}
  */
-function attrApply(tag: HTMLScriptElement, attrs: ScriptAttrs): void {
+function setAttrs(tag: HTMLScriptElement, attrs: Attrs): void {
     for (const key in attrs) {
         if (!Object.prototype.hasOwnProperty.call(attrs, key)) continue;
+
         const value = attrs[key];
         if (typeof value !== "string") continue;
+
         const trimmed = value.trim();
-        if (trimmed) tag.setAttribute(key, trimmed);
+        if (!trimmed) continue;
+
+        tag.setAttribute(key, trimmed);
     }
 }
 
 /**
- * @param {HTMLScriptElement} tag - Script element.
- * @param {number} retries - Number of retries; < 0 means forever.
- * @returns {Promise<void>} This function waits for a script element to be present in the document head, retrying a specified number of times if necessary. It checks if the script tag is already connected to the document head, and if not, it waits for the next animation frame and checks again. This process continues until the script tag is found in the head or the maximum number of retries is reached. If the script tag is not found after exhausting the retries, it throws an error. This is useful for ensuring that a script tag has been properly added to the document before attempting to load or interact with it.
+ * Waits until the tag is actually in <head>.
+ * Negative retries means just keep waiting.
+ * @param {HTMLScriptElement} tag
+ * @param {number} retries
+ * @returns {Promise<void>}
  */
-async function dontRush(tag: HTMLScriptElement, retries: number): Promise<void> {
+async function waitHead(tag: HTMLScriptElement, retries: number): Promise<void> {
     const inHead = (): boolean => tag.isConnected && document.head.contains(tag);
-
     if (inHead()) return;
 
     for (let tries = 0; retries < 0 || tries <= retries; tries += 1) {
-        await nextFrame();
+        await helpers.nextFrame();
         if (inHead()) return;
     }
 
@@ -121,40 +138,50 @@ async function dontRush(tag: HTMLScriptElement, retries: number): Promise<void> 
 }
 
 /**
- * @param {HTMLScriptElement} tag - Script element.
- * @param {string} src - Script URL.
- * @returns {Promise<void>} This function waits for a script element to load by listening for "load" and "error" events. It first checks if the script has already been marked as loaded using a custom attribute; if so, it resolves immediately. Otherwise, it sets up event listeners for the "load" and "error" events on the script tag. If the script loads successfully, it marks it as loaded and resolves the promise. If an error occurs during loading, it rejects the promise with an error message. The function also includes a cleanup mechanism to remove event listeners after they are triggered or if the script is already loaded, ensuring that resources are managed efficiently.
+ * Waits for the script to finish loading.
+ * If we already marked it as loaded, this just bails out straight away.
+ * @param {HTMLScriptElement} tag
+ * @param {string} src
+ * @returns {Promise<void>}
  */
-async function waitForIt(tag: HTMLScriptElement, src: string): Promise<void> {
-    if (tag.getAttribute(LOADED_ATTR) === "1") return;
+async function waitLoad(tag: HTMLScriptElement, src: string): Promise<void> {
+    if (tag.getAttribute(LD_ATTR) === "1") return;
 
     await new Promise<void>((resolve, reject) => {
-        const tidyUp = (): void => {
+        /**
+         * Removes the temp listeners.
+         * @returns {void}
+         */
+        const tidy = (): void => {
             tag.removeEventListener("load", onLoad);
             tag.removeEventListener("error", onErr);
         };
 
+        /**
+         * Marks the tag as loaded and resolves.
+         * @returns {void}
+         */
         const onLoad = (): void => {
-            tidyUp();
-            tag.setAttribute(LOADED_ATTR, "1");
+            tidy();
+            tag.setAttribute(LD_ATTR, "1");
             resolve();
         };
 
+        /**
+         * Rejects when the script load falls over.
+         * @returns {void}
+         */
         const onErr = (): void => {
-            tidyUp();
+            tidy();
             reject(new Error(`loadHeadScrpt: failed to load ${src}`));
         };
 
         tag.addEventListener("load", onLoad, { once: true });
         tag.addEventListener("error", onErr, { once: true });
 
-        if (tag.getAttribute(LOADED_ATTR) === "1") {
-            tidyUp();
-            resolve();
-        }
-    });
-}
+        if (tag.getAttribute(LD_ATTR) !== "1") return;
 
-async function nextFrame(): Promise<void> {
-    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+        tidy();
+        resolve();
+    });
 }

@@ -9,12 +9,14 @@ import { createMenu } from "./menu.tsx";
 import { createHeader } from "./header.ts";
 import { createFooter } from "./footer.ts";
 import { fetchUiData } from "./uiFetch.ts";
-import { instantiateWindows } from "./window.ts";
 import { readerModeFocus, readerModeKeep } from "./reader.tsx";
 import { initEffectsControls } from "./effects.tsx";
+import * as crtNoise from "./crtUi.tsx";
 import * as helpers from "./helpers.ts";
+import { initNtcs } from "./notices.tsx";
+import { initNoticeBoard } from "./noticeBoard.tsx";
 
-type TerminalModule = Readonly<{
+type TermMod = Readonly<{
     term: Readonly<{
         element: HTMLElement | null;
     }>;
@@ -23,11 +25,11 @@ type TerminalModule = Readonly<{
     setWebUiTheme?: (theme: "dark" | "light") => void;
 }>;
 
-type KeyboardEmuInstance = Readonly<{
+type KbInst = Readonly<{
     destroy: () => void;
 }>;
 
-type KeyboardEmuCtor = new (
+type KbCtor = new (
     isMobile: boolean,
     htmlUrl?: string,
     cssUrl?: string
@@ -35,49 +37,59 @@ type KeyboardEmuCtor = new (
     install: (
         transport: Readonly<{ send: (payload: Readonly<{ seq: string }>) => void }>,
         inputEl: HTMLTextAreaElement
-    ) => Promise<KeyboardEmuInstance>;
+    ) => Promise<KbInst>;
 }>;
 
-type CookieValue = string | null;
+type Cookie = string | null;
 
-type ServerStatusOk = Readonly<{
+type StatusOk = Readonly<{
     ok: true;
     online: true;
     now: string;
 }>;
 
-type ServerStatusResult =
+type StatusRes =
     | Readonly<{ kind: "online"; now: string }>
     | Readonly<{ kind: "offline"; reason: string }>;
 
-const FLOATING_UI_BUTTON_SELECTORS = [
+const FLOAT_BTN_SELS = [
     "#theme-toggle",
     "#effects-toggle",
+    "#crt-ui-toggle",
     "#reader-toggle",
     "#read-aloud-toggle"
 ] as const;
 
-let floatingUiButtonsResizeObserver: ResizeObserver | null = null;
-let floatingUiButtonsMutationObserver: MutationObserver | null = null;
-let floatingUiButtonsLayoutInstalled = false;
-let floatingUiButtonsAlignQueued = false;
+let floatBtnsRo: ResizeObserver | null = null;
+let floatBtnsMo: MutationObserver | null = null;
+let floatBtnsOn = false;
+let floatBtnsQueued = false;
+
+const params = new URLSearchParams(window.location.search);
+
+let termMod: TermMod | null = null;
+let nextTheme: "dark" | "light" | null = null;
+let curTheme: "dark" | "light" | null = null;
 
 /**
- *
- * @param res Response to read JSON from.
- * @returns json if possible
+ * Reads JSON if the response body has any, otherwise just gives null.
+ * Handy little "dont explode pls" wrapper.
+ * @param {Response} res
+ * @returns {Promise<unknown>}
  */
-function readJsonIfAny(res: Response): Promise<unknown> {
+function readJson(res: Response): Promise<unknown> {
     return res.json().catch(() => null);
 }
 
 /**
- * @param {number} timeoutMs - Timeout in milliseconds.
- * @returns {Promise<ServerStatusResult>} Online/offline status result.
+ * Pings the status endpoint and turns the result into a simpler shape.
+ * Timeout is hard cut off so it does not hang around forever.
+ * @param {number} timeoutMs
+ * @returns {Promise<StatusRes>}
  */
-async function fetchServerStatus(timeoutMs: number): Promise<ServerStatusResult> {
+async function fetchStatus(timeoutMs: number): Promise<StatusRes> {
     const ctl = new AbortController();
-    const t = window.setTimeout(() => ctl.abort(), timeoutMs);
+    const tid = window.setTimeout(() => ctl.abort(), timeoutMs);
 
     try {
         const res = await fetch(config.statusEndpointUrl, {
@@ -92,7 +104,7 @@ async function fetchServerStatus(timeoutMs: number): Promise<ServerStatusResult>
             return { kind: "offline", reason: `status endpoint returned ${res.status}` };
         }
 
-        const bodyUnknown: unknown = await readJsonIfAny(res);
+        const bodyUnknown: unknown = await readJson(res);
 
         const looksOk =
             helpers.isRecord(bodyUnknown) &&
@@ -105,31 +117,28 @@ async function fetchServerStatus(timeoutMs: number): Promise<ServerStatusResult>
             return { kind: "offline", reason: "status endpoint returned unexpected payload" };
         }
 
-        const body = bodyUnknown as ServerStatusOk;
+        const body = bodyUnknown as StatusOk;
         return { kind: "online", now: body.now };
     } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "unknown error";
         return { kind: "offline", reason: msg };
     } finally {
-        window.clearTimeout(t);
+        window.clearTimeout(tid);
     }
 }
 
-const params = new URLSearchParams(window.location.search);
-
-let terminalMod: TerminalModule | null = null;
-let pendingWebUiTheme: "dark" | "light" | null = null;
-
 /**
- * @param {Document} doc - Document to operate on.
- * @param {string} id - Anchor element id.
- * @returns {HTMLMetaElement} The anchor meta element.
+ * Makes sure the meta anchor exists in <head>.
+ * Used for the injected header bits so we can swap the middle chunk cleanly.
+ * @param {Document} doc
+ * @param {string} id
+ * @returns {HTMLMetaElement}
  */
-function ensureHeadAnchor(doc: Document, id: string): HTMLMetaElement {
-    const existing = doc.getElementById(id);
-    if (existing && existing instanceof HTMLMetaElement) return existing;
+function needHeadAnchor(doc: Document, id: string): HTMLMetaElement {
+    const ex = doc.getElementById(id);
+    if (ex && ex instanceof HTMLMetaElement) return ex;
 
-    if (existing) existing.remove();
+    if (ex) ex.remove();
 
     const meta = doc.createElement("meta");
     meta.id = id;
@@ -140,12 +149,15 @@ function ensureHeadAnchor(doc: Document, id: string): HTMLMetaElement {
 }
 
 /**
- * @param {Node} start - Start anchor node (exclusive).
- * @param {Node} end - End anchor node (exclusive).
- * @returns {void} Nothing.
+ * Clears every node between the two anchors.
+ * Start and end themselves stay put.
+ * @param {Node} start
+ * @param {Node} end
+ * @returns {void}
  */
-function clearNodesBetween(start: Node, end: Node): void {
+function clearBetween(start: Node, end: Node): void {
     let n = start.nextSibling;
+
     while (n && n !== end) {
         const next = n.nextSibling;
         n.parentNode?.removeChild(n);
@@ -154,11 +166,13 @@ function clearNodesBetween(start: Node, end: Node): void {
 }
 
 /**
- * @param {Document} doc - Document used to create replacement nodes.
- * @param {Node} node - Parsed node to clone.
- * @returns {Node} A cloned node where script elements are recreated so they execute when inserted.
+ * Clones a parsed head node back into the real document.
+ * Script tags get recreated so the browser actually runs them.
+ * @param {Document} doc
+ * @param {Node} node
+ * @returns {Node}
  */
-function cloneHeadInjectionNode(doc: Document, node: Node): Node {
+function cloneHeadNode(doc: Document, node: Node): Node {
     if (node.nodeType === Node.TEXT_NODE) {
         return doc.createTextNode(node.textContent ?? "");
     }
@@ -186,7 +200,7 @@ function cloneHeadInjectionNode(doc: Document, node: Node): Node {
         }
 
         for (const child of Array.from(node.childNodes)) {
-            el.appendChild(cloneHeadInjectionNode(doc, child));
+            el.appendChild(cloneHeadNode(doc, child));
         }
 
         return el;
@@ -196,13 +210,15 @@ function cloneHeadInjectionNode(doc: Document, node: Node): Node {
 }
 
 /**
- * @param {Document} doc - Document to operate on.
- * @param {readonly string[]} injections - HTML snippets to inject into <head>.
- * @returns {void} Nothing.
+ * Injects header snippets into <head> between two anchors.
+ * Old ones get wiped first so we do not keep piling them up.
+ * @param {Document} doc
+ * @param {readonly string[]} injections
+ * @returns {void}
  */
-function applyHeaderInjections(doc: Document, injections: readonly string[]): void {
-    const start = ensureHeadAnchor(doc, "kc-header-injections_start");
-    const end = ensureHeadAnchor(doc, "kc-header-injections_end");
+function applyHeadBits(doc: Document, injections: readonly string[]): void {
+    const start = needHeadAnchor(doc, "kc-header-injections_start");
+    const end = needHeadAnchor(doc, "kc-header-injections_end");
 
     if (start.parentNode !== doc.head) doc.head.appendChild(start);
     if (end.parentNode !== doc.head) doc.head.appendChild(end);
@@ -211,7 +227,7 @@ function applyHeaderInjections(doc: Document, injections: readonly string[]): vo
         doc.head.appendChild(end);
     }
 
-    clearNodesBetween(start, end);
+    clearBetween(start, end);
 
     const frag = doc.createDocumentFragment();
 
@@ -223,7 +239,7 @@ function applyHeaderInjections(doc: Document, injections: readonly string[]): vo
         tpl.innerHTML = html;
 
         for (const node of Array.from(tpl.content.childNodes)) {
-            frag.appendChild(cloneHeadInjectionNode(doc, node));
+            frag.appendChild(cloneHeadNode(doc, node));
         }
 
         frag.appendChild(doc.createTextNode("\n"));
@@ -233,26 +249,17 @@ function applyHeaderInjections(doc: Document, injections: readonly string[]): vo
 }
 
 /**
- * @param {unknown} v - Value to convert.
- * @returns {string} Sanitised string suitable for an id fragment.
+ * Loads MobileDetect if needed and makes a rough mobile guess.
+ * not exactly science, but good enough for this.
+ * @returns {Promise<boolean>}
  */
-function toSafeIdPart(v: unknown): string {
-    return String(v || "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-}
-
-/**
- * @returns {Promise<boolean>} True if considered mobile.
- */
-async function checkMobile(): Promise<boolean> {
+async function detectMobile(): Promise<boolean> {
     const MOBILE_DETECT_CDN =
         "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
 
-    if (!("MobileDetect" in window)
-        || typeof (window as unknown as { MobileDetect?: unknown }).MobileDetect === "undefined"
+    if (
+        !("MobileDetect" in window) ||
+        typeof (window as unknown as { MobileDetect?: unknown }).MobileDetect === "undefined"
     ) {
         await loader.loadScript(MOBILE_DETECT_CDN, { asModule: false });
     }
@@ -272,10 +279,22 @@ async function checkMobile(): Promise<boolean> {
 }
 
 /**
- * @param {boolean} isMobile - Whether the current device is mobile.
- * @returns {void} Nothing.
+ * Pulls the explicit mobile override from the query string if present.
+ * Otherwise falls back to the detector.
+ * @returns {Promise<boolean>}
  */
-function applyMobileTextScale(isMobile: boolean): void {
+async function getIsMobile(): Promise<boolean> {
+    return params.get("isMobile") !== null
+        ? params.get("isMobile") === "true"
+        : await detectMobile();
+}
+
+/**
+ * Applies the mobile text scale css vars and class.
+ * @param {boolean} isMobile
+ * @returns {void}
+ */
+function setMobileScale(isMobile: boolean): void {
     const root = document.documentElement;
 
     root.style.setProperty("--kc-text-scale", isMobile ? "0.65" : "1");
@@ -283,20 +302,24 @@ function applyMobileTextScale(isMobile: boolean): void {
 }
 
 /**
- * @param {string} raw - Raw CSS pixel value.
- * @param {number} fallback - Fallback value.
- * @returns {number} Parsed numeric pixel value.
+ * Parses a CSS pixel-ish value into a number.
+ * falls back quietly if it gets nonsense.
+ * @param {string} raw
+ * @param {number} fallback
+ * @returns {number}
  */
-function parseCssPx(raw: string, fallback: number = 0): number {
+function px(raw: string, fallback: number = 0): number {
     const parsed = Number.parseFloat(raw);
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 /**
- * @param {HTMLButtonElement} button - Button to inspect.
- * @returns {boolean} True when the button should participate in stacking.
+ * Says whether a floating ui button should join the stack right now.
+ * Hidden ones get ignored.
+ * @param {HTMLButtonElement} button
+ * @returns {boolean}
  */
-function isVisibleFloatingUiButton(button: HTMLButtonElement): boolean {
+function isFloatBtn(button: HTMLButtonElement): boolean {
     if (!button.isConnected) return false;
     if (button.hidden) return false;
 
@@ -308,141 +331,137 @@ function isVisibleFloatingUiButton(button: HTMLButtonElement): boolean {
 }
 
 /**
- * @returns {readonly HTMLButtonElement[]} Floating UI buttons that currently exist and are visible.
+ * Collects the floating ui buttons that are currently there and visible.
+ * @returns {readonly HTMLButtonElement[]}
  */
-function getFloatingUiButtons(): readonly HTMLButtonElement[] {
-    return FLOATING_UI_BUTTON_SELECTORS
+function getFloatBtns(): readonly HTMLButtonElement[] {
+    return FLOAT_BTN_SELS
         .map((selector) => document.querySelector(selector))
         .filter((node): node is HTMLButtonElement => node instanceof HTMLButtonElement)
-        .filter((button) => isVisibleFloatingUiButton(button));
+        .filter((button) => isFloatBtn(button));
 }
 
 /**
- * @param {HTMLElement} el - Element to measure.
- * @returns {number} Rendered height in pixels.
+ * Gets a usable height for an element.
+ * Bounding rect first, then css height, then offsetHeight as the sad fallback.
+ * @param {HTMLElement} el
+ * @returns {number}
  */
-function getRenderedHeight(el: HTMLElement): number {
+function getH(el: HTMLElement): number {
     const rect = el.getBoundingClientRect();
     if (rect.height > 0) return rect.height;
 
     const computed = window.getComputedStyle(el);
-    const cssHeight = parseCssPx(computed.height, 0);
+    const cssHeight = px(computed.height, 0);
     if (cssHeight > 0) return cssHeight;
 
     return el.offsetHeight;
 }
 
 /**
- * Aligns and vertically stacks the floating UI buttons so they share the same
- * right position and z-index, while keeping a fixed 1rem gap between them.
- *
- * Hidden buttons do not participate in the stack.
- *
- * @returns {void} Nothing.
+ * Lines the floating buttons up on the right and stacks them vertically.
+ * Keeps a 1rem gap between visible ones.
+ * @returns {void}
  */
-function alignFloatingUiButtons(): void {
-    const buttons = getFloatingUiButtons();
+function stackFloatBtns(): void {
+    const buttons = getFloatBtns();
     if (buttons.length === 0) return;
 
-    const rootFontSize = parseCssPx(
+    const rootFontSize = px(
         window.getComputedStyle(document.documentElement).fontSize,
         16
     );
     const gapPx = rootFontSize;
 
-    const measuredButtons = buttons
+    const items = buttons
         .map((button) => {
             const computed = window.getComputedStyle(button);
 
             return {
                 button,
-                bottom: parseCssPx(computed.bottom, 0),
+                bottom: px(computed.bottom, 0),
                 right: computed.right,
-                zIndex: parseCssPx(computed.zIndex, 0),
-                height: getRenderedHeight(button)
+                zIndex: px(computed.zIndex, 0),
+                height: getH(button)
             };
         })
         .sort((a, b) => a.bottom - b.bottom);
 
-    const sharedRight = measuredButtons[0]?.right || "0px";
-    const sharedZIndex = String(
-        Math.max(...measuredButtons.map((entry) => entry.zIndex))
+    const sharedRight = items[0]?.right || "0px";
+    const sharedZ = String(
+        Math.max(...items.map((item) => item.zIndex))
     );
 
-    let nextBottom = measuredButtons[0]?.bottom || 0;
+    let nextBottom = items[0]?.bottom || 0;
 
-    for (let i = 0; i < measuredButtons.length; i += 1) {
-        const entry = measuredButtons[i];
+    for (let i = 0; i < items.length; i += 1) {
+        const item = items[i];
 
         if (i > 0) {
-            const previous = measuredButtons[i - 1];
-            nextBottom += previous.height + gapPx;
+            const prev = items[i - 1];
+            nextBottom += prev.height + gapPx;
         }
 
-        entry.button.style.right = sharedRight;
-        entry.button.style.bottom = `${nextBottom}px`;
-        entry.button.style.zIndex = sharedZIndex;
+        item.button.style.right = sharedRight;
+        item.button.style.bottom = `${nextBottom}px`;
+        item.button.style.zIndex = sharedZ;
     }
 }
 
 /**
- * Schedules a single alignment pass on the next animation frame.
- *
- * @returns {void} Nothing.
+ * Queues one alignment pass for the next frame.
+ * @returns {void}
  */
-function queueFloatingUiButtonsAlign(): void {
-    if (floatingUiButtonsAlignQueued) return;
-    floatingUiButtonsAlignQueued = true;
+function queueFloatBtns(): void {
+    if (floatBtnsQueued) return;
+    floatBtnsQueued = true;
 
     requestAnimationFrame(() => {
-        floatingUiButtonsAlignQueued = false;
-        alignFloatingUiButtons();
-        observeFloatingUiButtons();
+        floatBtnsQueued = false;
+        stackFloatBtns();
+        watchFloatBtns();
     });
 }
 
 /**
- * Refreshes button observations so any later size change triggers a restack.
- *
- * @returns {void} Nothing.
+ * Refreshes resize observation for the currently visible floating buttons.
+ * @returns {void}
  */
-function observeFloatingUiButtons(): void {
-    floatingUiButtonsResizeObserver?.disconnect();
+function watchFloatBtns(): void {
+    floatBtnsRo?.disconnect();
 
     if (typeof ResizeObserver === "undefined") return;
 
-    const buttons = getFloatingUiButtons();
+    const buttons = getFloatBtns();
     if (buttons.length === 0) return;
 
-    floatingUiButtonsResizeObserver = new ResizeObserver(() => {
-        queueFloatingUiButtonsAlign();
+    floatBtnsRo = new ResizeObserver(() => {
+        queueFloatBtns();
     });
 
     for (const button of buttons) {
-        floatingUiButtonsResizeObserver.observe(button);
+        floatBtnsRo.observe(button);
     }
 }
 
 /**
- * Installs listeners that keep the floating button stack tidy when buttons are
- * resized, added, removed, hidden, or shown.
- *
- * @returns {void} Nothing.
+ * Installs the listeners that keep the floating button pile tidy.
+ * @returns {void}
  */
-function ensureFloatingUiButtonsLayout(): void {
-    if (!floatingUiButtonsLayoutInstalled) {
-        floatingUiButtonsLayoutInstalled = true;
+function ensureFloatBtns(): void {
+    if (!floatBtnsOn) {
+        floatBtnsOn = true;
 
         window.addEventListener("resize", () => {
-            queueFloatingUiButtonsAlign();
+            queueFloatBtns();
         });
 
-        floatingUiButtonsMutationObserver = new MutationObserver(() => {
-            queueFloatingUiButtonsAlign();
+        floatBtnsMo = new MutationObserver(() => {
+            queueFloatBtns();
         });
 
         if (document.body) {
-            floatingUiButtonsMutationObserver.observe(document.body, {
+            floatBtnsMo.observe(document.body, {
                 childList: true,
                 subtree: true,
                 attributes: true,
@@ -451,87 +470,81 @@ function ensureFloatingUiButtonsLayout(): void {
         }
     }
 
-    queueFloatingUiButtonsAlign();
+    queueFloatBtns();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    document.body.style.visibility = "visible";
-    document.body.style.opacity = "1";
+/**
+ * Boots the terminal side of the page.
+ * Also wires the mobile keyboard if we ended up on mobile and found the textarea.
+ * @returns {Promise<void>}
+ */
+async function bootTerm(): Promise<void> {
+    const onMobile = await getIsMobile();
 
-    /**
-     * @returns {Promise<void>} Resolves after terminal initialisation.
-     */
-    const init = async (): Promise<void> => {
-        const isMobile =
-            params.get("isMobile") !== null ? params.get("isMobile") === "true" : await checkMobile();
+    setMobileScale(onMobile);
 
-        applyMobileTextScale(isMobile);
+    const status = await fetchStatus(2000);
 
-        const status = await fetchServerStatus(2000);
+    const terminal = await Terminal.setupTerminalModule()
+        .then((mod) => {
+            document.getElementById("terminal-loading")?.style.setProperty("display", "none");
+            return mod as TermMod;
+        })
+        .catch((err: unknown) => {
+            console.error("Terminal initialisation failed:", err);
+            throw err;
+        });
 
-        const terminal = await Terminal.setupTerminalModule()
-            .then((mod) => {
-                document.getElementById("terminal-loading")?.style.setProperty("display", "none");
-                return mod as TerminalModule;
-            })
-            .catch((err: unknown) => {
-                console.error("Terminal initialisation failed:", err);
-                throw err;
-            });
+    await helpers.nextFrame();
 
-        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const xtermTextarea =
+        terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea.xterm-helper-textarea") ||
+        terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea") ||
+        null;
 
-        const xtermTextarea =
-            terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea.xterm-helper-textarea") ||
-            terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea") ||
-            null;
+    const Kb = keyboardEmu as KbCtor;
 
-        const KeyboardEmu = keyboardEmu as KeyboardEmuCtor;
+    const keyboard: KbInst | null =
+        onMobile && xtermTextarea
+            ? await new Kb(onMobile).install(
+                { send: ({ seq }) => terminal.sendSeq(seq) },
+                xtermTextarea
+            )
+            : null;
 
-        const keyboard: KeyboardEmuInstance | null =
-            isMobile && xtermTextarea
-                ? await new KeyboardEmu(isMobile).install(
-                    { send: ({ seq }) => terminal.sendSeq(seq) },
-                    xtermTextarea
-                )
-                : null;
-
-        const dispose = terminal.dispose;
-        (terminal as { dispose: () => void }).dispose = () => {
-            if (keyboard) keyboard.destroy();
-            dispose();
-        };
-
-        terminalMod = terminal;
-
-        if (pendingWebUiTheme && typeof terminalMod.setWebUiTheme === "function") {
-            terminalMod.setWebUiTheme(pendingWebUiTheme);
-            pendingWebUiTheme = null;
-        }
-
-        void status;
+    const dispose = terminal.dispose;
+    (terminal as { dispose: () => void }).dispose = () => {
+        if (keyboard) keyboard.destroy();
+        dispose();
     };
 
-    void init();
-});
+    termMod = terminal;
 
-let currentTheme: "dark" | "light" | null = null;
+    if (nextTheme && typeof termMod.setWebUiTheme === "function") {
+        termMod.setWebUiTheme(nextTheme);
+        nextTheme = null;
+    }
+
+    void status;
+}
 
 /**
- * @param {string} name - Cookie name.
- * @returns {CookieValue} Cookie value or null.
+ * Reads a cookie value.
+ * @param {string} name
+ * @returns {Cookie}
  */
-const getCookie = (name: string): CookieValue => {
+const getCookie = (name: string): Cookie => {
     const cookies = document.cookie.split("; ");
     const cookie = cookies.find((row) => row.startsWith(`${name}=`));
     return cookie ? cookie.split("=")[1] ?? null : null;
 };
 
 /**
- * @param {string} name - Cookie name.
- * @param {string} value - Cookie value.
- * @param {number} days - Expiry in days.
- * @returns {void} Nothing.
+ * Writes a cookie with a day-based expiry.
+ * @param {string} name
+ * @param {string} value
+ * @param {number} days
+ * @returns {void}
  */
 const setCookie = (name: string, value: string, days: number = 365): void => {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
@@ -539,28 +552,32 @@ const setCookie = (name: string, value: string, days: number = 365): void => {
 };
 
 /**
- * @param {string} name - Cookie name.
- * @returns {void} Nothing.
+ * Deletes a cookie by expiring it into the past.
+ * not used right now, but handy enough to keep.
+ * @param {string} name
+ * @returns {void}
  */
-const deleteCookie = (name: string): void => {
+const delCookie = (name: string): void => {
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-    void deleteCookie;
 };
+void delCookie;
 
 /**
- * @returns {void} Nothing.
+ * Forces a repaint.
+ * Cheap little nudge for the theme swap.
+ * @returns {void}
  */
 const repaint = (): void => {
     void document.body.offsetHeight;
 };
 
 /**
- * Normalises CSS `content:` strings into plain text.
- *
- * @param {string} raw - Raw computed `content` value.
- * @returns {string} Text suitable for clipboard.
+ * Turns computed CSS content into plain text.
+ * Mostly for the snippet copy thing.
+ * @param {string} raw
+ * @returns {string}
  */
-function normaliseCssContent(raw: string): string {
+function normCssContent(raw: string): string {
     if (!raw || raw === "none" || raw === "normal") return "";
 
     const quote = raw[0];
@@ -581,44 +598,74 @@ function normaliseCssContent(raw: string): string {
 }
 
 /**
- * Reads the Kitty badge snippet text from the pre pseudo-element (and falls back to DOM text).
- *
- * @returns {string} The snippet text.
+ * Reads the badge snippet text, preferring the ::before content.
+ * @returns {string}
  */
-function readBadgeSnippetText(): string {
+function readBadgeText(): string {
     const preEl = document.querySelector(".kc-badge-snippet__code");
     if (!(preEl instanceof HTMLElement)) return "";
 
     const raw = window.getComputedStyle(preEl, "::before").content;
-    const fromBefore = normaliseCssContent(raw).trim();
+    const fromBefore = normCssContent(raw).trim();
     if (fromBefore) return fromBefore;
 
     return (preEl.textContent ?? "").trim();
 }
 
 /**
- * Installs the copy button handler for the Kitty badge snippet.
- *
- * Expects:
- * - <pre class="kc-badge-snippet__code"> ... (snippet via ::before) </pre>
- * - <button class="kc-badge-snippet__copy" type="button">Copy</button>
- *
- * @returns {void} Nothing.
+ * Hooks the copy button for the badge snippet.
+ * @returns {void}
  */
-function initBadgSnptCpy(): void {
+function initBadgeCopy(): void {
     const buttonEl = document.querySelector(".kc-badge-snippet__copy");
     if (!(buttonEl instanceof HTMLButtonElement)) return;
 
     buttonEl.addEventListener("click", () => {
-        const text = readBadgeSnippetText();
-        void copyTxt(text);
+        const text = readBadgeText();
+        void copyText(text);
     });
 }
 
 /**
- * @returns {Promise<void>} Resolves after UI initialisation.
+ * Copies text to the clipboard.
+ * Uses the modern API first, then falls back to execCommand if needed.
+ * @param {string} text
+ * @returns {Promise<boolean>}
  */
-async function initialiseUI(): Promise<void> {
+async function copyText(text: string): Promise<boolean> {
+    if (!text) return false;
+
+    const clipboard = navigator.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+        try {
+            await clipboard.writeText(text);
+            return true;
+        } catch {
+            // Fall through to the crusty old fallback
+        }
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+
+    return ok;
+}
+
+/**
+ * Builds the rest of the page UI.
+ * menu, header, footer, theme bits, reader bits, all that lot.
+ * @returns {Promise<void>}
+ */
+async function initUi(): Promise<void> {
     try {
         const data = await fetchUiData();
 
@@ -629,7 +676,7 @@ async function initialiseUI(): Promise<void> {
         ]);
 
         if (data.headerInjections && data.headerInjections.length > 0) {
-            applyHeaderInjections(document, data.headerInjections);
+            applyHeadBits(document, data.headerInjections);
         }
 
         if (data.headScripts) {
@@ -647,7 +694,8 @@ async function initialiseUI(): Promise<void> {
         }
 
         if (data.windows) {
-            await instantiateWindows(data.windows);
+            const windowAPI = await import("./window.ts");
+            await windowAPI.instantiateWindows(data.windows);
         }
 
         const themeToggle = recreateSingleton("theme-toggle", () => document.createElement("button"), document);
@@ -655,17 +703,20 @@ async function initialiseUI(): Promise<void> {
         document.body.appendChild(themeToggle);
 
         /**
-         * @param {"dark" | "light"} theme Theme to apply.
-         * @param {boolean} persist Whether to persist to cookie.
-         * @returns {void} Nothing.
+         * Applies the chosen theme and optionally persists it.
+         * @param {"dark" | "light"} theme
+         * @param {boolean} persist
+         * @returns {void}
          */
         const applyTheme = (theme: "dark" | "light", persist: boolean = false): void => {
             document.documentElement.classList.toggle("dark-mode", theme === "dark");
             document.documentElement.classList.toggle("light-mode", theme === "light");
 
-            themeToggle.textContent = theme === "dark" ? data.themeToggle.dark : data.themeToggle.light;
+            themeToggle.textContent = theme === "dark"
+                ? data.themeToggle.dark
+                : data.themeToggle.light;
 
-            currentTheme = theme;
+            curTheme = theme;
 
             if (persist) {
                 setCookie("darkMode", theme === "dark" ? "true" : "false");
@@ -673,11 +724,29 @@ async function initialiseUI(): Promise<void> {
 
             repaint();
 
-            if (terminalMod && typeof terminalMod.setWebUiTheme === "function") {
-                terminalMod.setWebUiTheme(theme);
-            } else {
-                pendingWebUiTheme = theme;
+            if (termMod && typeof termMod.setWebUiTheme === "function") {
+                termMod.setWebUiTheme(theme);
+                return;
             }
+
+            nextTheme = theme;
+        };
+
+        /**
+         * Applies the `darkmode` query param when present.
+         * Keeps the old behaviour, just without the nested mess.
+         * @returns {void}
+         */
+        const applyDarkModeParam = (): void => {
+            if (!params.has("darkmode")) {
+                return;
+            }
+
+            const raw = params.get("darkmode");
+            const v = (raw ?? "").toLowerCase();
+
+            if (v === "true") applyTheme("dark", true);
+            if (v === "false") applyTheme("light", true);
         };
 
         const cookieDark = getCookie("darkMode");
@@ -690,27 +759,53 @@ async function initialiseUI(): Promise<void> {
         }
 
         themeToggle.addEventListener("click", () => {
-            applyTheme(currentTheme === "dark" ? "light" : "dark", true);
+            applyTheme(curTheme === "dark" ? "light" : "dark", true);
         });
 
         themeToggle.title = data.themeToggle.title || "Theme";
 
         initEffectsControls(data.effects);
-        ensureFloatingUiButtonsLayout();
+
+        ensureFloatBtns();
+
+        await initNtcs();
+        await initNoticeBoard();
 
         if (window.matchMedia) {
             const mq = window.matchMedia("(prefers-color-scheme: dark)");
+
             mq.addEventListener("change", (e) => {
                 const osTheme: "dark" | "light" = e.matches ? "dark" : "light";
-                if (currentTheme !== osTheme) {
-                    applyTheme(osTheme, false);
-                }
+                if (curTheme === osTheme) return;
+
+                applyTheme(osTheme, false);
             });
         }
 
-        const isReaderRoute = window.location.pathname === "/reader" || window.location.pathname.startsWith("/reader/");
+        if (data.crtUi) {
+            await crtNoise.initModal();
 
-        if (!isReaderRoute) return;
+            const crtUiToggle = recreateSingleton("crt-ui-toggle", () => document.createElement("button"), document);
+            crtUiToggle.classList.add("theme-toggle-button");
+            crtUiToggle.style.bottom = "140px";
+            crtUiToggle.textContent = data.crtUi.icon;
+            crtUiToggle.title = data.crtUi.title;
+            crtUiToggle.setAttribute("aria-label", data.crtUi.title);
+            document.body.appendChild(crtUiToggle);
+
+            crtUiToggle.addEventListener("click", () => {
+                void crtNoise.openModal();
+            });
+        }
+
+        const isReaderRoute =
+            window.location.pathname === "/reader" ||
+            window.location.pathname.startsWith("/reader/");
+
+        if (!isReaderRoute) {
+            applyDarkModeParam();
+            return;
+        }
 
         const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
         readerToggle.classList.add("theme-toggle-button");
@@ -748,55 +843,25 @@ async function initialiseUI(): Promise<void> {
 
         readAloudToggle.addEventListener("click", readAloud.showMenu);
 
-        ensureFloatingUiButtonsLayout();
-
-        if (params.has("darkmode")) {
-            const raw = params.get("darkmode");
-            const v = (raw ? raw : "").toLowerCase();
-            if (v === "true") applyTheme("dark", true);
-            if (v === "false") applyTheme("light", true);
-        }
+        ensureFloatBtns();
+        applyDarkModeParam();
     } catch (error: unknown) {
         console.error("Error loading JSON or updating DOM:", error);
     }
 }
 
 /**
- * Copies a string to the clipboard.
- * Prefers the Clipboard API and falls back to `execCommand("copy")` when needed.
- *
- * @param {string} text The text to copy.
- * @returns {Promise<boolean>} True if copying likely succeeded, otherwise false.
+ * DOM ready handler for this module.
+ * Kicks off terminal boot, UI init, and the badge copy button.
+ * @returns {void}
  */
-async function copyTxt(text: string): Promise<boolean> {
-    if (!text) return false;
+const onReady = (): void => {
+    document.body.style.visibility = "visible";
+    document.body.style.opacity = "1";
 
-    const clipboard = navigator.clipboard;
-    if (clipboard && typeof clipboard.writeText === "function") {
-        try {
-            await clipboard.writeText(text);
-            return true;
-        } catch {
-            // Fall through to the legacy method
-        }
-    }
+    void bootTerm();
+    initBadgeCopy();
+    void initUi();
+};
 
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-
-    document.body.appendChild(textarea);
-    textarea.select();
-
-    const ok = document.execCommand("copy");
-    document.body.removeChild(textarea);
-
-    return ok;
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    initBadgSnptCpy();
-    void initialiseUI();
-});
+document.addEventListener("DOMContentLoaded", onReady);

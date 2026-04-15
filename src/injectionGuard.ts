@@ -1,62 +1,71 @@
 import { removeExistingById, recreateSingleton } from "./domSingletons.js";
 import * as helpers from "./helpers.ts";
 
-interface InjectionGuardApi {
+interface Api {
     /**
-     * @param {Iterable<string>} ids - Element ids to add to the guarded set.
-     * @returns {void} Nothing.
+     * Adds a bunch of ids into the guarded set.
+     * @param {Iterable<string>} ids
+     * @returns {void}
      */
     apply(ids: Iterable<string>): void;
 
     /**
-     * @param {string} id - Element id to add to the guarded set.
-     * @returns {void} Nothing.
+     * Adds one id to the guarded set.
+     * @param {string} id
+     * @returns {void}
      */
     add(id: string): void;
 
     /**
-     * @param {string} id - Element id to remove from the guarded set.
-     * @returns {void} Nothing.
+     * Removes one id from the guarded set.
+     * @param {string} id
+     * @returns {void}
      */
     remove(id: string): void;
 
     /**
-     * @param {string} id - Element id to check.
-     * @returns {boolean} True when the id is guarded.
+     * Checks if an id is guarded.
+     * @param {string} id
+     * @returns {boolean}
      */
     has(id: string): boolean;
 
     /**
-     * @returns {readonly string[]} The currently guarded ids.
+     * Lists all guarded ids.
+     * @returns {readonly string[]}
      */
     list(): readonly string[];
 
     /**
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {void} Nothing.
+     * Runs singleton cleanup for every guarded id.
+     * @param {ParentNode} root
+     * @returns {void}
      */
     enforce(root?: ParentNode): void;
 
     /**
-     * @param {string} id - Element id to enforce as a singleton.
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {HTMLElement | null} The kept singleton element, or null if no matching element exists.
+     * Enforces singleton cleanup for one guarded id.
+     * @param {string} id
+     * @param {ParentNode} root
+     * @returns {HTMLElement | null}
      */
     enforceOne(id: string, root?: ParentNode): HTMLElement | null;
 
     /**
-     * @param {string} id - Element id whose existing instances should be removed.
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {void} Nothing.
+     * Removes any current instances of a guarded id.
+     * @param {string} id
+     * @param {ParentNode} root
+     * @returns {void}
      */
     purge(id: string, root?: ParentNode): void;
 
     /**
+     * Rebuilds a guarded singleton from scratch.
      * @template TEl
-     * @param {string} id - Element id to recreate as a singleton.
-     * @param {() => TEl} createEl - Factory that creates the element.
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {TEl} The recreated singleton element.
+     * @param {string} id
+     * @param {() => TEl} createEl
+     * @param {ParentNode} root
+     * @returns {TEl}
      */
     recreate<TEl extends HTMLElement>(
         id: string,
@@ -72,21 +81,24 @@ declare global {
 }
 
 /**
- * Small wrapper around domSingletons that only allows operations on guarded ids.
+ * Small wrapper around domSingletons that only works on ids we explicitly guard.
+ * stops random callers from doing weird singleton surgery wherever they feel like.
  */
-export class InjectionGuard implements InjectionGuardApi {
-    private readonly guardedIds = new Set<string>();
+export class InjectionGuard implements Api {
+    private readonly ids = new Set<string>();
 
     /**
-     * @param {Iterable<string>} ids - Initial ids to guard.
+     * Seeds the guard with any initial ids.
+     * @param {Iterable<string>} ids
      */
     public constructor(ids: Iterable<string> = []) {
         this.apply(ids);
     }
 
     /**
-     * @param {Iterable<string>} ids - Element ids to add to the guarded set.
-     * @returns {void} Nothing.
+     * Adds a bunch of ids.
+     * @param {Iterable<string>} ids
+     * @returns {void}
      */
     public apply(ids: Iterable<string>): void {
         for (const id of ids) {
@@ -95,86 +107,97 @@ export class InjectionGuard implements InjectionGuardApi {
     }
 
     /**
-     * @param {string} id - Element id to add to the guarded set.
-     * @returns {void} Nothing.
+     * Adds one id if it is not blank rubbish.
+     * @param {string} id
+     * @returns {void}
      */
     public add(id: string): void {
-        const value = String(id || "").trim();
-        if (!value) return;
-        this.guardedIds.add(value);
+        const val = String(id || "").trim();
+        if (!val) return;
+
+        this.ids.add(val);
     }
 
     /**
-     * @param {string} id - Element id to remove from the guarded set.
-     * @returns {void} Nothing.
+     * Removes one id from the guard set.
+     * @param {string} id
+     * @returns {void}
      */
     public remove(id: string): void {
-        this.guardedIds.delete(id);
+        this.ids.delete(id);
     }
 
     /**
-     * @param {string} id - Element id to check.
-     * @returns {boolean} True when the id is guarded.
+     * Checks if an id is guarded right now.
+     * @param {string} id
+     * @returns {boolean}
      */
     public has(id: string): boolean {
-        return this.guardedIds.has(id);
+        return this.ids.has(id);
     }
 
     /**
-     * @returns {readonly string[]} The currently guarded ids.
+     * Lists guarded ids.
+     * @returns {readonly string[]}
      */
     public list(): readonly string[] {
-        return Array.from(this.guardedIds);
+        return Array.from(this.ids);
     }
 
     /**
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {void} Nothing.
+     * Runs singleton cleanup for every guarded id.
+     * @param {ParentNode} root
+     * @returns {void}
      */
     public enforce(root: ParentNode = document): void {
-        for (const id of this.guardedIds) {
+        for (const id of this.ids) {
             this.enforceOne(id, root);
         }
     }
 
     /**
-     * @param {string} id - Element id to enforce as a singleton.
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {HTMLElement | null} The kept singleton element, or null if no matching element exists.
+     * Forces one guarded id down to a single kept element.
+     * Keeps the first match and re-inserts a clean clone roughly where it was.
+     * a bit fussy, but that is the point.
+     * @param {string} id
+     * @param {ParentNode} root
+     * @returns {HTMLElement | null}
      */
     public enforceOne(id: string, root: ParentNode = document): HTMLElement | null {
         if (!this.has(id)) return null;
 
-        const safeId = helpers.escapeCssIdentifier(id);
-        const matches = Array.from(root.querySelectorAll<HTMLElement>(`#${safeId}`));
+        const safe = helpers.escapeCssIdentifier(id);
+        const hits = Array.from(root.querySelectorAll<HTMLElement>(`#${safe}`));
 
-        if (matches.length === 0) return null;
-        if (matches.length === 1) return matches[0];
+        if (hits.length === 0) return null;
+        if (hits.length === 1) return hits[0];
 
-        const first = matches[0];
+        const first = hits[0];
         const parent = first.parentNode;
         if (!parent) return first;
 
-        const nextSibling = first.nextSibling;
-        const snapshot = first.cloneNode(true) as HTMLElement;
+        const next = first.nextSibling;
+        const snap = first.cloneNode(true) as HTMLElement;
 
         removeExistingById(id, root);
 
-        const singleton = recreateSingleton(id, () => snapshot, root);
+        const kept = recreateSingleton(id, () => snap, root);
 
-        if (nextSibling && nextSibling.parentNode === parent) {
-            parent.insertBefore(singleton, nextSibling);
-            return singleton;
+        if (next && next.parentNode === parent) {
+            parent.insertBefore(kept, next);
+            return kept;
         }
 
-        parent.appendChild(singleton);
-        return singleton;
+        parent.appendChild(kept);
+        return kept;
     }
 
     /**
-     * @param {string} id - Element id whose existing instances should be removed.
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {void} Nothing.
+     * Purges a guarded id completely.
+     * does nothing for unguarded ones.
+     * @param {string} id
+     * @param {ParentNode} root
+     * @returns {void}
      */
     public purge(id: string, root: ParentNode = document): void {
         if (!this.has(id)) return;
@@ -182,11 +205,13 @@ export class InjectionGuard implements InjectionGuardApi {
     }
 
     /**
+     * Recreates one guarded singleton.
+     * Throws if somebody asks for an id this guard does not own.
      * @template TEl
-     * @param {string} id - Element id to recreate as a singleton.
-     * @param {() => TEl} createEl - Factory that creates the element.
-     * @param {ParentNode} root - Root node to search within.
-     * @returns {TEl} The recreated singleton element.
+     * @param {string} id
+     * @param {() => TEl} createEl
+     * @param {ParentNode} root
+     * @returns {TEl}
      */
     public recreate<TEl extends HTMLElement>(
         id: string,
@@ -202,14 +227,16 @@ export class InjectionGuard implements InjectionGuardApi {
 }
 
 /**
- * @param {Iterable<string>} ids - Initial ids to guard.
- * @returns {InjectionGuard} The installed global injection guard instance.
+ * Installs the global guard if needed, otherwise reuses the existing one.
+ * also feeds in any extra ids you pass this time round.
+ * @param {Iterable<string>} ids
+ * @returns {InjectionGuard}
  */
 export function installInjectionGuard(ids: Iterable<string> = []): InjectionGuard {
-    const existing = window.injectionGuard;
-    if (existing) {
-        existing.apply(ids);
-        return existing;
+    const ex = window.injectionGuard;
+    if (ex) {
+        ex.apply(ids);
+        return ex;
     }
 
     const guard = new InjectionGuard(ids);
@@ -218,7 +245,8 @@ export function installInjectionGuard(ids: Iterable<string> = []): InjectionGuar
 }
 
 /**
- * @returns {InjectionGuard} The global injection guard instance.
+ * Gets the global guard, creating it on demand if it does not exist yet.
+ * @returns {InjectionGuard}
  */
 export function getInjectionGuard(): InjectionGuard {
     return window.injectionGuard ?? installInjectionGuard();

@@ -9,20 +9,22 @@ export interface HtmlPhysicsEffect<Args extends HtmlMethodArgs> {
 }
 
 /**
+ * Wraps a method that returns HTML and lets an effect patch that HTML afterwards.
+ *
  * @param {HtmlPhysicsEffect<Args>} effect - Effect definition.
- * @returns {(original: (this: This, ...args: Args) => string, context: ClassMethodDecoratorContext) => (this: This, ...args: Args) => string} Decorator.
+ * @returns {(original: (this: This, ...args: Args) => string, context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => string>) => (this: This, ...args: Args) => string} Decorator.
  */
 export function decorateHtmlReturn<This, Args extends HtmlMethodArgs>(effect: HtmlPhysicsEffect<Args>) {
-  return function (
+  return (
     original: (this: This, ...args: Args) => string,
     context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => string>,
-  ) {
+  ) => {
     context.addInitializer(() => {
       ensureCss(effect.cssHref);
-      if (effect.init) effect.init();
+      effect.init?.();
     });
 
-    return function (this: This, ...args: Args): string {
+    return function decoratedHtmlReturn(this: This, ...args: Args): string {
       const html = original.call(this, ...args);
       return effect.patch(html, args);
     };
@@ -42,6 +44,8 @@ const PHYSICS_LINK_REL = "stylesheet";
 const PHYSICS_RUNTIME_FLAG = "__mediaStylerPhysicsRuntimeInstalled";
 
 /**
+ * Keeps a number inside the given range.
+ *
  * @param {number} value - Number to clamp.
  * @param {number} min - Minimum.
  * @param {number} max - Maximum.
@@ -54,26 +58,33 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
+ * Checks whether a stylesheet is already present.
+ *
  * @param {string} cssHref - Stylesheet href.
- * @returns {boolean} True when stylesheet already exists in the document.
+ * @returns {boolean} True when a matching stylesheet is already in the document.
  */
 function hasCss(cssHref: string): boolean {
   const sheets = Array.from(document.styleSheets);
-  for (const s of sheets) {
-    const href = s.href;
+
+  for (const sheet of sheets) {
+    const href = sheet.href;
     if (!href) continue;
     if (href.endsWith(cssHref)) return true;
   }
+
   const links = Array.from(document.querySelectorAll<HTMLLinkElement>("link[rel='stylesheet']"));
-  return links.some((l) => l.getAttribute("href") === cssHref);
+  return links.some((link) => link.getAttribute("href") === cssHref);
 }
 
 /**
+ * Ensures a stylesheet link exists in the document head.
+ *
  * @param {string} cssHref - Stylesheet href.
- * @returns {void} Ensures a stylesheet link exists in document head.
+ * @returns {void}
  */
 function ensureCss(cssHref: string): void {
   if (hasCss(cssHref)) return;
+
   const link = document.createElement("link");
   link.rel = PHYSICS_LINK_REL;
   link.href = cssHref;
@@ -81,12 +92,15 @@ function ensureCss(cssHref: string): void {
 }
 
 /**
- * @returns {void} Installs IntersectionObserver + MutationObserver once.
+ * Activates physics-marked elements once they enter view, and watches for new ones.
+ *
+ * @returns {void}
  */
 export function ensurePhysicsRuntime(): void {
-  const w = window as unknown as Record<string, unknown>;
-  if (w[PHYSICS_RUNTIME_FLAG]) return;
-  w[PHYSICS_RUNTIME_FLAG] = true;
+  const runtimeFlags = window as unknown as Record<string, unknown>;
+  if (runtimeFlags[PHYSICS_RUNTIME_FLAG]) return;
+
+  runtimeFlags[PHYSICS_RUNTIME_FLAG] = true;
 
   const activate = (el: Element): void => {
     if (!(el instanceof HTMLElement)) return;
@@ -96,13 +110,16 @@ export function ensurePhysicsRuntime(): void {
 
   const observeRoot = (root: ParentNode, observer: IntersectionObserver | null): void => {
     const targets = Array.from(root.querySelectorAll<HTMLElement>(".phys-observe"));
-    for (const t of targets) {
-      if (t.classList.contains("phys-play")) continue;
+
+    for (const target of targets) {
+      if (target.classList.contains("phys-play")) continue;
+
       if (!observer) {
-        activate(t);
+        activate(target);
         continue;
       }
-      observer.observe(t);
+
+      observer.observe(target);
     }
   };
 
@@ -118,29 +135,35 @@ export function ensurePhysicsRuntime(): void {
 
   observeRoot(document, observer);
 
-  const mo = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      const added = Array.from(m.addedNodes);
-      for (const n of added) {
-        if (!(n instanceof Element)) continue;
+  const mutationObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      const addedNodes = Array.from(mutation.addedNodes);
 
-        if (n.matches(".phys-observe")) {
-          if (!observer) {
-            activate(n);
+      for (const node of addedNodes) {
+        if (!(node instanceof Element)) continue;
+
+        if (node.matches(".phys-observe")) {
+          if (observer) {
+            observer.observe(node);
           } else {
-            observer.observe(n);
+            activate(node);
           }
         }
 
-        observeRoot(n, observer);
+        observeRoot(node, observer);
       }
     }
   });
 
-  mo.observe(document.documentElement, { childList: true, subtree: true });
+  mutationObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
 }
 
 /**
+ * Builds the CSS variables for the SMS enter-bounce effect.
+ *
  * @param {SmsDirection} dir - Message direction.
  * @param {Required<SmsEnterBounceConfig>} cfg - Normalised config.
  * @returns {CssVarMap} CSS variables for this message.
@@ -194,29 +217,36 @@ function smsEnterBounceVars(dir: SmsDirection, cfg: Required<SmsEnterBounceConfi
 }
 
 /**
+ * Applies a map of CSS variables to an element.
+ *
  * @param {HTMLElement} el - Element to patch.
  * @param {CssVarMap} vars - CSS variables.
- * @returns {void} Adds vars to the element inline style.
+ * @returns {void}
  */
 function applyVars(el: HTMLElement, vars: CssVarMap): void {
-  for (const [k, v] of Object.entries(vars)) {
-    el.style.setProperty(k, v);
+  for (const [key, value] of Object.entries(vars)) {
+    el.style.setProperty(key, value);
   }
 }
 
 /**
+ * Reads a numeric attribute from an element.
+ *
  * @param {HTMLElement} el - Element.
  * @param {string} attr - Attribute name.
- * @returns {number | null} Parsed number if present.
+ * @returns {number | null} Parsed number when present and valid.
  */
 function readNumberAttr(el: HTMLElement, attr: string): number | null {
   const raw = el.getAttribute(attr);
   if (!raw) return null;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 /**
+ * Adds physics classes and CSS variables to SMS message wrappers in a blob of HTML.
+ *
  * @param {string} html - HTML to patch.
  * @param {SmsEnterBounceConfig} config - Effect config.
  * @returns {string} Patched HTML.
@@ -232,39 +262,48 @@ export function patchSmsEnterBounceHtml(html: string, config: SmsEnterBounceConf
   ensureCss(cfg.cssHref);
   ensurePhysicsRuntime();
 
-  const tpl = document.createElement("template");
-  tpl.innerHTML = html;
+  const template = document.createElement("template");
+  template.innerHTML = html;
 
-  const wrappers = Array.from(tpl.content.querySelectorAll<HTMLElement>(".message-wrapper"));
-  for (const w of wrappers) {
-    w.classList.add("phys", "phys-observe", "phys-sms-enter");
-    const dir: SmsDirection | null = w.classList.contains("in")
+  const wrappers = Array.from(template.content.querySelectorAll<HTMLElement>(".message-wrapper"));
+
+  for (const wrapper of wrappers) {
+    wrapper.classList.add("phys", "phys-observe", "phys-sms-enter");
+
+    const dir: SmsDirection | null = wrapper.classList.contains("in")
       ? "in"
-      : w.classList.contains("out")
+      : wrapper.classList.contains("out")
         ? "out"
         : null;
+
     if (!dir) continue;
 
-    const durationMs = readNumberAttr(w, "data-phys-duration-ms") ?? cfg.durationMs;
-    const strength = readNumberAttr(w, "data-phys-strength") ?? cfg.strength;
-    const viscosity = readNumberAttr(w, "data-phys-viscosity") ?? cfg.viscosity;
+    const durationMs = readNumberAttr(wrapper, "data-phys-duration-ms") ?? cfg.durationMs;
+    const strength = readNumberAttr(wrapper, "data-phys-strength") ?? cfg.strength;
+    const viscosity = readNumberAttr(wrapper, "data-phys-viscosity") ?? cfg.viscosity;
 
-    applyVars(w, smsEnterBounceVars(dir, { ...cfg, durationMs, strength, viscosity }));
+    applyVars(wrapper, smsEnterBounceVars(dir, {
+      ...cfg,
+      durationMs,
+      strength,
+      viscosity
+    }));
   }
 
-  return tpl.innerHTML;
+  return template.innerHTML;
 }
 
 type HtmlSyncTransform = (htmlContent: string, cssHref?: string) => string;
 
 /**
- * Method decorator: patches the HTML returned by an SMS transformer.
+ * Decorates a method that returns SMS HTML so the bounce effect is applied afterwards.
  *
  * @param {SmsEnterBounceConfig} config - Effect config.
  * @returns {<T extends HtmlSyncTransform>(value: T, context: ClassMethodDecoratorContext) => T} Decorator.
  */
 export function smsEnterBounce(config: SmsEnterBounceConfig = {}) {
   const cssHref = config.cssHref ?? "../styles/modules/physics.css";
+
   const effect: HtmlPhysicsEffect<Parameters<HtmlSyncTransform>> = {
     cssHref,
     init: ensurePhysicsRuntime,
