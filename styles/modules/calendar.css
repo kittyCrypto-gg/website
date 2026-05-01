@@ -151,6 +151,9 @@
     --cal-collapse-enter-x: var(--phys-collapse-enter-x);
     --cal-collapse-scale-x0: var(--phys-collapse-scale-x0);
     --cal-collapse-scale-y0: var(--phys-collapse-scale-y0);
+
+    --cal-control-bleed: 0.35rem;
+    --cal-control-raise-z: 10;
 }
 
 .cal {
@@ -169,18 +172,42 @@
     border: var(--cal-border-width) solid var(--cal-brd);
     background: var(--cal-bg);
     box-shadow: var(--cal-shadow);
+    overflow: visible;
 
     & .cal__hdr {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: var(--cal-gap);
+        inline-size: 100%;
         min-inline-size: 0;
         max-inline-size: 100%;
         flex: 0 0 auto;
+        align-self: stretch;
+        justify-self: stretch;
         padding: var(--cal-gap-tight) var(--cal-pad-inline);
-        margin: calc(var(--cal-gap-tight) * -1) calc(var(--cal-pad-inline) * -1) 0;
+        margin: 0;
         border-block-end: var(--cal-border-width) solid var(--cal-hdr-brd);
+        position: relative;
+        inset: auto;
+        translate: none;
+        transform: none;
+        overflow: visible;
+        box-sizing: border-box;
+    }
+
+    & .cal__hdr.kc-click-header,
+    & .cal__hdr.kc-click-header:hover,
+    & .cal__hdr.kc-click-header:focus,
+    & .cal__hdr.kc-click-header:focus-within,
+    & .cal__hdr.kc-click-header:focus-visible {
+        inline-size: 100%;
+        max-inline-size: 100%;
+        margin: 0;
+        position: relative;
+        inset: auto;
+        translate: none;
+        transform: none;
         box-sizing: border-box;
     }
 
@@ -223,9 +250,14 @@
         justify-content: flex-end;
         gap: var(--cal-ctl-gap);
         flex: 0 0 auto;
+        max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
+        padding: var(--cal-control-bleed);
+        margin: calc(0rem - var(--cal-control-bleed));
         margin-inline-start: 0;
         position: relative;
         z-index: 2;
+        overflow: visible;
+        box-sizing: border-box;
     }
 
     & .cal__rootTgl,
@@ -237,11 +269,23 @@
         appearance: none;
         font: inherit;
         line-height: 1.1;
+        position: relative;
+        z-index: 1;
 
         &:focus-visible {
             outline: none;
             box-shadow: var(--cal-fcs-ring);
+            z-index: var(--cal-control-raise-z);
         }
+    }
+
+    & .cal__rootTgl:hover,
+    & .cal__selPill:hover,
+    & .cal__rst:hover,
+    & .cal__clr:hover,
+    & .cal__itm:hover,
+    & .cal__sctTgl:hover {
+        z-index: var(--cal-control-raise-z);
     }
 
     & .cal__rootTgl {
@@ -273,13 +317,18 @@
         display: block;
         flex: 1 1 auto;
         min-inline-size: 0;
-        max-inline-size: 100%;
+        max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
+        padding: var(--cal-control-bleed);
+        margin: calc(0rem - var(--cal-control-bleed));
         overflow-x: auto;
-        overflow-y: hidden;
+        overflow-y: auto;
         scrollbar-width: thin;
         scrollbar-color: var(--cal-selbar-scroll-thumb) var(--cal-selbar-scroll-track);
         -webkit-overflow-scrolling: touch;
         pointer-events: none;
+        position: relative;
+        z-index: 2;
+        box-sizing: border-box;
     }
 
     & .cal__selBar::-webkit-scrollbar {
@@ -371,6 +420,7 @@
             border-color: var(--cal-selpill-brd-hover);
             box-shadow: var(--cal-selpill-glow);
             transform: translateY(-1px);
+            z-index: var(--cal-control-raise-z);
         }
 
         & .cal__selK {
@@ -396,6 +446,7 @@
         &:hover,
         &:focus-visible {
             transform: translateY(-1px);
+            z-index: var(--cal-control-raise-z);
         }
     }
 
@@ -433,6 +484,7 @@
         min-inline-size: 0;
         min-block-size: 0;
         flex: 0 0 auto;
+        box-sizing: border-box;
     }
 
     & .cal__sct {
@@ -447,6 +499,7 @@
         border-radius: var(--cal-sct-radius);
         border: var(--cal-border-width) solid var(--cal-sct-brd);
         background: var(--cal-sct-bg);
+        overflow: visible;
     }
 
     & .cal__sctHdr {
@@ -455,9 +508,12 @@
         justify-content: space-between;
         gap: var(--cal-gap-tight);
         min-width: 0;
+        max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
         flex: 0 0 auto;
-        padding: var(--cal-gap-tight) var(--cal-pad-inline);
-        margin: calc(var(--cal-gap-tight) * -1) calc(var(--cal-pad-inline) * -1) 0;
+        padding: calc(var(--cal-gap-tight) + var(--cal-control-bleed)) calc(var(--cal-pad-inline) + var(--cal-control-bleed));
+        margin: calc(0rem - var(--cal-control-bleed));
+        overflow: visible;
+        box-sizing: border-box;
     }
 
     & .cal__sctTtl {
@@ -530,8 +586,13 @@
         display: grid;
         gap: var(--cal-grid-gap);
         inline-size: 100%;
+        max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
         min-inline-size: 0;
         min-block-size: 0;
+        padding: var(--cal-control-bleed);
+        margin: calc(0rem - var(--cal-control-bleed));
+        box-sizing: border-box;
+        overflow: visible;
 
         &.cal__itmGrid--yrs {
             grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--cal-grid-min-yr)), 1fr));
@@ -569,6 +630,7 @@
         &:focus-visible {
             background: var(--cal-chip-bg-hover);
             transform: translateY(-1px);
+            z-index: var(--cal-control-raise-z);
         }
 
         &[data-sel="1"] {
@@ -649,6 +711,7 @@
         border-radius: var(--cal-mo-radius);
         border: var(--cal-border-width) solid var(--cal-mo-brd);
         background: var(--cal-mo-bg);
+        overflow: visible;
     }
 
     & .cal__moHdr {
@@ -721,6 +784,7 @@
             row-gap: var(--cal-gap-tight);
             inline-size: 100%;
             max-inline-size: 100%;
+            margin: 0;
             overflow: visible;
             box-sizing: border-box;
         }
@@ -738,13 +802,13 @@
             grid-area: selected;
             justify-self: stretch;
             inline-size: 100%;
-            max-inline-size: 100%;
+            max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
             min-inline-size: 0;
             display: block;
-            padding-block: 0.14rem;
-            margin-block: -0.14rem;
+            padding: var(--cal-control-bleed);
+            margin: calc(0rem - var(--cal-control-bleed));
             overflow-x: auto;
-            overflow-y: hidden;
+            overflow-y: auto;
             position: relative;
             z-index: 2;
             box-sizing: border-box;
@@ -772,9 +836,13 @@
         & .cal__hdrActions {
             grid-area: actions;
             justify-self: end;
-            max-inline-size: 100%;
+            max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
+            padding: var(--cal-control-bleed);
+            margin: calc(0rem - var(--cal-control-bleed));
             position: relative;
             z-index: 2;
+            overflow: visible;
+            box-sizing: border-box;
         }
     }
 }
@@ -787,6 +855,7 @@
                 "title"
                 "selected"
                 "actions";
+            margin: 0;
             overflow: visible;
         }
 
@@ -797,7 +866,7 @@
 
         & .cal__selBar {
             inline-size: 100%;
-            max-inline-size: 100%;
+            max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
             position: relative;
             z-index: 2;
         }
@@ -806,7 +875,7 @@
             grid-area: actions;
             justify-self: stretch;
             inline-size: 100%;
-            max-inline-size: 100%;
+            max-inline-size: calc(100% + var(--cal-control-bleed) + var(--cal-control-bleed));
             min-inline-size: 0;
             display: flex;
             flex-wrap: wrap;
@@ -814,10 +883,10 @@
             align-content: flex-start;
             justify-content: flex-end;
             gap: var(--cal-ctl-gap);
-            padding-block: 0.14rem;
-            margin-block: -0.14rem;
+            padding: var(--cal-control-bleed);
+            margin: calc(0rem - var(--cal-control-bleed));
             overflow-x: auto;
-            overflow-y: hidden;
+            overflow-y: auto;
             position: relative;
             z-index: 2;
             box-sizing: border-box;
