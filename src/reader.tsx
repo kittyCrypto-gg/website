@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
-import { modals, closeOnClick, type Modal } from "./modals.ts";
+import { factory, closeOnClick, type Modal } from "./modals.ts";
 import { getReaderNds, replaceTategaki, serialisNde } from "./tategaki.tsx";
 import { replaceSsmlAuthoring } from "./ssml.ts";
 import MediaStyler from "./mediaStyler.tsx";
@@ -283,13 +283,27 @@ function ReaderCtrls(): ReactElement {
 function ImgNav(): ReactElement {
     return (
         <>
-            <button className="btn-up">⬆️</button>
+            <button className="btn-up" title="Move image up" aria-label="Move image up">
+                {icons.MakeImageNavigationArrowIcon(0)}
+            </button>
+
             <div className="horizontal">
-                <button className="btn-left">⬅️</button>
-                <button className="btn-center">⏺️</button>
-                <button className="btn-right">➡️</button>
+                <button className="btn-left" title="Move image left" aria-label="Move image left">
+                    {icons.MakeImageNavigationArrowIcon(270)}
+                </button>
+
+                <button className="btn-center" title="Reset image position" aria-label="Reset image position">
+                    {window.buttons.jumpToChapter.icon}
+                </button>
+
+                <button className="btn-right" title="Move image right" aria-label="Move image right">
+                    {icons.MakeImageNavigationArrowIcon(90)}
+                </button>
             </div>
-            <button className="btn-down">⬇️</button>
+
+            <button className="btn-down" title="Move image down" aria-label="Move image down">
+                {icons.MakeImageNavigationArrowIcon(180)}
+            </button>
         </>
     );
 }
@@ -426,7 +440,7 @@ const READER_INFO_MODAL_ID = "kc-reader-info-modal";
 
 const READER_INFO_MODAL_HTML = (): string => render2Mkup(<InfoModal />);
 
-const infoModal: Modal = modals.create({
+const infoModal: Modal = factory.create({
     id: READER_INFO_MODAL_ID,
     mode: "blocking",
     content: READER_INFO_MODAL_HTML,
@@ -492,7 +506,7 @@ const persistLangTipHide: ModalDecorator = {
     }
 };
 
-const langTipModal: Modal = modals.create({
+const langTipModal: Modal = factory.create({
     id: LANG_TIP_MODAL_ID,
     mode: "non-blocking",
     readerModeCompatible: false,
@@ -1173,40 +1187,137 @@ function bindNavEvents(root: Document = document): void {
     root.querySelectorAll<HTMLButtonElement>(".btn-info").forEach((btn) => (btn.onclick = showNavInfo));
 }
 
+// /**
+//  * @param {Document} root
+//  * @returns {Promise<void>}
+//  */
+// async function populatePicker(root: Document = document): Promise<void> {
+//     if (!window.storyPickerRoot) return;
+//     try {
+//         const res = await fetch(`${config.storiesIndexURL}`);
+//         if (!res.ok) throw new Error("No stories found");
+//         const storiesUnknown: unknown = await res.json();
+
+//         if (!helpers.isRecord(storiesUnknown)) throw new Error("Invalid stories index format");
+//         const stories = storiesUnknown as StoriesIndex;
+
+//         const select = root.createElement("select");
+//         select.className = "story-selector";
+//         select.setAttribute("id", "reader-story-selector");
+//         select.innerHTML = render2Mkup(<option value="">Select a story...</option>);
+
+//         Object.keys(stories).forEach((name) => {
+//             const opt = root.createElement("option");
+//             opt.value = name;
+//             opt.textContent = name;
+//             if (name === window.storyName) opt.selected = true;
+//             select.appendChild(opt);
+//         });
+
+//         select.onchange = () => {
+//             if (select.value) {
+//                 window.location.search = `?story=${encodeURIComponent(select.value)}&chapter=1`;
+//             }
+//         };
+
+//         window.storyPickerRoot.appendChild(select);
+//     } catch (err) {
+//         console.warn("No stories found or failed to load stories.json", err);
+//     }
+// }
+
 /**
  * @param {Document} root
  * @returns {Promise<void>}
  */
 async function populatePicker(root: Document = document): Promise<void> {
-    if (!window.storyPickerRoot) return;
+    const picker = window.storyPickerRoot;
+    if (!picker) return;
+
+    const makePickerHint = (): HTMLDivElement => {
+        const hint = root.createElement("div");
+
+        hint.className = "story-dropdown__hint";
+        hint.textContent = "Pick a story...";
+        hint.setAttribute("aria-hidden", "true");
+
+        return hint;
+    };
+
+    const makeSizerItem = (text: string, className = ""): HTMLDivElement => {
+        const item = root.createElement("div");
+
+        item.className = ["story-dropdown__sizer-item", className]
+            .filter(Boolean)
+            .join(" ");
+
+        item.textContent = text;
+
+        return item;
+    };
+
     try {
         const res = await fetch(`${config.storiesIndexURL}`);
         if (!res.ok) throw new Error("No stories found");
+
         const storiesUnknown: unknown = await res.json();
 
-        if (!helpers.isRecord(storiesUnknown)) throw new Error("Invalid stories index format");
+        if (!helpers.isRecord(storiesUnknown)) {
+            throw new Error("Invalid stories index format");
+        }
+
         const stories = storiesUnknown as StoriesIndex;
+        const storyNames = Object.keys(stories);
 
-        const select = root.createElement("select");
-        select.className = "story-selector";
-        select.setAttribute("id", "reader-story-selector");
-        select.innerHTML = render2Mkup(<option value="">Select a story...</option>);
+        const makeStoryHref = (storyName: string): string =>
+            `?story=${encodeURIComponent(storyName)}&chapter=1`;
 
-        Object.keys(stories).forEach((name) => {
-            const opt = root.createElement("option");
-            opt.value = name;
-            opt.textContent = name;
-            if (name === window.storyName) opt.selected = true;
-            select.appendChild(opt);
-        });
+        const makeStoryItem = (storyName: string): HTMLAnchorElement => {
+            const item = root.createElement("a");
 
-        select.onchange = () => {
-            if (select.value) {
-                window.location.search = `?story=${encodeURIComponent(select.value)}&chapter=1`;
+            item.className = "story-dropdown__item";
+            item.href = makeStoryHref(storyName);
+            item.textContent = storyName;
+
+            if (storyName === window.storyName) {
+                item.classList.add("is-current");
+                item.setAttribute("aria-current", "page");
             }
+
+            return item;
         };
 
-        window.storyPickerRoot.appendChild(select);
+        const dropdown = root.createElement("div");
+        dropdown.className = "story-dropdown";
+
+        const button = root.createElement("button");
+        button.id = "reader-story-selector";
+        button.type = "button";
+        button.className = "story-dropdown__button";
+        button.textContent = window.storyName || "Pick a story...";
+        button.setAttribute("aria-haspopup", "true");
+
+        const sizer = root.createElement("div");
+        sizer.className = "story-dropdown__sizer";
+        sizer.setAttribute("aria-hidden", "true");
+
+        sizer.appendChild(makeSizerItem("Pick a story...", "story-dropdown__sizer-item--hint"));
+
+        storyNames
+            .map((storyName) => makeSizerItem(storyName))
+            .forEach((item) => sizer.appendChild(item));
+
+        const menu = root.createElement("div");
+        menu.className = "story-dropdown__content";
+
+        menu.appendChild(makePickerHint());
+
+        storyNames
+            .map(makeStoryItem)
+            .forEach((item) => menu.appendChild(item));
+
+        dropdown.append(button, sizer, menu);
+        picker.replaceChildren(dropdown);
     } catch (err) {
         console.warn("No stories found or failed to load stories.json", err);
     }

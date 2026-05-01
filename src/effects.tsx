@@ -1,9 +1,8 @@
 import type { ReactElement } from "react";
 import type { EffectsUiConfig } from "./uiFetch.ts";
-import { recreateSingleton } from "./domSingletons.ts";
-import { prepareSvgMarkup } from "./icons.tsx";
-import { closeOnClick, modals, onModalEvent, type Modal } from "./modals.ts";
+import * as modals from "./modals.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
+import { installMenuToggle } from "./menues.tsx";
 
 type Prefs = Readonly<{
     phosphorEnabled: boolean;
@@ -47,10 +46,9 @@ const SLIDER_MAX = 100;
 const SLIDER_STEP = 1;
 
 let defPrefs: Prefs | null = null;
-let mod: Modal | null = null;
+let mod: modals.Modal | null = null;
 let syncOn = false;
 let uiCfg: EffectsUiConfig | null = null;
-let iconReqTok = 0;
 
 /**
  * Clamp thing. Keeps slider rubbish in bounds and stops NaN being annoying.
@@ -447,81 +445,9 @@ function syncMod(modalEl: HTMLDivElement, prefs: Prefs): void {
  * @returns {void}
  */
 function syncOpen(): void {
-    const session = modals.getOpenSession(MOD_ID);
+    const session = modals.factory.getOpenSession(MOD_ID);
     if (!session) return;
     syncMod(session.modalEl, live());
-}
-
-/**
- * Fallback icon when svg fails or doesnt exist.
- * @param {HTMLButtonElement} button
- * @param {string} emoji
- * @returns {void}
- */
-function emojiIcon(button: HTMLButtonElement, emoji: string): void {
-    button.replaceChildren();
-    button.textContent = emoji;
-}
-
-/**
- * Tries to fetch and prep svg markup for the floating button.
- * @param {string} src
- * @returns {Promise<string | null>}
- */
-async function loadSvg(src: string): Promise<string | null> {
-    try {
-        const response = await fetch(src, { cache: "force-cache" });
-        if (!response.ok) return null;
-
-        const rawSvg = await response.text();
-        return prepareSvgMarkup(rawSvg, "effects-toggle-button__svg");
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Applies either the svg icon or the emoji fallback.
- * @param {HTMLButtonElement} button
- * @param {EffectsUiConfig} nextUi
- * @returns {Promise<void>}
- */
-async function setBtnIcon(button: HTMLButtonElement, nextUi: EffectsUiConfig): Promise<void> {
-    const requestToken = ++iconReqTok;
-
-    if (!nextUi.iconPath) {
-        emojiIcon(button, nextUi.icon);
-        return;
-    }
-
-    const markup = await loadSvg(nextUi.iconPath);
-    if (requestToken !== iconReqTok) return;
-
-    if (!markup) {
-        emojiIcon(button, nextUi.icon);
-        return;
-    }
-
-    const wrapper = document.createElement("span");
-    wrapper.className = "effects-toggle-button__icon";
-    wrapper.setAttribute("aria-hidden", "true");
-    wrapper.innerHTML = markup;
-
-    button.replaceChildren(wrapper);
-}
-
-/**
- * Applies title/aria/icon stuff to the floating button.
- * @param {EffectsUiConfig} nextUi
- * @param {HTMLButtonElement} button
- * @returns {void}
- */
-function setBtnUi(nextUi: EffectsUiConfig, button: HTMLButtonElement): void {
-    button.title = nextUi.title;
-    button.setAttribute("aria-label", nextUi.title);
-    button.style.bottom = BTN_BOTTOM;
-
-    void setBtnIcon(button, nextUi);
 }
 
 /**
@@ -818,25 +744,25 @@ const onReset = (_ev: Event, ctx: Ctx): void => {
 
 /**
  * Creates the modal singleton on first use.
- * @returns {Modal}
+ * @returns {modals.Modal}
  */
-function ensureMod(): Modal {
+function ensureMod(): modals.Modal {
     if (mod) return mod;
 
-    mod = modals.create({
+    mod = modals.factory.create({
         id: MOD_ID,
         mode: "blocking",
         window: true,
         modalClassName: "effects-modal",
         content: rndrMod,
         decorators: [
-            closeOnClick("[data-effects-close]"),
-            onModalEvent("#effects-phosphor-enabled", "change", onPhosTgl),
-            onModalEvent("#effects-scanlines-enabled", "change", onScanTgl),
-            onModalEvent("#effects-phosphor-opacity", "input", onPhosOp),
-            onModalEvent("#effects-scanline-opacity", "input", onScanOp),
-            onModalEvent("#effects-scanline-speed", "input", onScanSpd),
-            onModalEvent("#effects-reset", "click", onReset)
+            modals.closeOnClick("[data-effects-close]"),
+            modals.onModalEvent("#effects-phosphor-enabled", "change", onPhosTgl),
+            modals.onModalEvent("#effects-scanlines-enabled", "change", onScanTgl),
+            modals.onModalEvent("#effects-phosphor-opacity", "input", onPhosOp),
+            modals.onModalEvent("#effects-scanline-opacity", "input", onScanOp),
+            modals.onModalEvent("#effects-scanline-speed", "input", onScanSpd),
+            modals.onModalEvent("#effects-reset", "click", onReset)
         ]
     });
 
@@ -877,7 +803,8 @@ function ensureSync(): void {
 
 /**
  * Creates the floating CRT effects button, applies saved preferences,
- * and wires the effects modal.
+ * and wires the effects modal. Button plumbing is delegated to
+ * `installMenuToggle` so every floating-modal toggle behaves the same.
  * @param {EffectsUiConfig} nextUi
  * @returns {void}
  */
@@ -887,31 +814,18 @@ export function initEffectsControls(nextUi: EffectsUiConfig): void {
     defs();
     apply(resolved());
 
-    const buttonNode = recreateSingleton(
-        BTN_ID,
-        () => document.createElement("button"),
-        document
-    );
-
-    if (!(buttonNode instanceof HTMLButtonElement)) return;
-
-    /**
-     * Button click opens the modal. tiny wrapper but whatever.
-     * @returns {void}
-     */
-    const onClick = (): void => {
-        openMod();
-    };
-
-    buttonNode.classList.add("theme-toggle-button", "effects-toggle-button");
-    buttonNode.type = "button";
-    buttonNode.onclick = onClick;
-
-    setBtnUi(nextUi, buttonNode);
-
-    if (buttonNode.parentElement !== document.body) {
-        document.body.appendChild(buttonNode);
-    }
+    installMenuToggle({
+        id: BTN_ID,
+        bottom: BTN_BOTTOM,
+        cfg: nextUi,
+        classes: ["theme-toggle-button", "effects-toggle-button"],
+        icon: {
+            size: 32,
+            wrapperClass: "effects-toggle-button__icon",
+            svgClass: "effects-toggle-button__svg"
+        },
+        openModal: openMod
+    });
 
     if (mod?.isOpen()) {
         mod.setContent(rndrMod());

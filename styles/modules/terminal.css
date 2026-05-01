@@ -32,6 +32,11 @@
     --terminal-btn-close-colour: #8b0000;
     --terminal-btn-toggle-colour: #b8860b;
     --terminal-btn-float-colour: #006400;
+
+    --terminal-scrollbar-size: 0.75rem;
+    --terminal-scrollbar-thumb: color-mix(in srgb, var(--term-header-fg) 42%, transparent);
+    --terminal-scrollbar-thumb-hover: color-mix(in srgb, var(--term-header-fg) 62%, transparent);
+    --terminal-scrollbar-track: transparent;
 }
 
 .xterm {
@@ -40,6 +45,35 @@
 
     .xterm-viewport {
         background: var(--term-bg);
+
+        scrollbar-width: thin;
+        scrollbar-color: var(--terminal-scrollbar-thumb) var(--terminal-scrollbar-track);
+
+        &::-webkit-scrollbar {
+            width: var(--terminal-scrollbar-size);
+            height: var(--terminal-scrollbar-size);
+        }
+
+        &::-webkit-scrollbar-track {
+            background: var(--terminal-scrollbar-track);
+            border-radius: 999px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: var(--terminal-scrollbar-thumb);
+            border: 0.2rem solid transparent;
+            border-radius: 999px;
+            background-clip: content-box;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+            background: var(--terminal-scrollbar-thumb-hover);
+            background-clip: content-box;
+        }
+
+        &::-webkit-scrollbar-corner {
+            background: transparent;
+        }
     }
 
     .composition-view {

@@ -1,4 +1,6 @@
 import { render2Frag } from "./reactHelpers.tsx";
+import * as helpers from "./helpers.ts";
+import * as icons from "./icons.tsx";
 
 export type CalLvl = "yr" | "mo" | "dy";
 
@@ -219,6 +221,24 @@ function anySel(sel: CalSel): boolean {
 }
 
 /**
+ * The wee icon in the roundy buttons.
+ * @param {Readonly<{ open: boolean }>} props
+ * @returns {JSX.Element}
+ */
+function TglIco({ open }: Readonly<{ open: boolean }>): JSX.Element {
+    return open ? icons.MakeDecreaseFontIcon() : icons.MakeIncreaseFontIcon();
+}
+
+/**
+ * Render helper for shared collapse wiring.
+ * @param {boolean} open
+ * @returns {DocumentFragment}
+ */
+function renderTglIco(open: boolean): DocumentFragment {
+    return render2Frag(<TglIco open={open} />);
+}
+
+/**
  * Single selectable item button.
  * @param {Readonly<{ lvl: CalLvl; val: number; sel: boolean; has: boolean; txt: string; }>} props
  * @returns {JSX.Element}
@@ -367,20 +387,31 @@ function SctBlk({
 }>): JSX.Element {
     return (
         <section className="cal__sct" data-cal-sct-root={sct} data-open={open ? "1" : "0"}>
-            <div className="cal__sctHdr">
-                <button
-                    type="button"
-                    className="cal__sctTgl"
-                    data-cal-sct={sct}
-                    aria-expanded={open ? "true" : "false"}
-                >
-                    <span className="cal__sctTtl">{ttl}</span>
-                    <span className="cal__sctMeta">
-                        <span className="cal__sctCnt">{cnt}</span>
-                        <span className="cal__sctIcn">{open ? "−" : "+"}</span>
-                    </span>
-                </button>
-            </div>
+            <header
+                className="cal__sctHdr kc-click-header"
+                data-cal-sct-header={sct}
+                role="button"
+                tabIndex={0}
+                aria-expanded={open ? "true" : "false"}
+                title={open ? `Collapse ${ttl}` : `Expand ${ttl}`}
+            >
+                <span className="cal__sctTtl">{ttl}</span>
+
+                <span className="cal__sctMeta">
+                    <span className="cal__sctCnt">{cnt}</span>
+
+                    <button
+                        type="button"
+                        className="cal__sctTgl kc-round-icon-btn kc-round-icon-btn--sm kc-click-header__control"
+                        data-cal-sct={sct}
+                        aria-expanded={open ? "true" : "false"}
+                        aria-label={open ? `Collapse ${ttl}` : `Expand ${ttl}`}
+                        title={open ? `Collapse ${ttl}` : `Expand ${ttl}`}
+                    >
+                        <TglIco open={open} />
+                    </button>
+                </span>
+            </header>
 
             <div className="cal__sctBody" aria-hidden={open ? "false" : "true"}>
                 <div className="cal__sctBodyInner">{body}</div>
@@ -390,23 +421,21 @@ function SctBlk({
 }
 
 /**
- * Selected pills + reset bits.
- * @param {Readonly<{ sel: CalSel; showClr: boolean; }>} props
+ * Selected pills.
+ * @param {Readonly<{ sel: CalSel; }>} props
  * @returns {JSX.Element}
  */
-function SelBar({
-    sel,
-    showClr
-}: Readonly<{
-    sel: CalSel;
-    showClr: boolean;
-}>): JSX.Element {
+function SelBar({ sel }: Readonly<{ sel: CalSel }>): JSX.Element {
     const yrs = Array.from(sel.yrs).sort((a, b) => b - a);
     const mos = Array.from(sel.mos).sort((a, b) => a - b);
     const dys = Array.from(sel.dys).sort((a, b) => a - b);
 
     return (
-        <div className="cal__selBar">
+        <div
+            className="cal__selBar"
+            data-cal-sel-bar="1"
+            aria-label="Selected date filters"
+        >
             <div className="cal__selGrp">
                 {yrs.map((yr) => (
                     <button
@@ -447,18 +476,52 @@ function SelBar({
                     </button>
                 ))}
             </div>
+        </div>
+    );
+}
 
-            <div className="cal__ctlGrp">
-                <button type="button" className="cal__rst" data-cal-act="rst">
-                    Reset
+/**
+ * Root-level header controls.
+ * @param {Readonly<{ rootOpen: boolean; hasSel: boolean; }>} props
+ * @returns {JSX.Element}
+ */
+function RootActions({
+    rootOpen,
+    hasSel
+}: Readonly<{
+    rootOpen: boolean;
+    hasSel: boolean;
+}>): JSX.Element {
+    return (
+        <div className="cal__hdrActions kc-click-header__actions">
+            <button
+                type="button"
+                className="cal__rst kc-click-header__control"
+                data-cal-act="rst"
+            >
+                Reset
+            </button>
+
+            {hasSel ? (
+                <button
+                    type="button"
+                    className="cal__clr kc-click-header__control"
+                    data-cal-act="clr"
+                >
+                    Clear all
                 </button>
+            ) : null}
 
-                {showClr ? (
-                    <button type="button" className="cal__clr" data-cal-act="clr">
-                        Clear all
-                    </button>
-                ) : null}
-            </div>
+            <button
+                type="button"
+                className="cal__rootTgl kc-round-icon-btn kc-click-header__control"
+                data-cal-root-toggle="1"
+                aria-expanded={rootOpen ? "true" : "false"}
+                aria-label={rootOpen ? "Collapse filter" : "Expand filter"}
+                title={rootOpen ? "Collapse filter" : "Expand filter"}
+            >
+                <TglIco open={rootOpen} />
+            </button>
         </div>
     );
 }
@@ -501,8 +564,8 @@ function Root({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
             data-open={vw.rootOpen ? "1" : "0"}
         >
             <header
-                className="cal__hdr"
-                data-cal-act="tgl-root"
+                className="cal__hdr kc-click-header"
+                data-cal-root-header="1"
                 role="button"
                 tabIndex={0}
                 aria-expanded={vw.rootOpen ? "true" : "false"}
@@ -513,12 +576,10 @@ function Root({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
                     <h2 className="cal__ttl">{vw.ttl}</h2>
                 </div>
 
-                <span className="cal__rootTgl" aria-hidden="true">
-                    {vw.rootOpen ? "↘️" : "➡️"}
-                </span>
-            </header>
+                {vw.hasSel ? <SelBar sel={vw.sel} /> : null}
 
-            <SelBar sel={vw.sel} showClr={vw.hasSel} />
+                <RootActions rootOpen={vw.rootOpen} hasSel={vw.hasSel} />
+            </header>
 
             <div className="cal__rootBody" aria-hidden={vw.rootOpen ? "false" : "true"}>
                 <div className="cal__rootBodyInner">
@@ -626,24 +687,33 @@ export class CalCtrl {
             const trg = ev.target;
             if (!(trg instanceof Element)) return;
 
-            if (trg.closest<HTMLElement>("[data-cal-act='tgl-root']")) {
-                this.tglRoot();
-                return;
-            }
-
             if (trg.closest<HTMLElement>("[data-cal-act='rst']")) {
+                ev.preventDefault();
+                ev.stopPropagation();
                 this.rst();
                 return;
             }
 
             if (trg.closest<HTMLElement>("[data-cal-act='clr']")) {
+                ev.preventDefault();
+                ev.stopPropagation();
                 this.clr();
                 return;
             }
 
-            const sct = trg.closest<HTMLElement>("[data-cal-sct]");
-            if (sct) {
-                const key = sct.dataset.calSct as CalSct | undefined;
+            if (trg.closest<HTMLElement>("[data-cal-root-toggle]")) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.tglRoot();
+                return;
+            }
+
+            const sctBtn = trg.closest<HTMLElement>("[data-cal-sct]");
+            if (sctBtn) {
+                ev.preventDefault();
+                ev.stopPropagation();
+
+                const key = sctBtn.dataset.calSct as CalSct | undefined;
                 if (!key) return;
 
                 this.tglSct(key);
@@ -651,31 +721,61 @@ export class CalCtrl {
             }
 
             const itm = trg.closest<HTMLElement>("[data-cal-lvl][data-cal-val]");
-            if (!itm) return;
+            if (itm) {
+                const lvl = itm.dataset.calLvl as CalLvl | undefined;
+                const raw = itm.dataset.calVal ?? "";
+                const val = Number(raw);
 
-            const lvl = itm.dataset.calLvl as CalLvl | undefined;
-            const raw = itm.dataset.calVal ?? "";
-            const val = Number(raw);
+                if (!lvl || Number.isNaN(val)) return;
 
-            if (!lvl || Number.isNaN(val)) return;
-            this.tglVal(lvl, val);
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.tglVal(lvl, val);
+                return;
+            }
+
+            const rootHdr = trg.closest<HTMLElement>("[data-cal-root-header]");
+            if (rootHdr) {
+                if (helpers.eventHasBlockedControl(ev)) return;
+
+                this.tglRoot();
+                return;
+            }
+
+            const sctHdr = trg.closest<HTMLElement>("[data-cal-sct-header]");
+            if (sctHdr) {
+                if (helpers.eventHasBlockedControl(ev)) return;
+
+                const key = sctHdr.dataset.calSctHeader as CalSct | undefined;
+                if (!key) return;
+
+                this.tglSct(key);
+            }
         };
 
         /**
-         * Keyboard handler for the root toggle header only.
+         * Keyboard handler for row headers only.
          * @param {KeyboardEvent} ev
          * @returns {void}
          */
         this.keyHnd = (ev: KeyboardEvent): void => {
             const trg = ev.target;
-            if (!(trg instanceof Element)) return;
-
-            const rootTgl = trg.closest<HTMLElement>("[data-cal-act='tgl-root']");
-            if (!rootTgl) return;
+            if (!(trg instanceof HTMLElement)) return;
             if (ev.key !== "Enter" && ev.key !== " ") return;
 
+            if (trg.matches("[data-cal-root-header]")) {
+                ev.preventDefault();
+                this.tglRoot();
+                return;
+            }
+
+            if (!trg.matches("[data-cal-sct-header]")) return;
+
+            const key = trg.dataset.calSctHeader as CalSct | undefined;
+            if (!key) return;
+
             ev.preventDefault();
-            this.tglRoot();
+            this.tglSct(key);
         };
     }
 
@@ -963,47 +1063,6 @@ export class CalCtrl {
     }
 
     /**
-     * Plays the open/close max-height transition stuff.
-     * @param {HTMLElement} body
-     * @param {() => void} setOpenState
-     * @param {boolean} open
-     * @returns {void}
-     */
-    private playTgl(body: HTMLElement, setOpenState: () => void, open: boolean): void {
-        /**
-         * Ends the open transition by freeing max-height again.
-         * @param {TransitionEvent} ev
-         * @returns {void}
-         */
-        const onEnd = (ev: TransitionEvent): void => {
-            if (ev.target !== body || ev.propertyName !== "max-height") return;
-            if (open) {
-                body.style.maxHeight = "none";
-            }
-        };
-
-        if (!open) {
-            const curH = body.scrollHeight;
-            body.style.maxHeight = `${curH}px`;
-            void body.offsetHeight;
-            setOpenState();
-            window.requestAnimationFrame(() => {
-                body.style.maxHeight = "0px";
-            });
-            return;
-        }
-
-        body.style.maxHeight = "0px";
-        setOpenState();
-        const nxtH = body.scrollHeight;
-        body.removeEventListener("transitionend", onEnd);
-        body.addEventListener("transitionend", onEnd, { once: true });
-        window.requestAnimationFrame(() => {
-            body.style.maxHeight = `${nxtH}px`;
-        });
-    }
-
-    /**
      * Toggles the whole root open/closed.
      * @returns {void}
      */
@@ -1011,9 +1070,9 @@ export class CalCtrl {
         const root = this.host.querySelector<HTMLElement>(".cal");
         const hdr = this.host.querySelector<HTMLElement>(".cal__hdr");
         const body = this.host.querySelector<HTMLElement>(".cal__rootBody");
-        const icn = this.host.querySelector<HTMLElement>(".cal__rootTgl");
+        const btn = this.host.querySelector<HTMLElement>(".cal__rootTgl");
 
-        if (!root || !hdr || !body || !icn) {
+        if (!root || !hdr || !body || !btn) {
             this.rootOpen = !this.rootOpen;
             this.rnd();
             return;
@@ -1021,18 +1080,21 @@ export class CalCtrl {
 
         const nxtOpen = !this.rootOpen;
 
-        this.playTgl(
+        helpers.animateCollapsibleOpen({
+            root,
             body,
-            () => {
-                this.rootOpen = nxtOpen;
-                root.dataset.open = nxtOpen ? "1" : "0";
-                hdr.setAttribute("aria-expanded", nxtOpen ? "true" : "false");
-                hdr.setAttribute("title", nxtOpen ? "Collapse filter" : "Expand filter");
-                body.setAttribute("aria-hidden", nxtOpen ? "false" : "true");
-                icn.textContent = nxtOpen ? "↘️" : "➡️";
-            },
-            nxtOpen
-        );
+            header: hdr,
+            toggle: btn,
+            open: nxtOpen,
+            renderIcon: renderTglIco,
+            collapseLabel: "Collapse filter",
+            expandLabel: "Expand filter",
+            collapseTitle: "Collapse filter",
+            expandTitle: "Expand filter",
+            onLayout: null
+        });
+
+        this.rootOpen = nxtOpen;
     }
 
     /**
@@ -1042,29 +1104,34 @@ export class CalCtrl {
      */
     private tglSct(sct: CalSct): void {
         const box = this.host.querySelector<HTMLElement>(`.cal__sct[data-cal-sct-root="${sct}"]`);
+        const hdr = box?.querySelector<HTMLElement>(".cal__sctHdr") ?? null;
         const btn = this.host.querySelector<HTMLElement>(`.cal__sctTgl[data-cal-sct="${sct}"]`);
         const body = box?.querySelector<HTMLElement>(".cal__sctBody") ?? null;
-        const icn = btn?.querySelector<HTMLElement>(".cal__sctIcn") ?? null;
 
-        if (!box || !btn || !body || !icn) {
+        if (!box || !hdr || !btn || !body) {
             this.opn[sct] = !this.opn[sct];
             this.rnd();
             return;
         }
 
         const nxtOpen = !this.opn[sct];
+        const title = hdr.querySelector(".cal__sctTtl")?.textContent ?? "section";
 
-        this.playTgl(
+        helpers.animateCollapsibleOpen({
+            root: box,
             body,
-            () => {
-                this.opn[sct] = nxtOpen;
-                box.dataset.open = nxtOpen ? "1" : "0";
-                btn.setAttribute("aria-expanded", nxtOpen ? "true" : "false");
-                body.setAttribute("aria-hidden", nxtOpen ? "false" : "true");
-                icn.textContent = nxtOpen ? "−" : "+";
-            },
-            nxtOpen
-        );
+            header: hdr,
+            toggle: btn,
+            open: nxtOpen,
+            renderIcon: renderTglIco,
+            collapseLabel: `Collapse ${title}`,
+            expandLabel: `Expand ${title}`,
+            collapseTitle: `Collapse ${title}`,
+            expandTitle: `Expand ${title}`,
+            onLayout: null
+        });
+
+        this.opn[sct] = nxtOpen;
     }
 
     /**

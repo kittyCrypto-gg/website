@@ -4,6 +4,9 @@
 <head>
 	<script src="./dist/themeLoad.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<link rel="stylesheet"
+		href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css">
+	<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
 	<script type="module" src="./dist/main.js"></script>
 	<script type="module" src="./dist/rss.js"></script>
 	<script type="module" src="./dist/visitLogger.js"></script>
@@ -30,23 +33,20 @@
 					<div id="terminal"></div>
 				</div>
 			</aside>
-
 			<nav id="main-menu"></nav>
 			<header id="main-header">Kitty's Blog</header>
 
-			<div id="main-content">
-				<div class="blog-wrapper">
-					<a class="comments-header" style="display: block; text-align: left;"></a>
-					<div id="kc-blog-cal-filter" class="blog-cal-slot" aria-label="Blog date filters"></div>
-					<div class="blog-container"></div>
-				</div>
+			<div class="blog-wrapper">
+				<a class="comments-header" style="display: block; text-align: left;"></a>
+				<div id="kc-blog-cal-filter" class="blog-cal-slot" aria-label="Blog date filters"></div>
+				<div class="blog-container"></div>
+			</div>
 
-				<div class="site-stats kc-88by31">
-					<div class="segment-header">Stats</div>
-					<div class="site-stats__item">
-						<span class="stats-segment">Unique Visitors</span>
-						<div class="site-stats__counter" id="unique-visits-count"></div>
-					</div>
+			<div class="site-stats kc-88by31">
+				<div class="segment-header">Stats</div>
+				<div class="site-stats__item">
+					<span class="stats-segment">Unique Visitors</span>
+					<div class="site-stats__counter" id="unique-visits-count"></div>
 				</div>
 			</div>
 		</div>

@@ -90,8 +90,20 @@
         opacity: 1;
     }
 
+    & .horizontal {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--image-nav-gap);
+    }
+
     & button {
         all: unset;
+
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
 
         font-size: var(--image-nav-button-font-size);
         cursor: pointer;

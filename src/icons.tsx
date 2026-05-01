@@ -6,6 +6,7 @@ export interface SvgPathIconProps {
     src: string;
     className?: string;
     fallback?: ReaderIcon;
+    size?: number;
 }
 
 type StrokeProps = Readonly<{
@@ -179,8 +180,59 @@ function stripAttrs(svg: Element): void {
 }
 
 /**
+ * Rewrites internal svg class names so they do not collide with page css.
+ * Also updates selectors inside embedded <style> tags.
+ * @param {Element} svg
+ * @param {string} instanceId
+ * @returns {void}
+ */
+function rebaseClasses(svg: Element, instanceId: string): void {
+    const classMap = new Map<string, string>();
+    const nodes: Element[] = [svg, ...Array.from(svg.querySelectorAll("*"))];
+
+    for (const node of nodes) {
+        const rawClassName = node.getAttribute("class");
+        if (!rawClassName) continue;
+
+        const classNames = rawClassName
+            .split(/\s+/)
+            .map((part) => part.trim())
+            .filter(Boolean);
+
+        if (!classNames.length) continue;
+
+        const nextClassNames = classNames.map((className) => {
+            const cached = classMap.get(className);
+            if (cached) return cached;
+
+            const nextClassName = `${instanceId}-${className}`;
+            classMap.set(className, nextClassName);
+            return nextClassName;
+        });
+
+        node.setAttribute("class", nextClassNames.join(" "));
+    }
+
+    if (classMap.size === 0) return;
+
+    svg.querySelectorAll("style").forEach((styleNode) => {
+        let cssText = styleNode.textContent ?? "";
+        if (!cssText) return;
+
+        for (const [prevClassName, nextClassName] of classMap) {
+            cssText = cssText.replace(
+                new RegExp(`\\.${escRe(prevClassName)}(?=[^a-zA-Z0-9_-]|$)`, "g"),
+                `.${nextClassName}`
+            );
+        }
+
+        styleNode.textContent = cssText;
+    });
+}
+
+/**
  * Rewrites internal ids so multiple copies of the same svg do not clash.
- * messy if this is missing.
+ * Also updates references inside embedded <style> tags.
  * @param {Element} svg
  * @param {string} instanceId
  * @returns {void}
@@ -199,27 +251,47 @@ function rebaseIds(svg: Element, instanceId: string): void {
 
     if (idMap.size === 0) return;
 
+    /**
+     * Rewrites id references in attribute values or css text.
+     * @param {string} value
+     * @returns {string}
+     */
+    const replaceRefs = (value: string): string => {
+        let nextValue = value;
+
+        for (const [prevId, nextIdValue] of idMap) {
+            const escapedId = escRe(prevId);
+
+            nextValue = nextValue.replace(
+                new RegExp(`url\\((['"]?)#${escapedId}\\1\\)`, "g"),
+                `url(#${nextIdValue})`
+            );
+
+            nextValue = nextValue.replace(
+                new RegExp(`(?<![\\w-])#${escapedId}(?![\\w-])`, "g"),
+                `#${nextIdValue}`
+            );
+        }
+
+        return nextValue;
+    };
+
     const nodes: Element[] = [svg, ...Array.from(svg.querySelectorAll("*"))];
 
     for (const node of nodes) {
         for (const attr of Array.from(node.attributes)) {
-            let nextValue = attr.value;
-
-            for (const [prevId, nextIdValue] of idMap) {
-                nextValue = nextValue.replace(
-                    new RegExp(`url\\(#${escRe(prevId)}\\)`, "g"),
-                    `url(#${nextIdValue})`
-                );
-
-                if (nextValue === `#${prevId}`) {
-                    nextValue = `#${nextIdValue}`;
-                }
-            }
-
+            const nextValue = replaceRefs(attr.value);
             if (nextValue === attr.value) continue;
             node.setAttribute(attr.name, nextValue);
         }
     }
+
+    svg.querySelectorAll("style").forEach((styleNode) => {
+        const cssText = styleNode.textContent ?? "";
+        const nextCssText = replaceRefs(cssText);
+        if (nextCssText === cssText) return;
+        styleNode.textContent = nextCssText;
+    });
 }
 
 /**
@@ -242,16 +314,17 @@ function ensureViewBox(svg: Element): void {
  * Normalises the root svg attrs so it behaves nicely as an icon.
  * @param {Element} svg
  * @param {string} className
+ * @param {number} size
  * @returns {void}
  */
-function normRoot(svg: Element, className: string): void {
+function normRoot(svg: Element, className: string, size: number): void {
     ensureViewBox(svg);
 
     svg.removeAttribute("width");
     svg.removeAttribute("height");
 
-    svg.setAttribute("width", "1em");
-    svg.setAttribute("height", "1em");
+    svg.setAttribute("width", `${size}px`);
+    svg.setAttribute("height", `${size}px`);
     svg.setAttribute("aria-hidden", "true");
     svg.setAttribute("focusable", "false");
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
@@ -266,12 +339,14 @@ function normRoot(svg: Element, className: string): void {
  * @param {string} rawSvg
  * @param {string} className
  * @param {string} instanceId
+ * @param {number} size
  * @returns {string}
  */
 export function prepareSvgMarkup(
     rawSvg: string,
     className = "reader-ui-icon",
-    instanceId = nextId("kc-svg-path-icon")
+    instanceId = nextId("kc-svg-path-icon"),
+    size = 16
 ): string {
     const doc = new DOMParser().parseFromString(rawSvg, "image/svg+xml");
     const parseError = doc.querySelector("parsererror");
@@ -287,7 +362,8 @@ export function prepareSvgMarkup(
     stripNodes(svg);
     stripAttrs(svg);
     rebaseIds(svg, instanceId);
-    normRoot(svg, className);
+    rebaseClasses(svg, instanceId);
+    normRoot(svg, className, size);
 
     return new XMLSerializer().serializeToString(svg);
 }
@@ -307,14 +383,16 @@ function rndrFallback(fallback: ReaderIcon | undefined): ReactElement {
  * Loads an svg icon and gives back a react element wrapper for it.
  * @param {string} src
  * @param {string} className
+ * @param {number} size
  * @returns {Promise<ReactElement>}
  */
 export async function loadSvgPathIcon(
     src: string,
-    className = "reader-ui-icon"
+    className = "reader-ui-icon",
+    size = 16
 ): Promise<ReactElement> {
     const rawSvg = await getSrc(src);
-    const markup = prepareSvgMarkup(rawSvg, className);
+    const markup = prepareSvgMarkup(rawSvg, className, undefined, size);
 
     return <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: markup }} />;
 }
@@ -336,7 +414,7 @@ export function SvgPathIcon(props: SvgPathIconProps): ReactElement {
         setMarkup("");
 
         void getSrc(props.src)
-            .then((rawSvg) => prepareSvgMarkup(rawSvg, className, instanceId))
+            .then((rawSvg) => prepareSvgMarkup(rawSvg, className, instanceId, props.size))
             .then((nextMarkup) => {
                 if (disposed) return;
                 setMarkup(nextMarkup);
@@ -679,6 +757,49 @@ export function MakeResetFontIcon(): ReactElement {
 }
 
 /**
+ * Image navigation arrow icon.
+ * Base shape points up. Rotate for right, down, and left.
+ * @param {number} rotationDeg
+ * @returns {ReactElement}
+ */
+export function MakeImageNavigationArrowIcon(rotationDeg = 0): ReactElement {
+    const whiteFilterId = nextId("kc-image-nav-arrow-white");
+
+    return (
+        <svg
+            className="reader-ui-icon reader-ui-icon--imageNavArrow"
+            viewBox="0 0 16 16"
+            width="1em"
+            height="1em"
+            aria-hidden="true"
+            focusable="false"
+        >
+            <defs>
+                {mkWhiteFilter(whiteFilterId)}
+            </defs>
+
+            <g fill="var(--imageNavArrow-bg-colour)">
+                <rect x="1.5" y="1.5" width="13" height="13" rx="3" ry="3" opacity="0.18" />
+                <rect x="2.5" y="2.5" width="11" height="11" rx="2.4" ry="2.4" opacity="0.95" />
+            </g>
+
+            <g
+                fill="none"
+                stroke="#fff"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                filter={`url(#${whiteFilterId})`}
+                transform={`rotate(${rotationDeg} 8 8)`}
+            >
+                <path d="M8 11.2V4.8" />
+                <path d="M5.4 7.4 8 4.8 10.6 7.4" />
+            </g>
+        </svg>
+    );
+}
+
+/**
  * Plus icon for bigger font.
  * @returns {ReactElement}
  */
@@ -701,6 +822,181 @@ export function MakeIncreaseFontIcon(): ReactElement {
 }
 
 /**
+ * Left pointing arrow (story selected)
+ * @returns {ReactElement}
+ */
+export function makeLeftArrow(): ReactElement {
+    return (
+        <svg
+            className="reader-ui-icon reader-ui-icon--storySelected"
+            viewBox="14.5 19.5 71 61"
+            width="71px"
+            height="61px"
+            aria-label="Left arrow"
+        >
+            <path
+                d="M45 20 L15 50 L45 80 L45 60 H85 V40 H45 Z"
+                fill="var(--menu-button-bg-colour)"
+                stroke="var(--nav-border-colour)"
+                strokeWidth="1"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
+/**
+ * Code icon for code blocks in the blog.
+ * @returns {ReactElement}
+ */
+export function MakeCodeIcon(): ReactElement {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="14"
+            viewBox="0 0 16 14"
+            fill="none"
+            aria-hidden="true"
+        >
+            <path
+                d="M5 3L1 7L5 11"
+                stroke="var(--rss-code-fg)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M11 3L15 7L11 11"
+                stroke="var(--rss-code-fg)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M9 1L7 13"
+                stroke="var(--rss-code-fg)"
+                strokeWidth="2"
+                strokeLinecap="round"
+            />
+        </svg>
+    );
+}
+
+/**
+ * Copy icon for code blocks in the blog.
+ * @returns {ReactElement}
+ */
+export function MakeCopyIcon(): ReactElement {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+        >
+            <rect
+                x="2"
+                y="5"
+                width="9"
+                height="9"
+                rx="1.75"
+                stroke="var(--rss-code-fg)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <rect
+                x="5"
+                y="2"
+                width="9"
+                height="9"
+                rx="1.75"
+                stroke="var(--rss-code-fg)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
+/**
+ * Checkmark icon for code blocks in the blog.
+ * @returns {ReactElement}
+ */
+export function MakeCheckIcon(): ReactElement {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+        >
+            <path
+                d="M3 8.4L6.4 11.8L13 4.2"
+                stroke="var(--rss-code-fg)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+}
+
+/**
+ * Share icon for code blocks in the blog.
+ * @returns {ReactElement}
+ */
+export function MakeShareIcon(): ReactElement {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+        >
+            <path
+                d="M5.8 7.05L10.35 4.45"
+                stroke="var(--increaseFont-icon-colour)"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+            />
+            <path
+                d="M5.8 8.95L10.35 11.55"
+                stroke="var(--increaseFont-icon-colour)"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+            />
+            <circle
+                cx="4"
+                cy="8"
+                r="2.45"
+                fill="var(--increaseFont-icon-colour)"
+            />
+            <circle
+                cx="12"
+                cy="3.8"
+                r="2.45"
+                fill="var(--increaseFont-icon-colour)"
+            />
+            <circle
+                cx="12"
+                cy="12.2"
+                r="2.45"
+                fill="var(--increaseFont-icon-colour)"
+            />
+        </svg>
+    );
+}
+
+/**
  * Pulls plain text out of a ReaderIcon.
  * returns empty string if it was a React element.
  * @param {ReaderIcon} icon
@@ -708,4 +1004,21 @@ export function MakeIncreaseFontIcon(): ReactElement {
  */
 export function ReadTextIcon(icon: ReaderIcon): string {
     return typeof icon === "string" ? icon : "";
+}
+
+/**
+ * Tries to fetch and prep svg markup for the floating button.
+ * @param {string} src
+ * @returns {Promise<string | null>}
+ */
+export async function loadSvg(src: string): Promise<string | null> {
+    try {
+        const response = await fetch(src, { cache: "force-cache" });
+        if (!response.ok) return null;
+
+        const rawSvg = await response.text();
+        return prepareSvgMarkup(rawSvg, "effects-toggle-button__svg");
+    } catch {
+        return null;
+    }
 }

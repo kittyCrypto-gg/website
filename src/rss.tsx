@@ -3,7 +3,9 @@ import { Clusteriser } from "./clusterise.ts";
 import * as cfg from "./config.ts";
 import { render2Frag, render2Mkup } from "./reactHelpers.tsx";
 import { CalCtrl, type CalHasArg, type CalSel } from "./calendar.tsx";
-import { atchColl } from "./helpers.ts";
+import * as helpers from "./helpers.ts";
+import * as icons from "./icons.tsx";
+import { atchRssComments, initRssComments, mkRssCommentSlug } from "./rssComments.ts";
 
 declare global {
     namespace JSX {
@@ -18,10 +20,30 @@ declare const marked: {
     parse: (markdown: string) => string;
 };
 
+type HljsApi = Readonly<{
+    highlightElement: (el: HTMLElement) => void;
+}>;
+
+declare const hljs: HljsApi | undefined;
+
 type WrapRs = Readonly<{
     scr: HTMLDivElement | null;
     box: HTMLDivElement;
     cal: HTMLDivElement | null;
+}>;
+
+type FiltRs = Readonly<{
+    shell: HTMLDivElement;
+    body: HTMLDivElement;
+    btn: HTMLButtonElement;
+    hdr: HTMLElement;
+}>;
+
+type AthMenuRs = Readonly<{
+    root: HTMLElement;
+    body: HTMLDivElement;
+    btn: HTMLButtonElement;
+    hdr: HTMLElement;
 }>;
 
 type RssItm = Readonly<{
@@ -31,6 +53,7 @@ type RssItm = Readonly<{
     pubDate: string;
     author: string;
     guid: string;
+    postId: string;
 }>;
 
 type Pst = Readonly<{
@@ -40,17 +63,72 @@ type Pst = Readonly<{
     pub: string;
     ath: string;
     gid: string;
+    pid: string;
     dt: Date;
     yr: number;
     mo: number;
     dy: number;
 }>;
 
+type AthOpt = Readonly<{
+    ath: string;
+    cnt: number;
+    on: boolean;
+}>;
+
+type AthFilterCfg = Readonly<{
+    defaultUnselect: ReadonlySet<string>;
+}>;
+
+type FiltSumKnd = "date" | "author";
+
+type FiltSumPill = Readonly<{
+    key: string;
+    kind: FiltSumKnd;
+    label: string;
+    lvl?: "yr" | "mo" | "dy";
+    val?: number;
+    author?: string;
+}>;
+
+type PillSnap = Readonly<{
+    key: string;
+    rect: DOMRect;
+    el: HTMLElement;
+}>;
+
+const RSS_POST_PARAM = "post";
+const RSS_POST_SHARE_ID_LENGTH = 16;
+
+const RSS_FILT_CHILD_PILL_SEL = [
+    ".cal .cal__selPill[data-cal-lvl][data-cal-val]",
+    ".rss-author-filter__btn[data-rss-author][data-on='1']"
+].join(",");
+
+const RSS_FILT_SUM_PILL_SEL =
+    ".rss-filters__summaryPill[data-rss-filter-summary-key]";
+
+const authorFilterCfg: AthFilterCfg = {
+    defaultUnselect: new Set<string>([
+        "autoKitty"
+    ])
+};
+
 let blogClstr: Clusteriser | null = null;
 let calCtl: CalCtrl | null = null;
 let allPsts: readonly Pst[] = [];
+let authorOff: Set<string> = new Set<string>(authorFilterCfg.defaultUnselect);
+let pendingRevealPostRefs: readonly string[] = [];
+let athMenuOpen = false;
+
+let curCalSel: CalSel = {
+    yrs: new Set<number>(),
+    mos: new Set<number>(),
+    dys: new Set<number>()
+};
 
 /**
+ * blog page maybe.
  * @returns {boolean}
  */
 function isBlogPth(): boolean {
@@ -58,6 +136,7 @@ function isBlogPth(): boolean {
 }
 
 /**
+ * layout nudge, kinda blunt.
  * @returns {void}
  */
 function aplyBlogLyt(): void {
@@ -74,6 +153,1098 @@ function aplyBlogLyt(): void {
 }
 
 /**
+ * Makes the code label less ugly.
+ * @param {string} lang
+ * @returns {string}
+ */
+function fmtCodeLang(lang: string): string {
+    const clean = lang.trim();
+
+    if (clean.length === 0) return "TEXT";
+    if (clean.toLowerCase() === "ts") return "TYPESCRIPT";
+    if (clean.toLowerCase() === "tsx") return "TSX";
+    if (clean.toLowerCase() === "js") return "JAVASCRIPT";
+    if (clean.toLowerCase() === "py") return "PYTHON";
+
+    return clean.toUpperCase();
+}
+
+/**
+ * Sniffs lang from cls, messy but fine.
+ * @param {HTMLElement} code
+ * @returns {string}
+ */
+function getCodeLang(code: HTMLElement): string {
+    const cls = Array.from(code.classList).find((name) => {
+        return name.startsWith("language-") || name.startsWith("lang-");
+    });
+
+    const raw = cls?.replace(/^language-/, "").replace(/^lang-/, "").trim();
+
+    return raw && raw.length > 0 ? raw : "text";
+}
+
+/**
+ * Tiny text bit.
+ * @param {string} lang
+ * @returns {HTMLSpanElement}
+ */
+function mkLangTxt(lang: string): HTMLSpanElement {
+    const text = document.createElement("span");
+
+    text.className = "rss-code-lang__text";
+    text.textContent = `\u00A0${fmtCodeLang(lang)}`;
+
+    return text;
+}
+
+/**
+ * Resets lang label, prob overkill.
+ * @param {HTMLSpanElement} label
+ * @param {string} lang
+ * @returns {void}
+ */
+function setLangLblTxt(label: HTMLSpanElement, lang: string): void {
+    const text = label.querySelector(".rss-code-lang__text");
+
+    if (text instanceof HTMLSpanElement) {
+        text.textContent = `\u00A0${fmtCodeLang(lang)}`;
+        return;
+    }
+
+    label.replaceChildren(
+        render2Frag(icons.MakeCodeIcon()),
+        mkLangTxt(lang)
+    );
+}
+
+/**
+ * Back to copy state.
+ * @param {HTMLButtonElement} btn
+ * @returns {void}
+ */
+function setCpyIco(btn: HTMLButtonElement): void {
+    btn.replaceChildren(render2Frag(icons.MakeCopyIcon()));
+    btn.classList.remove("rss-code-copy--done", "rss-code-copy--failed");
+    btn.setAttribute("aria-label", "Copy code to clipboard");
+    btn.title = "Copy code";
+}
+
+/**
+ * Happy icon.
+ * @param {HTMLButtonElement} btn
+ * @returns {void}
+ */
+function setOkIco(btn: HTMLButtonElement): void {
+    btn.replaceChildren(render2Frag(icons.MakeCheckIcon()));
+    btn.classList.add("rss-code-copy--done");
+    btn.classList.remove("rss-code-copy--failed");
+    btn.setAttribute("aria-label", "Copied to clipboard");
+    btn.title = "Copied";
+}
+
+/**
+ * Sad copy icon thing.
+ * @param {HTMLButtonElement} btn
+ * @returns {void}
+ */
+function setBadIco(btn: HTMLButtonElement): void {
+    btn.replaceChildren(render2Frag(icons.MakeCopyIcon()));
+    btn.classList.add("rss-code-copy--failed");
+    btn.classList.remove("rss-code-copy--done");
+    btn.setAttribute("aria-label", "Copy failed");
+    btn.title = "Copy failed";
+}
+
+/**
+ * Clipboard, hopefully.
+ * @param {string} text
+ * @returns {Promise<boolean>}
+ */
+async function cpyTxt(text: string): Promise<boolean> {
+    if (!navigator.clipboard) return false;
+
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Little copied flash.
+ * @param {HTMLButtonElement} btn
+ * @param {boolean} ok
+ * @returns {void}
+ */
+function setCpyDone(btn: HTMLButtonElement, ok: boolean): void {
+    if (ok) {
+        setOkIco(btn);
+    } else {
+        setBadIco(btn);
+    }
+
+    window.setTimeout(() => {
+        btn.disabled = false;
+        setCpyIco(btn);
+    }, 1200);
+}
+
+/**
+ * Button for stealing code.
+ * @param {HTMLElement} code
+ * @returns {HTMLButtonElement}
+ */
+function mkCpyBtn(code: HTMLElement): HTMLButtonElement {
+    const btn = document.createElement("button");
+
+    btn.type = "button";
+    btn.className = "rss-code-copy";
+    setCpyIco(btn);
+
+    btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        btn.disabled = true;
+
+        void cpyTxt(code.textContent ?? "").then((ok) => {
+            setCpyDone(btn, ok);
+        });
+    });
+
+    return btn;
+}
+
+/**
+ * Lang badge thing.
+ * @param {string} lang
+ * @returns {HTMLSpanElement}
+ */
+function mkLangLbl(lang: string): HTMLSpanElement {
+    const label = document.createElement("span");
+
+    label.className = "rss-code-lang";
+    setLangLblTxt(label, lang);
+
+    return label;
+}
+
+/**
+ * Top bit for code blocks.
+ * @param {HTMLElement} code
+ * @returns {HTMLDivElement}
+ */
+function mkCodeBar(code: HTMLElement): HTMLDivElement {
+    const toolbar = document.createElement("div");
+
+    toolbar.className = "rss-code-toolbar";
+    toolbar.append(mkLangLbl(getCodeLang(code)), mkCpyBtn(code));
+
+    return toolbar;
+}
+
+/**
+ * Fixes old bar text.
+ * @param {HTMLDivElement} frame
+ * @param {HTMLElement} code
+ * @returns {void}
+ */
+function updCodeBar(frame: HTMLDivElement, code: HTMLElement): void {
+    const label = frame.querySelector(".rss-code-lang");
+    if (!(label instanceof HTMLSpanElement)) return;
+
+    setLangLblTxt(label, getCodeLang(code));
+}
+
+/**
+ * Do not let post eat this stuff.
+ * @param {HTMLElement} root
+ * @returns {void}
+ */
+function stopPstEvts(root: HTMLElement): void {
+    if (root.dataset.rssStopPropagationWired === "1") return;
+
+    root.dataset.rssStopPropagationWired = "1";
+
+    const stop = (ev: Event): void => {
+        ev.stopPropagation();
+    };
+
+    root.addEventListener("click", stop);
+    root.addEventListener("mousedown", stop);
+    root.addEventListener("pointerdown", stop);
+    root.addEventListener("touchstart", stop);
+    root.addEventListener("keydown", stop);
+}
+
+/**
+ * Wraps code if needed.
+ * @param {HTMLPreElement} pre
+ * @param {HTMLElement} code
+ * @returns {void}
+ */
+function ensCodeTls(pre: HTMLPreElement, code: HTMLElement): void {
+    const parent = pre.parentElement;
+    if (!parent) return;
+
+    const currentFrame = pre.closest(".rss-code-frame");
+    if (currentFrame instanceof HTMLDivElement) {
+        updCodeBar(currentFrame, code);
+        stopPstEvts(currentFrame);
+        return;
+    }
+
+    const frame = document.createElement("div");
+
+    frame.className = "rss-code-frame";
+    frame.dataset.language = getCodeLang(code);
+
+    parent.insertBefore(frame, pre);
+    frame.append(mkCodeBar(code), pre);
+
+    stopPstEvts(frame);
+}
+
+/**
+ * Highlight once, maybe.
+ * @param {HTMLElement} code
+ * @returns {void}
+ */
+function hglCode(code: HTMLElement): void {
+    if (code.dataset.rssHighlighted === "1") return;
+    if (typeof hljs === "undefined") return;
+
+    code.dataset.rssHighlighted = "1";
+    hljs.highlightElement(code);
+}
+
+/**
+ * Post code bits.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function hglPstCode(pstDiv: HTMLElement): void {
+    Array.from(pstDiv.querySelectorAll<HTMLElement>("pre code")).forEach((code) => {
+        const pre = code.closest("pre");
+        if (!(pre instanceof HTMLPreElement)) return;
+
+        ensCodeTls(pre, code);
+        hglCode(code);
+    });
+}
+
+/**
+ * Render helper for shared collapse wiring.
+ * @param {boolean} open
+ * @returns {DocumentFragment}
+ */
+function renderTglIco(open: boolean): DocumentFragment {
+    return render2Frag(open ? icons.MakeDecreaseFontIcon() : icons.MakeIncreaseFontIcon());
+}
+
+/**
+ * Plus/minus thing, yep.
+ * @param {HTMLButtonElement} btn
+ * @param {boolean} opn
+ * @returns {void}
+ */
+function setFiltIco(btn: HTMLButtonElement, opn: boolean): void {
+    btn.replaceChildren(renderTglIco(opn));
+    btn.setAttribute("aria-expanded", opn ? "true" : "false");
+    btn.setAttribute("aria-label", opn ? "Collapse filters" : "Expand filters");
+    btn.title = opn ? "Collapse filters" : "Expand filters";
+}
+
+/**
+ * Same toy, different cave.
+ * @param {HTMLButtonElement} btn
+ * @param {boolean} opn
+ * @returns {void}
+ */
+function setAthIco(btn: HTMLButtonElement, opn: boolean): void {
+    btn.replaceChildren(renderTglIco(opn));
+    btn.setAttribute("aria-expanded", opn ? "true" : "false");
+    btn.setAttribute("aria-label", opn ? "Collapse author filters" : "Expand author filters");
+    btn.title = opn ? "Collapse author filters" : "Expand author filters";
+}
+
+/**
+ * Silly round filter btn.
+ * @returns {HTMLButtonElement}
+ */
+function mkFiltBtn(): HTMLButtonElement {
+    const btn = document.createElement("button");
+
+    btn.type = "button";
+    btn.className = "rss-filters__toggle kc-round-icon-btn kc-click-header__control";
+    btn.dataset.rssFiltersToggle = "1";
+    btn.setAttribute("aria-controls", "kc-blog-filters-body");
+    setFiltIco(btn, false);
+
+    return btn;
+}
+
+/**
+ * Clear all thing.
+ * @returns {HTMLButtonElement}
+ */
+function mkFiltClearBtn(): HTMLButtonElement {
+    const btn = document.createElement("button");
+
+    btn.type = "button";
+    btn.className = "rss-filters__clear kc-click-header__control";
+    btn.dataset.rssFiltersClearAll = "1";
+    btn.textContent = "Clear all";
+    btn.hidden = true;
+    btn.setAttribute("aria-hidden", "true");
+    btn.title = "Clear all filters";
+
+    return btn;
+}
+
+/**
+ * Tiny month.
+ * @param {number} mo
+ * @returns {string}
+ */
+function fmtSumMo(mo: number): string {
+    return new Date(2000, mo - 1, 1).toLocaleString("en-GB", { month: "short" });
+}
+
+/**
+ * Date key thing.
+ * @param {"yr" | "mo" | "dy"} lvl
+ * @param {number} val
+ * @returns {string}
+ */
+function mkDtPillKey(lvl: "yr" | "mo" | "dy", val: number): string {
+    return `date:${lvl}:${val}`;
+}
+
+/**
+ * Author key thing.
+ * @param {string} ath
+ * @returns {string}
+ */
+function mkAthPillKey(ath: string): string {
+    return `author:${ath}`;
+}
+
+/**
+ * Flattens the sets.
+ * @param {CalSel} sel
+ * @returns {Readonly<{ yrs: number[]; mos: number[]; dys: number[] }>}
+ */
+function flatSel(sel: CalSel): Readonly<{ yrs: number[]; mos: number[]; dys: number[] }> {
+    return {
+        yrs: Array.from(sel.yrs),
+        mos: Array.from(sel.mos),
+        dys: Array.from(sel.dys)
+    };
+}
+
+/**
+ * Date set thing.
+ * @param {Iterable<number>} yrs
+ * @param {Iterable<number>} mos
+ * @param {Iterable<number>} dys
+ * @returns {CalSel}
+ */
+function mkCalSel(
+    yrs: Iterable<number>,
+    mos: Iterable<number>,
+    dys: Iterable<number>
+): CalSel {
+    return {
+        yrs: new Set<number>(yrs),
+        mos: new Set<number>(mos),
+        dys: new Set<number>(dys)
+    };
+}
+
+/**
+ * Authors on, for the tiny row.
+ * @returns {readonly string[]}
+ */
+function selAthsForSum(): readonly string[] {
+    return mkAthOpts(datePsts(allPsts, curCalSel), authorOff)
+        .filter((opt) => opt.on)
+        .map((opt) => opt.ath);
+}
+
+/**
+ * Tiny row pills.
+ * @returns {readonly FiltSumPill[]}
+ */
+function mkFiltSumPills(): readonly FiltSumPill[] {
+    const yrs = Array.from(curCalSel.yrs).sort((a, b) => b - a);
+    const mos = Array.from(curCalSel.mos).sort((a, b) => a - b);
+    const dys = Array.from(curCalSel.dys).sort((a, b) => a - b);
+    const aths = selAthsForSum();
+
+    return [
+        ...yrs.map((yr) => ({
+            key: mkDtPillKey("yr", yr),
+            kind: "date" as const,
+            lvl: "yr" as const,
+            val: yr,
+            label: String(yr)
+        })),
+        ...mos.map((mo) => ({
+            key: mkDtPillKey("mo", mo),
+            kind: "date" as const,
+            lvl: "mo" as const,
+            val: mo,
+            label: fmtSumMo(mo)
+        })),
+        ...dys.map((dy) => ({
+            key: mkDtPillKey("dy", dy),
+            kind: "date" as const,
+            lvl: "dy" as const,
+            val: dy,
+            label: String(dy)
+        })),
+        ...aths.map((ath) => ({
+            key: mkAthPillKey(ath),
+            kind: "author" as const,
+            author: ath,
+            label: ath
+        }))
+    ];
+}
+
+/**
+ * Tiny row btn.
+ * @param {FiltSumPill} pill
+ * @returns {HTMLButtonElement}
+ */
+function mkFiltSumPillBtn(pill: FiltSumPill): HTMLButtonElement {
+    const btn = document.createElement("button");
+    const value = document.createElement("span");
+
+    btn.type = "button";
+    btn.className = "cal__selPill rss-filters__summaryPill kc-click-header__control";
+    btn.dataset.rssFilterSummaryPill = "1";
+    btn.dataset.rssFilterSummaryKey = pill.key;
+    btn.dataset.rssFilterSummaryKind = pill.kind;
+    btn.title = pill.kind === "author"
+        ? `Remove author ${pill.label}`
+        : `Remove ${pill.label}`;
+
+    if (pill.kind === "date" && pill.lvl && pill.val !== undefined) {
+        btn.dataset.calLvl = pill.lvl;
+        btn.dataset.calVal = String(pill.val);
+    }
+
+    if (pill.kind === "author" && pill.author) {
+        btn.dataset.rssFilterSummaryAuthor = pill.author;
+    }
+
+    value.className = "cal__selV";
+    value.textContent = pill.label;
+
+    btn.appendChild(value);
+
+    return btn;
+}
+
+/**
+ * Summary cave.
+ * @param {HTMLDivElement} shell
+ * @returns {HTMLDivElement | null}
+ */
+function getFiltSumHost(shell: HTMLDivElement): HTMLDivElement | null {
+    const host = shell.querySelector("[data-rss-filters-summary]");
+
+    return host instanceof HTMLDivElement ? host : null;
+}
+
+/**
+ * Clear btn lookup.
+ * @param {HTMLDivElement} shell
+ * @returns {HTMLButtonElement | null}
+ */
+function getFiltClrBtn(shell: HTMLDivElement): HTMLButtonElement | null {
+    const btn = shell.querySelector("[data-rss-filters-clear-all]");
+
+    return btn instanceof HTMLButtonElement ? btn : null;
+}
+
+/**
+ * Summary row sync.
+ * @param {HTMLDivElement} shell
+ * @param {boolean} collapsed
+ * @param {boolean} vis
+ * @returns {void}
+ */
+function syncFiltSum(
+    shell: HTMLDivElement,
+    collapsed: boolean = shell.dataset.rssFiltersOpen !== "1",
+    vis: boolean = true
+): void {
+    const host = getFiltSumHost(shell);
+    const clearBtn = getFiltClrBtn(shell);
+
+    if (!host || !clearBtn) return;
+
+    const pills = collapsed ? mkFiltSumPills() : [];
+    const hasPills = pills.length > 0;
+    const pending = hasPills && !vis;
+
+    host.replaceChildren(...pills.map((pill) => mkFiltSumPillBtn(pill)));
+    host.hidden = !hasPills;
+    host.setAttribute("aria-hidden", hasPills && vis ? "false" : "true");
+
+    clearBtn.hidden = !hasPills;
+    clearBtn.disabled = pending;
+    clearBtn.setAttribute("aria-hidden", hasPills && vis ? "false" : "true");
+
+    shell.dataset.rssFiltersHasSummary = hasPills ? "1" : "0";
+    shell.dataset.rssFiltersSummaryPending = pending ? "1" : "0";
+}
+
+/**
+ * Current summary sync.
+ * @returns {void}
+ */
+function syncCurFiltSum(): void {
+    const shell = document.getElementById("kc-blog-filters");
+
+    if (!(shell instanceof HTMLDivElement)) return;
+
+    syncFiltSum(shell);
+}
+
+/**
+ * Show the hidden row.
+ * @param {HTMLDivElement} shell
+ * @returns {void}
+ */
+function rvlFiltSum(shell: HTMLDivElement): void {
+    const host = getFiltSumHost(shell);
+    const clearBtn = getFiltClrBtn(shell);
+    const hasPills = shell.dataset.rssFiltersHasSummary === "1";
+
+    shell.dataset.rssFiltersSummaryPending = "0";
+
+    if (!host || !clearBtn || !hasPills) return;
+
+    host.setAttribute("aria-hidden", "false");
+    clearBtn.disabled = false;
+    clearBtn.setAttribute("aria-hidden", "false");
+}
+
+/**
+ * Fly key, ish.
+ * @param {HTMLElement} el
+ * @returns {string | null}
+ */
+function getPillFlyKey(el: HTMLElement): string | null {
+    const sumKey = el.dataset.rssFilterSummaryKey;
+    if (sumKey) return sumKey;
+
+    const ath = el.dataset.rssAuthor;
+    if (ath) return mkAthPillKey(ath);
+
+    const lvl = el.dataset.calLvl as "yr" | "mo" | "dy" | undefined;
+    const rawVal = el.dataset.calVal ?? "";
+    const val = Number(rawVal);
+
+    if (!lvl || Number.isNaN(val)) return null;
+
+    return mkDtPillKey(lvl, val);
+}
+
+/**
+ * Pill spots.
+ * @param {ParentNode} root
+ * @param {string} sel
+ * @returns {Map<string, PillSnap>}
+ */
+function colPillRects(root: ParentNode, sel: string): Map<string, PillSnap> {
+    const snaps = new Map<string, PillSnap>();
+
+    Array.from(root.querySelectorAll<HTMLElement>(sel)).forEach((el) => {
+        const key = getPillFlyKey(el);
+        if (!key || snaps.has(key)) return;
+
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+
+        snaps.set(key, {
+            key,
+            rect,
+            el
+        });
+    });
+
+    return snaps;
+}
+
+/**
+ * Css clock thing.
+ * @param {string} raw
+ * @param {number} fallback
+ * @returns {number}
+ */
+function cssMs(raw: string, fallback: number): number {
+    const value = raw.trim();
+
+    if (value.endsWith("ms")) {
+        const ms = Number.parseFloat(value);
+        return Number.isFinite(ms) ? ms : fallback;
+    }
+
+    if (value.endsWith("s")) {
+        const sec = Number.parseFloat(value);
+        return Number.isFinite(sec) ? sec * 1000 : fallback;
+    }
+
+    return fallback;
+}
+
+/**
+ * Flight timeout.
+ * @returns {number}
+ */
+function pillFlyMs(): number {
+    const styles = window.getComputedStyle(document.documentElement);
+    const duration = styles.getPropertyValue("--kc-pill-migrate-duration");
+
+    return cssMs(duration, 620) + 160;
+}
+
+/**
+ * Little flying ghosts.
+ * @param {ReadonlyMap<string, PillSnap>} from
+ * @param {ReadonlyMap<string, PillSnap>} to
+ * @returns {Promise<void>}
+ */
+async function flyPills(
+    from: ReadonlyMap<string, PillSnap>,
+    to: ReadonlyMap<string, PillSnap>
+): Promise<void> {
+    const flights: Promise<void>[] = [];
+    const timeoutMs = pillFlyMs();
+
+    from.forEach((snap, key) => {
+        const target = to.get(key);
+        if (!target) return;
+
+        const ghost = target.el.cloneNode(true);
+        if (!(ghost instanceof HTMLElement)) return;
+
+        ghost.classList.add("kc-pill-migrate-fly");
+        ghost.removeAttribute("id");
+
+        ghost.style.left = `${snap.rect.left}px`;
+        ghost.style.top = `${snap.rect.top}px`;
+        ghost.style.width = `${snap.rect.width}px`;
+        ghost.style.height = `${snap.rect.height}px`;
+        ghost.style.setProperty("--kc-pill-fly-x", `${target.rect.left - snap.rect.left}px`);
+        ghost.style.setProperty("--kc-pill-fly-y", `${target.rect.top - snap.rect.top}px`);
+
+        const flight = new Promise<void>((resolve) => {
+            let done = false;
+
+            const finish = (): void => {
+                if (done) return;
+
+                done = true;
+                window.clearTimeout(timer);
+                ghost.remove();
+                resolve();
+            };
+
+            const timer = window.setTimeout(finish, timeoutMs);
+
+            ghost.addEventListener("animationend", finish, { once: true });
+            ghost.addEventListener("animationcancel", finish, { once: true });
+
+            document.body.appendChild(ghost);
+        });
+
+        flights.push(flight);
+    });
+
+    return Promise.all(flights).then(() => undefined);
+}
+
+/**
+ * Drops a date pill.
+ * @param {"yr" | "mo" | "dy"} lvl
+ * @param {number} val
+ * @returns {void}
+ */
+function rmSumDtPill(lvl: "yr" | "mo" | "dy", val: number): void {
+    const cur = flatSel(curCalSel);
+    const next = {
+        yrs: lvl === "yr" ? cur.yrs.filter((yr) => yr !== val) : cur.yrs,
+        mos: lvl === "mo" ? cur.mos.filter((mo) => mo !== val) : cur.mos,
+        dys: lvl === "dy" ? cur.dys.filter((dy) => dy !== val) : cur.dys
+    };
+
+    if (calCtl) {
+        calCtl.setSel(next);
+        syncCurFiltSum();
+        return;
+    }
+
+    curCalSel = mkCalSel(next.yrs, next.mos, next.dys);
+    repaintFiltersAndBlog();
+}
+
+/**
+ * Repaint the filter mess.
+ * @returns {void}
+ */
+function repaintFiltersAndBlog(): void {
+    const rs = ensBlogWrap();
+    const authorSlot = document.getElementById("kc-blog-author-filter");
+
+    if (authorSlot instanceof HTMLDivElement) {
+        rndAthFilt(authorSlot, allPsts, curCalSel);
+    }
+
+    if (rs?.box) {
+        rndBlog(rs.box, allPsts, curCalSel, authorOff);
+    }
+
+    syncCurFiltSum();
+    afterDrawerMove();
+}
+
+/**
+ * Summary pill click.
+ * @param {HTMLElement} pill
+ * @returns {void}
+ */
+function hdlSumPillClick(pill: HTMLElement): void {
+    const kind = pill.dataset.rssFilterSummaryKind as FiltSumKnd | undefined;
+
+    if (kind === "author") {
+        const ath = pill.dataset.rssFilterSummaryAuthor;
+        if (!ath) return;
+
+        authorOff.add(ath);
+        repaintFiltersAndBlog();
+        return;
+    }
+
+    if (kind !== "date") return;
+
+    const lvl = pill.dataset.calLvl as "yr" | "mo" | "dy" | undefined;
+    const val = Number(pill.dataset.calVal ?? "");
+
+    if (!lvl || Number.isNaN(val)) return;
+
+    rmSumDtPill(lvl, val);
+}
+
+/**
+ * Nukes the tiny row.
+ * @returns {void}
+ */
+function clrAllSumFilt(): void {
+    authorOff = new Set<string>(pstAths(allPsts));
+
+    if (calCtl) {
+        calCtl.setSel({
+            yrs: [],
+            mos: [],
+            dys: []
+        });
+        syncCurFiltSum();
+        return;
+    }
+
+    curCalSel = mkCalSel([], [], []);
+    repaintFiltersAndBlog();
+}
+
+/**
+ * Tiny shell lookup.
+ * @param {HTMLDivElement} shell
+ * @returns {FiltRs | null}
+ */
+function getFiltRs(shell: HTMLDivElement): FiltRs | null {
+    const body = shell.querySelector(".rss-filters__body");
+    const btn = shell.querySelector("[data-rss-filters-toggle]");
+    const hdr = shell.querySelector("[data-rss-filters-header]");
+
+    if (!(body instanceof HTMLDivElement)) return null;
+    if (!(btn instanceof HTMLButtonElement)) return null;
+    if (!(hdr instanceof HTMLElement)) return null;
+
+    return {
+        shell,
+        body,
+        btn,
+        hdr
+    };
+}
+
+/**
+ * Tiny author lookup, because yes.
+ * @param {HTMLElement} root
+ * @returns {AthMenuRs | null}
+ */
+function getAthRs(root: HTMLElement): AthMenuRs | null {
+    const body = root.querySelector(".rss-author-filter__body");
+    const btn = root.querySelector("[data-rss-author-menu-tgl]");
+    const hdr = root.querySelector("[data-rss-author-menu-hdr]");
+
+    if (!(body instanceof HTMLDivElement)) return null;
+    if (!(btn instanceof HTMLButtonElement)) return null;
+    if (!(hdr instanceof HTMLElement)) return null;
+
+    return {
+        root,
+        body,
+        btn,
+        hdr
+    };
+}
+
+/**
+ * Layout bump after drawers move.
+ * @returns {void}
+ */
+function afterDrawerMove(): void {
+    window.requestAnimationFrame(() => {
+        aplyBlogLyt();
+        adjScrHgt();
+    });
+}
+
+/**
+ * Opens the filter cave, or shuts it.
+ * @param {HTMLDivElement} shell
+ * @param {boolean} opn
+ * @returns {void}
+ */
+function setFiltOpn(shell: HTMLDivElement, opn: boolean): void {
+    const rs = getFiltRs(shell);
+    if (!rs) return;
+    if (rs.shell.dataset.rssFiltersMigrating === "1") return;
+
+    rs.shell.dataset.rssFiltersMigrating = "1";
+
+    const from = colPillRects(
+        rs.shell,
+        opn ? RSS_FILT_SUM_PILL_SEL : RSS_FILT_CHILD_PILL_SEL
+    );
+
+    rs.shell.dataset.rssFiltersChildPending = "1";
+
+    if (!opn) {
+        syncFiltSum(rs.shell, true, false);
+    }
+
+    helpers.animateCollapsibleOpen({
+        root: rs.shell,
+        body: rs.body,
+        header: rs.hdr,
+        toggle: rs.btn,
+        open: opn,
+        renderIcon: renderTglIco,
+        rootDatasetKey: "rssFiltersOpen",
+        collapseLabel: "Collapse filters",
+        expandLabel: "Expand filters",
+        collapseTitle: "Collapse filters",
+        expandTitle: "Expand filters",
+        onLayout: afterDrawerMove
+    });
+
+    window.requestAnimationFrame(() => {
+        const to = colPillRects(
+            rs.shell,
+            opn ? RSS_FILT_CHILD_PILL_SEL : RSS_FILT_SUM_PILL_SEL
+        );
+
+        const done = flyPills(from, to);
+
+        if (opn) {
+            syncFiltSum(rs.shell, false);
+        }
+
+        void done.then(() => {
+            if (!opn) {
+                rvlFiltSum(rs.shell);
+            }
+
+            rs.shell.dataset.rssFiltersChildPending = "0";
+            rs.shell.dataset.rssFiltersMigrating = "0";
+            afterDrawerMove();
+        });
+    });
+}
+
+/**
+ * Opens the author drawer thing.
+ * @param {HTMLElement} root
+ * @param {boolean} opn
+ * @returns {void}
+ */
+function setAthOpn(root: HTMLElement, opn: boolean): void {
+    const rs = getAthRs(root);
+    if (!rs) return;
+
+    athMenuOpen = opn;
+
+    helpers.animateCollapsibleOpen({
+        root: rs.root,
+        body: rs.body,
+        header: rs.hdr,
+        toggle: rs.btn,
+        open: opn,
+        renderIcon: renderTglIco,
+        rootDatasetKey: "rssAuthorOpen",
+        collapseLabel: "Collapse author filters",
+        expandLabel: "Expand author filters",
+        collapseTitle: "Collapse author filters",
+        expandTitle: "Expand author filters",
+        onLayout: afterDrawerMove
+    });
+}
+
+/**
+ * Wire the wee filter drawer.
+ * @param {HTMLDivElement} shell
+ * @returns {void}
+ */
+function wireFilt(shell: HTMLDivElement): void {
+    if (shell.dataset.rssFiltersWired === "1") return;
+
+    const rs = getFiltRs(shell);
+    if (!rs) return;
+
+    shell.dataset.rssFiltersWired = "1";
+
+    rs.btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        setFiltOpn(shell, shell.dataset.rssFiltersOpen !== "1");
+    });
+
+    rs.hdr.addEventListener("click", (ev) => {
+        const trg = ev.target;
+        if (!(trg instanceof Element)) return;
+
+        const sumPill = trg.closest<HTMLElement>("[data-rss-filter-summary-pill]");
+        if (sumPill) {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            hdlSumPillClick(sumPill);
+            return;
+        }
+
+        const clearBtn = trg.closest<HTMLElement>("[data-rss-filters-clear-all]");
+        if (clearBtn) {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            clrAllSumFilt();
+            return;
+        }
+
+        if (trg.closest("[data-rss-filters-summary]")) return;
+        if (helpers.eventHasBlockedControl(ev)) return;
+
+        setFiltOpn(shell, shell.dataset.rssFiltersOpen !== "1");
+    });
+
+    rs.hdr.addEventListener("keydown", (ev) => {
+        if (ev.target !== rs.hdr) return;
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+
+        ev.preventDefault();
+        setFiltOpn(shell, shell.dataset.rssFiltersOpen !== "1");
+    });
+
+    syncFiltSum(shell);
+}
+
+/**
+ * Makes the filter sandwich.
+ * @param {HTMLDivElement} cal
+ * @returns {HTMLDivElement}
+ */
+function ensFiltShell(cal: HTMLDivElement): HTMLDivElement {
+    const current = cal.closest(".rss-filters");
+
+    if (current instanceof HTMLDivElement) {
+        const inner = current.querySelector(".rss-filters__body-inner");
+
+        if (inner instanceof HTMLDivElement) {
+            if (!inner.contains(cal)) inner.prepend(cal);
+
+            wireFilt(current);
+            syncFiltSum(current);
+            return inner;
+        }
+    }
+
+    const parent = cal.parentElement;
+    if (!parent) return cal;
+
+    const shell = document.createElement("div");
+    const hdr = document.createElement("div");
+    const ttl = document.createElement("h3");
+    const summary = document.createElement("div");
+    const actions = document.createElement("div");
+    const body = document.createElement("div");
+    const inner = document.createElement("div");
+    const clearBtn = mkFiltClearBtn();
+    const btn = mkFiltBtn();
+
+    shell.id = "kc-blog-filters";
+    shell.className = "rss-filters";
+    shell.dataset.rssFiltersOpen = "0";
+
+    hdr.className = "rss-filters__hdr kc-click-header";
+    hdr.dataset.rssFiltersHeader = "1";
+    hdr.setAttribute("role", "button");
+    hdr.setAttribute("tabindex", "0");
+    hdr.setAttribute("aria-expanded", "false");
+    hdr.setAttribute("title", "Expand filters");
+
+    ttl.className = "rss-filters__ttl";
+    ttl.textContent = "Filters: ";
+
+    summary.className = "rss-filters__summary kc-click-header__control";
+    summary.dataset.rssFiltersSummary = "1";
+    summary.hidden = true;
+    summary.setAttribute("aria-hidden", "true");
+    summary.setAttribute("aria-label", "Selected filters");
+
+    actions.className = "rss-filters__hdrActions kc-click-header__actions";
+    actions.append(clearBtn, btn);
+
+    body.id = "kc-blog-filters-body";
+    body.className = "rss-filters__body";
+    body.setAttribute("aria-hidden", "true");
+
+    inner.className = "rss-filters__body-inner";
+
+    hdr.append(ttl, summary, actions);
+    body.appendChild(inner);
+
+    parent.insertBefore(shell, cal);
+    inner.appendChild(cal);
+    shell.append(hdr, body);
+
+    wireFilt(shell);
+
+    return inner;
+}
+
+/**
+ * Cal slot if it is there.
  * @returns {HTMLDivElement | null}
  */
 function ensCalSlot(): HTMLDivElement | null {
@@ -82,6 +1253,7 @@ function ensCalSlot(): HTMLDivElement | null {
 }
 
 /**
+ * Finds/makes the blog shell, fragile-ish.
  * @returns {WrapRs | null}
  */
 function ensBlogWrap(): WrapRs | null {
@@ -120,6 +1292,7 @@ function ensBlogWrap(): WrapRs | null {
             if (chd === scr) return;
             if (!(chd instanceof Element)) return;
             if (!chd.classList.contains("blog-container")) return;
+
             wrap.removeChild(chd);
         });
 
@@ -142,6 +1315,7 @@ function ensBlogWrap(): WrapRs | null {
 }
 
 /**
+ * Weird scroll height fix.
  * @returns {void}
  */
 function adjScrHgt(): void {
@@ -160,6 +1334,7 @@ function adjScrHgt(): void {
             fstIx = i;
             continue;
         }
+
         break;
     }
 
@@ -171,6 +1346,87 @@ function adjScrHgt(): void {
 }
 
 /**
+ * Opened content needs its number again.
+ * @param {HTMLElement} content
+ * @returns {void}
+ */
+function calcExpHgt(content: HTMLElement): void {
+    if (!content.classList.contains("content-expanded")) return;
+
+    content.style.maxHeight = `${content.scrollHeight}px`;
+}
+
+/**
+ * Post height poke.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function calcPstHgt(pstDiv: HTMLElement): void {
+    const content = pstDiv.querySelector(".rss-post-content");
+    if (!(content instanceof HTMLElement)) return;
+
+    calcExpHgt(content);
+    adjScrHgt();
+}
+
+/**
+ * Do it twice because DOM is annoying.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function qPstHgt(pstDiv: HTMLElement): void {
+    window.requestAnimationFrame(() => {
+        calcPstHgt(pstDiv);
+
+        window.requestAnimationFrame(() => {
+            calcPstHgt(pstDiv);
+        });
+    });
+}
+
+/**
+ * Comment box changes mess with size.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function wireCmntLyt(pstDiv: HTMLElement): void {
+    if (pstDiv.dataset.rssCommentLayoutWired === "1") return;
+
+    const comments = pstDiv.querySelector(".rss-comments");
+    if (!(comments instanceof HTMLElement)) return;
+
+    pstDiv.dataset.rssCommentLayoutWired = "1";
+
+    comments.addEventListener("rss-comments-layout-change", () => {
+        qPstHgt(pstDiv);
+    });
+
+    const mutationTarget = comments.querySelector("[data-rss-comments-box]");
+
+    const observer = new MutationObserver(() => {
+        qPstHgt(pstDiv);
+    });
+
+    observer.observe(
+        mutationTarget instanceof HTMLElement ? mutationTarget : comments,
+        {
+            childList: true,
+            subtree: true,
+            characterData: true
+        }
+    );
+
+    if (!("ResizeObserver" in window)) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+        qPstHgt(pstDiv);
+    });
+
+    resizeObserver.observe(comments);
+}
+
+/**
+ * Moving scroll thing.
  * @returns {void}
  */
 function setDynScr(): void {
@@ -184,6 +1440,7 @@ function setDynScr(): void {
 }
 
 /**
+ * Old toggle height bump.
  * @returns {void}
  */
 function trgAdjOnTgl(): void {
@@ -200,6 +1457,90 @@ function trgAdjOnTgl(): void {
 }
 
 /**
+ * Hover class stuff.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function wireHvr(pstDiv: HTMLElement): void {
+    if (pstDiv.dataset.rssHoverStateWired === "1") return;
+
+    const tgl = pstDiv.querySelector(".rss-post-toggle");
+    if (!(tgl instanceof HTMLElement)) return;
+
+    pstDiv.dataset.rssHoverStateWired = "1";
+
+    tgl.addEventListener("pointerenter", () => {
+        pstDiv.classList.add("is-rss-toggle-hovered");
+    });
+
+    tgl.addEventListener("pointerleave", () => {
+        pstDiv.classList.remove("is-rss-toggle-hovered");
+    });
+
+    tgl.addEventListener("pointercancel", () => {
+        pstDiv.classList.remove("is-rss-toggle-hovered");
+    });
+
+    tgl.addEventListener("blur", () => {
+        pstDiv.classList.remove("is-rss-toggle-hovered");
+    });
+}
+
+/**
+ * Pulls txt from an rss child.
+ * @param {Element} root
+ * @param {string} tagName
+ * @returns {string}
+ */
+function rdItmTxt(root: Element, tagName: string): string {
+    const el = root.getElementsByTagName(tagName)[0];
+    return (el?.textContent ?? "").trim();
+}
+
+/**
+ * Last hash bit, that is it.
+ * @param {string} guid
+ * @returns {string}
+ */
+function pidFromGuid(guid: string): string {
+    const hashIx = guid.lastIndexOf("#");
+    if (hashIx < 0) return "";
+
+    return guid.slice(hashIx + 1).trim();
+}
+
+/**
+ * Id clean up.
+ * @param {string} postId
+ * @returns {string}
+ */
+function trimPid(postId: string): string {
+    return postId.trim().toLowerCase();
+}
+
+/**
+ * Small id for links.
+ * @param {string} postId
+ * @returns {string}
+ */
+function truncPid(postId: string): string {
+    const clean = trimPid(postId);
+    return clean.length > RSS_POST_SHARE_ID_LENGTH
+        ? clean.slice(0, RSS_POST_SHARE_ID_LENGTH)
+        : clean;
+}
+
+/**
+ * Hex-ish post id maybe.
+ * @param {string} value
+ * @returns {boolean}
+ */
+function isPidish(value: string): boolean {
+    return /^[a-f0-9]{16,64}$/i.test(value.trim());
+}
+
+/**
+ * Rss xml into plain-ish items.
  * @param {string} xml
  * @returns {RssItm[]}
  */
@@ -210,19 +1551,23 @@ function prsRss(xml: string): RssItm[] {
     return Array.from(doc.querySelectorAll("item")).map((itm) => {
         const cntTags = itm.getElementsByTagName("content:encoded");
         const cnt = (cntTags.length ? (cntTags[0]?.textContent ?? "") : "").trim();
+        const guid = rdItmTxt(itm, "guid");
+        const postId = rdItmTxt(itm, "postId") || pidFromGuid(guid);
 
         return {
-            title: (itm.querySelector("title")?.textContent ?? "").trim(),
-            description: (itm.querySelector("description")?.textContent ?? "").trim(),
+            title: rdItmTxt(itm, "title"),
+            description: rdItmTxt(itm, "description"),
             content: cnt,
-            pubDate: (itm.querySelector("pubDate")?.textContent ?? "").trim(),
-            author: ((itm.querySelector("author")?.textContent ?? "Kitty").trim() || "Kitty"),
-            guid: (itm.querySelector("guid")?.textContent ?? "").trim()
+            pubDate: rdItmTxt(itm, "pubDate"),
+            author: rdItmTxt(itm, "author") || "Kitty",
+            guid,
+            postId
         };
     });
 }
 
 /**
+ * Date or dead date.
  * @param {string} pub
  * @returns {Date}
  */
@@ -232,6 +1577,7 @@ function mkDt(pub: string): Date {
 }
 
 /**
+ * Rss to psts.
  * @param {RssItm[]} itms
  * @returns {Pst[]}
  */
@@ -247,6 +1593,7 @@ function mkPsts(itms: RssItm[]): Pst[] {
                 pub: itm.pubDate,
                 ath: itm.author,
                 gid: itm.guid,
+                pid: itm.postId,
                 dt,
                 yr: dt.getFullYear(),
                 mo: dt.getMonth() + 1,
@@ -257,6 +1604,7 @@ function mkPsts(itms: RssItm[]): Pst[] {
 }
 
 /**
+ * Date for ui.
  * @param {string} pub
  * @returns {string}
  */
@@ -272,8 +1620,348 @@ function fmtDt(pub: string): string {
 }
 
 /**
+ * Slug wrapper, yep.
  * @param {Pst} pst
- * @param {boolean} exp
+ * @returns {string}
+ */
+function mkPstSlug(pst: Pst): string {
+    return mkRssCommentSlug(pst);
+}
+
+/**
+ * Full pid thing.
+ * @param {Pst} pst
+ * @returns {string}
+ */
+function mkPstFullId(pst: Pst): string {
+    return trimPid(pst.pid);
+}
+
+/**
+ * Shorter ref, unless missing.
+ * @param {Pst} pst
+ * @returns {string}
+ */
+function mkPstShortId(pst: Pst): string {
+    const postId = mkPstFullId(pst);
+    return postId.length > 0 ? truncPid(postId) : mkPstSlug(pst);
+}
+
+/**
+ * Dom ref atm.
+ * @param {Pst} pst
+ * @returns {string}
+ */
+function mkPstDomRef(pst: Pst): string {
+    return mkPstShortId(pst);
+}
+
+/**
+ * Share url n stuff.
+ * @param {string} postRef
+ * @returns {string}
+ */
+function mkPstShareUrl(postRef: string): string {
+    return helpers.setUrlParam(RSS_POST_PARAM, postRef);
+}
+
+/**
+ * Url requested post, if any.
+ * @returns {string | null}
+ */
+function getReqPstRef(): string | null {
+    const postRef = helpers.getUrlParam(RSS_POST_PARAM);
+
+    return postRef && postRef.trim().length > 0 ? postRef.trim() : null;
+}
+
+/**
+ * Compares refs, bit fussy.
+ * @param {Pst} pst
+ * @param {string} postRef
+ * @returns {boolean}
+ */
+function mtchPstRef(pst: Pst, postRef: string): boolean {
+    const clean = postRef.trim();
+    if (clean.length === 0) return false;
+
+    const fullId = mkPstFullId(pst);
+    const shortId = mkPstShortId(pst);
+    const slug = mkPstSlug(pst);
+    const normalisedIdRef = trimPid(clean);
+
+    if (isPidish(clean)) {
+        return normalisedIdRef === fullId || normalisedIdRef === shortId;
+    }
+
+    return clean === slug || normalisedIdRef === fullId || normalisedIdRef === shortId;
+}
+
+/**
+ * Find posts from url/ref thing.
+ * @param {readonly Pst[]} psts
+ * @param {string | null} postRef
+ * @returns {readonly Pst[]}
+ */
+function findByPstRef(psts: readonly Pst[], postRef: string | null): readonly Pst[] {
+    if (!postRef) return [];
+
+    return psts.filter((pst) => mtchPstRef(pst, postRef));
+}
+
+/**
+ * Date selection from posts.
+ * @param {readonly Pst[]} psts
+ * @returns {CalSel}
+ */
+function mkPstsSel(psts: readonly Pst[]): CalSel {
+    return {
+        yrs: new Set<number>(psts.map((pst) => pst.yr)),
+        mos: new Set<number>(psts.map((pst) => pst.mo)),
+        dys: new Set<number>(psts.map((pst) => pst.dy))
+    };
+}
+
+/**
+ * Refs as set.
+ * @param {readonly Pst[]} psts
+ * @returns {ReadonlySet<string>}
+ */
+function mkPstsRefs(psts: readonly Pst[]): ReadonlySet<string> {
+    return new Set<string>(psts.map((pst) => mkPstDomRef(pst)));
+}
+
+/**
+ * Open the post, even if toggle is weird.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function opnPstEl(pstDiv: HTMLElement): void {
+    const tgl = pstDiv.querySelector(".rss-post-toggle");
+    const cnt = pstDiv.querySelector(".rss-post-content");
+
+    if (!(tgl instanceof HTMLElement)) return;
+    if (!(cnt instanceof HTMLElement)) return;
+
+    if (!cnt.classList.contains("content-expanded")) {
+        tgl.click();
+    }
+
+    if (!cnt.classList.contains("content-expanded")) {
+        const arr = pstDiv.querySelector(".summary-arrow");
+
+        cnt.classList.add("content-expanded");
+        cnt.classList.remove("content-collapsed");
+        cnt.style.maxHeight = `${cnt.scrollHeight}px`;
+        cnt.style.visibility = "visible";
+        cnt.style.pointerEvents = "auto";
+        tgl.setAttribute("aria-expanded", "true");
+
+        if (arr instanceof HTMLElement) {
+            arr.textContent = "🔽";
+        }
+    }
+
+    qPstHgt(pstDiv);
+}
+
+/**
+ * Reveal posts from saved refs.
+ * @param {readonly string[]} postRefs
+ * @returns {void}
+ */
+function rvlPstRefs(postRefs: readonly string[]): void {
+    const refs = Array.from(new Set<string>(postRefs));
+    pendingRevealPostRefs = refs;
+
+    window.requestAnimationFrame(() => {
+        const matched: HTMLElement[] = [];
+
+        refs.forEach((postRef) => {
+            const selector = `.rss-post-block[data-rss-post-ref="${helpers.escapeCssIdentifier(postRef)}"]`;
+
+            document.querySelectorAll(selector).forEach((el) => {
+                if (!(el instanceof HTMLElement)) return;
+                if (matched.includes(el)) return;
+
+                matched.push(el);
+                opnPstEl(el);
+            });
+        });
+
+        const first = matched[0];
+        if (!first) return;
+
+        window.requestAnimationFrame(() => {
+            first.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+
+        pendingRevealPostRefs = [];
+    });
+}
+
+/**
+ * Set filters so the wanted posts can show up.
+ * @param {readonly Pst[]} psts
+ * @param {readonly Pst[]} tgts
+ * @returns {void}
+ */
+function prepTgts(psts: readonly Pst[], tgts: readonly Pst[]): void {
+    if (tgts.length === 0) return;
+
+    const targetAuthors = pstAths(tgts);
+    const allAuthors = pstAths(psts);
+
+    authorOff = new Set<string>(
+        Array.from(allAuthors).filter((author) => !targetAuthors.has(author))
+    );
+
+    curCalSel = mkPstsSel(tgts);
+    pendingRevealPostRefs = Array.from(mkPstsRefs(tgts));
+}
+
+/**
+ * Little share thing.
+ * @param {Readonly<{ pst: Pst; placement: "top" | "bottom" }>} props
+ * @returns {JSX.Element}
+ */
+function RssShareBtn({
+    pst,
+    placement
+}: Readonly<{
+    pst: Pst;
+    placement: "top" | "bottom";
+}>): JSX.Element {
+    const postRef = mkPstShortId(pst);
+
+    return (
+        <button
+            type="button"
+            className={`rss-post-share rss-post-share--${placement} kc-round-icon-btn`}
+            data-rss-share-post={postRef}
+            aria-label={`Share ${pst.ttl}`}
+            title="Share post"
+        >
+            {icons.MakeShareIcon()}
+        </button>
+    );
+}
+
+/**
+ * Comments slot, disabled sometimes.
+ * @param {Readonly<{ slug: string; disabled: boolean }>} props
+ * @returns {JSX.Element}
+ */
+function RssCmntSlot({
+    slug,
+    disabled
+}: Readonly<{
+    slug: string;
+    disabled: boolean;
+}>): JSX.Element {
+    if (disabled) {
+        return (
+            <section
+                className="rss-comments rss-comments--disabled comments-container"
+                data-rss-comment-disabled="1"
+            >
+                <div className="segment-header">Visitor Comments</div>
+
+                <p className="rss-comments__status">
+                    Comments are disabled for automated posts.
+                </p>
+            </section>
+        );
+    }
+
+    return (
+        <section
+            className="rss-comments comments-container"
+            data-rss-comment-slug={slug}
+            data-rss-comment-disabled="0"
+        >
+            <div className="segment-header">Leave your comment!</div>
+
+            <div className="comment-input">
+                <div className="comment-row comment-meta-row">
+                    <input
+                        type="text"
+                        id="comment-nick"
+                        maxLength={32}
+                        placeholder="Your nickname (max 32 characters)"
+                        data-rss-comment-nick="1"
+                    />
+
+                    <input
+                        type="text"
+                        id="comment-website"
+                        placeholder="Your Website (Optional)"
+                        data-rss-comment-website="1"
+                    />
+
+                    <div className="comment-location-field">
+                        <div className="comment-location-control">
+                            <select
+                                id="comment-location"
+                                aria-label="Your location"
+                                data-rss-comment-location="1"
+                            >
+                                <option value="">Location (Optional)</option>
+                            </select>
+
+                            <span
+                                id="comment-location-flag"
+                                aria-hidden="true"
+                                data-rss-comment-location-flag="1"
+                            >
+                                🌎
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="comment-row comment-body-row">
+                    <textarea
+                        id="new-comment"
+                        maxLength={256}
+                        rows={4}
+                        placeholder="Write your comment here (max 256 characters)..."
+                        data-rss-comment-msg="1"
+                    />
+                </div>
+
+                <div className="comment-row comment-submit-row">
+                    <button
+                        id="post-comment-button"
+                        type="button"
+                        data-rss-comment-post="1"
+                    >
+                        Post
+                    </button>
+                </div>
+            </div>
+
+            <div className="segment-header">Visitor Comments</div>
+
+            <p
+                className="rss-comments__status"
+                data-rss-comments-status="1"
+                aria-live="polite"
+            >
+                Comments load when the post is opened.
+            </p>
+
+            <div className="comments-box" data-rss-comments-box="1" />
+        </section>
+    );
+}
+
+/**
+ * Big post card thing.
+ * @param {Readonly<{ pst: Pst; exp: boolean }>} props
  * @returns {JSX.Element}
  */
 function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Element {
@@ -281,9 +1969,17 @@ function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Elemen
     const arr = exp ? "🔽" : "▶️";
     const expd = exp ? "true" : "false";
     const cls = exp ? "rss-post-content content-expanded" : "rss-post-content content-collapsed";
+    const commentsDisabled = authorFilterCfg.defaultUnselect.has(pst.ath);
+    const slug = mkPstSlug(pst);
+    const postRef = mkPstDomRef(pst);
 
     return (
-        <article className="rss-post-block" data-pub={pst.pub} data-gid={pst.gid}>
+        <article
+            className="rss-post-block"
+            data-pub={pst.pub}
+            data-gid={pst.gid}
+            data-rss-post-ref={postRef}
+        >
             <div
                 className="rss-post-toggle"
                 {...(exp ? {} : { tabIndex: 0, role: "button" })}
@@ -293,6 +1989,7 @@ function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Elemen
                     <span className="summary-arrow">{arr}</span>
                     <span className="rss-post-title">{pst.ttl}</span>
                     <span className="rss-post-date">{fmtDt(pst.pub)}</span>
+                    <RssShareBtn pst={pst} placement="top" />
                 </div>
 
                 <div className="rss-post-meta">
@@ -304,14 +2001,25 @@ function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Elemen
                 </div>
             </div>
 
-            <div className={cls} dangerouslySetInnerHTML={cnt} />
+            <div className={cls}>
+                <div className="rss-post-content__inner" dangerouslySetInnerHTML={cnt} />
+
+                <div className="rss-post-share-row">
+                    <RssShareBtn pst={pst} placement="bottom" />
+                </div>
+
+                <RssCmntSlot
+                    slug={slug}
+                    disabled={commentsDisabled}
+                />
+            </div>
         </article>
     );
 }
 
 /**
- * @param {string} ttl
- * @param {string} body
+ * Empty state, boring.
+ * @param {Readonly<{ ttl: string; body: string }>} props
  * @returns {JSX.Element}
  */
 function EmptyBlk({ ttl, body }: Readonly<{ ttl: string; body: string }>): JSX.Element {
@@ -324,6 +2032,141 @@ function EmptyBlk({ ttl, body }: Readonly<{ ttl: string; body: string }>): JSX.E
 }
 
 /**
+ * Wee author drawer button.
+ * @param {Readonly<{ opn: boolean }>} props
+ * @returns {JSX.Element}
+ */
+function AthTglBtn({ opn }: Readonly<{ opn: boolean }>): JSX.Element {
+    return (
+        <button
+            type="button"
+            className="rss-filters__toggle rss-author-filter__toggle kc-round-icon-btn kc-click-header__control"
+            data-rss-author-menu-tgl="1"
+            aria-controls="kc-blog-author-filter-body"
+            aria-expanded={opn ? "true" : "false"}
+            aria-label={opn ? "Collapse author filters" : "Expand author filters"}
+            title={opn ? "Collapse author filters" : "Expand author filters"}
+        >
+            {opn ? icons.MakeDecreaseFontIcon() : icons.MakeIncreaseFontIcon()}
+        </button>
+    );
+}
+
+/**
+ * Author all/select button.
+ * @param {Readonly<{ act: string; txt: string; cnt: number; disabled: boolean }>} props
+ * @returns {JSX.Element}
+ */
+function AuthorAllBtn({
+    act,
+    txt,
+    cnt,
+    disabled
+}: Readonly<{
+    act: string;
+    txt: string;
+    cnt: number;
+    disabled: boolean;
+}>): JSX.Element {
+    return (
+        <button
+            type="button"
+            className="rss-author-filter__all kc-click-header__control"
+            data-rss-author-act={act}
+            disabled={disabled}
+            title={`${txt} (${cnt})`}
+        >
+            <span className="rss-author-filter__allTxt">{txt}</span>
+            <span className="rss-author-filter__allCnt">{cnt}</span>
+        </button>
+    );
+}
+
+/**
+ * Author buttons.
+ * @param {Readonly<{ opts: readonly AthOpt[]; opn: boolean }>} props
+ * @returns {JSX.Element}
+ */
+function AuthorFilter({
+    opts,
+    opn
+}: Readonly<{
+    opts: readonly AthOpt[];
+    opn: boolean;
+}>): JSX.Element {
+    const onCnt = opts.filter((opt) => opt.on).length;
+    const allOn = opts.length > 0 && onCnt === opts.length;
+    const act = allOn ? "clr" : "all";
+    const txt = allOn ? "Clear all" : "Select all";
+    const actionCnt = opts
+        .filter((opt) => !allOn || opt.on)
+        .reduce((total, opt) => total + opt.cnt, 0);
+
+    return (
+        <section
+            className="rss-author-filter"
+            aria-label="Author filters"
+            data-rss-author-open={opn ? "1" : "0"}
+        >
+            <header
+                className="rss-author-filter__hdr kc-click-header"
+                data-rss-author-menu-hdr="1"
+                role="button"
+                tabIndex={0}
+                aria-expanded={opn ? "true" : "false"}
+                title={opn ? "Collapse author filters" : "Expand author filters"}
+            >
+                <div className="rss-author-filter__titleWrap">
+                    <h3 className="rss-author-filter__ttl">Authors</h3>
+                    <p className="rss-author-filter__txt">
+                        Showing {onCnt} of {opts.length}
+                    </p>
+                </div>
+
+                <div className="rss-author-filter__actions kc-click-header__actions">
+                    <AuthorAllBtn
+                        act={act}
+                        txt={txt}
+                        cnt={actionCnt}
+                        disabled={opts.length === 0}
+                    />
+
+                    <AthTglBtn opn={opn} />
+                </div>
+            </header>
+
+            <div
+                id="kc-blog-author-filter-body"
+                className="rss-filters__body rss-author-filter__body"
+                aria-hidden={opn ? "false" : "true"}
+            >
+                <div className="rss-filters__body-inner rss-author-filter__body-inner">
+                    <div className="rss-author-filter__list">
+                        {opts.map((opt) => (
+                            <button
+                                key={opt.ath}
+                                type="button"
+                                className="rss-author-filter__btn"
+                                data-rss-author={opt.ath}
+                                data-on={opt.on ? "1" : "0"}
+                                aria-pressed={opt.on ? "true" : "false"}
+                                title={opt.on ? `Hide ${opt.ath}` : `Show ${opt.ath}`}
+                            >
+                                <span className="rss-author-filter__name">{opt.ath}</span>
+                                <span className="rss-author-filter__dot" aria-hidden="true">
+                                    •
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * Links inside posts.
  * @param {HTMLElement} pstDiv
  * @returns {void}
  */
@@ -342,6 +2185,34 @@ function cfgPstLks(pstDiv: HTMLElement): void {
 }
 
 /**
+ * Share btn click wires.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function wireShareBtns(pstDiv: HTMLElement): void {
+    if (pstDiv.dataset.rssShareWired === "1") return;
+
+    pstDiv.dataset.rssShareWired = "1";
+
+    pstDiv.querySelectorAll<HTMLButtonElement>("[data-rss-share-post]").forEach((btn) => {
+        btn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            const postRef = btn.dataset.rssSharePost;
+            if (!postRef) return;
+
+            const psts = findByPstRef(allPsts, postRef);
+            const shareTitle = psts.length === 1 ? psts[0].ttl : document.title;
+            const shareUrl = mkPstShareUrl(postRef);
+
+            void helpers.shareUrl(shareUrl, shareTitle);
+        });
+    });
+}
+
+/**
+ * Attach the post bits.
  * @param {HTMLElement} pstDiv
  * @returns {void}
  */
@@ -359,10 +2230,16 @@ function atchTgl(pstDiv: HTMLElement): void {
     if (!(cnt instanceof HTMLElement)) return;
 
     cfgPstLks(pstDiv);
-    atchColl({ tgl, cnt, arr });
+    hglPstCode(pstDiv);
+    wireShareBtns(pstDiv);
+    wireHvr(pstDiv);
+    wireCmntLyt(pstDiv);
+    helpers.atchColl({ tgl, cnt, arr });
+    atchRssComments(pstDiv);
 }
 
 /**
+ * All post toggles.
  * @param {HTMLElement} box
  * @returns {void}
  */
@@ -371,9 +2248,14 @@ function atchAllTgl(box: HTMLElement): void {
     if (psts.length === 0) return;
 
     psts.forEach((pst) => atchTgl(pst));
+
+    if (pendingRevealPostRefs.length > 0) {
+        rvlPstRefs(pendingRevealPostRefs);
+    }
 }
 
 /**
+ * Years list.
  * @param {readonly Pst[]} psts
  * @returns {number[]}
  */
@@ -383,6 +2265,7 @@ function mkYrOpts(psts: readonly Pst[]): number[] {
 
     psts.forEach((pst) => {
         if (Number.isNaN(pst.yr)) return;
+
         src.add(pst.yr);
     });
 
@@ -390,6 +2273,7 @@ function mkYrOpts(psts: readonly Pst[]): number[] {
 }
 
 /**
+ * Date match thing.
  * @param {Pst} pst
  * @param {CalSel} sel
  * @returns {boolean}
@@ -403,6 +2287,219 @@ function mtchPst(pst: Pst, sel: CalSel): boolean {
 }
 
 /**
+ * Author slot by cal.
+ * @param {HTMLDivElement} cal
+ * @returns {HTMLDivElement}
+ */
+function ensAthSlot(cal: HTMLDivElement): HTMLDivElement {
+    const host = ensFiltShell(cal);
+    const found = document.getElementById("kc-blog-author-filter");
+
+    if (found instanceof HTMLDivElement) {
+        if (!host.contains(found)) host.appendChild(found);
+
+        return found;
+    }
+
+    const slot = document.createElement("div");
+
+    slot.id = "kc-blog-author-filter";
+    slot.className = "rss-author-filter-slot";
+
+    host.appendChild(slot);
+
+    return slot;
+}
+
+/**
+ * Default hidden authors.
+ * @returns {Set<string>}
+ */
+function mkDefAthOff(): Set<string> {
+    return new Set<string>(authorFilterCfg.defaultUnselect);
+}
+
+/**
+ * Posts by date filter.
+ * @param {readonly Pst[]} psts
+ * @param {CalSel} sel
+ * @returns {readonly Pst[]}
+ */
+function datePsts(psts: readonly Pst[], sel: CalSel): readonly Pst[] {
+    return psts.filter((pst) => mtchPst(pst, sel));
+}
+
+/**
+ * Posts with authors on.
+ * @param {readonly Pst[]} psts
+ * @param {ReadonlySet<string>} off
+ * @returns {readonly Pst[]}
+ */
+function athPsts(psts: readonly Pst[], off: ReadonlySet<string>): readonly Pst[] {
+    return psts.filter((pst) => !off.has(pst.ath));
+}
+
+/**
+ * Author set.
+ * @param {readonly Pst[]} psts
+ * @returns {ReadonlySet<string>}
+ */
+function pstAths(psts: readonly Pst[]): ReadonlySet<string> {
+    return new Set<string>(psts.map((pst) => pst.ath));
+}
+
+/**
+ * Options for author ui.
+ * @param {readonly Pst[]} psts
+ * @param {ReadonlySet<string>} off
+ * @returns {readonly AthOpt[]}
+ */
+function mkAthOpts(psts: readonly Pst[], off: ReadonlySet<string>): readonly AthOpt[] {
+    const counts = new Map<string, number>();
+
+    psts.forEach((pst) => {
+        counts.set(pst.ath, (counts.get(pst.ath) ?? 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+        .map(([ath, cnt]) => ({
+            ath,
+            cnt,
+            on: !off.has(ath)
+        }))
+        .sort((a, b) => a.ath.localeCompare(b.ath));
+}
+
+/**
+ * Turn authors on.
+ * @param {ReadonlySet<string>} aths
+ * @returns {void}
+ */
+function selAths(aths: ReadonlySet<string>): void {
+    aths.forEach((ath) => {
+        authorOff.delete(ath);
+    });
+}
+
+/**
+ * Turn authors off.
+ * @param {ReadonlySet<string>} aths
+ * @returns {void}
+ */
+function unselAths(aths: ReadonlySet<string>): void {
+    aths.forEach((ath) => {
+        authorOff.add(ath);
+    });
+}
+
+/**
+ * Repaint authors.
+ * @param {HTMLDivElement} slot
+ * @param {readonly Pst[]} psts
+ * @param {CalSel} sel
+ * @returns {void}
+ */
+function rndAthFilt(slot: HTMLDivElement, psts: readonly Pst[], sel: CalSel): void {
+    const opts = mkAthOpts(datePsts(psts, sel), authorOff);
+    const frag = render2Frag(<AuthorFilter opts={opts} opn={athMenuOpen} />);
+
+    slot.replaceChildren(frag);
+    syncCurFiltSum();
+}
+
+/**
+ * Clicks for author filter.
+ * @param {HTMLDivElement} slot
+ * @param {HTMLDivElement} box
+ * @returns {void}
+ */
+function wireAthFilt(slot: HTMLDivElement, box: HTMLDivElement): void {
+    if (slot.dataset.rssAuthorWired === "1") return;
+
+    slot.dataset.rssAuthorWired = "1";
+
+    slot.addEventListener("click", (ev) => {
+        const trg = ev.target;
+        if (!(trg instanceof Element)) return;
+
+        const menuBtn = trg.closest<HTMLButtonElement>("[data-rss-author-menu-tgl]");
+
+        if (menuBtn) {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            const root = menuBtn.closest(".rss-author-filter");
+            if (!(root instanceof HTMLElement)) return;
+
+            setAthOpn(root, root.dataset.rssAuthorOpen !== "1");
+            return;
+        }
+
+        const allBtn = trg.closest<HTMLButtonElement>("[data-rss-author-act]");
+
+        if (allBtn) {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            const aths = pstAths(datePsts(allPsts, curCalSel));
+            const act = allBtn.dataset.rssAuthorAct;
+
+            if (act === "clr") {
+                unselAths(aths);
+            } else {
+                selAths(aths);
+            }
+
+            rndAthFilt(slot, allPsts, curCalSel);
+            rndBlog(box, allPsts, curCalSel, authorOff);
+            syncCurFiltSum();
+            return;
+        }
+
+        const btn = trg.closest<HTMLButtonElement>("[data-rss-author]");
+
+        if (btn instanceof HTMLButtonElement) {
+            const ath = btn.dataset.rssAuthor;
+            if (!ath) return;
+
+            if (authorOff.has(ath)) {
+                authorOff.delete(ath);
+            } else {
+                authorOff.add(ath);
+            }
+
+            rndAthFilt(slot, allPsts, curCalSel);
+            rndBlog(box, allPsts, curCalSel, authorOff);
+            syncCurFiltSum();
+            return;
+        }
+
+        const hdr = trg.closest<HTMLElement>("[data-rss-author-menu-hdr]");
+        if (!hdr) return;
+        if (helpers.eventHasBlockedControl(ev)) return;
+
+        const root = hdr.closest(".rss-author-filter");
+        if (!(root instanceof HTMLElement)) return;
+
+        setAthOpn(root, root.dataset.rssAuthorOpen !== "1");
+    });
+
+    slot.addEventListener("keydown", (ev) => {
+        const trg = ev.target;
+        if (!(trg instanceof HTMLElement)) return;
+        if (!trg.matches("[data-rss-author-menu-hdr]")) return;
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+
+        const root = trg.closest(".rss-author-filter");
+        if (!(root instanceof HTMLElement)) return;
+
+        ev.preventDefault();
+        setAthOpn(root, root.dataset.rssAuthorOpen !== "1");
+    });
+}
+
+/**
+ * Calendar has callback.
  * @param {readonly Pst[]} psts
  * @returns {(arg: CalHasArg) => boolean}
  */
@@ -436,15 +2533,23 @@ function mkHasFn(psts: readonly Pst[]): (arg: CalHasArg) => boolean {
 }
 
 /**
+ * Draw the blog list.
  * @param {HTMLDivElement} box
  * @param {readonly Pst[]} psts
  * @param {CalSel} sel
+ * @param {ReadonlySet<string>} offAuthors
  * @returns {void}
  */
-function rndBlog(box: HTMLDivElement, psts: readonly Pst[], sel: CalSel): void {
-    const vis = psts.filter((pst) => mtchPst(pst, sel));
+function rndBlog(
+    box: HTMLDivElement,
+    psts: readonly Pst[],
+    sel: CalSel,
+    offAuthors: ReadonlySet<string> = new Set<string>()
+): void {
+    const byDate = datePsts(psts, sel);
+    const vis = athPsts(byDate, offAuthors);
 
-    if (vis.length === 0) {
+    if (byDate.length === 0) {
         const frag = render2Frag(
             <EmptyBlk
                 ttl="No posts for this date selection"
@@ -454,6 +2559,21 @@ function rndBlog(box: HTMLDivElement, psts: readonly Pst[], sel: CalSel): void {
 
         box.replaceChildren(frag);
         aplyBlogLyt();
+        syncCurFiltSum();
+        return;
+    }
+
+    if (vis.length === 0) {
+        const frag = render2Frag(
+            <EmptyBlk
+                ttl="No posts for the selected authors"
+                body="Turn an author back on, or use Select all to show every author for this date selection."
+            />
+        );
+
+        box.replaceChildren(frag);
+        aplyBlogLyt();
+        syncCurFiltSum();
         return;
     }
 
@@ -472,9 +2592,11 @@ function rndBlog(box: HTMLDivElement, psts: readonly Pst[], sel: CalSel): void {
     box.replaceChildren(frag);
     atchAllTgl(box);
     aplyBlogLyt();
+    syncCurFiltSum();
 }
 
 /**
+ * Mount calendar, resets some stuff.
  * @param {HTMLDivElement} slot
  * @param {HTMLDivElement} box
  * @param {readonly Pst[]} psts
@@ -483,6 +2605,10 @@ function rndBlog(box: HTMLDivElement, psts: readonly Pst[], sel: CalSel): void {
 function mntCal(slot: HTMLDivElement, box: HTMLDivElement, psts: readonly Pst[]): void {
     const yrs = mkYrOpts(psts);
     const has = mkHasFn(psts);
+    const authorSlot = ensAthSlot(slot);
+
+    authorOff = mkDefAthOff();
+    wireAthFilt(authorSlot, box);
 
     if (calCtl) {
         calCtl.destroy();
@@ -495,14 +2621,19 @@ function mntCal(slot: HTMLDivElement, box: HTMLDivElement, psts: readonly Pst[])
         yrs,
         has,
         onChg: (sel) => {
-            rndBlog(box, psts, sel);
+            curCalSel = sel;
+            rndAthFilt(authorSlot, psts, sel);
+            rndBlog(box, psts, sel, authorOff);
+            syncCurFiltSum();
         }
     });
 
     calCtl.init();
+    syncCurFiltSum();
 }
 
 /**
+ * Non calendar render path.
  * @param {HTMLDivElement} box
  * @param {readonly Pst[]} psts
  * @returns {void}
@@ -535,6 +2666,7 @@ function rndStd(box: HTMLDivElement, psts: readonly Pst[]): void {
 }
 
 /**
+ * Oops screen.
  * @param {HTMLDivElement} box
  * @param {unknown} err
  * @returns {void}
@@ -554,9 +2686,34 @@ function rndErr(box: HTMLDivElement, err: unknown): void {
 }
 
 /**
+ * Target posts while cal exists.
+ * @param {HTMLDivElement} box
+ * @param {HTMLDivElement} cal
+ * @param {readonly Pst[]} psts
+ * @param {readonly Pst[]} tgts
+ * @returns {void}
+ */
+function rndTgtsCal(
+    box: HTMLDivElement,
+    cal: HTMLDivElement,
+    psts: readonly Pst[],
+    tgts: readonly Pst[]
+): void {
+    const authorSlot = ensAthSlot(cal);
+    const targetRefs = Array.from(mkPstsRefs(tgts));
+
+    prepTgts(psts, tgts);
+    rndAthFilt(authorSlot, psts, curCalSel);
+    rndBlog(box, psts, curCalSel, authorOff);
+    syncCurFiltSum();
+    rvlPstRefs(targetRefs);
+}
+
+/**
+ * Load rss and draw stuff.
  * @returns {Promise<void>}
  */
-async function loadBlogFeed(): Promise<void> {
+async function loadBlog(): Promise<void> {
     const rs = ensBlogWrap();
     if (!rs) return;
 
@@ -564,6 +2721,8 @@ async function loadBlogFeed(): Promise<void> {
     box.innerHTML = "";
 
     try {
+        void initRssComments();
+
         const rsp = await fetch(`${cfg.RSS_BACKEND_URL}`);
         if (!rsp.ok) {
             throw new Error(`RSS fetch error: ${rsp.status} ${rsp.statusText}`);
@@ -572,21 +2731,38 @@ async function loadBlogFeed(): Promise<void> {
         const xml = await rsp.text();
         allPsts = mkPsts(prsRss(xml));
 
+        const requestedPostRef = getReqPstRef();
+        const requestedPosts = findByPstRef(allPsts, requestedPostRef);
+
+        if (requestedPosts.length > 0) {
+            prepTgts(allPsts, requestedPosts);
+        }
+
         if (cal instanceof HTMLDivElement) {
             mntCal(cal, box, allPsts);
+
+            if (requestedPosts.length > 0) {
+                rndTgtsCal(box, cal, allPsts, requestedPosts);
+            }
+
             return;
         }
 
         if (isBlogPth()) {
-            rndBlog(box, allPsts, {
-                yrs: new Set<number>(),
-                mos: new Set<number>(),
-                dys: new Set<number>()
-            });
+            rndBlog(box, allPsts, curCalSel, authorOff);
+
+            if (requestedPosts.length > 0) {
+                rvlPstRefs(Array.from(mkPstsRefs(requestedPosts)));
+            }
+
             return;
         }
 
         rndStd(box, allPsts);
+
+        if (requestedPosts.length > 0) {
+            rvlPstRefs(Array.from(mkPstsRefs(requestedPosts)));
+        }
     } catch (err: unknown) {
         rndErr(box, err);
     }
@@ -594,5 +2770,5 @@ async function loadBlogFeed(): Promise<void> {
 
 window.addEventListener("DOMContentLoaded", () => {
     aplyBlogLyt();
-    void loadBlogFeed();
+    void loadBlog();
 });

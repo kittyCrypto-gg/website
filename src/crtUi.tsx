@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import type { MainJson } from './uiFetch.ts';
 import * as soundEffects from './soundEffects.ts';
 import * as plot from './plot.ts';
-import { modals, onModalEvent, type Modal } from './modals.ts';
+import { factory, onModalEvent, type Modal } from './modals.ts';
 import { render2Mkup } from './reactHelpers.tsx';
 import { fetchUiData } from './uiFetch.ts';
 import * as helpers from './helpers.ts';
@@ -1448,7 +1448,7 @@ function ensureMod(): Modal {
         height: DEF_WIN_H
     });
 
-    mod = modals.create({
+    mod = factory.create({
         id: MOD_ID,
         mode: 'blocking',
         window: true,

@@ -101,6 +101,29 @@ export type CrtUiConfig = Readonly<{
     modal: CrtUiModalConfig;
 }>;
 
+export type ToggleVisualConfig = Readonly<{
+    emoji: string;
+    iconPath?: string;
+    title?: string;
+}>;
+
+export type ThemeToggleConfig = Readonly<{
+    dark: string;
+    darkIconPath?: string;
+    light: string;
+    lightIconPath?: string;
+    title?: string;
+}>;
+
+export type BinaryToggleConfig = Readonly<{
+    enable: string;
+    enableIconPath?: string;
+    disable: string;
+    disableIconPath?: string;
+    iconPath?: string;
+    title?: string;
+}>;
+
 export type NtcJsonBody = Readonly<{
     notice: string;
     start: string;
@@ -127,9 +150,9 @@ export type MainJson = Readonly<{
     mainMenu: Record<string, MainMenuEntry>;
     header: string;
     footer: string;
-    themeToggle: Readonly<{ dark: string; light: string; title?: string }>;
-    readerModeToggle: Readonly<{ enable: string; disable: string; title?: string }>;
-    readAloudToggle: Readonly<{ enable: string; disable: string; title?: string }>;
+    themeToggle: ThemeToggleConfig;
+    readerModeToggle: BinaryToggleConfig;
+    readAloudToggle: BinaryToggleConfig;
     effects: EffectsUiConfig;
     crtUi?: CrtUiConfig;
     windows?: Readonly<Record<string, WindowJsonDefinition>>;

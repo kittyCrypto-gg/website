@@ -13,8 +13,10 @@ import { readerModeFocus, readerModeKeep } from "./reader.tsx";
 import { initEffectsControls } from "./effects.tsx";
 import * as crtNoise from "./crtUi.tsx";
 import * as helpers from "./helpers.ts";
+import { installMenuToggle } from "./menues.tsx";
 import { initNtcs } from "./notices.tsx";
 import { initNoticeBoard } from "./noticeBoard.tsx";
+import { bindToggleVisuals, showToggleVisual } from "./toggleIcons.ts";
 
 type TermMod = Readonly<{
     term: Readonly<{
@@ -70,6 +72,12 @@ const params = new URLSearchParams(window.location.search);
 let termMod: TermMod | null = null;
 let nextTheme: "dark" | "light" | null = null;
 let curTheme: "dark" | "light" | null = null;
+
+const FLOAT_TOGGLE_ICON_SPEC = {
+    size: 32,
+    wrapperClass: "theme-toggle-button__icon",
+    svgClass: "theme-toggle-button__svg"
+} as const;
 
 /**
  * Reads JSON if the response body has any, otherwise just gives null.
@@ -702,6 +710,19 @@ async function initUi(): Promise<void> {
         themeToggle.classList.add("theme-toggle-button");
         document.body.appendChild(themeToggle);
 
+        bindToggleVisuals(themeToggle, {
+            light: {
+                emoji: data.themeToggle.light,
+                iconPath: data.themeToggle.lightIconPath,
+                title: data.themeToggle.title || "Theme"
+            },
+            dark: {
+                emoji: data.themeToggle.dark,
+                iconPath: data.themeToggle.darkIconPath,
+                title: data.themeToggle.title || "Theme"
+            }
+        });
+
         /**
          * Applies the chosen theme and optionally persists it.
          * @param {"dark" | "light"} theme
@@ -712,9 +733,11 @@ async function initUi(): Promise<void> {
             document.documentElement.classList.toggle("dark-mode", theme === "dark");
             document.documentElement.classList.toggle("light-mode", theme === "light");
 
-            themeToggle.textContent = theme === "dark"
-                ? data.themeToggle.dark
-                : data.themeToggle.light;
+            void showToggleVisual(
+                themeToggle,
+                theme === "dark" ? "dark" : "light",
+                FLOAT_TOGGLE_ICON_SPEC
+            );
 
             curTheme = theme;
 
@@ -785,16 +808,16 @@ async function initUi(): Promise<void> {
         if (data.crtUi) {
             await crtNoise.initModal();
 
-            const crtUiToggle = recreateSingleton("crt-ui-toggle", () => document.createElement("button"), document);
-            crtUiToggle.classList.add("theme-toggle-button");
-            crtUiToggle.style.bottom = "140px";
-            crtUiToggle.textContent = data.crtUi.icon;
-            crtUiToggle.title = data.crtUi.title;
-            crtUiToggle.setAttribute("aria-label", data.crtUi.title);
-            document.body.appendChild(crtUiToggle);
-
-            crtUiToggle.addEventListener("click", () => {
-                void crtNoise.openModal();
+            installMenuToggle({
+                id: "crt-ui-toggle",
+                bottom: "140px",
+                cfg: data.crtUi,
+                icon: {
+                    size: 32,
+                    wrapperClass: "effects-toggle-button__icon",
+                    svgClass: "effects-toggle-button__svg"
+                },
+                openModal: () => crtNoise.openModal()
             });
         }
 
@@ -810,10 +833,21 @@ async function initUi(): Promise<void> {
         const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
         readerToggle.classList.add("theme-toggle-button");
         readerToggle.style.bottom = "140px";
-        readerToggle.textContent = data.readerModeToggle.enable;
-        readerToggle.setAttribute("data-enable", data.readerModeToggle.enable);
-        readerToggle.setAttribute("data-disable", data.readerModeToggle.disable);
-        readerToggle.title = data.readerModeToggle.title || "Reader Mode";
+
+        bindToggleVisuals(readerToggle, {
+            enable: {
+                emoji: data.readerModeToggle.enable,
+                iconPath: data.readerModeToggle.enableIconPath,
+                title: data.readerModeToggle.title || "Reader Mode"
+            },
+            disable: {
+                emoji: data.readerModeToggle.disable,
+                iconPath: data.readerModeToggle.disableIconPath,
+                title: data.readerModeToggle.title || "Reader Mode"
+            }
+        });
+
+        void showToggleVisual(readerToggle, "enable", FLOAT_TOGGLE_ICON_SPEC);
         document.body.appendChild(readerToggle);
 
         await setupReaderToggle({
@@ -835,10 +869,21 @@ async function initUi(): Promise<void> {
         const readAloudToggle = recreateSingleton("read-aloud-toggle", () => document.createElement("button"), document);
         readAloudToggle.classList.add("theme-toggle-button");
         readAloudToggle.style.bottom = "200px";
-        readAloudToggle.textContent = data.readAloudToggle.enable;
-        readAloudToggle.setAttribute("data-enable", data.readAloudToggle.enable);
-        readAloudToggle.setAttribute("data-disable", data.readAloudToggle.disable);
-        readAloudToggle.title = data.readAloudToggle.title || "Read Aloud";
+
+        bindToggleVisuals(readAloudToggle, {
+            enable: {
+                emoji: data.readAloudToggle.enable,
+                iconPath: data.readAloudToggle.enableIconPath ?? data.readAloudToggle.iconPath,
+                title: data.readAloudToggle.title || "Enable Read Aloud"
+            },
+            disable: {
+                emoji: data.readAloudToggle.disable,
+                iconPath: data.readAloudToggle.disableIconPath ?? data.readAloudToggle.iconPath,
+                title: data.readAloudToggle.title || "Disable Read Aloud"
+            }
+        });
+
+        void showToggleVisual(readAloudToggle, "enable", FLOAT_TOGGLE_ICON_SPEC);
         document.body.appendChild(readAloudToggle);
 
         readAloudToggle.addEventListener("click", readAloud.showMenu);

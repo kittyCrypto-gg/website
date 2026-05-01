@@ -1186,6 +1186,6 @@ export function closeOnClick(selector: string): Dec {
 }
 
 /**
- * one shared factory if you dont feel like making your own.
+ * Shared factory.
  */
-export const modals = new ModalFactory();
+export const factory = new ModalFactory();

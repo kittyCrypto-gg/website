@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import * as config from "./config.ts";
-import { modals, onModalEvent, closeOnClick } from "./modals.ts";
+import { factory, onModalEvent, closeOnClick } from "./modals.ts";
 import { render2Frag, render2Mkup } from "./reactHelpers.tsx";
 import * as helpers from "./helpers.ts";
 
@@ -172,7 +172,7 @@ const closeMod = (): void => {
     mod.close();
 };
 
-const mod = modals.create({
+const mod = factory.create({
     id: MOD_ID,
     mode: "blocking",
     content: MOD_HTML,

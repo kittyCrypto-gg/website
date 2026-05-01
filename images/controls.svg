@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" viewBox="1 1 14 14">
+    <defs>
+        <linearGradient id="g1" x2="1" gradientUnits="userSpaceOnUse"
+            gradientTransform="matrix(14,14,-14,14,1,1)">
+            <stop offset="0" stop-color="#f4f4f5"></stop>
+            <stop offset=".45" stop-color="#d7d8db"></stop>
+            <stop offset="1" stop-color="#a9abb1"></stop>
+        </linearGradient>
+        <linearGradient id="g2" x2="1" gradientUnits="userSpaceOnUse"
+            gradientTransform="matrix(16,16,-16,16,0,0)">
+            <stop offset="0" stop-color="#ffffff" stop-opacity=".9"></stop>
+            <stop offset="1" stop-color="#6d7178" stop-opacity="1"></stop>
+        </linearGradient>
+        <radialGradient id="g3" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+            gradientTransform="matrix(-2.899,2.899,-2.899,-2.899,6.2,4.8)">
+            <stop offset="0" stop-color="#6d7076"></stop>
+            <stop offset="1" stop-color="#3e4147"></stop>
+        </radialGradient>
+        <radialGradient id="g4" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+            gradientTransform="matrix(-2.899,2.899,-2.899,-2.899,6.2,4.8)">
+            <stop offset="0" stop-color="#6d7076"></stop>
+            <stop offset="1" stop-color="#3e4147"></stop>
+        </radialGradient>
+        <radialGradient id="g5" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+            gradientTransform="matrix(-2.899,2.899,-2.899,-2.899,6.2,4.8)">
+            <stop offset="0" stop-color="#6d7076"></stop>
+            <stop offset="1" stop-color="#3e4147"></stop>
+        </radialGradient>
+        <radialGradient id="g6" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+            gradientTransform="matrix(-2.899,2.899,-2.899,-2.899,6.2,4.8)">
+            <stop offset="0" stop-color="#6d7076"></stop>
+            <stop offset="1" stop-color="#3e4147"></stop>
+        </radialGradient>
+    </defs>
+    <style> .s0 { fill: url(#g1) } .s1 { fill: none;stroke: url(#g2) } .s2 { fill: url(#g3) } .s3 {
+        fill: url(#g4) } .s4 { fill: url(#g5) } .s5 { fill: url(#g6) } .s6 { fill: none;stroke:
+        #d9dce1;stroke-linecap: round;stroke-width: .7 } </style>
+    <path fill-rule="evenodd" class="s0"
+        d="m3.25 1h9.5c1.24 0 2.25 1.01 2.25 2.25v9.5c0 1.24-1.01 2.25-2.25 2.25h-9.5c-1.24 0-2.25-1.01-2.25-2.25v-9.5c0-1.24 1.01-2.25 2.25-2.25z"></path>
+    <path fill-rule="evenodd" class="s1"
+        d="m3.25 1.5h9.5c0.97 0 1.75 0.78 1.75 1.75v9.5c0 0.97-0.78 1.75-1.75 1.75h-9.5c-0.97 0-1.75-0.78-1.75-1.75v-9.5c0-0.97 0.78-1.75 1.75-1.75z"></path>
+    <g>
+        <path fill-rule="evenodd" class="s2"
+            d="m5 7.15c-1.19 0-2.15-0.96-2.15-2.15 0-1.19 0.96-2.15 2.15-2.15 1.19 0 2.15 0.96 2.15 2.15 0 1.19-0.96 2.15-2.15 2.15z"></path>
+        <path fill-rule="evenodd" class="s3"
+            d="m11 7.15c-1.19 0-2.15-0.96-2.15-2.15 0-1.19 0.96-2.15 2.15-2.15 1.19 0 2.15 0.96 2.15 2.15 0 1.19-0.96 2.15-2.15 2.15z"></path>
+        <path fill-rule="evenodd" class="s4"
+            d="m5 13.15c-1.19 0-2.15-0.96-2.15-2.15 0-1.19 0.96-2.15 2.15-2.15 1.19 0 2.15 0.96 2.15 2.15 0 1.19-0.96 2.15-2.15 2.15z"></path>
+        <path fill-rule="evenodd" class="s5"
+            d="m11 13.15c-1.19 0-2.15-0.96-2.15-2.15 0-1.19 0.96-2.15 2.15-2.15 1.19 0 2.15 0.96 2.15 2.15 0 1.19-0.96 2.15-2.15 2.15z"></path>
+    </g>
+    <g>
+        <path class="s6" d="m5 5h1.15"></path>
+        <path class="s6" d="m11 5l-0.8-0.8"></path>
+        <path class="s6" d="m5 11l-1.05-0.45"></path>
+        <path class="s6" d="m11 11l0.8-0.85"></path>
+    </g>
+    <g> </g>
+</svg>

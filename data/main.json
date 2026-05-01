@@ -29,15 +29,23 @@
   "footer": "Kitty's website is open-source. 2024 - ${year}",
   "themeToggle": {
     "light": "🌙",
-    "dark": "☀️"
+    "lightIconPath": "/images/moon.svg",
+    "dark": "☀️",
+    "darkIconPath": "/images/sun.svg",
+    "title": "Theme"
   },
   "readerModeToggle": {
     "enable": "📖",
-    "disable": "📕"
+    "enableIconPath": "/images/book-open.svg",
+    "disable": "📕",
+    "disableIconPath": "/images/book-closed.svg",
+    "title": "Reader Mode"
   },
   "readAloudToggle": {
     "enable": "🔊",
-    "disable": "🔇"
+    "disable": "🔇",
+    "iconPath": "/images/speaker.svg",
+    "title": "Read Aloud"
   },
   "effects": {
     "icon": "📺",
@@ -64,7 +72,7 @@
   },
   "crtUi": {
     "icon": "🎛️",
-    "iconPath": "/images/tube.svg",
+    "iconPath": "/images/controls.svg",
     "title": "CRT Noise Control Desk",
     "modal": {
       "title": "CRT Noise Control Desk",

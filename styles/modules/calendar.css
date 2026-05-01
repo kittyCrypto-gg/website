@@ -1,4 +1,5 @@
 @import url("/styles/modules/physics.css");
+@import url("/styles/core/utilities.css");
 
 /* =========================================
     Module: Calendar Filter
@@ -35,11 +36,9 @@
     --cal-chip-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 72%, var(--frame-bg-colour));
     --cal-chip-col: var(--menu-button-text-colour);
     --cal-chip-brd: color-mix(in srgb, var(--frame-border-light) 48%, var(--menu-button-bg-colour));
-    --cal-chip-sel-bg: linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--banner-teal-bright) 22%, var(--menu-button-bg-colour)),
-        color-mix(in srgb, var(--banner-blue) 14%, var(--menu-button-bg-colour))
-    );
+    --cal-chip-sel-bg: linear-gradient(135deg,
+            color-mix(in srgb, var(--banner-teal-bright) 22%, var(--menu-button-bg-colour)),
+            color-mix(in srgb, var(--banner-blue) 14%, var(--menu-button-bg-colour)));
     --cal-chip-sel-col: var(--header-text-colour);
     --cal-chip-sel-brd: color-mix(in srgb, var(--banner-blue) 34%, var(--frame-border-light));
     --cal-chip-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 90%, var(--frame-bg-colour));
@@ -55,8 +54,6 @@
     --cal-sct-bg: color-mix(in srgb, var(--chatroom-bg-colour) 80%, var(--frame-bg-colour));
     --cal-sct-brd: color-mix(in srgb, var(--frame-border-light) 62%, transparent);
 
-    --cal-sct-btn-pad-block: 0;
-    --cal-sct-btn-pad-inline: 0;
     --cal-sct-title-size: calc(clamp(0.78rem, 0.76rem + 0.08vw, 0.84rem) * var(--kc-text-scale));
     --cal-sct-title-weight: 700;
     --cal-sct-meta-size: calc(clamp(0.68rem, 0.66rem + 0.06vw, 0.74rem) * var(--kc-text-scale));
@@ -68,13 +65,19 @@
     --cal-grid-cols-dy: 7;
 
     --cal-selbar-gap: clamp(0.38rem, 0.68vw, 0.5rem);
-    --cal-selpill-pad-block: clamp(0.24rem, 0.46vw, 0.32rem);
-    --cal-selpill-pad-inline: clamp(0.42rem, 0.78vw, 0.54rem);
     --cal-selpill-bg: color-mix(in srgb, var(--banner-blue) 10%, var(--frame-bg-colour));
+    --cal-selpill-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 70%, var(--frame-bg-colour));
     --cal-selpill-col: var(--header-text-colour);
     --cal-selpill-brd: color-mix(in srgb, var(--banner-blue) 22%, var(--frame-border-light));
+    --cal-selpill-brd-hover: var(--banner-blue);
     --cal-selpill-k-opc: 0.62;
     --cal-selpill-v-weight: 700;
+    --cal-selpill-glow:
+        0 0 0 2px color-mix(in srgb, var(--banner-blue) 22%, transparent);
+    --cal-selbar-scroll-thumb: color-mix(in srgb, var(--body-text-colour) 28%, transparent);
+    --cal-selbar-scroll-thumb-hover: color-mix(in srgb, var(--body-text-colour) 42%, transparent);
+    --cal-selbar-scroll-track: transparent;
+    --cal-selbar-scrollbar-size: 0.42rem;
 
     --cal-ctl-gap: clamp(0.28rem, 0.55vw, 0.38rem);
     --cal-rst-pad-block: clamp(0.3rem, 0.56vw, 0.38rem);
@@ -100,9 +103,19 @@
     --cal-eye-ls: 0.1em;
     --cal-eye-transform: uppercase;
 
-    --cal-roottgl-size: 1.95rem;
-    --cal-roottgl-font-size: calc(clamp(0.78rem, 0.76rem + 0.08vw, 0.9rem) * var(--kc-text-scale));
-    --cal-roottgl-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 62%, transparent);
+    --cal-roottgl-size: var(--kc-round-icon-btn-size);
+    --cal-roottgl-radius: var(--kc-round-icon-btn-radius);
+    --cal-roottgl-icon-size: var(--kc-round-icon-btn-icon-size);
+    --cal-roottgl-border-width: var(--kc-round-icon-btn-border-width);
+    --cal-roottgl-bg: var(--kc-round-icon-btn-bg);
+    --cal-roottgl-bg-hover: var(--kc-round-icon-btn-bg-hover);
+    --cal-roottgl-brd: var(--kc-round-icon-btn-border);
+    --cal-roottgl-brd-hover: var(--kc-round-icon-btn-border-hover);
+    --cal-roottgl-col: var(--kc-round-icon-btn-fg);
+    --cal-roottgl-transition: var(--kc-round-icon-btn-transition);
+
+    --cal-scttgl-size: var(--kc-round-icon-btn-sm-size);
+    --cal-scttgl-icon-size: var(--kc-round-icon-btn-sm-icon-size);
 
     --cal-mo-gap: clamp(0.32rem, 0.6vw, 0.42rem);
     --cal-mo-pad-block: clamp(0.38rem, 0.72vw, 0.5rem);
@@ -130,7 +143,7 @@
     --cal-dypad-radius: 999px;
     --cal-dypad-bg: color-mix(in srgb, var(--chatroom-bg-colour) 52%, transparent);
 
-    --cal-fcs-ring: 0 0 0 2px color-mix(in srgb, var(--banner-blue) 22%, transparent);
+    --cal-fcs-ring: var(--kc-click-header-focus-ring);
 
     --cal-collapse-duration: var(--phys-collapse-duration);
     --cal-collapse-fade-duration: var(--phys-collapse-fade-duration);
@@ -163,24 +176,19 @@
         justify-content: space-between;
         gap: var(--cal-gap);
         min-inline-size: 0;
+        max-inline-size: 100%;
         flex: 0 0 auto;
-        padding-block-end: var(--cal-gap-tight);
+        padding: var(--cal-gap-tight) var(--cal-pad-inline);
+        margin: calc(var(--cal-gap-tight) * -1) calc(var(--cal-pad-inline) * -1) 0;
         border-block-end: var(--cal-border-width) solid var(--cal-hdr-brd);
-        border-radius: var(--cal-radius-xs);
-        cursor: pointer;
-        user-select: none;
-        transition:
-            background 0.18s ease,
-            transform 0.18s ease,
-            box-shadow 0.18s ease;
+        box-sizing: border-box;
+    }
 
-        &:hover,
-        &:focus-visible {
-            background: var(--cal-roottgl-bg-hover);
-            transform: translateY(-1px);
-            outline: none;
-            box-shadow: var(--cal-fcs-ring);
-        }
+    & .cal__hdr:has(.cal__selPill:hover),
+    & .cal__hdr:has(.cal__selPill:focus-visible) {
+        background: transparent;
+        transform: none;
+        box-shadow: none;
     }
 
     & .cal__ttlWrap {
@@ -188,6 +196,7 @@
         gap: 0.12rem;
         min-width: 0;
         text-align: left;
+        flex: 0 0 auto;
     }
 
     & .cal__eyebrow {
@@ -205,6 +214,18 @@
         font-weight: var(--cal-ttl-weight);
         color: var(--cal-ttl-col);
         line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    & .cal__hdrActions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--cal-ctl-gap);
+        flex: 0 0 auto;
+        margin-inline-start: 0;
+        position: relative;
+        z-index: 2;
     }
 
     & .cal__rootTgl,
@@ -214,8 +235,6 @@
     & .cal__itm,
     & .cal__sctTgl {
         appearance: none;
-        border: none;
-        background: none;
         font: inherit;
         line-height: 1.1;
 
@@ -226,32 +245,59 @@
     }
 
     & .cal__rootTgl {
-        display: inline-grid;
-        place-items: center;
-        inline-size: var(--cal-roottgl-size);
-        block-size: var(--cal-roottgl-size);
-        flex: 0 0 auto;
-        border-radius: var(--cal-radius-sm);
-        pointer-events: none;
-        font-size: var(--cal-roottgl-font-size);
-        transition:
-            background 0.18s ease,
-            transform 0.18s ease;
+        --kc-round-icon-btn-size: var(--cal-roottgl-size);
+        --kc-round-icon-btn-icon-size: var(--cal-roottgl-icon-size);
+        --kc-round-icon-btn-radius: var(--cal-roottgl-radius);
+        --kc-round-icon-btn-border-width: var(--cal-roottgl-border-width);
+        --kc-round-icon-btn-bg: var(--cal-roottgl-bg);
+        --kc-round-icon-btn-bg-hover: var(--cal-roottgl-bg-hover);
+        --kc-round-icon-btn-border: var(--cal-roottgl-brd);
+        --kc-round-icon-btn-border-hover: var(--cal-roottgl-brd-hover);
+        --kc-round-icon-btn-fg: var(--cal-roottgl-col);
+        --kc-round-icon-btn-transition: var(--cal-roottgl-transition);
     }
 
-    & .cal__hdr:focus-visible .cal__rootTgl {
+    & .cal__sctTgl {
+        --kc-round-icon-btn-sm-size: var(--cal-scttgl-size);
+        --kc-round-icon-btn-sm-icon-size: var(--cal-scttgl-icon-size);
+    }
+
+    & .cal__hdr:hover .cal__rootTgl:not(:hover),
+    & .cal__hdr:focus-visible .cal__rootTgl:not(:focus-visible) {
         background: var(--cal-roottgl-bg-hover);
+        border-color: var(--cal-roottgl-brd-hover);
         transform: translateY(-1px);
     }
 
     & .cal__selBar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--cal-selbar-gap);
-        flex: 0 0 auto;
+        display: block;
+        flex: 1 1 auto;
         min-inline-size: 0;
+        max-inline-size: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cal-selbar-scroll-thumb) var(--cal-selbar-scroll-track);
+        -webkit-overflow-scrolling: touch;
+        pointer-events: none;
+    }
+
+    & .cal__selBar::-webkit-scrollbar {
+        height: var(--cal-selbar-scrollbar-size);
+    }
+
+    & .cal__selBar::-webkit-scrollbar-track {
+        background: var(--cal-selbar-scroll-track);
+        border-radius: 999px;
+    }
+
+    & .cal__selBar::-webkit-scrollbar-thumb {
+        background: var(--cal-selbar-scroll-thumb);
+        border-radius: 999px;
+    }
+
+    & .cal__selBar:hover::-webkit-scrollbar-thumb {
+        background: var(--cal-selbar-scroll-thumb-hover);
     }
 
     & .cal__rootBody {
@@ -285,36 +331,45 @@
 
     & .cal__selGrp {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--cal-gap-tight);
-        min-width: 0;
-    }
-
-    & .cal__ctlGrp {
-        display: inline-flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: center;
-        gap: var(--cal-ctl-gap);
-        margin-inline-start: auto;
+        gap: var(--cal-gap-tight);
+        inline-size: max-content;
+        min-inline-size: max-content;
+        padding-block: 0.08rem;
     }
 
     & .cal__selPill {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: var(--cal-chip-gap);
-        padding: var(--cal-selpill-pad-block) var(--cal-selpill-pad-inline);
+        flex: 0 0 auto;
+        inline-size: auto;
+        min-inline-size: max-content;
+        max-inline-size: none;
+        min-block-size: 1.45rem;
+        padding: 0.12rem 0.48rem;
         border-radius: var(--cal-radius-sm);
         border: var(--cal-border-width) solid var(--cal-selpill-brd);
         background: var(--cal-selpill-bg);
         color: var(--cal-selpill-col);
         cursor: pointer;
+        font-size: var(--cal-rst-size);
+        line-height: 1;
+        white-space: nowrap;
+        pointer-events: auto;
         transition:
             background 0.18s ease,
             transform 0.18s ease,
-            border-color 0.18s ease;
+            border-color 0.18s ease,
+            box-shadow 0.18s ease;
 
         &:hover,
         &:focus-visible {
+            background: var(--cal-selpill-bg-hover);
+            border-color: var(--cal-selpill-brd-hover);
+            box-shadow: var(--cal-selpill-glow);
             transform: translateY(-1px);
         }
 
@@ -325,6 +380,7 @@
 
         & .cal__selV {
             font-weight: var(--cal-selpill-v-weight);
+            white-space: nowrap;
         }
     }
 
@@ -394,22 +450,21 @@
     }
 
     & .cal__sctHdr {
-        min-width: 0;
-        flex: 0 0 auto;
-    }
-
-    & .cal__sctTgl {
-        width: 100%;
-        padding: var(--cal-sct-btn-pad-block) var(--cal-sct-btn-pad-inline);
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: var(--cal-gap-tight);
-        cursor: pointer;
-        text-align: left;
+        min-width: 0;
+        flex: 0 0 auto;
+        padding: var(--cal-gap-tight) var(--cal-pad-inline);
+        margin: calc(var(--cal-gap-tight) * -1) calc(var(--cal-pad-inline) * -1) 0;
     }
 
     & .cal__sctTtl {
+        min-inline-size: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         font-size: var(--cal-sct-title-size);
         font-weight: var(--cal-sct-title-weight);
         color: var(--cal-ttl-col);
@@ -435,11 +490,11 @@
         line-height: 1;
     }
 
-    & .cal__sctIcn {
-        inline-size: 1.1rem;
-        text-align: center;
-        font-weight: 700;
-        line-height: 1;
+    & .cal__sctHdr:hover .cal__sctTgl:not(:hover),
+    & .cal__sctHdr:focus-visible .cal__sctTgl:not(:focus-visible) {
+        background: var(--kc-round-icon-btn-bg-hover);
+        border-color: var(--kc-round-icon-btn-border-hover);
+        transform: translateY(-1px);
     }
 
     & .cal__sctBody {
@@ -524,11 +579,9 @@
         }
 
         &[data-has="0"] {
-            background: linear-gradient(
-                135deg,
-                color-mix(in srgb, var(--cal-chip-empty-bg) 92%, transparent),
-                color-mix(in srgb, var(--frame-bg-colour) 82%, transparent)
-            );
+            background: linear-gradient(135deg,
+                    color-mix(in srgb, var(--cal-chip-empty-bg) 92%, transparent),
+                    color-mix(in srgb, var(--frame-bg-colour) 82%, transparent));
             border-color: var(--cal-chip-empty-brd);
             color: var(--cal-chip-empty-col);
             opacity: var(--cal-chip-empty-opc);
@@ -652,5 +705,162 @@
         border-radius: var(--cal-dypad-radius);
         background: var(--cal-dypad-bg);
         opacity: 0.34;
+    }
+}
+
+@media (max-width: 620px) {
+    .cal {
+        & .cal__hdr {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-areas:
+                "title title"
+                "selected actions";
+            align-items: center;
+            column-gap: var(--cal-gap);
+            row-gap: var(--cal-gap-tight);
+            inline-size: 100%;
+            max-inline-size: 100%;
+            overflow: visible;
+            box-sizing: border-box;
+        }
+
+        & .cal__ttlWrap {
+            grid-area: title;
+            justify-self: start;
+            min-inline-size: 0;
+            max-inline-size: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        & .cal__selBar {
+            grid-area: selected;
+            justify-self: stretch;
+            inline-size: 100%;
+            max-inline-size: 100%;
+            min-inline-size: 0;
+            display: block;
+            padding-block: 0.14rem;
+            margin-block: -0.14rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+
+        & .cal__selGrp {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            align-content: flex-start;
+            gap: var(--cal-gap-tight);
+            inline-size: 100%;
+            min-inline-size: 0;
+            max-inline-size: none;
+            box-sizing: border-box;
+        }
+
+        & .cal__selPill {
+            flex: 0 0 auto;
+            inline-size: auto;
+            min-inline-size: max-content;
+            max-inline-size: none;
+        }
+
+        & .cal__hdrActions {
+            grid-area: actions;
+            justify-self: end;
+            max-inline-size: 100%;
+            position: relative;
+            z-index: 2;
+        }
+    }
+}
+
+@media (max-width: 400px) {
+    .cal {
+        & .cal__hdr {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas:
+                "title"
+                "selected"
+                "actions";
+            overflow: visible;
+        }
+
+        & .cal__ttlWrap {
+            position: relative;
+            z-index: 1;
+        }
+
+        & .cal__selBar {
+            inline-size: 100%;
+            max-inline-size: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        & .cal__hdrActions {
+            grid-area: actions;
+            justify-self: stretch;
+            inline-size: 100%;
+            max-inline-size: 100%;
+            min-inline-size: 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            align-content: flex-start;
+            justify-content: flex-end;
+            gap: var(--cal-ctl-gap);
+            padding-block: 0.14rem;
+            margin-block: -0.14rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+            z-index: 2;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: var(--cal-selbar-scroll-thumb) var(--cal-selbar-scroll-track);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        & .cal__hdrActions::-webkit-scrollbar {
+            height: var(--cal-selbar-scrollbar-size);
+        }
+
+        & .cal__hdrActions::-webkit-scrollbar-track {
+            background: var(--cal-selbar-scroll-track);
+            border-radius: 999px;
+        }
+
+        & .cal__hdrActions::-webkit-scrollbar-thumb {
+            background: var(--cal-selbar-scroll-thumb);
+            border-radius: 999px;
+        }
+
+        & .cal__hdrActions:hover::-webkit-scrollbar-thumb {
+            background: var(--cal-selbar-scroll-thumb-hover);
+        }
+
+        & .cal__rst,
+        & .cal__clr {
+            flex: 0 0 auto;
+            inline-size: auto;
+            max-inline-size: none;
+        }
+
+        & .cal__rootTgl {
+            flex: 0 0 var(--cal-roottgl-size);
+            inline-size: var(--cal-roottgl-size);
+            block-size: var(--cal-roottgl-size);
+            min-inline-size: var(--cal-roottgl-size);
+            max-inline-size: var(--cal-roottgl-size);
+            min-block-size: var(--cal-roottgl-size);
+            max-block-size: var(--cal-roottgl-size);
+            padding: 0;
+            border-radius: var(--cal-roottgl-radius);
+        }
     }
 }

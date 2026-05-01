@@ -21,6 +21,13 @@
     --comments-box-font-size: calc(clamp(0.95rem, 0.9rem + 0.2vw, 1rem) * var(--kc-text-scale));
     --comments-box-gap: clamp(0.75rem, 1.5vw, 0.9375rem);
 
+    --comments-scrollbar-size: 0.75rem;
+    --comments-box-scrollbar-thumb: color-mix(in srgb, var(--chatroom-text-colour) 42%, transparent);
+    --comments-box-scrollbar-thumb-hover: color-mix(in srgb, var(--chatroom-text-colour) 62%, transparent);
+    --comments-location-scrollbar-thumb: color-mix(in srgb, var(--chat-input-text-colour) 42%, transparent);
+    --comments-location-scrollbar-thumb-hover: color-mix(in srgb, var(--chat-input-text-colour) 62%, transparent);
+    --comments-scrollbar-track: transparent;
+
     --comment-message-padding: clamp(0.75rem, 1.5vw, 0.875rem);
     --comment-message-radius: 6px;
     --comment-even-mix: 85%;
@@ -67,6 +74,9 @@
     --comments-location-picker-arrow-size: clamp(0.3125rem, 0.8vw, 0.375rem);
     --comments-location-picker-arrow-inline-end: clamp(2rem, 4vw, 2.625rem);
     --comments-location-picker-world-font-size: calc(clamp(0.95rem, 0.9rem + 0.2vw, 1rem) * var(--kc-text-scale));
+    --comments-location-dropdown-gap: 0.25rem;
+    --comments-location-dropdown-z-index: 20;
+    --comments-location-dropdown-max-height: min(45dvh, 22rem);
 
     --comments-avatar-badge-width: clamp(1.25rem, 2vw, 1.5rem);
     --comments-avatar-badge-min-height: clamp(0.875rem, 1.5vw, 1rem);
@@ -165,6 +175,35 @@
     gap: var(--comments-box-gap);
     color: var(--chatroom-text-colour);
     min-width: 0;
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--comments-box-scrollbar-thumb) var(--comments-scrollbar-track);
+
+    &::-webkit-scrollbar {
+        width: var(--comments-scrollbar-size);
+        height: var(--comments-scrollbar-size);
+    }
+
+    &::-webkit-scrollbar-track {
+        background: var(--comments-scrollbar-track);
+        border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--comments-box-scrollbar-thumb);
+        border: 0.2rem solid transparent;
+        border-radius: 999px;
+        background-clip: content-box;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: var(--comments-box-scrollbar-thumb-hover);
+        background-clip: content-box;
+    }
+
+    &::-webkit-scrollbar-corner {
+        background: transparent;
+    }
 }
 
 /* Individual comment message */
@@ -218,7 +257,7 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
     box-sizing: border-box;
 }
 
@@ -266,6 +305,290 @@
     background-repeat: no-repeat;
 }
 
+#comment-location.comment-location-native {
+    position: absolute;
+
+    inline-size: 1px;
+    block-size: 1px;
+
+    min-width: 0;
+    max-width: none;
+
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+
+    opacity: 0;
+    pointer-events: none;
+
+    clip-path: inset(50%);
+}
+
+.comment-location-dropdown {
+    position: relative;
+
+    display: inline-block;
+
+    inline-size: 100%;
+    max-inline-size: 100%;
+
+    text-align: left;
+    cursor: pointer;
+
+    &::after {
+        content: "";
+
+        position: absolute;
+        top: 100%;
+        left: 0;
+
+        inline-size: 100%;
+        block-size: var(--comments-location-dropdown-gap);
+
+        z-index: calc(var(--comments-location-dropdown-z-index) - 1);
+
+        background: transparent;
+        pointer-events: auto;
+    }
+
+    >.comment-location-dropdown__button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        box-sizing: border-box;
+
+        inline-size: 100%;
+        max-inline-size: 100%;
+
+        padding: var(--comment-field-padding);
+        padding-right: var(--comments-location-picker-padding-inline-end);
+
+        border: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+        border-radius: var(--comment-field-radius);
+
+        background-color: var(--chat-input-bg-colour);
+        color: var(--chat-input-text-colour);
+
+        background-image:
+            linear-gradient(45deg, transparent 50%, var(--chat-input-text-colour) 50%),
+            linear-gradient(135deg, var(--chat-input-text-colour) 50%, transparent 50%);
+        background-position:
+            calc(100% - var(--comments-location-picker-arrow-inline-end)) calc(50% - 2px),
+            calc(100% - calc(var(--comments-location-picker-arrow-inline-end) - var(--comments-location-picker-arrow-size))) calc(50% - 2px);
+        background-size:
+            var(--comments-location-picker-arrow-size) var(--comments-location-picker-arrow-size),
+            var(--comments-location-picker-arrow-size) var(--comments-location-picker-arrow-size);
+        background-repeat: no-repeat;
+
+        font-size: var(--comment-field-font-size);
+        line-height: 1.2;
+
+        text-align: center;
+        white-space: nowrap;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        cursor: pointer;
+
+        transition:
+            background-color var(--comment-post-btn-hover-transition),
+            border-color var(--comment-post-btn-hover-transition),
+            transform var(--comment-post-btn-hover-transition);
+
+        &:hover {
+            background-color: var(--menu-button-hover-bg-colour);
+        }
+
+        &:focus-visible {
+            outline: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+            outline-offset: 3px;
+        }
+    }
+
+    >.comment-location-dropdown__content {
+        position: absolute;
+        top: calc(100% + var(--comments-location-dropdown-gap));
+        left: 0;
+
+        box-sizing: border-box;
+
+        inline-size: 100%;
+        max-inline-size: 100%;
+
+        max-block-size: var(--comments-location-dropdown-max-height);
+
+        margin: 0;
+        padding: 0;
+
+        z-index: var(--comments-location-dropdown-z-index);
+
+        background-color: var(--chat-input-bg-colour);
+        color: var(--chat-input-text-colour);
+
+        border: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+        border-radius: var(--comment-field-radius);
+
+        box-shadow: var(--frame-box-shadow);
+
+        overflow-y: auto;
+        overflow-x: auto;
+
+        scrollbar-width: thin;
+        scrollbar-color: var(--comments-location-scrollbar-thumb) var(--comments-scrollbar-track);
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+
+        transform: translateY(-0.35rem) scaleY(0.96);
+        transform-origin: top center;
+
+        transition:
+            opacity 0.14s ease,
+            transform 0.16s ease,
+            visibility 0s linear 0.16s;
+
+        &::-webkit-scrollbar {
+            width: var(--comments-scrollbar-size);
+            height: var(--comments-scrollbar-size);
+        }
+
+        &::-webkit-scrollbar-track {
+            background: var(--comments-scrollbar-track);
+            border-radius: 999px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: var(--comments-location-scrollbar-thumb);
+            border: 0.2rem solid transparent;
+            border-radius: 999px;
+            background-clip: content-box;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+            background: var(--comments-location-scrollbar-thumb-hover);
+            background-clip: content-box;
+        }
+
+        &::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+    }
+
+    &:hover,
+    &:focus-within {
+        >.comment-location-dropdown__content {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+
+            transform: translateY(0) scaleY(1);
+
+            transition:
+                opacity 0.12s ease,
+                transform 0.16s ease,
+                visibility 0s linear 0s;
+        }
+    }
+
+    &.is-picked {
+        >.comment-location-dropdown__content {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+
+            transform: translateY(-0.35rem) scaleY(0.96);
+
+            transition:
+                opacity 0.14s ease,
+                transform 0.16s ease,
+                visibility 0s linear 0.16s;
+        }
+    }
+
+    .comment-location-dropdown__group {
+        display: block;
+
+        box-sizing: border-box;
+
+        min-inline-size: 100%;
+        inline-size: max-content;
+
+        padding: calc(var(--comment-field-padding-block) * 0.7) var(--comment-field-padding-inline);
+
+        background-color: color-mix(in srgb, var(--chat-input-bg-colour) 84%, var(--chat-input-text-colour));
+        color: var(--chat-input-text-colour);
+
+        border-top: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+        border-bottom: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+
+        font-size: calc(var(--comment-field-font-size) * 0.86);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+
+        text-align: center;
+        text-transform: uppercase;
+        white-space: nowrap;
+
+        cursor: default;
+        user-select: none;
+
+        opacity: 0.72;
+    }
+
+    .comment-location-dropdown__item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        box-sizing: border-box;
+
+        min-inline-size: 100%;
+        inline-size: max-content;
+
+        padding: var(--comment-field-padding);
+
+        background-color: var(--chat-input-bg-colour);
+        color: var(--chat-input-text-colour);
+
+        border: 0;
+
+        font-size: var(--comment-field-font-size);
+        line-height: 1.2;
+
+        text-align: center;
+        text-decoration: none;
+        white-space: nowrap;
+
+        cursor: pointer;
+
+        transition: background-color var(--comment-post-btn-hover-transition);
+
+        &:hover,
+        &:focus {
+            background-color: var(--menu-button-hover-bg-colour);
+        }
+
+        &:focus-visible {
+            outline: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+            outline-offset: -3px;
+        }
+
+        &.is-current {
+            background-color: var(--menu-button-hover-bg-colour);
+            font-weight: 700;
+        }
+
+        &.comment-location-dropdown__item--placeholder {
+            font-style: italic;
+            opacity: 0.72;
+        }
+    }
+}
+
 #comment-location-flag {
     position: absolute;
     top: 50%;
@@ -285,6 +608,7 @@
     font-size: var(--comments-location-picker-world-font-size);
     pointer-events: none;
     box-sizing: border-box;
+    z-index: calc(var(--comments-location-dropdown-z-index) + 1);
 
     img,
     svg {

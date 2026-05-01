@@ -97,4 +97,5 @@
     --prevChapter-icon-colour: var(--banner-blue);
     --jumpToChapter-icon-colour: var(--banner-blue);
     --showInfo-icon-colour: var(--banner-blue);
+    --imageNavArrow-bg-colour: var(--banner-blue);
 }

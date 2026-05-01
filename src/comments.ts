@@ -9,6 +9,9 @@ declare global {
     }
 }
 
+export const COMMENT_NICK_KEY = "nickname";
+export const COMMENT_LOCATION_KEY = "comment-location";
+
 const POST_URL = `${config.commentPostURL}`;
 const LOAD_URL = `${config.commentLoadURL}`;
 const TOKEN_URL = `${config.sessionTokenURL}`;
@@ -17,31 +20,18 @@ const IP_URL = `${config.getIpURL}`;
 const LOC_DATA_URL = "../data/locations.json";
 const LOC_FLAGS_URL = "../images/flags";
 
-const NICK_KEY = "nickname";
-const LOC_KEY = "comment-location";
+export type CommentScope = Readonly<
+    | {
+        page: string;
+        slug?: never;
+    }
+    | {
+        slug: string;
+        page?: never;
+    }
+>;
 
-type PostInp = Readonly<{
-    nick: string;
-    msg: string;
-    ip: string | null;
-    sessionToken: string | null;
-    website?: string;
-    location: string;
-}>;
-
-type PostOk = Readonly<{
-    success: true;
-    id: string;
-}>;
-
-type PostFail = Readonly<{
-    success: false;
-    error: string | undefined;
-}>;
-
-type PostRes = PostOk | PostFail;
-
-type LoadCmt = Readonly<{
+export type CommentRecord = Readonly<{
     nick: string;
     ip: string;
     msg: string;
@@ -50,16 +40,97 @@ type LoadCmt = Readonly<{
     location?: string;
 }>;
 
-let sTok: string | null = null;
+export type CommentSession = Readonly<{
+    sessionToken: string | null;
+    userIp: string | null;
+}>;
+
+export type CommentFormValues = Readonly<{
+    nick: string;
+    msg: string;
+    rawWebsite: string;
+    website?: string;
+    location: string;
+}>;
+
+export type CommentPostOk = Readonly<{
+    success: true;
+    id: string;
+}>;
+
+export type CommentPostFail = Readonly<{
+    success: false;
+    error: string | undefined;
+}>;
+
+export type CommentPostRes = CommentPostOk | CommentPostFail;
+
+export type CommentPostInput = Readonly<{
+    url: string;
+    scope: CommentScope;
+    nick: string;
+    msg: string;
+    ip: string | null;
+    sessionToken: string | null;
+    website?: string;
+    location: string;
+    emptyCredentialsAsString?: boolean;
+}>;
+
+export type CommentFormControls = Readonly<{
+    nickInput: HTMLInputElement;
+    textarea: HTMLTextAreaElement;
+    websiteInput?: HTMLInputElement | null;
+    locationSelect?: HTMLSelectElement | null;
+}>;
+
+export type LoadCommentRecordsInput = Readonly<{
+    url: string;
+    scopeParam: "page" | "slug";
+    scopeValue: string;
+}>;
+
+export type RenderCommentRecordsInput = Readonly<{
+    comments: readonly unknown[];
+    box: HTMLElement;
+    locationApi?: LocationApi | null;
+}>;
+
+export type CommentLocationPickerInput = Readonly<{
+    selectElement: HTMLSelectElement;
+    flagElement: HTMLElement;
+    storageKey?: string;
+    placeholderLabel?: string;
+    emptyFlagLabel?: string;
+}>;
+
+type CmtPayloadBase = Readonly<{
+    page?: string;
+    slug?: string;
+    nick: string;
+    msg: string;
+    ip: string | null;
+    sessionToken: string | null;
+    timestamp: string;
+    id: string;
+    location: string;
+}>;
+
+type CmtPayload = CmtPayloadBase & Readonly<{
+    website?: string;
+}>;
+
+let sessionToken: string | null = null;
 let userIp: string | null = null;
+let sessionPromise: Promise<CommentSession> | null = null;
 let locApi: LocationApi | null = null;
 
 /**
- * Tiny url check.
+ * url check, just lets URL do it
  * @param {string} value
  * @returns {boolean}
  */
-function isUrl(value: string): boolean {
+export function isUrl(value: string): boolean {
     try {
         new URL(value);
         return true;
@@ -69,12 +140,11 @@ function isUrl(value: string): boolean {
 }
 
 /**
- * Normalises the website field and adds https if needed.
- * blank becomes undefined, bad rubbish stays rejected.
+ * makes site value less raw
  * @param {string} rawValue
  * @returns {string | undefined}
  */
-function normSite(rawValue: string): string | undefined {
+export function normSite(rawValue: string): string | undefined {
     const trimmed = rawValue.trim();
     if (trimmed.length === 0) return undefined;
 
@@ -86,12 +156,11 @@ function normSite(rawValue: string): string | undefined {
 }
 
 /**
- * Checks one loaded comment payload.
- * throws if the shape is off.
+ * throws if comment looks wrong
  * @param {unknown} value
  * @returns {void}
  */
-function assertCmt(value: unknown): asserts value is LoadCmt {
+export function assertCmt(value: unknown): asserts value is CommentRecord {
     if (!helpers.isRecord(value)) throw new Error("Invalid data format in comment data");
     if (typeof value.nick !== "string") throw new Error("Invalid nickname format in comment data");
     if (typeof value.ip !== "string") throw new Error("Invalid comment metadata format in comment data");
@@ -110,23 +179,23 @@ function assertCmt(value: unknown): asserts value is LoadCmt {
 }
 
 /**
- * Makes sure empty location vals become "world".
+ * empty loc becomes world
  * @param {string | null | undefined} rawValue
  * @returns {string}
  */
-function normLoc(rawValue: string | null | undefined): string {
+export function normLoc(rawValue: string | null | undefined): string {
     const trimmed = rawValue?.trim() ?? "";
     return trimmed.length === 0 ? "world" : trimmed;
 }
 
 /**
- * Restores the saved location selection if possible.
- * otherwise just falls back to world and moves on.
+ * puts saved loc back in the select
  * @param {HTMLSelectElement} locationSelect
+ * @param {string} storageKey
  * @returns {void}
  */
-function restoreLoc(locationSelect: HTMLSelectElement): void {
-    const storedLocation = normLoc(localStorage.getItem(LOC_KEY));
+export function restoreLoc(locationSelect: HTMLSelectElement, storageKey = COMMENT_LOCATION_KEY): void {
+    const storedLocation = normLoc(localStorage.getItem(storageKey));
     const hasStoredOption = Array.from(locationSelect.options).some((option) => option.value === storedLocation);
 
     locationSelect.value = hasStoredOption ? storedLocation : "world";
@@ -134,61 +203,95 @@ function restoreLoc(locationSelect: HTMLSelectElement): void {
 }
 
 /**
- * Inits the location picker bits if the dom nodes exist.
- * @returns {Promise<void>}
+ * makes the loc picker and saves changes
+ * @param {CommentLocationPickerInput} input
+ * @returns {Promise<LocationApi>}
  */
-async function initLocPicker(): Promise<void> {
-    const locationSelect = document.getElementById("comment-location") as HTMLSelectElement | null;
-    const locationFlag = document.getElementById("comment-location-flag") as HTMLElement | null;
+export async function initCommentLocationPicker(input: CommentLocationPickerInput): Promise<LocationApi> {
+    const storageKey = input.storageKey ?? COMMENT_LOCATION_KEY;
 
-    if (!locationSelect || !locationFlag) return;
-
-    locApi = createLocationApi({
-        selectElement: locationSelect,
-        flagElement: locationFlag,
+    const api = createLocationApi({
+        selectElement: input.selectElement,
+        flagElement: input.flagElement,
         locationsUrl: LOC_DATA_URL,
         flagsBaseUrl: LOC_FLAGS_URL,
-        emptyFlagLabel: "🌎"
+        placeholderLabel: input.placeholderLabel,
+        emptyFlagLabel: input.emptyFlagLabel ?? "🌎"
     });
 
-    await locApi.init();
-    restoreLoc(locationSelect);
+    await api.init();
+    wireLocPkClse(input.selectElement);
+    restoreLoc(input.selectElement, storageKey);
 
-    /**
-     * Persists the selected location locally.
-     * @returns {void}
-     */
     const onLocChange = (): void => {
-        localStorage.setItem(LOC_KEY, normLoc(locationSelect.value));
+        localStorage.setItem(storageKey, normLoc(input.selectElement.value));
     };
 
-    locationSelect.addEventListener("change", onLocChange);
+    input.selectElement.addEventListener("change", onLocChange);
+    locApi = api;
+
+    return api;
 }
 
 /**
- * Makes the boring world badge.
+ * folds the fake loc menu after a pick, I think
+ * @param {HTMLSelectElement} locationSelect
+ * @returns {void}
+ */
+function wireLocPkClse(locationSelect: HTMLSelectElement): void {
+    const picker = locationSelect.parentElement
+        ?.querySelector<HTMLElement>(".comment-location-dropdown");
+
+    if (!picker) return;
+    if (picker.dataset.wired === "1") return;
+
+    picker.dataset.wired = "1";
+
+    picker.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+
+        const item = target.closest(".comment-location-dropdown__item");
+        if (!(item instanceof HTMLElement)) return;
+
+        picker.classList.add("is-picked");
+
+        picker.addEventListener(
+            "pointerleave",
+            () => {
+                picker.classList.remove("is-picked");
+            },
+            { once: true }
+        );
+    });
+}
+
+/**
+ * plain world badge
  * @returns {HTMLElement}
  */
-function mkWorldBadge(): HTMLElement {
+export function mkWorldBadge(): HTMLElement {
     const badge = document.createElement("span");
+
     badge.className = "chat-location-badge";
     badge.dataset.location = "world";
     badge.textContent = "🌎";
     badge.setAttribute("aria-label", "World");
     badge.title = "World";
+
     return badge;
 }
 
 /**
- * Makes a location badge for a comment header.
- * falls back to the world icon if anything is missing or weird.
+ * flag badge, falls back to world
  * @param {string | null | undefined} locationKeyRaw
+ * @param {LocationApi | null} api
  * @returns {HTMLElement}
  */
-function mkLocBadge(locationKeyRaw: string | null | undefined): HTMLElement {
+export function mkLocBadge(locationKeyRaw: string | null | undefined, api: LocationApi | null = locApi): HTMLElement {
     const locationKey = normLoc(locationKeyRaw);
     if (locationKey === "world") return mkWorldBadge();
-    if (!locApi) return mkWorldBadge();
+    if (!api) return mkWorldBadge();
 
     try {
         const badge = document.createElement("span");
@@ -197,12 +300,13 @@ function mkLocBadge(locationKeyRaw: string | null | undefined): HTMLElement {
 
         const image = document.createElement("img");
         image.className = "chat-location-flag";
-        image.src = locApi.getFlagUrl(locationKey);
-        image.alt = `${locApi.getLabel(locationKey)} flag`;
+        image.src = api.getFlagUrl(locationKey);
+        image.alt = `${api.getLabel(locationKey)} flag`;
         image.loading = "lazy";
 
         badge.appendChild(image);
-        badge.title = locApi.getLabel(locationKey);
+        badge.title = api.getLabel(locationKey);
+
         return badge;
     } catch {
         return mkWorldBadge();
@@ -210,20 +314,46 @@ function mkLocBadge(locationKeyRaw: string | null | undefined): HTMLElement {
 }
 
 /**
- * Full page id used by the comments api.
+ * page-ish id
  * @returns {string}
  */
-function getPageId(): string {
+export function getPageId(): string {
     const path = window.location.pathname;
     const query = window.location.search;
+
     return `${path}${query}`;
 }
 
 /**
- * Fetches a session token for comment posting.
- * @returns {Promise<void>}
+ * shared session init
+ * @returns {Promise<CommentSession>}
  */
-async function fetchTok(): Promise<void> {
+export async function initCommentSession(): Promise<CommentSession> {
+    if (sessionPromise) return sessionPromise;
+
+    sessionPromise = bootSess();
+    return sessionPromise;
+}
+
+/**
+ * gets token and ip
+ * @returns {Promise<CommentSession>}
+ */
+async function bootSess(): Promise<CommentSession> {
+    sessionToken = await fetchTok();
+    userIp = await fetchIp();
+
+    return {
+        sessionToken,
+        userIp
+    };
+}
+
+/**
+ * token fetch, may fail quietly
+ * @returns {Promise<string | null>}
+ */
+async function fetchTok(): Promise<string | null> {
     try {
         const response = await fetch(TOKEN_URL);
         if (!response.ok) throw new Error(`Failed to fetch session token: ${response.status}`);
@@ -231,15 +361,15 @@ async function fetchTok(): Promise<void> {
         const data: unknown = await (response.json() as Promise<unknown>);
         helpers.assertSessionTokenResponse(data);
 
-        sTok = data.sessionToken;
-        console.log("🔑 Session Token received:", sTok);
+        return data.sessionToken;
     } catch (error) {
         console.error("❌ Error fetching session token:", error);
+        return null;
     }
 }
 
 /**
- * Fetches the current user ip.
+ * ip fetch, also stashes it on window
  * @returns {Promise<string | null>}
  */
 async function fetchIp(): Promise<string | null> {
@@ -250,7 +380,6 @@ async function fetchIp(): Promise<string | null> {
         const data: unknown = await (response.json() as Promise<unknown>);
         helpers.assertGetIpResponse(data);
 
-        console.log(`🌍 User IP: ${data.ip}`);
         window.ipAddress = data.ip;
         return data.ip;
     } catch (error) {
@@ -260,49 +389,50 @@ async function fetchIp(): Promise<string | null> {
 }
 
 /**
- * Makes a short-ish deterministic comment id.
- * not magic, just hash a few bits and take the front slice.
+ * small hash id for comments
  * @param {string | null} ip
- * @param {string | null} sessionToken
+ * @param {string | null} token
  * @param {string} timestamp
  * @returns {Promise<string>}
  */
-async function mkCmtId(ip: string | null, sessionToken: string | null, timestamp: string): Promise<string> {
+export async function mkCmtId(ip: string | null, token: string | null, timestamp: string): Promise<string> {
     const randomValue = Math.floor(Math.random() * 255) + 1;
-    const raw = `${ip}-${sessionToken}-${timestamp}-${randomValue}`;
+    const raw = `${ip}-${token}-${timestamp}-${randomValue}`;
     const msgUint8 = new TextEncoder().encode(raw);
     const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
     return hashHex.substring(0, 8);
 }
 
 /**
- * Formats a timestamp for display.
+ * timestamp for display
  * @param {string} isoString
  * @returns {string}
  */
-function fmtTs(isoString: string): string {
+export function fmtTs(isoString: string): string {
     const date = new Date(isoString);
     return date.toLocaleString();
 }
 
 /**
- * Loads comments for the current page.
+ * fetch comments, returns empty on fail
+ * @param {LoadCommentRecordsInput} input
  * @returns {Promise<unknown[]>}
  */
-async function loadCmts(): Promise<unknown[]> {
-    const currentPage = getPageId();
-
+export async function loadCommentRecords(input: LoadCommentRecordsInput): Promise<unknown[]> {
     try {
-        const encodedPage = encodeURIComponent(currentPage);
-        const response = await fetch(`${LOAD_URL}?page=${encodedPage}`);
-        if (!response.ok) throw new Error(`Failed to load comments: ${response.status}`);
+        const encodedValue = encodeURIComponent(input.scopeValue);
+        const response = await fetch(`${input.url}?${input.scopeParam}=${encodedValue}`);
+
+        if (!response.ok) {
+            throw new Error(`Failed to load comments: ${response.status}`);
+        }
 
         const comments: unknown = await (response.json() as Promise<unknown>);
         if (!Array.isArray(comments)) throw new Error("Invalid comment data format");
 
-        console.log(`💬 Loaded ${comments.length} comment(s) for page "${currentPage}"`);
         return comments;
     } catch (error) {
         console.error("❌ Error loading comments:", error);
@@ -311,11 +441,11 @@ async function loadCmts(): Promise<unknown[]> {
 }
 
 /**
- * Builds either a plain nick span or a website link.
- * @param {LoadCmt} comment
+ * nick, linked if they left a site
+ * @param {CommentRecord} comment
  * @returns {HTMLElement}
  */
-function mkNick(comment: LoadCmt): HTMLElement {
+export function mkNick(comment: CommentRecord): HTMLElement {
     if (!comment.website) {
         const nickSpan = document.createElement("span");
         nickSpan.className = "chat-nick";
@@ -329,97 +459,97 @@ function mkNick(comment: LoadCmt): HTMLElement {
     nickLink.href = comment.website;
     nickLink.target = "_blank";
     nickLink.rel = "nofollow noopener noreferrer";
+
     return nickLink;
 }
 
 /**
- * Renders all comments into the comments box.
+ * make one comment dom node
+ * @param {CommentRecord} comment
+ * @param {LocationApi | null} api
+ * @returns {Promise<HTMLElement>}
+ */
+export async function mkCommentElement(comment: CommentRecord, api: LocationApi | null = locApi): Promise<HTMLElement> {
+    const wrapper = document.createElement("div");
+    wrapper.className = "comment-message";
+
+    const header = document.createElement("div");
+    header.className = "chat-header";
+
+    const avatarWrapper = document.createElement("div");
+    avatarWrapper.className = "avatar-container";
+
+    const identicon = await drawSpiralIdenticon(`${comment.nick}@${comment.ip}`, 48);
+    avatarWrapper.appendChild(identicon);
+    avatarWrapper.appendChild(mkLocBadge(comment.location, api));
+
+    const timestampSpan = document.createElement("span");
+    timestampSpan.className = "chat-timestamp";
+    timestampSpan.textContent = fmtTs(comment.timestamp);
+
+    const message = document.createElement("span");
+    message.className = "chat-text";
+    message.textContent = comment.msg;
+
+    header.appendChild(avatarWrapper);
+    header.appendChild(mkNick(comment));
+    header.appendChild(timestampSpan);
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(message);
+
+    return wrapper;
+}
+
+/**
+ * clear and render all comments
+ * @param {RenderCommentRecordsInput} input
  * @returns {Promise<void>}
  */
-async function rndCmts(): Promise<void> {
-    await helpers.waitForDomReady();
-    const comments = await loadCmts();
-    const box = document.getElementById("comments-box");
-    if (!box) return;
+export async function renderCommentRecords(input: RenderCommentRecordsInput): Promise<void> {
+    input.box.replaceChildren();
 
-    box.innerHTML = "";
-
-    for (const commentUnknown of comments) {
+    for (const commentUnknown of input.comments) {
         assertCmt(commentUnknown);
-        const comment = commentUnknown;
 
-        const wrapper = document.createElement("div");
-        wrapper.className = "comment-message";
-
-        const header = document.createElement("div");
-        header.className = "chat-header";
-
-        const avatarWrapper = document.createElement("div");
-        avatarWrapper.className = "avatar-container";
-
-        const identicon = await drawSpiralIdenticon(`${comment.nick}@${comment.ip}`, 48);
-        avatarWrapper.appendChild(identicon);
-        avatarWrapper.appendChild(mkLocBadge(comment.location));
-
-        const timestampSpan = document.createElement("span");
-        timestampSpan.className = "chat-timestamp";
-        timestampSpan.textContent = fmtTs(comment.timestamp);
-
-        const message = document.createElement("span");
-        message.className = "chat-text";
-        message.textContent = comment.msg;
-
-        header.appendChild(avatarWrapper);
-        header.appendChild(mkNick(comment));
-        header.appendChild(timestampSpan);
-
-        wrapper.appendChild(header);
-        wrapper.appendChild(message);
-        box.appendChild(wrapper);
+        const item = await mkCommentElement(commentUnknown, input.locationApi ?? locApi);
+        input.box.appendChild(item);
     }
 }
 
 /**
- * Posts one comment to the api.
- * @param {PostInp} input
- * @returns {Promise<PostRes>}
+ * send a comment
+ * @param {CommentPostInput} input
+ * @returns {Promise<CommentPostRes>}
  */
-async function postCmt({
-    nick,
-    msg,
-    ip,
-    sessionToken,
-    website,
-    location
-}: PostInp): Promise<PostRes> {
-    const page = getPageId();
+export async function postComment(input: CommentPostInput): Promise<CommentPostRes> {
     const timestamp = new Date().toISOString();
-    const id = await mkCmtId(ip, sessionToken, timestamp);
+    const id = await mkCmtId(input.ip, input.sessionToken, timestamp);
 
-    const payload: Readonly<{
-        page: string;
-        nick: string;
-        msg: string;
-        ip: string | null;
-        sessionToken: string | null;
-        timestamp: string;
-        id: string;
-        website?: string;
-        location: string;
-    }> = {
-        page,
-        nick,
-        msg,
-        ip,
-        sessionToken,
+    const scopePayload = "page" in input.scope
+        ? { page: input.scope.page }
+        : { slug: input.scope.slug };
+
+    const basePayload: CmtPayloadBase = {
+        ...scopePayload,
+        nick: input.nick,
+        msg: input.msg,
+        ip: input.emptyCredentialsAsString ? input.ip ?? "" : input.ip,
+        sessionToken: input.emptyCredentialsAsString ? input.sessionToken ?? "" : input.sessionToken,
         timestamp,
         id,
-        website,
-        location
+        location: input.location
     };
 
+    const payload: CmtPayload = input.website === undefined
+        ? basePayload
+        : {
+            ...basePayload,
+            website: input.website
+        };
+
     try {
-        const response = await fetch(POST_URL, {
+        const response = await fetch(input.url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -435,20 +565,153 @@ async function postCmt({
             return { success: false, error: serverError || "Unknown error" };
         }
 
-        console.log("✅ Comment posted:", payload);
         return { success: true, id };
     } catch (error) {
         console.error("❌ Error sending comment:", error);
+
         const message = (error as { message?: unknown }).message;
         return { success: false, error: message as string | undefined };
     }
 }
 
 /**
- * Wires the comment posting form.
+ * read and check the form
+ * @param {CommentFormControls} controls
+ * @returns {CommentFormValues | null}
+ */
+export function readCommentForm(controls: CommentFormControls): CommentFormValues | null {
+    const nick = controls.nickInput.value.trim();
+    const msg = controls.textarea.value.trim();
+
+    if (!nick || nick.length > 32) {
+        alert("Nickname must be 1–32 characters.");
+        return null;
+    }
+
+    if (!msg || msg.length > 256) {
+        alert("Comment must be 1–256 characters.");
+        return null;
+    }
+
+    const rawWebsite = controls.websiteInput?.value ?? "";
+    const website = normSite(rawWebsite);
+
+    if (rawWebsite.trim().length > 0 && website === undefined) {
+        alert("Website must be a valid URL, for example https://example.com.");
+        return null;
+    }
+
+    return {
+        nick,
+        msg,
+        rawWebsite,
+        website,
+        location: normLoc(controls.locationSelect?.value)
+    };
+}
+
+/**
+ * saved nick back in box
+ * @param {HTMLInputElement} nickInput
  * @returns {void}
  */
-function initPosting(): void {
+export function restoreNick(nickInput: HTMLInputElement): void {
+    const storedNick = localStorage.getItem(COMMENT_NICK_KEY);
+    if (storedNick) nickInput.value = storedNick;
+}
+
+/**
+ * save form bits after posting
+ * @param {CommentFormControls} controls
+ * @param {CommentFormValues} values
+ * @returns {void}
+ */
+export function persistCommentFormValues(controls: CommentFormControls, values: CommentFormValues): void {
+    localStorage.setItem(COMMENT_NICK_KEY, values.nick);
+    localStorage.setItem(COMMENT_LOCATION_KEY, values.location);
+
+    controls.textarea.value = "";
+
+    if (controls.websiteInput) {
+        controls.websiteInput.value = values.rawWebsite.trim().length > 0
+            ? values.rawWebsite.trim()
+            : "";
+    }
+}
+
+/**
+ * stop clicks etc leaking out
+ * @param {HTMLElement} root
+ * @returns {void}
+ */
+export function stopCommentEventPropagation(root: HTMLElement): void {
+    if (root.dataset.commentStopPropagationWired === "1") return;
+
+    root.dataset.commentStopPropagationWired = "1";
+
+    const stop = (event: Event): void => {
+        event.stopPropagation();
+    };
+
+    root.addEventListener("click", stop);
+    root.addEventListener("mousedown", stop);
+    root.addEventListener("pointerdown", stop);
+    root.addEventListener("touchstart", stop);
+    root.addEventListener("keydown", stop);
+}
+
+/**
+ * page comments load
+ * @returns {Promise<unknown[]>}
+ */
+async function loadPgCmts(): Promise<unknown[]> {
+    return loadCommentRecords({
+        url: LOAD_URL,
+        scopeParam: "page",
+        scopeValue: getPageId()
+    });
+}
+
+/**
+ * page comments render
+ * @returns {Promise<void>}
+ */
+async function rndPgCmts(): Promise<void> {
+    await helpers.waitForDomReady();
+
+    const comments = await loadPgCmts();
+    const box = document.getElementById("comments-box");
+    if (!box) return;
+
+    await renderCommentRecords({
+        comments,
+        box,
+        locationApi: locApi
+    });
+}
+
+/**
+ * page location picker, if present
+ * @returns {Promise<void>}
+ */
+async function initPgLoc(): Promise<void> {
+    const locationSelect = document.getElementById("comment-location") as HTMLSelectElement | null;
+    const locationFlag = document.getElementById("comment-location-flag") as HTMLElement | null;
+
+    if (!locationSelect || !locationFlag) return;
+
+    locApi = await initCommentLocationPicker({
+        selectElement: locationSelect,
+        flagElement: locationFlag,
+        emptyFlagLabel: "🌎"
+    });
+}
+
+/**
+ * page post button wiring
+ * @returns {void}
+ */
+function initPgPost(): void {
     const nickInput = document.getElementById("comment-nick") as HTMLInputElement | null;
     const locationSelect = document.getElementById("comment-location") as HTMLSelectElement | null;
     const textarea = document.getElementById("new-comment") as HTMLTextAreaElement | null;
@@ -457,47 +720,37 @@ function initPosting(): void {
 
     if (!nickInput || !textarea || !button) return;
 
-    const storedNick = localStorage.getItem(NICK_KEY);
-    if (storedNick) nickInput.value = storedNick;
+    restoreNick(nickInput);
 
-    /**
-     * Handles posting from the comment form.
-     * @returns {Promise<void>}
-     */
-    const onPost = async (): Promise<void> => {
-        const nick = nickInput.value.trim();
-        const msg = textarea.value.trim();
+    const onPst = async (): Promise<void> => {
+        const values = readCommentForm({
+            nickInput,
+            textarea,
+            websiteInput,
+            locationSelect
+        });
 
-        if (!nick || nick.length > 32) {
-            alert("Nickname must be 1–32 characters.");
-            return;
-        }
+        if (!values) return;
 
-        if (!msg || msg.length > 256) {
-            alert("Comment must be 1–256 characters.");
-            return;
-        }
+        persistCommentFormValues(
+            {
+                nickInput,
+                textarea,
+                websiteInput,
+                locationSelect
+            },
+            values
+        );
 
-        const rawWebsite = websiteInput?.value ?? "";
-        const website = normSite(rawWebsite);
-
-        if (rawWebsite.trim().length > 0 && website === undefined) {
-            alert("Website must be a valid URL (for example https://example.com).");
-            return;
-        }
-
-        const location = normLoc(locationSelect?.value);
-
-        localStorage.setItem(NICK_KEY, nick);
-        localStorage.setItem(LOC_KEY, location);
-
-        const result = await postCmt({
-            nick,
-            msg,
+        const result = await postComment({
+            url: POST_URL,
+            scope: { page: getPageId() },
+            nick: values.nick,
+            msg: values.msg,
             ip: userIp,
-            sessionToken: sTok,
-            website,
-            location
+            sessionToken,
+            website: values.website,
+            location: values.location
         });
 
         if (!result.success) {
@@ -505,32 +758,31 @@ function initPosting(): void {
             return;
         }
 
-        textarea.value = "";
-
-        if (websiteInput) {
-            websiteInput.value = rawWebsite.trim().length > 0 ? rawWebsite.trim() : "";
-        }
-
-        await rndCmts();
+        await rndPgCmts();
     };
 
     button.addEventListener("click", () => {
-        void onPost();
+        void onPst();
     });
 }
 
 /**
- * Boots the comment page bits once dom is ready.
+ * boot comments on normal pages
  * @returns {Promise<void>}
  */
-const boot = async (): Promise<void> => {
-    await fetchTok();
-    userIp = await fetchIp();
-    await initLocPicker();
-    await rndCmts();
-    initPosting();
-};
+async function bootPgCmts(): Promise<void> {
+    const hasPageComments =
+        document.getElementById("comments") !== null ||
+        document.getElementById("comments-box") !== null;
+
+    if (!hasPageComments) return;
+
+    await initCommentSession();
+    await initPgLoc();
+    await rndPgCmts();
+    initPgPost();
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-    void boot();
+    void bootPgCmts();
 });

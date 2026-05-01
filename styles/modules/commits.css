@@ -24,6 +24,11 @@
     --commits-scroll-font-size: calc(1rem * var(--kc-text-scale));
     --commits-scroll-gap: clamp(0.75rem, 1.5vw, 0.9375rem);
 
+    --commits-scrollbar-size: 0.75rem;
+    --commits-scrollbar-thumb: color-mix(in srgb, var(--chatroom-text-colour) 42%, transparent);
+    --commits-scrollbar-thumb-hover: color-mix(in srgb, var(--chatroom-text-colour) 62%, transparent);
+    --commits-scrollbar-track: transparent;
+
     --commits-row-gap: clamp(0.75rem, 2vw, 1.25rem);
     --commits-row-max-width: min(75rem, 100%);
 
@@ -142,6 +147,9 @@
     max-height: var(--commits-scroll-max-height);
     overflow-y: auto;
 
+    scrollbar-width: thin;
+    scrollbar-color: var(--commits-scrollbar-thumb) var(--commits-scrollbar-track);
+
     font-size: var(--commits-scroll-font-size);
 
     display: flex;
@@ -149,6 +157,32 @@
     gap: var(--commits-scroll-gap);
 
     color: var(--chatroom-text-colour);
+
+    &::-webkit-scrollbar {
+        width: var(--commits-scrollbar-size);
+        height: var(--commits-scrollbar-size);
+    }
+
+    &::-webkit-scrollbar-track {
+        background: var(--commits-scrollbar-track);
+        border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--commits-scrollbar-thumb);
+        border: 0.2rem solid transparent;
+        border-radius: 999px;
+        background-clip: content-box;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: var(--commits-scrollbar-thumb-hover);
+        background-clip: content-box;
+    }
+
+    &::-webkit-scrollbar-corner {
+        background: transparent;
+    }
 }
 
 /* =========================================
@@ -337,8 +371,8 @@
         overflow: hidden !important;
     }
 
-    .commits-outer-shell > .window-header,
-    .commits-outer-shell > .window-body,
+    .commits-outer-shell>.window-header,
+    .commits-outer-shell>.window-body,
     .window-launcher[src="/images/factory.svg"] {
         display: none !important;
     }

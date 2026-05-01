@@ -32,19 +32,15 @@ interface Row {
 }
 
 const DEF_REG_ORDER = [
-    "africa",
-    "america",
-    "asia",
-    "europe",
-    "oceania"
+    "europe", "asia", "america", "oceania", "africa",
 ] as const;
 
 const DEF_REG_LABELS: Readonly<Record<string, string>> = {
-    africa: "Africa",
-    america: "America",
-    asia: "Asia",
     europe: "Europe",
-    oceania: "Oceania"
+    asia: "Asia",
+    america: "America",
+    oceania: "Oceania",
+    africa: "Africa",
 };
 
 const DEF_TOP_KEYS = [
@@ -52,6 +48,7 @@ const DEF_TOP_KEYS = [
     "england",
     "wales",
     "northern ireland",
+    "ireland",
     "united states of america",
     "japan",
     "spain",
@@ -71,10 +68,11 @@ export class locApi {
 
     private data: Regions | null = null;
     private onChg: (() => void) | null = null;
+    private pickerEl: HTMLDivElement | null = null;
+    private pickerBtn: HTMLButtonElement | null = null;
 
     /**
-     * Wires the little api wrapper up.
-     * mostly just stores refs and defaults really.
+     * stores the bits and defaults, not much else
      * @param {Opts} options
      * @returns {void}
      */
@@ -82,23 +80,24 @@ export class locApi {
         this.selEl = options.selectElement;
         this.flagEl = options.flagElement;
         this.dataUrl = options.locationsUrl;
-        this.flagsUrl = trimSlash(options.flagsBaseUrl);
+        this.flagsUrl = noSlash(options.flagsBaseUrl);
         this.topKeys = options.mostFrequentKeys ?? DEF_TOP_KEYS;
         this.regOrder = options.regionOrder ?? DEF_REG_ORDER;
         this.regLabels = options.regionLabels ?? DEF_REG_LABELS;
-        this.phLabel = options.placeholderLabel ?? "Select a location";
+        this.phLabel = options.placeholderLabel ?? "Location (Optional)";
         this.emptyLabel = options.emptyFlagLabel ?? "Select a location";
     }
 
     /**
-     * Loads the dataset, fills the select, hooks the change event.
-     * then paints the current flag if there is already a value sat there.
+     * load data, make options, wire it
+     * then paints current flag if any
      * @returns {Promise<void>}
      */
     public async init(): Promise<void> {
-        this.data = await this.fetchData();
+        this.data = await this.fetchDat();
         this.fill();
         this.bind();
+        this.syncPick();
 
         if (!this.selEl.value) {
             this.clearFlag();
@@ -109,8 +108,7 @@ export class locApi {
     }
 
     /**
-     * Removes listeners and drops the cached dataset.
-     * small tidy-up job.
+     * tidy the picker, mostly
      * @returns {void}
      */
     public destroy(): void {
@@ -119,47 +117,54 @@ export class locApi {
             this.onChg = null;
         }
 
+        this.pickerEl?.remove();
+        this.pickerEl = null;
+        this.pickerBtn = null;
+        this.selEl.classList.remove("comment-location-native");
+
         this.data = null;
     }
 
     /**
-     * Re-fetches the locations json and rebuilds the dropdown.
-     * keeps the current value if it still exists.
+     * reloads json and tries not to lose the value
      * @returns {Promise<void>}
      */
     public async reload(): Promise<void> {
         const selKey = this.selEl.value;
 
-        this.data = await this.fetchData();
+        this.data = await this.fetchDat();
         this.fill();
 
         if (!selKey) {
             this.clearFlag();
+            this.syncPick();
             return;
         }
 
         const row = this.find(selKey);
         if (!row) {
             this.clearFlag();
+            this.syncPick();
             return;
         }
 
         this.selEl.value = selKey;
+        this.syncPick();
         await this.show(selKey);
     }
 
     /**
-     * Sets a location in code and updates the flag too.
-     * blank value clears it.
+     * set it from code, empty means clear
      * @param {string} locationKey
      * @returns {Promise<void>}
      */
     public async setValue(locationKey: string): Promise<void> {
-        this.needInit();
+        this.ndInit();
 
         if (!locationKey) {
             this.selEl.value = "";
             this.clearFlag();
+            this.syncPick();
             return;
         }
 
@@ -169,11 +174,12 @@ export class locApi {
         }
 
         this.selEl.value = locationKey;
+        this.syncPick();
         await this.show(locationKey);
     }
 
     /**
-     * Gives back the currently selected key.
+     * current key
      * @returns {string}
      */
     public getValue(): string {
@@ -181,13 +187,12 @@ export class locApi {
     }
 
     /**
-     * Looks up one location from the loaded dataset.
-     * returns null if it is missing.
+     * gets the row-ish public shape
      * @param {string} locationKey
      * @returns {Loc | null}
      */
     public getLocation(locationKey: string): Loc | null {
-        this.needInit();
+        this.ndInit();
 
         const row = this.find(locationKey);
         if (!row) return null;
@@ -199,7 +204,7 @@ export class locApi {
     }
 
     /**
-     * Clears whatever is being shown in the flag slot.
+     * blank flag display
      * @returns {void}
      */
     public clearFlag(): void {
@@ -208,14 +213,21 @@ export class locApi {
     }
 
     /**
-     * Re-renders the flag for the current select value.
-     * null when there is no value to show.
+     * redraw the current flag thing
      * @returns {Promise<FlagRes | null>}
      */
     public async renderCurrentFlag(): Promise<FlagRes | null> {
         const locationKey = this.selEl.value;
 
+        this.syncPick();
+
         if (!locationKey) {
+            this.clearFlag();
+            return null;
+        }
+
+        const row = this.find(locationKey);
+        if (!row) {
             this.clearFlag();
             return null;
         }
@@ -224,29 +236,29 @@ export class locApi {
     }
 
     /**
-     * Resolves the png url for a given location flag.
+     * png url for a loc
      * @param {string} locationKey
      * @returns {string}
      */
     public getFlagUrl(locationKey: string): string {
-        this.needInit();
+        this.ndInit();
 
         const row = this.find(locationKey);
         if (!row) {
             throw new Error(`Location not found in dataset: ${locationKey}`);
         }
 
-        const code = toFlagCode(row.emoji);
+        const code = flagCode(row.emoji);
         return `${this.flagsUrl}/${code}.png`;
     }
 
     /**
-     * Builds the user-facing label for one location.
+     * label for ui, nothing fancy
      * @param {string} locationKey
      * @returns {string}
      */
     public getLabel(locationKey: string): string {
-        this.needInit();
+        this.ndInit();
 
         const row = this.find(locationKey);
         if (!row) {
@@ -257,8 +269,7 @@ export class locApi {
     }
 
     /**
-     * Hooks the select change event.
-     * if one was there already it gets replaced.
+     * wire change listener again
      * @returns {void}
      */
     private bind(): void {
@@ -267,6 +278,7 @@ export class locApi {
         }
 
         this.onChg = () => {
+            this.syncPick();
             void this.renderCurrentFlag();
         };
 
@@ -274,10 +286,10 @@ export class locApi {
     }
 
     /**
-     * Fetches the raw locations json and normalises it.
+     * fetch and clean the json
      * @returns {Promise<Regions>}
      */
-    private async fetchData(): Promise<Regions> {
+    private async fetchDat(): Promise<Regions> {
         const response = await fetch(this.dataUrl);
 
         if (!response.ok) {
@@ -290,24 +302,25 @@ export class locApi {
             throw new Error("Locations JSON must contain an object at the root");
         }
 
-        return normData(value);
+        return normDat(value);
     }
 
     /**
-     * Rebuilds the dropdown from scratch.
+     * make the select again
      * @returns {void}
      */
     private fill(): void {
-        this.needInit();
+        this.ndInit();
 
         this.selEl.replaceChildren();
         this.addPh();
         this.addTop();
         this.addRegs();
+        this.rndPick();
     }
 
     /**
-     * Adds the empty placeholder option at the top.
+     * placeholder option
      * @returns {void}
      */
     private addPh(): void {
@@ -318,7 +331,7 @@ export class locApi {
     }
 
     /**
-     * Adds the "Most Frequent" optgroup if any of those keys exist.
+     * top group, if anything matches
      * @returns {void}
      */
     private addTop(): void {
@@ -352,8 +365,7 @@ export class locApi {
     }
 
     /**
-     * Adds all the regional optgroups in the configured order.
-     * skips empty or rubbish regions.
+     * region groups, skips weird stuff
      * @returns {void}
      */
     private addRegs(): void {
@@ -389,8 +401,153 @@ export class locApi {
     }
 
     /**
-     * Finds one row in the cached dataset.
-     * null if missing.
+     * make the fake dropdown bit
+     * @returns {void}
+     */
+    private rndPick(): void {
+        const parent = this.selEl.parentElement;
+        if (!parent) return;
+
+        this.pickerEl?.remove();
+        this.selEl.classList.add("comment-location-native");
+
+        const picker = document.createElement("div");
+        picker.className = "comment-location-dropdown";
+
+        const button = document.createElement("button");
+        button.id = `${this.selEl.id}-dropdown-button`;
+        button.type = "button";
+        button.className = "comment-location-dropdown__button";
+        button.setAttribute("aria-haspopup", "listbox");
+        button.setAttribute("aria-controls", `${this.selEl.id}-dropdown-menu`);
+
+        const menu = document.createElement("div");
+        menu.id = `${this.selEl.id}-dropdown-menu`;
+        menu.className = "comment-location-dropdown__content";
+        menu.setAttribute("role", "listbox");
+
+        this.fillMenu(menu);
+
+        picker.append(button, menu);
+
+        if (this.flagEl.parentElement === parent) {
+            parent.insertBefore(picker, this.flagEl);
+        } else {
+            parent.appendChild(picker);
+        }
+
+        this.pickerEl = picker;
+        this.pickerBtn = button;
+
+        this.syncPick();
+    }
+
+    /**
+     * menu items from native select
+     * @param {HTMLDivElement} menu
+     * @returns {void}
+     */
+    private fillMenu(menu: HTMLDivElement): void {
+        for (const child of Array.from(this.selEl.children)) {
+            if (child instanceof HTMLOptionElement) {
+                menu.appendChild(this.mkPickItm(child));
+                continue;
+            }
+
+            if (!(child instanceof HTMLOptGroupElement)) {
+                continue;
+            }
+
+            const group = document.createElement("div");
+            group.className = "comment-location-dropdown__group";
+            group.textContent = child.label;
+            group.setAttribute("aria-hidden", "true");
+            menu.appendChild(group);
+
+            for (const option of Array.from(child.children)) {
+                if (!(option instanceof HTMLOptionElement)) {
+                    continue;
+                }
+
+                menu.appendChild(this.mkPickItm(option));
+            }
+        }
+    }
+
+    /**
+     * one fake dropdown item
+     * @param {HTMLOptionElement} option
+     * @returns {HTMLButtonElement}
+     */
+    private mkPickItm(option: HTMLOptionElement): HTMLButtonElement {
+        const item = document.createElement("button");
+
+        item.type = "button";
+        item.className = "comment-location-dropdown__item";
+        item.textContent = option.textContent || this.phLabel;
+        item.dataset.locationKey = option.value;
+        item.setAttribute("role", "option");
+
+        if (!option.value) {
+            item.classList.add("comment-location-dropdown__item--placeholder");
+        }
+
+        item.addEventListener("click", () => {
+            this.pickVal(option.value);
+        });
+
+        return item;
+    }
+
+    /**
+     * select from fake dropdown
+     * @param {string} locationKey
+     * @returns {void}
+     */
+    private pickVal(locationKey: string): void {
+        this.selEl.value = locationKey;
+        this.selEl.dispatchEvent(new Event("change", { bubbles: true }));
+
+        const active = document.activeElement;
+        if (active instanceof HTMLElement) {
+            active.blur();
+        }
+    }
+
+    /**
+     * make fake dropdown match native one
+     * @returns {void}
+     */
+    private syncPick(): void {
+        if (this.pickerBtn) {
+            this.pickerBtn.textContent = this.selLbl();
+        }
+
+        this.pickerEl
+            ?.querySelectorAll<HTMLButtonElement>(".comment-location-dropdown__item")
+            .forEach((item) => {
+                const isCurrent = item.dataset.locationKey === this.selEl.value;
+
+                item.classList.toggle("is-current", isCurrent);
+                item.setAttribute("aria-selected", isCurrent ? "true" : "false");
+            });
+    }
+
+    /**
+     * visible selected label
+     * @returns {string}
+     */
+    private selLbl(): string {
+        const selected = Array
+            .from(this.selEl.options)
+            .find((option) => option.value === this.selEl.value);
+
+        const label = selected?.textContent?.trim() ?? "";
+        return label.length > 0 ? label : this.phLabel;
+    }
+
+    /**
+     * find row in cache
      * @param {string} locationKey
      * @returns {Row | null}
      */
@@ -415,8 +572,7 @@ export class locApi {
     }
 
     /**
-     * Renders a specific flag into the host element.
-     * also checks the asset exists before swapping it in.
+     * show a flag, checks png first
      * @param {string} locationKey
      * @returns {Promise<FlagRes>}
      */
@@ -427,10 +583,10 @@ export class locApi {
             throw new Error(`Location not found in dataset: ${locationKey}`);
         }
 
-        const code = toFlagCode(row.emoji);
+        const code = flagCode(row.emoji);
         const url = `${this.flagsUrl}/${code}.png`;
 
-        await needAsset(url);
+        await needAst(url);
 
         const image = document.createElement("img");
         image.src = url;
@@ -447,11 +603,10 @@ export class locApi {
     }
 
     /**
-     * Throws if init was never called.
-     * saves the rest of the class from repeating itself too much.
+     * complain if init didnt happen
      * @returns {void}
      */
-    private needInit(): void {
+    private ndInit(): void {
         if (this.data) {
             return;
         }
@@ -461,7 +616,7 @@ export class locApi {
 }
 
 /**
- * Tiny factory for the location api.
+ * factory, tiny thing
  * @param {Opts} options
  * @returns {locApi}
  */
@@ -470,12 +625,11 @@ export function createLocationApi(options: Opts): locApi {
 }
 
 /**
- * Makes sure an asset URL actually exists.
- * throws if the fetch comes back bad.
+ * checks the asset exists
  * @param {string} assetUrl
  * @returns {Promise<void>}
  */
-async function needAsset(assetUrl: string): Promise<void> {
+async function needAst(assetUrl: string): Promise<void> {
     const response = await fetch(assetUrl);
 
     if (response.ok) {
@@ -486,12 +640,12 @@ async function needAsset(assetUrl: string): Promise<void> {
 }
 
 /**
- * Normalises the raw dataset shape into the typed one we actually use.
- * anything weird just gets skipped.
+ * clean up raw data into rows we can use
+ * skips odd stuff
  * @param {unknown} value
  * @returns {Regions}
  */
-function normData(value: unknown): Regions {
+function normDat(value: unknown): Regions {
     if (!helpers.isRecord(value)) {
         throw new Error("Locations JSON must contain an object at the root");
     }
@@ -520,8 +674,7 @@ function normData(value: unknown): Regions {
 }
 
 /**
- * Builds the visible label for one location option.
- * english name first, local name in brackets if it differs.
+ * label, with local name if needed
  * @param {string} locationKey
  * @param {string} localName
  * @returns {string}
@@ -529,35 +682,34 @@ function normData(value: unknown): Regions {
 function mkLbl(locationKey: string, localName: string): string {
     const englishName = fmtEng(locationKey);
 
-    return sameName(englishName, localName)
+    return sameNm(englishName, localName)
         ? englishName
         : `${englishName} (${localName})`;
 }
 
 /**
- * Checks if two names are basically the same after normalising.
+ * compare names, roughly
  * @param {string} englishName
  * @param {string} localName
  * @returns {boolean}
  */
-function sameName(englishName: string, localName: string): boolean {
-    return normName(englishName) === normName(localName);
+function sameNm(englishName: string, localName: string): boolean {
+    return normNm(englishName) === normNm(localName);
 }
 
 /**
- * Normalises a name so comparisons are less fussy.
+ * name cleanup for compareing
  * @param {string} value
  * @returns {string}
  */
-function normName(value: string): string {
+function normNm(value: string): string {
     return value
         .trim()
         .toLocaleLowerCase("en");
 }
 
 /**
- * Turns a dataset key into a nicer english label.
- * pretty simple title-casing thing.
+ * dumb title-ish case from key
  * @param {string} value
  * @returns {string}
  */
@@ -570,11 +722,11 @@ function fmtEng(value: string): string {
 }
 
 /**
- * Turns a flag emoji into a lowercase country code-ish string.
+ * emoji flag to code string
  * @param {string} flag
  * @returns {string}
  */
-function toFlagCode(flag: string): string {
+function flagCode(flag: string): string {
     const symbols = Array.from(flag);
 
     if (symbols.length === 0) {
@@ -582,17 +734,17 @@ function toFlagCode(flag: string): string {
     }
 
     return symbols
-        .map((symbol) => regToAsc(symbol))
+        .map((symbol) => regAsc(symbol))
         .join("")
         .toLowerCase();
 }
 
 /**
- * Converts one regional indicator symbol into its ASCII letter.
+ * regional symbol to ascii letter
  * @param {string} symbol
  * @returns {string}
  */
-function regToAsc(symbol: string): string {
+function regAsc(symbol: string): string {
     const codePoint = symbol.codePointAt(0);
 
     if (!codePoint) {
@@ -609,19 +761,18 @@ function regToAsc(symbol: string): string {
 }
 
 /**
- * Trims one trailing slash off a url-like string.
- * just one, not a full cleanup mission.
+ * one slash off the end
  * @param {string} value
  * @returns {string}
  */
-function trimSlash(value: string): string {
+function noSlash(value: string): string {
     return value.endsWith("/")
         ? value.slice(0, -1)
         : value;
 }
 
 /**
- * Checks whether a value looks like a location row.
+ * row shape, loose check
  * @param {unknown} value
  * @returns {value is Row}
  */
@@ -632,8 +783,7 @@ function isRow(value: unknown): value is Row {
 }
 
 /**
- * Filters null out of arrays.
- * nothing more exotic than that.
+ * removes nulls from maps
  * @param {T | null} value
  * @returns {value is T}
  */

@@ -8,9 +8,9 @@
     --menu-border-width: 2px;
     --menu-button-padding-block: clamp(0.55rem, 1.5vw, 0.625rem);
     --menu-button-padding-inline: clamp(0.75rem, 2vw, 0.9375rem);
-    --menu-button-radius: 8px;
-    --menu-button-font-size: calc(clamp(0.95rem, 0.9rem + 0.25vw, 3rem) / var(--kc-text-scale) * 0.75);
-    --menu-button-font-weight: 700;
+    --menu-button-radius: 12px;
+    --menu-button-font-size: clamp(0.95rem, 0.9rem + 0.25vw, 3rem);
+    --menu-button-font-weight: 600;
     --menu-button-hover-scale: 1.1;
     --menu-button-bg-transition: 0.3s;
     --menu-button-transform-transition: 0.2s;

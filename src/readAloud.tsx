@@ -1,9 +1,10 @@
 import type { ReactElement } from "react";
 import { forceBookmark } from "./reader.tsx";
-import { modals, type Modal } from "./modals.ts";
+import { factory, type Modal } from "./modals.ts";
 import * as loader from "./loader.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
 import * as helpers from "./helpers.ts";
+import { showToggleVisual } from "./toggleIcons.ts";
 
 type ReadAloudButton = Readonly<{
   icon: string;
@@ -178,6 +179,12 @@ declare global {
     readAloudState: ReadAloudState;
   }
 }
+
+const READ_ALOUD_TOGGLE_ICON_SPEC = {
+  size: 32,
+  wrapperClass: "theme-toggle-button__icon",
+  svgClass: "theme-toggle-button__svg"
+} as const;
 
 type MenuProps = Readonly<{
   buttons: ReadAloudButtons;
@@ -1060,9 +1067,12 @@ class ReadAloudModule {
 
     const toggleBtn = helpers.getEl("read-aloud-toggle");
     if (toggleBtn) {
-      const disableLabel = toggleBtn.getAttribute("data-disable") || "";
-      toggleBtn.textContent = disableLabel;
       toggleBtn.classList.add("active");
+
+      if (toggleBtn instanceof HTMLButtonElement) {
+        void showToggleVisual(toggleBtn, "disable", READ_ALOUD_TOGGLE_ICON_SPEC);
+      }
+
       toggleBtn.removeEventListener("click", this.#boundShowMenu);
       toggleBtn.addEventListener("click", this.#boundCloseMenu);
     }
@@ -1520,9 +1530,12 @@ class ReadAloudModule {
       menu.style.display = "none";
       window.readAloudState.menuVisible = false;
 
-      toggleBtn.textContent = toggleBtn.getAttribute("data-enable") || "";
       toggleBtn.classList.remove("active");
       toggleBtn.classList.add("menu-eye");
+
+      if (toggleBtn instanceof HTMLButtonElement) {
+        void showToggleVisual(toggleBtn, "enable", READ_ALOUD_TOGGLE_ICON_SPEC);
+      }
 
       toggleBtn.removeEventListener("click", this.#boundCloseMenu);
       toggleBtn.addEventListener("click", this.#boundMenuVis);
@@ -1532,9 +1545,12 @@ class ReadAloudModule {
     menu.style.display = window.readAloudState.originalMenuDisplay || "flex";
     window.readAloudState.menuVisible = true;
 
-    toggleBtn.textContent = toggleBtn.getAttribute("data-disable") || "";
     toggleBtn.classList.add("active");
     toggleBtn.classList.remove("menu-eye");
+
+    if (toggleBtn instanceof HTMLButtonElement) {
+      void showToggleVisual(toggleBtn, "disable", READ_ALOUD_TOGGLE_ICON_SPEC);
+    }
 
     toggleBtn.removeEventListener("click", this.#boundMenuVis);
     toggleBtn.addEventListener("click", this.#boundCloseMenu);
@@ -1568,8 +1584,12 @@ class ReadAloudModule {
 
     const toggleBtn = helpers.getEl("read-aloud-toggle");
     if (toggleBtn) {
-      toggleBtn.textContent = toggleBtn.getAttribute("data-enable") || "";
       toggleBtn.classList.remove("active");
+
+      if (toggleBtn instanceof HTMLButtonElement) {
+        void showToggleVisual(toggleBtn, "enable", READ_ALOUD_TOGGLE_ICON_SPEC);
+      }
+
       toggleBtn.removeEventListener("click", this.#boundCloseMenu);
       toggleBtn.addEventListener("click", this.#boundShowMenu);
     }
@@ -2738,7 +2758,7 @@ class ReadAloudModule {
       return;
     }
 
-    const modal = modals.create({
+    const modal = factory.create({
       id: modalId,
       mode: "blocking",
       content: html
@@ -2759,7 +2779,7 @@ class ReadAloudModule {
       return;
     }
 
-    modals.getOpenSession(modalId)?.close();
+    factory.getOpenSession(modalId)?.close();
   }
 
   /**

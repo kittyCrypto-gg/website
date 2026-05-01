@@ -7,6 +7,8 @@ import {
 
 import * as helpers from "./helpers.ts";
 
+import { showToggleVisual } from "./toggleIcons.ts";
+
 type ChapterImageInfo = Readonly<{
 	src: string;
 	alt: string;
@@ -60,25 +62,27 @@ declare global {
 	}
 }
 
+const READER_TOGGLE_ICON_SPEC = {
+	size: 32,
+	wrapperClass: "theme-toggle-button__icon",
+	svgClass: "theme-toggle-button__svg"
+} as const;
+
 class ReaderToggle {
 	readerActive: boolean = false;
 	originalNodeClone: Node | null = null;
-	readerToggle: HTMLElement;
-	enableText: string = "";
-	disableText: string = "";
+	readerToggle: HTMLButtonElement;
 	options: ReaderModeOptions;
 	purgedSheets: PurgedSheetEntry[] = [];
 	overrideSheetEl: HTMLStyleElement | null = null;
 
 	/**
-	 * @param {HTMLElement} readerToggle - The toggle element used to enable/disable reader mode.
+	 * @param {HTMLButtonElement} readerToggle - The toggle element used to enable/disable reader mode.
 	 * @param {ReaderModeOptions} [options={}] - Reader mode keep/focus configuration.
 	 * @returns {void}
 	 */
-	constructor(readerToggle: HTMLElement, options: ReaderModeOptions = {}) {
+	constructor(readerToggle: HTMLButtonElement, options: ReaderModeOptions = {}) {
 		this.readerToggle = readerToggle;
-		this.enableText = readerToggle.getAttribute("data-enable") || "";
-		this.disableText = readerToggle.getAttribute("data-disable") || "";
 		this.options = options;
 		this.handleToggleClick = this.handleToggleClick.bind(this);
 	}
@@ -94,11 +98,11 @@ class ReaderToggle {
 
 		let readerToggle = document.getElementById("reader-toggle");
 
-		if (!readerToggle) {
-			readerToggle = await new Promise<HTMLElement>((resolve) => {
+		if (!(readerToggle instanceof HTMLButtonElement)) {
+			readerToggle = await new Promise<HTMLButtonElement>((resolve) => {
 				const observer = new MutationObserver(() => {
 					const el = document.getElementById("reader-toggle");
-					if (!el) return;
+					if (!(el instanceof HTMLButtonElement)) return;
 					observer.disconnect();
 					resolve(el);
 				});
@@ -107,7 +111,7 @@ class ReaderToggle {
 			});
 		}
 
-		if (!readerToggle) return false;
+		if (!(readerToggle instanceof HTMLButtonElement)) return false;
 
 		const instance = new ReaderToggle(readerToggle, options);
 		instance.syncButtonState();
@@ -135,13 +139,13 @@ class ReaderToggle {
 	 */
 	syncButtonState(): void {
 		if (document.body.classList.contains("reader-mode")) {
-			this.readerToggle.textContent = this.disableText;
 			this.readerToggle.classList.add("active");
+			void showToggleVisual(this.readerToggle, "disable", READER_TOGGLE_ICON_SPEC);
 			return;
 		}
 
-		this.readerToggle.textContent = this.enableText;
 		this.readerToggle.classList.remove("active");
+		void showToggleVisual(this.readerToggle, "enable", READER_TOGGLE_ICON_SPEC);
 	}
 
 	/**
@@ -800,8 +804,8 @@ class ReaderToggle {
 			window.history.pushState({}, "", url);
 		}
 
-		this.readerToggle.textContent = this.disableText;
 		this.readerToggle.classList.add("active");
+		void showToggleVisual(this.readerToggle, "disable", READER_TOGGLE_ICON_SPEC);
 		this.readerActive = true;
 	}
 

@@ -1,4 +1,134 @@
 /* =========================================
+  Utilities
+========================================= */
+
+:root {
+  --kc-round-icon-btn-size: 2rem;
+  --kc-round-icon-btn-radius: 999px;
+  --kc-round-icon-btn-icon-size: 1rem;
+
+  --kc-round-icon-btn-sm-size: 1.55rem;
+  --kc-round-icon-btn-sm-icon-size: 0.86rem;
+
+  --kc-round-icon-btn-border-width: 1px;
+  --kc-round-icon-btn-bg:
+    color-mix(in srgb, var(--menu-button-bg-colour) 82%, var(--chatroom-bg-colour));
+  --kc-round-icon-btn-bg-hover: var(--menu-button-hover-bg-colour);
+
+  --kc-round-icon-btn-border:
+    color-mix(in srgb, var(--frame-border-light) 72%, var(--menu-button-bg-colour));
+  --kc-round-icon-btn-border-hover: var(--banner-blue);
+
+  --kc-round-icon-btn-fg: var(--body-text-colour);
+  --kc-round-icon-btn-transition: 0.18s;
+
+  --kc-round-icon-btn-focus-ring:
+    0 0 0 2px color-mix(in srgb, var(--banner-blue) 44%, transparent);
+
+  --kc-click-header-radius: 7px;
+  --kc-click-header-bg-hover:
+    color-mix(in srgb, var(--menu-button-hover-bg-colour) 62%, transparent);
+  --kc-click-header-focus-ring:
+    0 0 0 2px color-mix(in srgb, var(--banner-blue) 22%, transparent);
+  --kc-click-header-transition: 0.18s;
+
+  --kc-pill-migrate-duration: 620ms;
+  --kc-pill-migrate-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --kc-pill-migrate-shadow:
+    0 0 0 1px color-mix(in srgb, var(--banner-blue) 18%, transparent),
+    0 0.42rem 1rem color-mix(in srgb, var(--frame-border-light) 22%, transparent);
+}
+
+.kc-round-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--kc-round-icon-btn-size);
+  block-size: var(--kc-round-icon-btn-size);
+  flex: 0 0 auto;
+  padding: 0;
+  border: var(--kc-round-icon-btn-border-width) solid var(--kc-round-icon-btn-border);
+  border-radius: var(--kc-round-icon-btn-radius);
+  background: var(--kc-round-icon-btn-bg);
+  color: var(--kc-round-icon-btn-fg);
+  cursor: pointer;
+  transition:
+    background var(--kc-round-icon-btn-transition),
+    border-color var(--kc-round-icon-btn-transition),
+    transform var(--kc-round-icon-btn-transition),
+    opacity var(--kc-round-icon-btn-transition);
+
+  & svg {
+    inline-size: var(--kc-round-icon-btn-icon-size);
+    block-size: var(--kc-round-icon-btn-icon-size);
+    flex: 0 0 auto;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--kc-round-icon-btn-bg-hover);
+    border-color: var(--kc-round-icon-btn-border-hover);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--kc-round-icon-btn-focus-ring);
+  }
+}
+
+.kc-round-icon-btn--sm {
+  inline-size: var(--kc-round-icon-btn-sm-size);
+  block-size: var(--kc-round-icon-btn-sm-size);
+
+  & svg {
+    inline-size: var(--kc-round-icon-btn-sm-icon-size);
+    block-size: var(--kc-round-icon-btn-sm-icon-size);
+  }
+}
+
+.kc-click-header {
+  border-radius: var(--kc-click-header-radius);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--kc-click-header-transition),
+    transform var(--kc-click-header-transition),
+    box-shadow var(--kc-click-header-transition);
+
+  &:hover,
+  &:focus-visible {
+    background: var(--kc-click-header-bg-hover);
+    transform: translateY(-1px);
+    outline: none;
+    box-shadow: var(--kc-click-header-focus-ring);
+  }
+
+  &:has(.kc-click-header__control:hover),
+  &:has(.kc-click-header__control:focus-visible) {
+    background: transparent;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.kc-click-header__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(0.28rem, 0.55vw, 0.38rem);
+  flex: 0 0 auto;
+}
+
+.kc-click-header__control {
+  cursor: pointer;
+}
+
+/* =========================================
   Utilities: kc-badge-snippet (tokens)
 ========================================= */
 
@@ -209,14 +339,9 @@
     content:
       "<a href=\"https://kittycrypto.gg\" target=\"_blank\" rel=\"noopener noreferrer\">\A"
       "  <img loading=\"lazy\" id=\"kittyCrypto_badge\"\A"
-      "    src=\"https://kittycrypto.gg/images/kittycrypto-gg.svg\"\A"
+      "    src=\"https://kittycrypto.gg/images/button.svg\"\A"
       "    alt=\"kittycrypto.gg badge\"\A"
-      "    style=\"width:88px;height:44px;\">\A"
-      "  <!--\A"
-      "    Note: this button is slightly taller than 88x31\A"
-      "    as the artwork extends past the classic frame.\A"
-      "    If you need strict 88x31, change the inline style above.\A"
-      "  -->\A"
+      "    style=\"width:88px;height:31px;\">\A"
       "</a>";
 
     display: block;
@@ -288,5 +413,165 @@
   &:focus-visible {
     outline: var(--kc-badge-snippet-focus-outline);
     outline-offset: var(--kc-badge-snippet-focus-outline-offset);
+  }
+}
+
+/* =========================================
+  Utilities: Pill migration
+========================================= */
+
+.kc-pill-migrate-fly {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  margin: 0;
+  box-sizing: border-box;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  contain: layout paint style;
+  animation: kc-pill-migrate var(--kc-pill-migrate-duration) var(--kc-pill-migrate-ease) both;
+}
+
+.kc-pill-migrate-fly.cal__selPill,
+.kc-pill-migrate-fly.rss-filters__summaryPill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cal-chip-gap);
+  flex: 0 0 auto;
+  min-block-size: 1.45rem;
+  padding: 0.12rem 0.48rem;
+  border-radius: var(--cal-radius-sm);
+  border: var(--cal-border-width) solid var(--cal-selpill-brd);
+  background: var(--cal-selpill-bg);
+  color: var(--cal-selpill-col);
+  font: inherit;
+  font-size: var(--cal-rst-size);
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--kc-pill-migrate-shadow);
+}
+
+.kc-pill-migrate-fly.cal__selPill .cal__selV,
+.kc-pill-migrate-fly.rss-filters__summaryPill .cal__selV {
+  font-weight: var(--cal-selpill-v-weight);
+  white-space: nowrap;
+}
+
+.kc-pill-migrate-fly.rss-author-filter__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rss-author-btn-gap);
+  padding: var(--rss-author-btn-pad-block) var(--rss-author-btn-pad-inline);
+  border-radius: var(--rss-author-radius-sm);
+  border: var(--rss-author-border-width) solid var(--cal-selpill-brd);
+  background: var(--cal-selpill-bg);
+  color: var(--cal-selpill-col);
+  font: inherit;
+  font-size: var(--cal-rst-size);
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--kc-pill-migrate-shadow);
+}
+
+.kc-pill-migrate-fly.rss-author-filter__btn .rss-author-filter__name {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--cal-rst-size);
+  font-weight: var(--cal-selpill-v-weight);
+}
+
+.kc-pill-migrate-fly.rss-author-filter__btn .rss-author-filter__dot {
+  display: none;
+}
+
+@keyframes kc-pill-migrate {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.94;
+  }
+
+  8% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.04),
+        calc((var(--kc-pill-fly-y, 0px) * 0.04) - 1px),
+        0) scale(1.006);
+    opacity: 0.98;
+  }
+
+  16% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.12),
+        calc((var(--kc-pill-fly-y, 0px) * 0.12) - 2.5px),
+        0) scale(1.014);
+    opacity: 1;
+  }
+
+  24% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.22),
+        calc((var(--kc-pill-fly-y, 0px) * 0.22) - 4px),
+        0) scale(1.02);
+    opacity: 1;
+  }
+
+  34% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.36),
+        calc((var(--kc-pill-fly-y, 0px) * 0.36) - 6px),
+        0) scale(1.026);
+    opacity: 1;
+  }
+
+  46% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.52),
+        calc((var(--kc-pill-fly-y, 0px) * 0.52) - 7px),
+        0) scale(1.024);
+    opacity: 1;
+  }
+
+  58% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.68),
+        calc((var(--kc-pill-fly-y, 0px) * 0.68) - 6px),
+        0) scale(1.018);
+    opacity: 0.98;
+  }
+
+  70% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.82),
+        calc((var(--kc-pill-fly-y, 0px) * 0.82) - 4px),
+        0) scale(1.01);
+    opacity: 0.94;
+  }
+
+  82% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.93),
+        calc((var(--kc-pill-fly-y, 0px) * 0.93) - 1.5px),
+        0) scale(1.004);
+    opacity: 0.78;
+  }
+
+  92% {
+    transform:
+      translate3d(calc(var(--kc-pill-fly-x, 0px) * 0.985),
+        calc(var(--kc-pill-fly-y, 0px) * 0.985),
+        0) scale(1);
+    opacity: 0.42;
+  }
+
+  100% {
+    transform: translate3d(var(--kc-pill-fly-x, 0px), var(--kc-pill-fly-y, 0px), 0) scale(1);
+    opacity: 0;
   }
 }
