@@ -299,7 +299,7 @@ function RaHelp(): ReactElement {
           For further help, see the <a href="https://learn.microsoft.com/en-gb/azure/ai-services/speech-service/" target="_blank" rel="noopener">official docs</a>.
         </p>
         <p className="modal-note">
-          <b>Note:</b> KittyCrypto.gg will <u>NOT</u> store your API key or region server-side. It is saved only in your browser&apos;s local storage.
+          <b>Note:</b> kittycrow.dev will <u>NOT</u> store your API key or region server-side. It is saved only in your browser&apos;s local storage.
           <br />
           See the full implementation on <a href="https://github.com/kittyCrypto-gg/website/blob/main/src/readAloud.tsx" target="_blank" rel="noopener">GitHub</a>.
         </p>
@@ -374,7 +374,7 @@ class ReadAloudModule {
 
   constructor() {
     this.#SDK_CDN =
-      "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1.44.0/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle.js";
+      "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1.44.0/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle.js";
 
     this.#buttons = {
       play: { icon: "▶️", action: "Start Read Aloud" },

@@ -22,11 +22,14 @@
 
     --kc-88by31-button-hover-scale: 1.1;
     --kc-88by31-button-hover-transition: 0.2s;
+
+    --kc-88by31-webring-width: min(100%, 32rem);
 }
 
 /* =========================================
     Window shell for wrapped 88x31 panels
 ========================================= */
+
 .kc-88by31-shell {
     width: var(--kc-88by31-outer-width);
     max-width: var(--kc-88by31-max-width);
@@ -61,7 +64,44 @@
     }
 }
 
-/* Default direct-use card */
+/* =========================================
+    Webrings window height override
+========================================= */
+
+.kc-88by31-shell:has(#webrings-wrapper) {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+}
+
+.kc-88by31-shell:has(#webrings-wrapper) > .window-body {
+    display: block;
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+}
+
+.kc-88by31-shell:has(#webrings-wrapper) #webrings-wrapper {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+}
+
+.kc-88by31-shell:has(#webrings-wrapper) .kc-88by31__inner,
+.kc-88by31-shell:has(#webrings-wrapper) .kc-88by31__grid,
+.kc-88by31-shell:has(#webrings-wrapper) #nekowebring {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+}
+
+/* =========================================
+    Default direct-use card
+========================================= */
+
 .kc-88by31 {
     width: var(--kc-88by31-outer-width);
     max-width: var(--kc-88by31-max-width);
@@ -78,9 +118,18 @@
     box-shadow: var(--frame-box-shadow);
 
     text-align: left;
+
+    &#webrings-wrapper {
+        height: auto;
+        min-height: 0;
+        max-height: none;
+    }
 }
 
-/* Content-mode override only when inside the new shell */
+/* =========================================
+    Content-mode override only when inside shell
+========================================= */
+
 .kc-88by31-shell > .window-body > .kc-88by31 {
     width: 100%;
     max-width: 100%;
@@ -92,6 +141,10 @@
     border-radius: 0;
     box-shadow: none;
 }
+
+/* =========================================
+    Inner layout
+========================================= */
 
 .kc-88by31__inner {
     width: var(--kc-88by31-inner-width);
@@ -133,4 +186,54 @@
     height: 100%;
     display: block;
     cursor: pointer;
+}
+
+/* =========================================
+    Webrings content override
+========================================= */
+
+#webrings-wrapper .kc-88by31__inner {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+}
+
+#webrings-wrapper #webrings-grid {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    text-align: center;
+}
+
+#webrings-wrapper #webrings-grid > #nekowebring {
+    display: block;
+    width: var(--kc-88by31-webring-width);
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin-inline: auto;
+    box-sizing: border-box;
+    transition: none;
+}
+
+#webrings-wrapper #webrings-grid > #nekowebring:hover {
+    transform: none;
+}
+
+#webrings-wrapper #nekowebring * {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+#webrings-wrapper #nekowebring img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    display: inline-block;
 }

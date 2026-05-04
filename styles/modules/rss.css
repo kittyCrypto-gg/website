@@ -72,6 +72,25 @@
     --rss-content-scale-y0: var(--phys-collapse-scale-y0);
     --rss-content-scroll-inline-size-narrower: clamp(34rem, 170vw, 56rem);
 
+    --rss-list-margin-block: 0.95rem;
+    --rss-list-padding-inline-start: clamp(1.25rem, 3vw, 1.75rem);
+    --rss-list-gap: 0.35rem;
+    --rss-list-nested-margin-block: 0.35rem;
+    --rss-list-marker-col: color-mix(in srgb, var(--banner-blue) 76%, var(--menu-button-text-colour));
+    --rss-list-marker-size: 1em;
+    --rss-list-marker-weight: 700;
+
+    --rss-blockquote-margin-block: 1rem;
+    --rss-blockquote-padding-block: clamp(0.75rem, 2vw, 1rem);
+    --rss-blockquote-padding-inline: clamp(0.875rem, 2.5vw, 1.125rem);
+    --rss-blockquote-border-width: 0.28rem;
+    --rss-blockquote-radius: 0.75rem;
+    --rss-blockquote-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--frame-bg-colour));
+    --rss-blockquote-brd: color-mix(in srgb, var(--banner-blue) 62%, var(--frame-border-light));
+    --rss-blockquote-col: var(--rss-content-colour);
+    --rss-blockquote-shadow: inset 0.65rem 0 1.2rem color-mix(in srgb, var(--banner-blue) 8%, transparent);
+    --rss-blockquote-cite-opacity: 0.78;
+
     --rss-code-font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
     --rss-code-font-size: calc(0.92em * var(--kc-text-scale));
     --rss-code-line-height: 1.55;
@@ -234,6 +253,10 @@
 
     --rss-pill-fly-extra: 90ms;
     --rss-pill-fly-duration: calc(var(--kc-pill-migrate-duration, 620ms) + var(--rss-pill-fly-extra));
+    --rss-pill-fly-start-scale-x: var(--kc-pill-fly-start-scale-x, 1);
+    --rss-pill-fly-start-scale-y: var(--kc-pill-fly-start-scale-y, 1);
+    --rss-pill-fly-end-scale-x: var(--kc-pill-fly-end-scale-x, var(--kc-pill-fly-scale-x, 1));
+    --rss-pill-fly-end-scale-y: var(--kc-pill-fly-end-scale-y, var(--kc-pill-fly-scale-y, 1));
 
     --rss-control-bleed: 0.35rem;
     --rss-control-raise-z: 10;
@@ -242,6 +265,12 @@
 .dark-mode {
     --rss-content-colour: #e0f7fa;
     --rss-content-opacity: 0.91;
+
+    --rss-list-marker-col: color-mix(in srgb, var(--banner-blue) 82%, var(--menu-button-text-colour));
+
+    --rss-blockquote-bg: color-mix(in srgb, var(--chatroom-bg-colour) 82%, white 6%);
+    --rss-blockquote-brd: color-mix(in srgb, var(--banner-blue) 72%, var(--frame-border-light));
+    --rss-blockquote-shadow: inset 0.65rem 0 1.2rem color-mix(in srgb, var(--banner-blue) 14%, transparent);
 
     --rss-post-even-mix-target: white;
 
@@ -1210,6 +1239,74 @@
             box-sizing: border-box;
         }
 
+        & ul {
+            display: grid;
+            gap: var(--rss-list-gap);
+            margin: var(--rss-list-margin-block) 0;
+            padding-inline-start: var(--rss-list-padding-inline-start);
+            box-sizing: border-box;
+            max-inline-size: 100%;
+            list-style-position: outside;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        & ul ul {
+            margin-block: var(--rss-list-nested-margin-block);
+        }
+
+        & li {
+            padding-inline-start: 0.1rem;
+            max-inline-size: 100%;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        & li::marker {
+            color: var(--rss-list-marker-col);
+            font-size: var(--rss-list-marker-size);
+            font-weight: var(--rss-list-marker-weight);
+        }
+
+        & li> :first-child {
+            margin-block-start: 0;
+        }
+
+        & li> :last-child {
+            margin-block-end: 0;
+        }
+
+        & blockquote {
+            display: flow-root;
+            inline-size: fit-content;
+            width: fit-content;
+            max-inline-size: 100%;
+            margin: var(--rss-blockquote-margin-block) 0;
+            padding: var(--rss-blockquote-padding-block) var(--rss-blockquote-padding-inline);
+            border-inline-start: var(--rss-blockquote-border-width) solid var(--rss-blockquote-brd);
+            border-radius: var(--rss-blockquote-radius);
+            background: var(--rss-blockquote-bg);
+            color: var(--rss-blockquote-col);
+            box-shadow: var(--rss-blockquote-shadow);
+            text-align: start;
+            box-sizing: border-box;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        & blockquote> :first-child {
+            margin-block-start: 0;
+        }
+
+        & blockquote> :last-child {
+            margin-block-end: 0;
+        }
+
+        & blockquote cite {
+            opacity: var(--rss-blockquote-cite-opacity);
+            font-style: italic;
+        }
+
         & a {
             color: var(--menu-button-text-colour);
             text-decoration: underline;
@@ -1736,6 +1833,10 @@
 
 .kc-pill-migrate-fly {
     opacity: 1 !important;
+    pointer-events: none !important;
+    transform-origin: var(--kc-pill-fly-origin, 0 0) !important;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
     animation-name: rss-pill-fly !important;
     animation-duration: var(--rss-pill-fly-duration) !important;
     animation-timing-function: var(--phys-collapse-ease) !important;
@@ -1745,16 +1846,19 @@
 @keyframes rss-pill-fly {
     0% {
         opacity: 1;
-        transform: translate3d(0, 0, 0);
+        transform:
+            translate3d(0, 0, 0) scaleX(var(--rss-pill-fly-start-scale-x)) scaleY(var(--rss-pill-fly-start-scale-y));
     }
 
     84% {
         opacity: 1;
-        transform: translate3d(var(--kc-pill-fly-x), var(--kc-pill-fly-y), 0);
+        transform:
+            translate3d(var(--kc-pill-fly-x), var(--kc-pill-fly-y), 0) scaleX(var(--rss-pill-fly-end-scale-x)) scaleY(var(--rss-pill-fly-end-scale-y));
     }
 
     100% {
         opacity: 1;
-        transform: translate3d(var(--kc-pill-fly-x), var(--kc-pill-fly-y), 0);
+        transform:
+            translate3d(var(--kc-pill-fly-x), var(--kc-pill-fly-y), 0) scaleX(var(--rss-pill-fly-end-scale-x)) scaleY(var(--rss-pill-fly-end-scale-y));
     }
 }

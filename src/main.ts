@@ -263,7 +263,7 @@ function applyHeadBits(doc: Document, injections: readonly string[]): void {
  */
 async function detectMobile(): Promise<boolean> {
     const MOBILE_DETECT_CDN =
-        "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
+        "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
 
     if (
         !("MobileDetect" in window) ||

@@ -1,5 +1,5 @@
-export const BACKEND_URL = "https://srv.kittycrypto.gg";
-export const RSS_BACKEND_URL = "https://rss.kittycrypto.gg/rss/kittycrypto";
+export const BACKEND_URL = "https://srv.kittycrow.dev";
+export const RSS_BACKEND_URL = "https://rss.kittycrow.dev/rss/kittycrypto";
 
 if (!BACKEND_URL) {
     throw new Error("PUBLIC_BACKEND_URL is not defined");

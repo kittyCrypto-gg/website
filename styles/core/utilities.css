@@ -337,10 +337,10 @@
 
   &::before {
     content:
-      "<a href=\"https://kittycrypto.gg\" target=\"_blank\" rel=\"noopener noreferrer\">\A"
-      "  <img loading=\"lazy\" id=\"kittyCrypto_badge\"\A"
-      "    src=\"https://kittycrypto.gg/images/button.svg\"\A"
-      "    alt=\"kittycrypto.gg badge\"\A"
+      "<a href=\"https://kittycrow.dev\" target=\"_blank\" rel=\"noopener noreferrer\">\A"
+      "  <img loading=\"lazy\" id=\"kittycrow-dev_badge\"\A"
+      "    src=\"https://kittycrow.dev/images/new-button.svg\"\A"
+      "    alt=\"kittycrow.dev badge\"\A"
       "    style=\"width:88px;height:31px;\">\A"
       "</a>";
 

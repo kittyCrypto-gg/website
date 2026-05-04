@@ -1,19 +1,19 @@
 {
     "social": {
         "github": {
-            "url": "https://github.com/kitty-crypto",
+            "url": "https://github.com/kitty-crow",
             "icon": "../images/github.svg"
         },
         "discord": {
-            "url": "https://discord.com/users/kitty.crypto",
+            "url": "https://discord.com/users/kitty.crow",
             "icon": "../images/discord.svg"
         },
         "twitter": {
-            "url": "https://twitter.com/kitty_cgc",
+            "url": "https://twitter.com/kitty_cr0w0",
             "icon": "../images/twitter.svg"
         },
         "telegram": {
-            "url": "https://t.me/kitty_crypto",
+            "url": "https://t.me/kitty_crow",
             "icon": "../images/telegram.svg"
         }
     }

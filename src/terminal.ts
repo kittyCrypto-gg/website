@@ -136,7 +136,7 @@ async function checkMobile(): Promise<boolean> {
     if (!window.MobileDetect) {
         const script = document.createElement("script");
         script.src =
-            "https://kittycrypto.gg/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
+            "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
         script.async = true;
         document.body.appendChild(script);
 
@@ -406,7 +406,7 @@ async function attachWebSocketTransport(
     opts: WebSocketTransportOptions = {}
 ): Promise<WebSocket> {
     const { token: sessionToken, isNew } = await getOrCreateSessionToken();
-    const wsUrl = `wss://bash.kittycrypto.gg/?sessionToken=${encodeURIComponent(sessionToken)}`;
+    const wsUrl = `wss://bash.kittycrow.dev/?sessionToken=${encodeURIComponent(sessionToken)}`;
 
     const onOpen = typeof opts.onOpen === "function" ? opts.onOpen : null;
     const connectRef = typeof opts.connectRef === "function" ? opts.connectRef : null;
@@ -541,7 +541,7 @@ async function attachWebSocketTransport(
  */
 function wsUnreachableNoticeText(trigger: string): string {
     const base =
-        "Try refreshing to reconnect. If the issue persists email me at kitty@kittycrypto.gg";
+        "Try refreshing to reconnect. If the issue persists email me at kitty@kittycrow.dev";
 
     return `[notice] ${base} (trigger: ${trigger})`;
 }

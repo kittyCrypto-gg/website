@@ -265,6 +265,15 @@
         "title": "Kitty Chat",
         "mountTarget": "body"
       }
+    },
+    "webRingsWindow": {
+      "selector": "#webrings-wrapper",
+      "options": {
+        "id": "webrings-wrapper",
+        "title": "Web Rings",
+        "mountTarget": "body",
+        "launcherSrc": "/images/webrings.svg"
+      }
     }
   }
 }
