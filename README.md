@@ -1,12 +1,12 @@
-# kittycrypto.gg - Frontend - ${V6.201}
+# kittycrow.dev - Frontend - ${V6.201}
 
-The public-facing frontend of https://kittycrypto.gg 🐾
+The public-facing frontend of https://kittycrow.dev 🐾
 
 ---
 
 ## Overview
 
-This is the frontend for `kittycrypto.gg`.
+This is the frontend for `kittycrow.dev`.
 
 It is built with **TypeScript**, **TSX**, **React**, **HTML**, and **CSS**, and compiled with **esbuild** into browser-ready **ES modules**. The codebase stays modular and close to the DOM, while using TSX where it makes UI generation cleaner and easier to maintain.
 
@@ -72,7 +72,7 @@ The backend repository is here:
 
 The frontend expects the backend to run at:
 
-- https://srv.kittycrypto.gg
+- https://srv.kittycroe.dev
 
 (If you run a local backend or a different environment, adjust the configuration accordingly in ./src/config.ts)
 
@@ -94,7 +94,7 @@ The frontend renders the outcome.
 
 MIT License (Applies to all code in this repository)
 
-Copyright (c) 2026 Kitty Crypto
+Copyright (c) 2026 Kitty Crow
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
