@@ -72,7 +72,7 @@ The backend repository is here:
 
 The frontend expects the backend to run at:
 
-- https://srv.kittycroe.dev
+- https://srv.kittycrow.dev
 
 (If you run a local backend or a different environment, adjust the configuration accordingly in ./src/config.ts)
 
