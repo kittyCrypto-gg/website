@@ -123,6 +123,8 @@
     --rss-code-hljs-operator: #c5301c;
     --rss-code-hljs-title: #37a567;
     --rss-code-hljs-built_in: #2770a0;
+    --rss-code-hljs-punctuation: #000;
+    --rss-code-hljs-name: #000;
 
     --rss-code-border: color-mix(in srgb, var(--frame-border-light) 72%, var(--menu-button-bg-colour));
     --rss-code-copy-bg: color-mix(in srgb, var(--menu-button-bg-colour) 82%, var(--rss-code-bg));
@@ -285,6 +287,8 @@
     --rss-code-hljs-operator: #c5301c;
     --rss-code-hljs-title: #37a567;
     --rss-code-hljs-built_in: #48adff;
+    --rss-code-hljs-punctuation: #fff;
+    --rss-code-hljs-name: #fff;
 
     --rss-author-count-bg: color-mix(in srgb, var(--menu-button-bg-colour) 44%, transparent);
 }
@@ -1569,6 +1573,22 @@
             color: var(--rss-code-hljs-built_in);
         }
 
+        & .hljs-punctuation {
+            color: var(--rss-code-hljs-punctuation);
+        }
+
+        & .hljs-name {
+            color: var(--rss-code-hljs-name);
+        }
+
+        & .hljs-attr {
+            color: var(--rss-code-hljs-name);
+        }
+        
+        & .hljs-tag {
+            color: var(--rss-code-name);
+        }
+        
         &.content-collapsed {
             max-height: 0 !important;
             overflow: hidden;
