@@ -133,6 +133,9 @@ const RSS_RESOURCE_TITLE_PREFIX = "${resource}";
 const RSS_CODE_PREF_STORAGE_KEY = "kittycrow:rss-code-language-preferences:v1";
 const RSS_CODE_DIRECTIVE_RE = /^[ \t]*@code\[([^\]\r\n]+)\]\(([^)\r\n]+)\)[ \t]*$/gm;
 const RSS_CODE_DIRECTIVE_COMMENT_PREFIX = "rss-code-source:";
+const RSS_BLOCKQUOTE_ACCENT_RE = /^([ \t]{0,3})(#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}))>[ \t]?/;
+const RSS_BLOCKQUOTE_ACCENT_COMMENT_PREFIX = "rss-blockquote-accent:";
+const RSS_MARKDOWN_FENCE_RE = /^[ \t]{0,3}(?:```|~~~)/;
 
 const RSS_FILT_CHILD_PILL_SEL = [
     ".cal .cal__selPill[data-cal-lvl][data-cal-val]",
@@ -513,6 +516,136 @@ function prepExternalCodeDirectives(markdown: string): string {
             return mkExternalCodeFence(directive);
         }
     );
+}
+
+/**
+ * Normalises a custom blockquote accent colour.
+ * @param {string} raw
+ * @returns {string | null}
+ */
+function normBQAcc(raw: string): string | null {
+    const clean = raw.trim();
+
+    return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(clean)
+        ? clean.toUpperCase()
+        : null;
+}
+
+/**
+ * Checks whether a markdown line opens or closes a fenced block.
+ * @param {string} line
+ * @returns {boolean}
+ */
+function isMarkdownFenceLine(line: string): boolean {
+    return RSS_MARKDOWN_FENCE_RE.test(line);
+}
+
+/**
+ * Converts custom coloured blockquote prefixes into normal markdown blockquotes with markers.
+ * @param {string} markdown
+ * @returns {string}
+ */
+function prepBlQAcc(markdown: string): string {
+    let inFence = false;
+
+    return markdown
+        .split(/(\r?\n)/)
+        .map((line) => {
+            if (line === "\n" || line === "\r\n") {
+                return line;
+            }
+
+            if (isMarkdownFenceLine(line)) {
+                inFence = !inFence;
+                return line;
+            }
+
+            if (inFence) {
+                return line;
+            }
+
+            return line.replace(
+                RSS_BLOCKQUOTE_ACCENT_RE,
+                (match: string, indent: string, rawColour: string): string => {
+                    const colour = normBQAcc(rawColour);
+
+                    if (!colour) {
+                        return match;
+                    }
+
+                    return `${indent}> <!--${RSS_BLOCKQUOTE_ACCENT_COMMENT_PREFIX}${colour}--> `;
+                }
+            );
+        })
+        .join("");
+}
+
+/**
+ * Reads and removes a custom blockquote accent marker.
+ * @param {HTMLQuoteElement} blockquote
+ * @returns {string | null}
+ */
+function readBQAcc(blockquote: HTMLQuoteElement): string | null {
+    const walker = document.createTreeWalker(blockquote, NodeFilter.SHOW_COMMENT);
+    let node = walker.nextNode();
+
+    while (node) {
+        if (node instanceof Comment) {
+            const raw = node.data.trim();
+
+            if (raw.startsWith(RSS_BLOCKQUOTE_ACCENT_COMMENT_PREFIX)) {
+                const colour = normBQAcc(
+                    raw.slice(RSS_BLOCKQUOTE_ACCENT_COMMENT_PREFIX.length)
+                );
+
+                node.remove();
+
+                return colour;
+            }
+        }
+
+        node = walker.nextNode();
+    }
+
+    return null;
+}
+
+/**
+ * Applies custom blockquote accent colours to rendered HTML.
+ * @param {string} html
+ * @returns {string}
+ */
+function applBQAcc(html: string): string {
+    const template = document.createElement("template");
+
+    template.innerHTML = html;
+
+    Array.from(template.content.querySelectorAll<HTMLQuoteElement>("blockquote")).forEach((blockquote) => {
+        const colour = readBQAcc(blockquote);
+
+        if (!colour) {
+            return;
+        }
+
+        blockquote.style.setProperty("--rss-blockquote-brd", colour);
+        blockquote.style.setProperty(
+            "--rss-blockquote-shadow",
+            `inset 0.65rem 0 1.2rem color-mix(in srgb, ${colour} 14%, transparent)`
+        );
+    });
+
+    return template.innerHTML;
+}
+
+/**
+ * Prepares and renders RSS markdown.
+ * @param {string} markdown
+ * @returns {string}
+ */
+function rndrRssMD(markdown: string): string {
+    const prepared = prepExternalCodeDirectives(prepBlQAcc(markdown));
+
+    return applBQAcc(marked.parse(prepared));
 }
 
 /**
@@ -3105,7 +3238,7 @@ function RssCmntSlot({
  * @returns {JSX.Element}
  */
 function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Element {
-    const cnt = { __html: marked.parse(prepExternalCodeDirectives(pst.cnt)) };
+    const cnt = { __html: rndrRssMD(pst.cnt) };
     const arr = exp ? "🔽" : "▶️";
     const expd = exp ? "true" : "false";
     const cls = exp ? "rss-post-content content-expanded" : "rss-post-content content-collapsed";
