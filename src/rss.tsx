@@ -127,8 +127,25 @@ type ExternalCodeSpec = Readonly<{
     transFrom: CodeTranspileLang | null;
 }>;
 
+type SegPoint = Readonly<{
+    clientX: number;
+    clientY: number;
+}>;
+
+type SegTapSnap = Readonly<{
+    id: string;
+    at: number;
+}>;
+
+type SegRevealReq = Readonly<{
+    seg: HTMLElement;
+    point: SegPoint;
+}>;
+
 const RSS_POST_PARAM = "post";
+const RSS_JUMP_PARAM = "jumpto";
 const RSS_POST_SHARE_ID_LENGTH = 16;
+const RSS_SEG_ID_PREFIX = "rss-s-";
 const RSS_RESOURCE_TITLE_PREFIX = "${resource}";
 const RSS_CODE_PREF_STORAGE_KEY = "kittycrow:rss-code-language-preferences:v1";
 const RSS_CODE_DIRECTIVE_RE = /^[ \t]*@code\[([^\]\r\n]+)\]\(([^)\r\n]+)\)[ \t]*$/gm;
@@ -136,6 +153,12 @@ const RSS_CODE_DIRECTIVE_COMMENT_PREFIX = "rss-code-source:";
 const RSS_BLOCKQUOTE_ACCENT_RE = /^([ \t]{0,3})(#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}))>[ \t]?/;
 const RSS_BLOCKQUOTE_ACCENT_COMMENT_PREFIX = "rss-blockquote-accent:";
 const RSS_MARKDOWN_FENCE_RE = /^[ \t]{0,3}(?:```|~~~)/;
+const RSS_SEG_DOUBLE_TAP_MS = 420;
+const RSS_SEG_POINTER_REVEAL_MS = 1800;
+const RSS_SEG_SHARE_SEL = "[data-rss-seg-id]";
+const RSS_SEG_SHARE_BTN_SEL = "[data-rss-seg-share-btn]";
+const RSS_JUMP_RETRY_FRAMES = 18;
+const RSS_JUMP_SETTLE_MS = 520;
 
 const RSS_FILT_CHILD_PILL_SEL = [
     ".cal .cal__selPill[data-cal-lvl][data-cal-val]",
@@ -156,11 +179,17 @@ let calCtl: CalCtrl | null = null;
 let allPsts: readonly Pst[] = [];
 let authorOff: Set<string> = new Set<string>(authorFilterCfg.defaultUnselect);
 let pendingRevealPostRefs: readonly string[] = [];
+let pendingRevealJumpId: string | null = null;
 let athMenuOpen = false;
 let rssCodeGroupIx = 0;
 let rssCodeDirectiveIx = 0;
 let rssCodeDirectives = new Map<string, ExternalCodeDirective>();
 let rssCodeSourceCache = new Map<string, Promise<string>>();
+let activeSegShare: HTMLElement | null = null;
+let lastSegTap: SegTapSnap | null = null;
+let pendingSegReveal: SegRevealReq | null = null;
+let segRevealTimer: number | null = null;
+let segDismissWired = false;
 
 let curCalSel: CalSel = {
     yrs: new Set<number>(),
@@ -638,14 +667,168 @@ function applBQAcc(html: string): string {
 }
 
 /**
- * Prepares and renders RSS markdown.
- * @param {string} markdown
+ * Hashes a segment fingerprint into a short stable id suffix.
+ * @param {string} value
  * @returns {string}
  */
-function rndrRssMD(markdown: string): string {
-    const prepared = prepExternalCodeDirectives(prepBlQAcc(markdown));
+function hashSegId(value: string): string {
+    let hash = 0x811c9dc5;
 
-    return applBQAcc(marked.parse(prepared));
+    for (let i = 0; i < value.length; i += 1) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193);
+    }
+
+    return (hash >>> 0).toString(16).padStart(8, "0").slice(0, 8);
+}
+
+/**
+ * Checks whether an element is a top-level blockquote.
+ * @param {HTMLQuoteElement} blockquote
+ * @returns {boolean}
+ */
+function isTopBQ(blockquote: HTMLQuoteElement): boolean {
+    const parent = blockquote.parentElement;
+
+    return !parent || parent.closest("blockquote") === null;
+}
+
+/**
+ * Collects heading and top-level quote share targets.
+ * @param {DocumentFragment} root
+ * @returns {HTMLElement[]}
+ */
+function colSegShareEls(root: DocumentFragment): HTMLElement[] {
+    return Array.from(root.querySelectorAll<HTMLElement>("h1,h2,h3,h4,blockquote"))
+        .filter((el) => {
+            if (el instanceof HTMLQuoteElement) {
+                return isTopBQ(el);
+            }
+
+            return true;
+        });
+}
+
+/**
+ * Builds a deterministic short segment id.
+ * @param {string} seed
+ * @param {HTMLElement} el
+ * @param {number} index
+ * @param {Set<string>} used
+ * @returns {string}
+ */
+function mkSegId(seed: string, el: HTMLElement, index: number, used: Set<string>): string {
+    const kind = el.tagName.toLowerCase();
+    const text = (el.textContent ?? "").trim().replace(/\s+/g, " ");
+    let attempt = 0;
+
+    while (true) {
+        const extra = attempt === 0 ? "" : `|${attempt}`;
+        const hash = hashSegId(`${seed}|${kind}|${index}|${text}${extra}`);
+        const id = `${RSS_SEG_ID_PREFIX}${hash}`;
+
+        if (!used.has(id)) {
+            used.add(id);
+            return id;
+        }
+
+        attempt += 1;
+    }
+}
+
+/**
+ * Creates one segment share button.
+ * @param {string} segId
+ * @returns {HTMLButtonElement}
+ */
+function mkSegShareBtn(segId: string): HTMLButtonElement {
+    const btn = document.createElement("button");
+
+    btn.type = "button";
+    btn.className = "rss-post-share rss-post-share--segment rss-seg-share kc-round-icon-btn";
+    btn.dataset.rssSegShareBtn = segId;
+    btn.setAttribute("aria-label", "Share this section");
+    btn.title = "Share section";
+    btn.append(render2Frag(icons.MakeShareIcon()));
+
+    return btn;
+}
+
+/**
+ * Removes temporary segment metadata from a raw pre element.
+ * @param {HTMLPreElement} pre
+ * @returns {void}
+ */
+function clrPreSegShare(pre: HTMLPreElement): void {
+    pre.removeAttribute("id");
+    delete pre.dataset.rssSegId;
+    delete pre.dataset.rssSegShare;
+}
+
+/**
+ * Moves a code segment id from the raw pre to its rendered code frame.
+ * @param {HTMLDivElement} frame
+ * @param {readonly HTMLPreElement[]} pres
+ * @returns {void}
+ */
+function moveCodeSegShareToFrame(
+    frame: HTMLDivElement,
+    pres: readonly HTMLPreElement[]
+): void {
+    const segId = pres.find((pre) => pre.dataset.rssSegId)?.dataset.rssSegId;
+
+    pres.forEach((pre) => {
+        clrPreSegShare(pre);
+    });
+
+    if (!segId || frame.dataset.rssSegId) {
+        return;
+    }
+
+    frame.id = segId;
+    frame.dataset.rssSegId = segId;
+    frame.dataset.rssSegShare = "1";
+    frame.appendChild(mkSegShareBtn(segId));
+}
+
+/**
+ * Adds deterministic ids and share buttons to headings and top-level blockquotes.
+ * @param {string} html
+ * @param {string} seed
+ * @returns {string}
+ */
+function applSegShares(html: string, seed: string): string {
+    const template = document.createElement("template");
+    const used = new Set<string>();
+
+    template.innerHTML = html;
+
+    colSegShareEls(template.content).forEach((el, index) => {
+        const id = mkSegId(seed, el, index, used);
+
+        el.id = id;
+        el.dataset.rssSegId = id;
+        el.dataset.rssSegShare = "1";
+
+        if (!(el instanceof HTMLPreElement)) {
+            el.appendChild(mkSegShareBtn(id));
+        }
+    });
+
+    return template.innerHTML;
+}
+
+/**
+ * Prepares and renders RSS markdown.
+ * @param {string} markdown
+ * @param {string} seed
+ * @returns {string}
+ */
+function rndrRssMD(markdown: string, seed: string): string {
+    const prepared = prepExternalCodeDirectives(prepBlQAcc(markdown));
+    const html = applBQAcc(marked.parse(prepared));
+
+    return applSegShares(html, seed);
 }
 
 /**
@@ -1577,6 +1760,8 @@ function mkCodeGroupFrame(run: readonly HTMLPreElement[]): void {
     frame.dataset.rssCodeGroupPrefKey = groupKey;
     frame.dataset.language = variants[preferredIndex]?.lang ?? variants[0].lang;
 
+    moveCodeSegShareToFrame(frame, variants.map((variant) => variant.pre));
+
     deck.className = "rss-code-variants";
 
     parent.insertBefore(frame, run[0]);
@@ -1665,6 +1850,8 @@ function ensCodeTls(pre: HTMLPreElement, code: HTMLElement): void {
 
     frame.className = "rss-code-frame";
     frame.dataset.language = getCodeLang(code);
+
+    moveCodeSegShareToFrame(frame, [pre]);
 
     parent.insertBefore(frame, pre);
     frame.append(mkCodeBar(code), pre);
@@ -2935,7 +3122,25 @@ function mkPstDomRef(pst: Pst): string {
  * @returns {string}
  */
 function mkPstShareUrl(postRef: string): string {
-    return helpers.setUrlParam(RSS_POST_PARAM, postRef);
+    const url = new URL(helpers.setUrlParam(RSS_POST_PARAM, postRef), window.location.href);
+
+    url.searchParams.delete(RSS_JUMP_PARAM);
+
+    return url.toString();
+}
+
+/**
+ * Share url for one segment.
+ * @param {string} postRef
+ * @param {string} segId
+ * @returns {string}
+ */
+function mkPstSegShareUrl(postRef: string, segId: string): string {
+    const url = new URL(mkPstShareUrl(postRef), window.location.href);
+
+    url.searchParams.set(RSS_JUMP_PARAM, segId);
+
+    return url.toString();
 }
 
 /**
@@ -2946,6 +3151,17 @@ function getReqPstRef(): string | null {
     const postRef = helpers.getUrlParam(RSS_POST_PARAM);
 
     return postRef && postRef.trim().length > 0 ? postRef.trim() : null;
+}
+
+/**
+ * Url requested segment, if any.
+ * @returns {string | null}
+ */
+function getReqJumpId(): string | null {
+    const jumpId = helpers.getUrlParam(RSS_JUMP_PARAM);
+    const clean = jumpId?.trim() ?? "";
+
+    return /^rss-s-[a-f0-9]{8}$/i.test(clean) ? clean : null;
 }
 
 /**
@@ -3005,6 +3221,154 @@ function mkPstsRefs(psts: readonly Pst[]): ReadonlySet<string> {
 }
 
 /**
+ * Waits for the next layout frame.
+ * @returns {Promise<void>}
+ */
+function waitFrame(): Promise<void> {
+    return new Promise((resolve) => {
+        window.requestAnimationFrame(() => resolve());
+    });
+}
+
+/**
+ * Waits several layout frames.
+ * @param {number} count
+ * @returns {Promise<void>}
+ */
+async function waitFrames(count: number): Promise<void> {
+    for (let i = 0; i < count; i += 1) {
+        await waitFrame();
+    }
+}
+
+/**
+ * Gets a visible jump target.
+ * @param {string} jumpId
+ * @returns {HTMLElement | null}
+ */
+function getReadyJumpEl(jumpId: string): HTMLElement | null {
+    const el = document.getElementById(jumpId);
+
+    if (!(el instanceof HTMLElement)) {
+        return null;
+    }
+
+    if (el.getClientRects().length === 0) {
+        return null;
+    }
+
+    return el;
+}
+
+/**
+ * Waits until the jump target exists and has layout.
+ * @param {string} jumpId
+ * @returns {Promise<HTMLElement | null>}
+ */
+async function waitForJumpEl(jumpId: string): Promise<HTMLElement | null> {
+    for (let i = 0; i < RSS_JUMP_RETRY_FRAMES; i += 1) {
+        const el = getReadyJumpEl(jumpId);
+
+        if (el) {
+            return el;
+        }
+
+        await waitFrame();
+    }
+
+    return null;
+}
+
+/**
+ * Viewport height, accounting for mobile visual viewport when present.
+ * @returns {number}
+ */
+function getViewportHeight(): number {
+    return window.visualViewport?.height ?? document.documentElement.clientHeight;
+}
+
+/**
+ * Scrolls one jump target to the middle of the viewport.
+ * @param {HTMLElement} el
+ * @returns {void}
+ */
+function scrollJumpEl(el: HTMLElement): void {
+    const rect = el.getBoundingClientRect();
+    const viewportHeight = getViewportHeight();
+    const targetTop = window.scrollY + rect.top + (rect.height / 2) - (viewportHeight / 2);
+
+    window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: "smooth"
+    });
+}
+
+/**
+ * Repeats the jump once after the expand animation/layout has settled.
+ * @param {string} jumpId
+ * @returns {void}
+ */
+function qSettledJump(jumpId: string): void {
+    window.setTimeout(() => {
+        const el = getReadyJumpEl(jumpId);
+
+        if (!el) {
+            return;
+        }
+
+        scrollJumpEl(el);
+    }, RSS_JUMP_SETTLE_MS);
+}
+
+/**
+ * Moves to one rendered segment.
+ * @param {string | null} jumpId
+ * @returns {Promise<boolean>}
+ */
+async function jumpToSeg(jumpId: string | null): Promise<boolean> {
+    if (!jumpId) {
+        return false;
+    }
+
+    const el = await waitForJumpEl(jumpId);
+
+    if (!el) {
+        return false;
+    }
+
+    scrollJumpEl(el);
+    qSettledJump(jumpId);
+
+    return true;
+}
+
+/**
+ * Scrolls to the requested segment, or falls back to the post.
+ * @param {HTMLElement} first
+ * @param {string | null} jumpId
+ * @returns {Promise<void>}
+ */
+async function scrollRevealTarget(first: HTMLElement, jumpId: string | null): Promise<void> {
+    try {
+        await waitFrames(2);
+
+        const jumped = await jumpToSeg(jumpId);
+
+        if (jumped) {
+            return;
+        }
+
+        first.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    } finally {
+        pendingRevealPostRefs = [];
+        pendingRevealJumpId = null;
+    }
+}
+
+/**
  * Open the post, even if toggle is weird.
  * @param {HTMLElement} pstDiv
  * @returns {void}
@@ -3041,11 +3405,14 @@ function opnPstEl(pstDiv: HTMLElement): void {
 /**
  * Reveal posts from saved refs.
  * @param {readonly string[]} postRefs
+ * @param {string | null} jumpId
  * @returns {void}
  */
-function rvlPstRefs(postRefs: readonly string[]): void {
+function rvlPstRefs(postRefs: readonly string[], jumpId: string | null = null): void {
     const refs = Array.from(new Set<string>(postRefs));
+
     pendingRevealPostRefs = refs;
+    pendingRevealJumpId = jumpId;
 
     window.requestAnimationFrame(() => {
         const matched: HTMLElement[] = [];
@@ -3063,16 +3430,16 @@ function rvlPstRefs(postRefs: readonly string[]): void {
         });
 
         const first = matched[0];
-        if (!first) return;
+
+        if (!first) {
+            pendingRevealPostRefs = [];
+            pendingRevealJumpId = null;
+            return;
+        }
 
         window.requestAnimationFrame(() => {
-            first.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
+            void scrollRevealTarget(first, jumpId);
         });
-
-        pendingRevealPostRefs = [];
     });
 }
 
@@ -3080,9 +3447,14 @@ function rvlPstRefs(postRefs: readonly string[]): void {
  * Set filters so the wanted posts can show up.
  * @param {readonly Pst[]} psts
  * @param {readonly Pst[]} tgts
+ * @param {string | null} jumpId
  * @returns {void}
  */
-function prepTgts(psts: readonly Pst[], tgts: readonly Pst[]): void {
+function prepTgts(
+    psts: readonly Pst[],
+    tgts: readonly Pst[],
+    jumpId: string | null = null
+): void {
     if (tgts.length === 0) return;
 
     const targetAuthors = pstAths(tgts);
@@ -3094,6 +3466,7 @@ function prepTgts(psts: readonly Pst[], tgts: readonly Pst[]): void {
 
     curCalSel = mkPstsSel(tgts);
     pendingRevealPostRefs = Array.from(mkPstsRefs(tgts));
+    pendingRevealJumpId = jumpId;
 }
 
 /**
@@ -3238,13 +3611,13 @@ function RssCmntSlot({
  * @returns {JSX.Element}
  */
 function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Element {
-    const cnt = { __html: rndrRssMD(pst.cnt) };
+    const postRef = mkPstDomRef(pst);
+    const cnt = { __html: rndrRssMD(pst.cnt, postRef) };
     const arr = exp ? "🔽" : "▶️";
     const expd = exp ? "true" : "false";
     const cls = exp ? "rss-post-content content-expanded" : "rss-post-content content-collapsed";
     const commentsDisabled = authorFilterCfg.defaultUnselect.has(pst.ath);
     const slug = mkPstSlug(pst);
-    const postRef = mkPstDomRef(pst);
 
     return (
         <article
@@ -3458,6 +3831,288 @@ function cfgPstLks(pstDiv: HTMLElement): void {
 }
 
 /**
+ * Reads pointer coordinates from a pointer event.
+ * @param {PointerEvent} ev
+ * @returns {SegPoint}
+ */
+function segPointFromPointerEvent(ev: PointerEvent): SegPoint {
+    return {
+        clientX: ev.clientX,
+        clientY: ev.clientY
+    };
+}
+
+/**
+ * Keeps a local segment coordinate inside its box.
+ * @param {number} value
+ * @param {number} max
+ * @returns {number}
+ */
+function clampSegCoord(value: number, max: number): number {
+    if (!Number.isFinite(value)) {
+        return 0;
+    }
+
+    return Math.min(Math.max(value, 0), Math.max(max, 0));
+}
+
+/**
+ * Checks if a target is an interactive element that should keep its own behaviour.
+ * @param {Element} trg
+ * @returns {boolean}
+ */
+function isSegControlTarget(trg: Element): boolean {
+    return trg.closest("a,button,input,textarea,select,label") !== null;
+}
+
+/**
+ * Stores the desired segment share button position as CSS variables.
+ * @param {HTMLElement} seg
+ * @param {SegPoint} point
+ * @returns {void}
+ */
+function setSegSharePoint(seg: HTMLElement, point: SegPoint): void {
+    const rect = seg.getBoundingClientRect();
+    const localX = clampSegCoord(point.clientX - rect.left, rect.width);
+    const localY = clampSegCoord(point.clientY - rect.top, rect.height);
+
+    seg.style.setProperty("--rss-seg-share-x", `${localX}px`);
+    seg.style.setProperty("--rss-seg-share-y", `${localY}px`);
+}
+
+/**
+ * Cancels a delayed segment share reveal.
+ * @returns {void}
+ */
+function cancelPendingSegReveal(): void {
+    pendingSegReveal = null;
+
+    if (segRevealTimer === null) {
+        return;
+    }
+
+    window.clearTimeout(segRevealTimer);
+    segRevealTimer = null;
+}
+
+/**
+ * Hides the currently visible segment share button only.
+ * @returns {void}
+ */
+function hideActiveSegShare(): void {
+    if (!activeSegShare) {
+        return;
+    }
+
+    activeSegShare.classList.remove("is-rss-seg-share-open");
+    activeSegShare.dataset.rssSegShareOpen = "0";
+    activeSegShare = null;
+}
+
+/**
+ * Reveals one segment share button and hides the previous one.
+ * @param {HTMLElement} seg
+ * @returns {void}
+ */
+function rvlSegShare(seg: HTMLElement): void {
+    if (activeSegShare && activeSegShare !== seg) {
+        activeSegShare.classList.remove("is-rss-seg-share-open");
+        activeSegShare.dataset.rssSegShareOpen = "0";
+    }
+
+    activeSegShare = seg;
+    seg.classList.add("is-rss-seg-share-open");
+    seg.dataset.rssSegShareOpen = "1";
+}
+
+/**
+ * Reveals a segment share button at a pointer or tap position.
+ * @param {HTMLElement} seg
+ * @param {SegPoint} point
+ * @returns {void}
+ */
+function rvlSegShareAt(seg: HTMLElement, point: SegPoint): void {
+    cancelPendingSegReveal();
+    setSegSharePoint(seg, point);
+    rvlSegShare(seg);
+}
+
+/**
+ * Queues a segment share reveal once the pointer enters a shareable segment.
+ * @param {HTMLElement} seg
+ * @param {SegPoint} point
+ * @returns {void}
+ */
+function qSegShareReveal(seg: HTMLElement, point: SegPoint): void {
+    if (activeSegShare === seg) {
+        return;
+    }
+
+    if (pendingSegReveal?.seg === seg) {
+        return;
+    }
+
+    if (activeSegShare) {
+        hideActiveSegShare();
+    }
+
+    cancelPendingSegReveal();
+    setSegSharePoint(seg, point);
+
+    pendingSegReveal = {
+        seg,
+        point
+    };
+
+    segRevealTimer = window.setTimeout(() => {
+        const pending = pendingSegReveal;
+
+        segRevealTimer = null;
+        pendingSegReveal = null;
+
+        if (!pending?.seg.isConnected) {
+            return;
+        }
+
+        rvlSegShare(pending.seg);
+    }, RSS_SEG_POINTER_REVEAL_MS);
+}
+
+/**
+ * Hides the active segment share button.
+ * @returns {void}
+ */
+function hideSegShare(): void {
+    cancelPendingSegReveal();
+    hideActiveSegShare();
+}
+
+/**
+ * Reads the post ref for one rendered segment.
+ * @param {HTMLElement} seg
+ * @returns {string | null}
+ */
+function getSegPostRef(seg: HTMLElement): string | null {
+    const pstDiv = seg.closest(".rss-post-block");
+
+    if (!(pstDiv instanceof HTMLElement)) {
+        return null;
+    }
+
+    return pstDiv.dataset.rssPostRef ?? null;
+}
+
+/**
+ * Reads the share URL for one rendered segment.
+ * @param {HTMLElement} seg
+ * @returns {string | null}
+ */
+function getSegShareUrl(seg: HTMLElement): string | null {
+    const segId = seg.dataset.rssSegId;
+    const postRef = getSegPostRef(seg);
+
+    if (!segId || !postRef) {
+        return null;
+    }
+
+    return mkPstSegShareUrl(postRef, segId);
+}
+
+/**
+ * Copies a rendered segment URL.
+ * @param {HTMLElement} seg
+ * @returns {void}
+ */
+function copySegShareUrl(seg: HTMLElement): void {
+    const url = getSegShareUrl(seg);
+
+    if (!url) {
+        return;
+    }
+
+    void cpyTxt(url);
+    hideSegShare();
+}
+
+/**
+ * Shares a rendered segment using the normal share helper.
+ * @param {HTMLElement} seg
+ * @returns {void}
+ */
+function shareSegUrl(seg: HTMLElement): void {
+    const url = getSegShareUrl(seg);
+    const postRef = getSegPostRef(seg);
+    const pst = findByPstRef(allPsts, postRef).at(0);
+    const title = pst?.ttl ?? document.title;
+
+    if (!url) {
+        return;
+    }
+
+    void helpers.shareUrl(url, title);
+    hideSegShare();
+}
+
+/**
+ * Handles touch tap on a shareable segment.
+ * @param {HTMLElement} seg
+ * @param {SegPoint} point
+ * @returns {void}
+ */
+function hdlSegTap(seg: HTMLElement, point: SegPoint): void {
+    const segId = seg.dataset.rssSegId;
+    const now = Date.now();
+    const isDoubleTap =
+        !!segId
+        && lastSegTap?.id === segId
+        && now - lastSegTap.at <= RSS_SEG_DOUBLE_TAP_MS;
+
+    if (isDoubleTap) {
+        lastSegTap = null;
+        copySegShareUrl(seg);
+        return;
+    }
+
+    if (segId) {
+        lastSegTap = {
+            id: segId,
+            at: now
+        };
+    }
+
+    rvlSegShareAt(seg, point);
+}
+
+/**
+ * Hides mobile revealed segment buttons on outside tap/click.
+ * @returns {void}
+ */
+function wireSegShareDismiss(): void {
+    if (segDismissWired) return;
+
+    segDismissWired = true;
+
+    document.addEventListener(
+        "pointerdown",
+        (ev) => {
+            const trg = ev.target;
+
+            if (!(trg instanceof Element)) {
+                hideSegShare();
+                return;
+            }
+
+            if (activeSegShare?.contains(trg)) {
+                return;
+            }
+
+            hideSegShare();
+        },
+        true
+    );
+}
+
+/**
  * Share btn click wires.
  * @param {HTMLElement} pstDiv
  * @returns {void}
@@ -3485,6 +4140,135 @@ function wireShareBtns(pstDiv: HTMLElement): void {
 }
 
 /**
+ * Segment share click wires.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function wireSegShares(pstDiv: HTMLElement): void {
+    if (pstDiv.dataset.rssSegShareWired === "1") return;
+
+    pstDiv.dataset.rssSegShareWired = "1";
+    wireSegShareDismiss();
+
+    pstDiv.addEventListener(
+        "pointermove",
+        (ev) => {
+            if (ev.pointerType === "touch") {
+                return;
+            }
+
+            const trg = ev.target;
+
+            if (!(trg instanceof Element)) {
+                hideSegShare();
+                return;
+            }
+
+            if (trg.closest(RSS_SEG_SHARE_BTN_SEL)) {
+                return;
+            }
+
+            const seg = trg.closest<HTMLElement>(RSS_SEG_SHARE_SEL);
+
+            if (!(seg instanceof HTMLElement)) {
+                hideSegShare();
+                return;
+            }
+
+            qSegShareReveal(seg, segPointFromPointerEvent(ev));
+        },
+        true
+    );
+
+    pstDiv.addEventListener(
+        "pointerleave",
+        (ev) => {
+            if (ev.pointerType === "touch") {
+                return;
+            }
+
+            hideSegShare();
+        },
+        true
+    );
+
+    pstDiv.addEventListener(
+        "click",
+        (ev) => {
+            const trg = ev.target;
+
+            if (!(trg instanceof Element)) return;
+
+            const shareBtn = trg.closest<HTMLButtonElement>(RSS_SEG_SHARE_BTN_SEL);
+
+            if (shareBtn instanceof HTMLButtonElement) {
+                ev.preventDefault();
+                ev.stopPropagation();
+
+                const seg = shareBtn.closest<HTMLElement>(RSS_SEG_SHARE_SEL);
+
+                if (seg instanceof HTMLElement) {
+                    shareSegUrl(seg);
+                }
+            }
+        },
+        true
+    );
+
+    pstDiv.addEventListener(
+        "dblclick",
+        (ev) => {
+            const trg = ev.target;
+
+            if (!(trg instanceof Element)) return;
+
+            const seg = trg.closest<HTMLElement>(RSS_SEG_SHARE_SEL);
+
+            if (!(seg instanceof HTMLElement)) {
+                return;
+            }
+
+            ev.preventDefault();
+            ev.stopPropagation();
+        },
+        true
+    );
+
+    pstDiv.addEventListener(
+        "pointerdown",
+        (ev) => {
+            const trg = ev.target;
+
+            if (!(trg instanceof Element)) return;
+
+            if (trg.closest(RSS_SEG_SHARE_BTN_SEL)) {
+                ev.stopPropagation();
+                return;
+            }
+
+            const seg = trg.closest<HTMLElement>(RSS_SEG_SHARE_SEL);
+
+            if (!(seg instanceof HTMLElement)) {
+                return;
+            }
+
+            ev.stopPropagation();
+
+            if (ev.pointerType !== "touch") {
+                return;
+            }
+
+            if (isSegControlTarget(trg)) {
+                return;
+            }
+
+            hdlSegTap(seg, segPointFromPointerEvent(ev));
+        },
+        true
+    );
+}
+
+/**
  * Attach the post bits.
  * @param {HTMLElement} pstDiv
  * @returns {void}
@@ -3505,6 +4289,7 @@ function atchTgl(pstDiv: HTMLElement): void {
     cfgPstLks(pstDiv);
     hglPstCode(pstDiv);
     wireShareBtns(pstDiv);
+    wireSegShares(pstDiv);
     wireHvr(pstDiv);
     wireCmntLyt(pstDiv);
     helpers.atchColl({ tgl, cnt, arr });
@@ -3523,7 +4308,7 @@ function atchAllTgl(box: HTMLElement): void {
     psts.forEach((pst) => atchTgl(pst));
 
     if (pendingRevealPostRefs.length > 0) {
-        rvlPstRefs(pendingRevealPostRefs);
+        rvlPstRefs(pendingRevealPostRefs, pendingRevealJumpId);
     }
 }
 
@@ -4006,22 +4791,22 @@ function rndErr(box: HTMLDivElement, err: unknown): void {
  * @param {HTMLDivElement} cal
  * @param {readonly Pst[]} psts
  * @param {readonly Pst[]} tgts
+ * @param {string | null} jumpId
  * @returns {void}
  */
 function rndTgtsCal(
     box: HTMLDivElement,
     cal: HTMLDivElement,
     psts: readonly Pst[],
-    tgts: readonly Pst[]
+    tgts: readonly Pst[],
+    jumpId: string | null = null
 ): void {
     const authorSlot = ensAthSlot(cal);
-    const targetRefs = Array.from(mkPstsRefs(tgts));
 
-    prepTgts(psts, tgts);
+    prepTgts(psts, tgts, jumpId);
     rndAthFilt(authorSlot, psts, curCalSel);
     rndBlog(box, psts, curCalSel, authorOff);
     syncCurFiltSum();
-    rvlPstRefs(targetRefs);
 }
 
 /**
@@ -4047,19 +4832,15 @@ async function loadBlog(): Promise<void> {
         allPsts = pstsForCurPage(mkPsts(prsRss(xml)));
 
         const requestedPostRef = getReqPstRef();
+        const requestedJumpId = requestedPostRef ? getReqJumpId() : null;
         const requestedPosts = findByPstRef(allPsts, requestedPostRef);
 
         if (requestedPosts.length > 0) {
-            prepTgts(allPsts, requestedPosts);
+            prepTgts(allPsts, requestedPosts, requestedJumpId);
         }
 
         if (isResourcePth()) {
             rndResources(box, allPsts);
-
-            if (requestedPosts.length > 0) {
-                rvlPstRefs(Array.from(mkPstsRefs(requestedPosts)));
-            }
-
             return;
         }
 
@@ -4067,7 +4848,7 @@ async function loadBlog(): Promise<void> {
             mntCal(cal, box, allPsts);
 
             if (requestedPosts.length > 0) {
-                rndTgtsCal(box, cal, allPsts, requestedPosts);
+                rndTgtsCal(box, cal, allPsts, requestedPosts, requestedJumpId);
             }
 
             return;
@@ -4075,19 +4856,10 @@ async function loadBlog(): Promise<void> {
 
         if (isBlogPth()) {
             rndBlog(box, allPsts, curCalSel, authorOff);
-
-            if (requestedPosts.length > 0) {
-                rvlPstRefs(Array.from(mkPstsRefs(requestedPosts)));
-            }
-
             return;
         }
 
         rndStd(box, allPsts);
-
-        if (requestedPosts.length > 0) {
-            rvlPstRefs(Array.from(mkPstsRefs(requestedPosts)));
-        }
     } catch (err: unknown) {
         rndErr(box, err);
     }

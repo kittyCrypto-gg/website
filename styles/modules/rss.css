@@ -192,6 +192,17 @@
     --rss-post-share-row-margin-block-start: clamp(0.75rem, 2vw, 1rem);
     --rss-post-share-row-margin-block-end: clamp(0.5rem, 1.5vw, 0.75rem);
 
+    --rss-seg-share-pad-inline-end: 0rem;
+    --rss-seg-share-x: 0px;
+    --rss-seg-share-y: 0px;
+    --rss-seg-share-pointer-gap: 0.35rem;
+    --rss-seg-share-hidden-y: -0.22rem;
+    --rss-seg-share-hidden-scale: 0.96;
+    --rss-seg-share-transition: 0.18s ease;
+    --rss-seg-share-z: 24;
+    --rss-seg-share-scroll-margin: clamp(4.5rem, 12vh, 7rem);
+    --rss-seg-share-code-toolbar-pad-start: var(--rss-code-toolbar-padding-inline);
+
     --rss-filters-pad-block: var(--cal-pad-block);
     --rss-filters-pad-inline: var(--rss-post-padding-inline);
     --rss-filters-gap: var(--cal-gap);
@@ -1042,6 +1053,43 @@
         color: var(--rss-post-hover-colour);
     }
 
+    & :is(h1, h2, h3, h4, blockquote, .rss-code-frame)[data-rss-seg-id] {
+        position: relative;
+        isolation: isolate;
+        scroll-margin-block-start: var(--rss-seg-share-scroll-margin);
+    }
+
+    & :is(h1, h2, h3, h4, blockquote)[data-rss-seg-id] {
+        padding-inline-end: max(var(--rss-seg-share-pad-inline-end), var(--rss-blockquote-padding-inline));
+    }
+
+    & .rss-post-share.rss-seg-share {
+        position: absolute;
+        inset-block-start: var(--rss-seg-share-y, 0px);
+        inset-inline-start: var(--rss-seg-share-x, 0px);
+        inset-inline-end: auto;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, calc(-100% - var(--rss-seg-share-pointer-gap) + var(--rss-seg-share-hidden-y))) scale(var(--rss-seg-share-hidden-scale));
+        z-index: var(--rss-seg-share-z);
+        transition:
+            opacity var(--rss-seg-share-transition),
+            transform var(--rss-seg-share-transition),
+            background var(--rss-post-share-transition),
+            border-color var(--rss-post-share-transition);
+    }
+
+    & :is(h1, h2, h3, h4, blockquote, .rss-code-frame)[data-rss-seg-id]:is(:hover, :focus-within, .is-rss-seg-share-open)>.rss-post-share.rss-seg-share,
+    & .rss-post-share.rss-seg-share:is(:hover, :focus-visible) {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, calc(-100% - var(--rss-seg-share-pointer-gap))) scale(1);
+    }
+
+    & .rss-post-share.rss-seg-share:is(:hover, :focus-visible) {
+        transform: translate(-50%, calc(-100% - var(--rss-seg-share-pointer-gap) - 1px)) scale(1);
+    }
+
     & .rss-post-toggle {
         display: flex;
         flex-direction: column;
@@ -1452,8 +1500,14 @@
             max-width: 100%;
             min-width: 0;
             margin: var(--rss-code-frame-margin-block) 0;
-            overflow: hidden;
+            overflow: visible;
+            position: relative;
+            isolation: isolate;
             box-sizing: border-box;
+        }
+
+        & .rss-code-frame[data-rss-seg-id] .rss-code-toolbar {
+            padding-inline-start: var(--rss-seg-share-code-toolbar-pad-start);
         }
 
         & .rss-code-frame--group {
@@ -1513,10 +1567,6 @@
             min-inline-size: 0;
             max-inline-size: 100%;
             padding: var(--rss-code-switch-padding);
-            /* border: var(--rss-code-block-border-width) solid var(--rss-code-switch-brd); */
-            /* border-radius: var(--rss-code-switch-radius); */
-            /* background: var(--rss-code-switch-bg); */
-            /* overflow: hidden; */
             overflow: visible;
             text-overflow: clip;
             white-space: nowrap;
@@ -2042,6 +2092,11 @@
         & .rss-post-share {
             grid-area: share;
             justify-self: end;
+        }
+
+        & .rss-post-share.rss-seg-share {
+            grid-area: auto;
+            justify-self: auto;
         }
 
         & .rss-post-title {
