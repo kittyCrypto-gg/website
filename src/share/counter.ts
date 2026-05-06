@@ -1,3 +1,21 @@
+/********** ***********
+ * @module counter
+ *
+ * @description
+ * Provides the website visit counter logic, including counter rendering,
+ * visitor tracking, and display updates.
+ *
+ * @author kitty crow
+ * @license MIT
+ *
+ * @website https://kittycrow.dev
+ * @repository
+ *
+ * @remarks
+ * This module runs in the browser and expects the counter backend endpoint
+ * and target counter DOM elements to be available.
+ ********** ***********/
+
 export interface CounterOptions {
     elementId: string;
     target: number;
@@ -54,7 +72,7 @@ function sanVal(value: number): number {
 }
 
 /**
- * How many digits we need, with the leading zero slot too.
+ * How many digits we need, with a leading zero.
  * @param {number} value
  * @returns {number}
  */
@@ -74,7 +92,7 @@ function fmtVal(value: number, length: number): string {
 
 /**
  * Picks the runtime duration.
- * if caller gives one we clamp it a bit, otherwise default and done.
+ * if caller gives one we clamp it a bit.
  * @param {number} _targetValue
  * @param {number | undefined} durationMs
  * @returns {number}
@@ -89,7 +107,7 @@ function durMs(_targetValue: number, durationMs?: number): number {
 
 /**
  * Place value for a column.
- * leftmost gets the biggest one obv.
+ * leftmost gets the biggest one.
  * @param {number} length
  * @param {number} cellIndex
  * @returns {number}
@@ -129,7 +147,7 @@ function restartAnim(element: HTMLElement, className: string): void {
 }
 
 /**
- * Sets one digit and maybe kicks its animation too.
+ * Sets one digit and kicks its animation too.
  * @param {Cell} cell
  * @param {number} digit
  * @param {string | undefined} animCls
@@ -207,6 +225,7 @@ function mkTable(
 
 /**
  * Builds the visible credit line.
+ * Please do not remove it, I worked hard on this module and it would be sad if no one knew who made it.
  * @returns {HTMLSpanElement}
  */
 function mkCredit(): HTMLSpanElement {
@@ -350,7 +369,7 @@ function finish(inst: Inst): void {
 }
 
 /**
- * Runs the animation right now.
+ * Runs the animation.
  * @param {Inst} inst
  * @param {number} durationMs
  * @returns {void}
@@ -391,7 +410,7 @@ function runAnim(inst: Inst, durationMs: number): void {
 
 /**
  * Waits until the counter is visible before starting it.
- * if IntersectionObserver doesnt exist we just run it straight away.
+ * if IntersectionObserver doesnt exist just runs it straight away.
  * @param {Inst} inst
  * @param {number} durationMs
  * @returns {void}

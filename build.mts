@@ -69,34 +69,54 @@ async function walk(dir: string): Promise<string[]> {
  * @param {string} filePath
  * @returns {boolean}
  */
-function isEntry(filePath: string): boolean {
+function isTrackedSourceFile(filePath: string): boolean {
     const file = norm(filePath);
 
     if (!file.startsWith("src/")) return false;
-    if (file.endsWith(".d.ts")) return false;
 
     return file.endsWith(".ts") || file.endsWith(".tsx");
 }
 
 /**
- * @returns {Promise<string[]>}
+ * @param {string} filePath
+ * @returns {boolean}
  */
-async function getEntries(): Promise<string[]> {
-    const allFiles = await walk("src");
-    return allFiles.filter(isEntry).sort((left, right) => left.localeCompare(right));
+function isEntry(filePath: string): boolean {
+    const file = norm(filePath);
+
+    if (!isTrackedSourceFile(file)) return false;
+    if (file.endsWith(".d.ts")) return false;
+
+    return true;
 }
 
 /**
- * @param {string[]} entryPoints
+ * @returns {Promise<string[]>}
+ */
+async function getSourceFiles(): Promise<string[]> {
+    const allFiles = await walk("src");
+    return allFiles.filter(isTrackedSourceFile).sort((left, right) => left.localeCompare(right));
+}
+
+/**
+ * @param {string[]} sourceFiles
  * @returns {string[]}
  */
-function getTrackedFiles(entryPoints: string[]): string[] {
+function getEntries(sourceFiles: string[]): string[] {
+    return sourceFiles.filter(isEntry).sort((left, right) => left.localeCompare(right));
+}
+
+/**
+ * @param {string[]} sourceFiles
+ * @returns {string[]}
+ */
+function getTrackedFiles(sourceFiles: string[]): string[] {
     return [
         "build.mts",
         "package.json",
         "tsconfig.json",
         "tsconfig.tools.json",
-        ...entryPoints
+        ...sourceFiles
     ].sort((left, right) => left.localeCompare(right));
 }
 
@@ -327,6 +347,11 @@ async function runBuild(entryPoints: string[]): Promise<void> {
         target: "es2022",
         entryNames: "[dir]/[name]",
         chunkNames: "chunks/[name]-[hash]",
+        assetNames: "wasm/[name]",
+        publicPath: "/dist",
+        loader: {
+            ".wasm": "file"
+        },
         logLevel: "info"
     });
 }
@@ -382,13 +407,14 @@ async function uploadRemoteManifest(manifest: BuildManifest): Promise<string> {
 async function main(): Promise<void> {
     await loadOptionalDotenv();
 
-    const entryPoints = await getEntries();
+    const sourceFiles = await getSourceFiles();
+    const entryPoints = getEntries(sourceFiles);
 
     if (entryPoints.length === 0) {
         throw new Error("No entry points found under src.");
     }
 
-    const trackedFiles = getTrackedFiles(entryPoints);
+    const trackedFiles = getTrackedFiles(sourceFiles);
     const currentManifest = await createManifest(trackedFiles);
 
     console.log(`[build] Tracking ${String(trackedFiles.length)} files.`);

@@ -1,3 +1,22 @@
+/********** ***********
+ * @module visitLogger
+ *
+ * @description
+ * Logs lightweight website visit events through a backend endpoint.
+ *
+ * @author kitty crow
+ * @license MIT
+ *
+ * @website https://kittycrow.dev
+ * @repository
+ *
+ * @remarks
+ * This module sends a minimal request only. It does not include personal
+ * payload data from the page. The backend may still receive standard request
+ * metadata such as the origin, IP address, user agent, and similar transport
+ * or browser-provided headers.
+ ********** ***********/
+
 const VISITS_API_BASE_URL = "https://srv.kittycrow.dev"
 
 /**
@@ -14,7 +33,7 @@ function getSiteOrigin(): string {
  *
  * @returns {string} The visit logging endpoint.
  */
-function getLogVisitEndpoint(): string {
+function getLogVep(): string {
     const encodedSiteOrigin = encodeURIComponent(getSiteOrigin())
 
     return `${VISITS_API_BASE_URL}/visits/log/${encodedSiteOrigin}`
@@ -35,7 +54,7 @@ function getCurrentPage(): string {
  * @param {string} page The page identifier to store.
  * @returns {string} The session storage key.
  */
-function getVisitStorageKey(page: string): string {
+function getVStrgKey(page: string): string {
     return `visitLogged:${getSiteOrigin()}:${page}`
 }
 
@@ -45,8 +64,8 @@ function getVisitStorageKey(page: string): string {
  * @param {string} page The page identifier to check.
  * @returns {boolean} True when the page visit was already logged in this session.
  */
-function hasVisitBeenLoggedThisSession(page: string): boolean {
-    return sessionStorage.getItem(getVisitStorageKey(page)) === "true"
+function visitLogged(page: string): boolean {
+    return sessionStorage.getItem(getVStrgKey(page)) === "true"
 }
 
 /**
@@ -55,8 +74,8 @@ function hasVisitBeenLoggedThisSession(page: string): boolean {
  * @param {string} page The page identifier to mark.
  * @returns {void}
  */
-function markVisitAsLoggedThisSession(page: string): void {
-    sessionStorage.setItem(getVisitStorageKey(page), "true")
+function markVLogged(page: string): void {
+    sessionStorage.setItem(getVStrgKey(page), "true")
 }
 
 /**
@@ -64,14 +83,14 @@ function markVisitAsLoggedThisSession(page: string): void {
  *
  * @returns {Promise<void>}
  */
-async function logCurrentPageVisit(): Promise<void> {
+async function logPageV(): Promise<void> {
     const page = getCurrentPage()
 
-    if (hasVisitBeenLoggedThisSession(page)) {
+    if (visitLogged(page)) {
         return
     }
 
-    const response = await fetch(getLogVisitEndpoint(), {
+    const response = await fetch(getLogVep(), {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -85,7 +104,7 @@ async function logCurrentPageVisit(): Promise<void> {
         throw new Error(`Failed to log visit for page ${page}`)
     }
 
-    markVisitAsLoggedThisSession(page)
+    markVLogged(page)
 }
 
 /**
@@ -93,14 +112,14 @@ async function logCurrentPageVisit(): Promise<void> {
  *
  * @returns {void}
  */
-function startVisitLogger(): void {
+function strtVLogger(): void {
     if (typeof window === "undefined") {
         return
     }
 
-    void logCurrentPageVisit().catch((error: unknown) => {
+    void logPageV().catch((error: unknown) => {
         console.error("Visit logging failed:", error)
     })
 }
 
-startVisitLogger()
+strtVLogger()

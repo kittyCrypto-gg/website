@@ -6,6 +6,7 @@ import { CalCtrl, type CalHasArg, type CalSel } from "./calendar.tsx";
 import * as helpers from "./helpers.ts";
 import * as icons from "./icons.tsx";
 import { atchRssComments, initRssComments, mkRssCommentSlug } from "./rssComments.ts";
+import { transpileCodeSource } from "./transpiler.ts";
 
 declare global {
     namespace JSX {
@@ -68,6 +69,7 @@ type Pst = Readonly<{
     yr: number;
     mo: number;
     dy: number;
+    res: boolean;
 }>;
 
 type AthOpt = Readonly<{
@@ -110,9 +112,27 @@ type CodeGroupActiveOptions = Readonly<{
     syncPeers?: boolean;
 }>;
 
+type CodeTranspileLang = "js" | "jsx" | "ts" | "tsx";
+
+type ExternalCodeDirective = Readonly<{
+    id: string;
+    lang: string;
+    sourceUrl: string;
+    transFrom: CodeTranspileLang | null;
+    placeholder: string;
+}>;
+
+type ExternalCodeSpec = Readonly<{
+    lang: string;
+    transFrom: CodeTranspileLang | null;
+}>;
+
 const RSS_POST_PARAM = "post";
 const RSS_POST_SHARE_ID_LENGTH = 16;
+const RSS_RESOURCE_TITLE_PREFIX = "${resource}";
 const RSS_CODE_PREF_STORAGE_KEY = "kittycrow:rss-code-language-preferences:v1";
+const RSS_CODE_DIRECTIVE_RE = /^[ \t]*@code\[([^\]\r\n]+)\]\(([^)\r\n]+)\)[ \t]*$/gm;
+const RSS_CODE_DIRECTIVE_COMMENT_PREFIX = "rss-code-source:";
 
 const RSS_FILT_CHILD_PILL_SEL = [
     ".cal .cal__selPill[data-cal-lvl][data-cal-val]",
@@ -135,6 +155,9 @@ let authorOff: Set<string> = new Set<string>(authorFilterCfg.defaultUnselect);
 let pendingRevealPostRefs: readonly string[] = [];
 let athMenuOpen = false;
 let rssCodeGroupIx = 0;
+let rssCodeDirectiveIx = 0;
+let rssCodeDirectives = new Map<string, ExternalCodeDirective>();
+let rssCodeSourceCache = new Map<string, Promise<string>>();
 
 let curCalSel: CalSel = {
     yrs: new Set<number>(),
@@ -148,6 +171,99 @@ let curCalSel: CalSel = {
  */
 function isBlogPth(): boolean {
     return window.location.pathname.toLowerCase().includes("blog");
+}
+
+/**
+ * resources page maybe.
+ * @returns {boolean}
+ */
+function isResourcePth(): boolean {
+    return window.location.pathname.toLowerCase().includes("resources");
+}
+
+/**
+ * Direct page path using the normal blog container.
+ * @returns {boolean}
+ */
+function isDirectRssPth(): boolean {
+    return isBlogPth() || isResourcePth();
+}
+
+/**
+ * Resource post marker check.
+ * @param {string} title
+ * @returns {boolean}
+ */
+function isResourceTitle(title: string): boolean {
+    return title.trimStart().startsWith(RSS_RESOURCE_TITLE_PREFIX);
+}
+
+/**
+ * Removes the resource marker from a display title.
+ * @param {string} title
+ * @returns {string}
+ */
+function stripResourceTitle(title: string): string {
+    const clean = title.trimStart();
+
+    if (!clean.startsWith(RSS_RESOURCE_TITLE_PREFIX)) {
+        return title;
+    }
+
+    return clean.slice(RSS_RESOURCE_TITLE_PREFIX.length).trimStart();
+}
+
+/**
+ * Chooses the posts visible for this page.
+ * @param {readonly Pst[]} psts
+ * @returns {readonly Pst[]}
+ */
+function pstsForCurPage(psts: readonly Pst[]): readonly Pst[] {
+    if (isResourcePth()) {
+        return psts.filter((pst) => pst.res);
+    }
+
+    return psts.filter((pst) => !pst.res);
+}
+
+/**
+ * Existing selected date state.
+ * @param {CalSel} sel
+ * @returns {boolean}
+ */
+function hasCalSel(sel: CalSel): boolean {
+    return sel.yrs.size > 0 || sel.mos.size > 0 || sel.dys.size > 0;
+}
+
+/**
+ * Default calendar selection is current year, or latest post year.
+ * @param {readonly Pst[]} psts
+ * @returns {CalSel}
+ */
+function mkDefaultYearSel(psts: readonly Pst[]): CalSel {
+    const nowYr = new Date().getFullYear();
+    const yrs = Array.from(
+        new Set<number>(
+            psts
+                .map((pst) => pst.yr)
+                .filter((yr) => Number.isFinite(yr) && yr > 0)
+        )
+    ).sort((left, right) => right - left);
+
+    if (yrs.length === 0) {
+        return mkCalSel([], [], []);
+    }
+
+    return mkCalSel([yrs.includes(nowYr) ? nowYr : yrs[0]], [], []);
+}
+
+/**
+ * Picks requested-post selection when present, otherwise the default year.
+ * @param {readonly Pst[]} psts
+ * @returns {CalSel}
+ */
+function mkInitialCalSel(psts: readonly Pst[]): CalSel {
+    return hasCalSel(curCalSel) ? curCalSel : mkDefaultYearSel(psts);
 }
 
 /**
@@ -232,6 +348,382 @@ function getCodeLang(code: HTMLElement): string {
     const raw = cls?.replace(/^language-/, "").replace(/^lang-/, "").trim();
 
     return raw && raw.length > 0 ? raw : "text";
+}
+
+/**
+ * Checks whether a language can be used as an esbuild transform loader.
+ * @param {string} lang
+ * @returns {lang is CodeTranspileLang}
+ */
+function isCodeTranspileLang(lang: string): lang is CodeTranspileLang {
+    return lang === "js"
+        || lang === "jsx"
+        || lang === "ts"
+        || lang === "tsx";
+}
+
+/**
+ * Normalises a trans= value to an esbuild transform loader.
+ * @param {string} value
+ * @returns {CodeTranspileLang | null}
+ */
+function normTranspileLang(value: string): CodeTranspileLang | null {
+    const clean = normCodeLangKey(value);
+
+    return isCodeTranspileLang(clean) ? clean : null;
+}
+
+/**
+ * Keeps the visible fenced language simple and safe.
+ * @param {string} raw
+ * @returns {string}
+ */
+function cleanDirectiveLang(raw: string): string {
+    const clean = raw.trim();
+
+    return /^[a-z0-9_#+.-]+$/i.test(clean) ? clean : "text";
+}
+
+/**
+ * Reads the @code directive metadata from the square brackets.
+ * @param {string} rawSpec
+ * @returns {ExternalCodeSpec | null}
+ */
+function parseExternalCodeSpec(rawSpec: string): ExternalCodeSpec | null {
+    const parts = rawSpec
+        .trim()
+        .split(/\s+/)
+        .filter((part) => part.length > 0);
+
+    const rawLang = parts[0];
+
+    if (!rawLang) {
+        return null;
+    }
+
+    let transFrom: CodeTranspileLang | null = null;
+
+    parts.slice(1).forEach((part) => {
+        const [rawKey, rawValue] = part.split("=");
+        const key = rawKey?.trim().toLowerCase() ?? "";
+        const value = rawValue?.trim() ?? "";
+
+        if (key !== "trans" || value.length === 0) {
+            return;
+        }
+
+        transFrom = normTranspileLang(value);
+    });
+
+    return {
+        lang: cleanDirectiveLang(rawLang),
+        transFrom
+    };
+}
+
+/**
+ * Turns a @code source into a safe fetch URL.
+ * @param {string} raw
+ * @returns {string | null}
+ */
+function normExternalCodeUrl(raw: string): string | null {
+    try {
+        const url = new URL(raw.trim(), window.location.href);
+
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+            return null;
+        }
+
+        return url.toString();
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Creates the temporary code body for an external source block.
+ * @param {ExternalCodeSpec} spec
+ * @returns {string}
+ */
+function mkExternalCodePlaceholder(spec: ExternalCodeSpec): string {
+    if (spec.transFrom) {
+        return `//transpiling from ${spec.transFrom} source`;
+    }
+
+    return "// loading external code";
+}
+
+/**
+ * Registers one external code directive.
+ * @param {ExternalCodeSpec} spec
+ * @param {string} sourceUrl
+ * @returns {ExternalCodeDirective}
+ */
+function regExternalCodeDirective(
+    spec: ExternalCodeSpec,
+    sourceUrl: string
+): ExternalCodeDirective {
+    rssCodeDirectiveIx += 1;
+
+    const directive: ExternalCodeDirective = {
+        id: `rss-code-${rssCodeDirectiveIx}`,
+        lang: spec.lang,
+        sourceUrl,
+        transFrom: spec.transFrom,
+        placeholder: mkExternalCodePlaceholder(spec)
+    };
+
+    rssCodeDirectives.set(directive.id, directive);
+
+    return directive;
+}
+
+/**
+ * Makes the fenced markdown placeholder for one external code directive.
+ * @param {ExternalCodeDirective} directive
+ * @returns {string}
+ */
+function mkExternalCodeFence(directive: ExternalCodeDirective): string {
+    return [
+        `<!--${RSS_CODE_DIRECTIVE_COMMENT_PREFIX}${directive.id}-->`,
+        `\`\`\`${directive.lang}`,
+        directive.placeholder,
+        "```"
+    ].join("\n");
+}
+
+/**
+ * Converts @code[...] directives into normal fenced code blocks before Marked runs.
+ * @param {string} markdown
+ * @returns {string}
+ */
+function prepExternalCodeDirectives(markdown: string): string {
+    return markdown.replace(
+        RSS_CODE_DIRECTIVE_RE,
+        (match: string, rawSpec: string, rawUrl: string): string => {
+            const spec = parseExternalCodeSpec(rawSpec);
+            const sourceUrl = normExternalCodeUrl(rawUrl);
+
+            if (!spec || !sourceUrl) {
+                return match;
+            }
+
+            const directive = regExternalCodeDirective(spec, sourceUrl);
+
+            return mkExternalCodeFence(directive);
+        }
+    );
+}
+
+/**
+ * Fetches source code with a tiny in-page cache.
+ * @param {string} sourceUrl
+ * @returns {Promise<string>}
+ */
+function fetchExternalCodeSource(sourceUrl: string): Promise<string> {
+    const cached = rssCodeSourceCache.get(sourceUrl);
+
+    if (cached) {
+        return cached;
+    }
+
+    const request = fetch(sourceUrl).then(async (rsp) => {
+        if (!rsp.ok) {
+            throw new Error(`External code fetch failed: ${rsp.status} ${rsp.statusText}`);
+        }
+
+        return rsp.text();
+    });
+
+    rssCodeSourceCache.set(sourceUrl, request);
+
+    return request;
+}
+
+/**
+ * Removes previous highlight state so hljs can safely run again.
+ * @param {HTMLElement} code
+ * @returns {void}
+ */
+function resetCodeHighlight(code: HTMLElement): void {
+    delete code.dataset.rssHighlighted;
+    code.removeAttribute("data-highlighted");
+}
+
+/**
+ * Recalculates the toolbar and post height after external code changes.
+ * @param {HTMLElement} pstDiv
+ * @param {HTMLElement} code
+ * @returns {void}
+ */
+function syncExternalCodeLayout(pstDiv: HTMLElement, code: HTMLElement): void {
+    const frame = code.closest(".rss-code-frame");
+
+    if (frame instanceof HTMLDivElement) {
+        updCodeBar(frame, code);
+
+        if (frame.dataset.rssCodeGroup === "1" && code.closest(".rss-code-variant.is-active")) {
+            frame.dataset.language = getCodeLang(code);
+            frame.dataset.rssCodeActiveLang = normCodeLangKey(getCodeLang(code));
+            qCodeGroupLayout(frame);
+        }
+    }
+
+    qPstHgt(pstDiv);
+}
+
+/**
+ * Sets code text and reruns syntax highlighting.
+ * @param {HTMLElement} pstDiv
+ * @param {HTMLElement} code
+ * @param {string} text
+ * @returns {void}
+ */
+function setExternalCodeText(pstDiv: HTMLElement, code: HTMLElement, text: string): void {
+    code.textContent = text;
+    resetCodeHighlight(code);
+    hglCode(code);
+    syncExternalCodeLayout(pstDiv, code);
+}
+
+/**
+ * Shows an external code failure inside the code block.
+ * @param {HTMLElement} pstDiv
+ * @param {HTMLElement} code
+ * @param {ExternalCodeDirective} directive
+ * @param {unknown} err
+ * @returns {void}
+ */
+function setExternalCodeError(
+    pstDiv: HTMLElement,
+    code: HTMLElement,
+    directive: ExternalCodeDirective,
+    err: unknown
+): void {
+    const msg = err instanceof Error ? err.message : String(err);
+
+    setExternalCodeText(
+        pstDiv,
+        code,
+        [
+            `// Could not load external code from: ${directive.sourceUrl}`,
+            "",
+            `// ${msg}`
+        ].join("\n")
+    );
+}
+
+/**
+ * Resolves raw or transpiled text for one external code directive.
+ * @param {ExternalCodeDirective} directive
+ * @returns {Promise<string>}
+ */
+async function resolveExternalCodeText(directive: ExternalCodeDirective): Promise<string> {
+    const source = await fetchExternalCodeSource(directive.sourceUrl);
+
+    if (!directive.transFrom) {
+        return source;
+    }
+
+    return transpileCodeSource(source, directive.transFrom);
+}
+
+/**
+ * Finds the element immediately after a directive comment.
+ * @param {Comment} comment
+ * @returns {Element | null}
+ */
+function nextElementAfterComment(comment: Comment): Element | null {
+    let node: ChildNode | null = comment.nextSibling;
+
+    while (node) {
+        if (node instanceof Element) {
+            return node;
+        }
+
+        if (node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim().length > 0) {
+            return null;
+        }
+
+        node = node.nextSibling;
+    }
+
+    return null;
+}
+
+/**
+ * Finds the pre block attached to a directive comment.
+ * @param {Comment} comment
+ * @returns {HTMLPreElement | null}
+ */
+function getDirectivePre(comment: Comment): HTMLPreElement | null {
+    const element = nextElementAfterComment(comment);
+
+    if (element instanceof HTMLPreElement) {
+        return element;
+    }
+
+    const pre = element?.querySelector("pre");
+
+    return pre instanceof HTMLPreElement ? pre : null;
+}
+
+/**
+ * Wires one external code directive to its rendered code block.
+ * @param {HTMLElement} pstDiv
+ * @param {Comment} comment
+ * @returns {void}
+ */
+function wireExternalCodeComment(pstDiv: HTMLElement, comment: Comment): void {
+    const raw = comment.data.trim();
+
+    if (!raw.startsWith(RSS_CODE_DIRECTIVE_COMMENT_PREFIX)) {
+        return;
+    }
+
+    const id = raw.slice(RSS_CODE_DIRECTIVE_COMMENT_PREFIX.length).trim();
+    const directive = rssCodeDirectives.get(id);
+    const pre = getDirectivePre(comment);
+    const code = pre ? getPreCode(pre) : null;
+
+    if (!directive || !code) {
+        return;
+    }
+
+    if (code.dataset.rssExternalCodeWired === "1") {
+        return;
+    }
+
+    code.dataset.rssExternalCodeWired = "1";
+    code.dataset.rssExternalCodeId = directive.id;
+    code.dataset.rssExternalCodeSrc = directive.sourceUrl;
+
+    void resolveExternalCodeText(directive)
+        .then((text) => {
+            setExternalCodeText(pstDiv, code, text);
+        })
+        .catch((err: unknown) => {
+            console.warn("External RSS code source failed:", err);
+            setExternalCodeError(pstDiv, code, directive, err);
+        });
+}
+
+/**
+ * Wires every external @code directive inside a rendered post.
+ * @param {HTMLElement} pstDiv
+ * @returns {void}
+ */
+function wireExternalCodeBlocks(pstDiv: HTMLElement): void {
+    const walker = document.createTreeWalker(pstDiv, NodeFilter.SHOW_COMMENT);
+    let node = walker.nextNode();
+
+    while (node) {
+        if (node instanceof Comment) {
+            wireExternalCodeComment(pstDiv, node);
+        }
+
+        node = walker.nextNode();
+    }
 }
 
 /**
@@ -1066,6 +1558,7 @@ function hglCode(code: HTMLElement): void {
  * @returns {void}
  */
 function hglPstCode(pstDiv: HTMLElement): void {
+    wireExternalCodeBlocks(pstDiv);
     grpAdjacentCodeBlocks(pstDiv);
 
     Array.from(pstDiv.querySelectorAll<HTMLElement>("pre code")).forEach((code) => {
@@ -1904,16 +2397,14 @@ function ensCalSlot(): HTMLDivElement | null {
  * @returns {WrapRs | null}
  */
 function ensBlogWrap(): WrapRs | null {
-    if (isBlogPth()) {
+    if (isDirectRssPth()) {
         const box = document.querySelector(".blog-container");
         if (!(box instanceof HTMLDivElement)) return null;
-
-        const cal = ensCalSlot();
 
         return {
             scr: null,
             box,
-            cal
+            cal: isBlogPth() ? ensCalSlot() : null
         };
     }
 
@@ -2232,9 +2723,10 @@ function mkPsts(itms: RssItm[]): Pst[] {
     return itms
         .map((itm) => {
             const dt = mkDt(itm.pubDate);
+            const res = isResourceTitle(itm.title);
 
             return {
-                ttl: itm.title,
+                ttl: res ? stripResourceTitle(itm.title) : itm.title,
                 dsc: itm.description,
                 cnt: itm.content,
                 pub: itm.pubDate,
@@ -2244,7 +2736,8 @@ function mkPsts(itms: RssItm[]): Pst[] {
                 dt,
                 yr: dt.getFullYear(),
                 mo: dt.getMonth() + 1,
-                dy: dt.getDate()
+                dy: dt.getDate(),
+                res
             };
         })
         .sort((a, b) => b.dt.getTime() - a.dt.getTime());
@@ -2612,7 +3105,7 @@ function RssCmntSlot({
  * @returns {JSX.Element}
  */
 function PstCard({ pst, exp }: Readonly<{ pst: Pst; exp: boolean }>): JSX.Element {
-    const cnt = { __html: marked.parse(pst.cnt) };
+    const cnt = { __html: marked.parse(prepExternalCodeDirectives(pst.cnt)) };
     const arr = exp ? "🔽" : "▶️";
     const expd = exp ? "true" : "false";
     const cls = exp ? "rss-post-content content-expanded" : "rss-post-content content-collapsed";
@@ -3243,6 +3736,43 @@ function rndBlog(
 }
 
 /**
+ * Draw the resources list without filters.
+ * @param {HTMLDivElement} box
+ * @param {readonly Pst[]} psts
+ * @returns {void}
+ */
+function rndResources(box: HTMLDivElement, psts: readonly Pst[]): void {
+    if (psts.length === 0) {
+        const frag = render2Frag(
+            <EmptyBlk
+                ttl="No resources found"
+                body={`Posts whose title starts with ${RSS_RESOURCE_TITLE_PREFIX} will appear here.`}
+            />
+        );
+
+        box.replaceChildren(frag);
+        aplyBlogLyt();
+        return;
+    }
+
+    const frag = render2Frag(
+        <>
+            {psts.map((pst) => (
+                <PstCard
+                    key={pst.gid || `${pst.pub}-${pst.ttl}`}
+                    pst={pst}
+                    exp={false}
+                />
+            ))}
+        </>
+    );
+
+    box.replaceChildren(frag);
+    atchAllTgl(box);
+    aplyBlogLyt();
+}
+
+/**
  * Mount calendar, resets some stuff.
  * @param {HTMLDivElement} slot
  * @param {HTMLDivElement} box
@@ -3253,8 +3783,10 @@ function mntCal(slot: HTMLDivElement, box: HTMLDivElement, psts: readonly Pst[])
     const yrs = mkYrOpts(psts);
     const has = mkHasFn(psts);
     const authorSlot = ensAthSlot(slot);
+    const initialSel = mkInitialCalSel(psts);
 
     authorOff = mkDefAthOff();
+    curCalSel = initialSel;
     wireAthFilt(authorSlot, box);
 
     if (calCtl) {
@@ -3276,6 +3808,9 @@ function mntCal(slot: HTMLDivElement, box: HTMLDivElement, psts: readonly Pst[])
     });
 
     calCtl.init();
+    calCtl.setSel(flatSel(initialSel));
+    rndAthFilt(authorSlot, psts, curCalSel);
+    rndBlog(box, psts, curCalSel, authorOff);
     syncCurFiltSum();
 }
 
@@ -3376,13 +3911,23 @@ async function loadBlog(): Promise<void> {
         }
 
         const xml = await rsp.text();
-        allPsts = mkPsts(prsRss(xml));
+        allPsts = pstsForCurPage(mkPsts(prsRss(xml)));
 
         const requestedPostRef = getReqPstRef();
         const requestedPosts = findByPstRef(allPsts, requestedPostRef);
 
         if (requestedPosts.length > 0) {
             prepTgts(allPsts, requestedPosts);
+        }
+
+        if (isResourcePth()) {
+            rndResources(box, allPsts);
+
+            if (requestedPosts.length > 0) {
+                rvlPstRefs(Array.from(mkPstsRefs(requestedPosts)));
+            }
+
+            return;
         }
 
         if (cal instanceof HTMLDivElement) {

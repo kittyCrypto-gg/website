@@ -20,6 +20,10 @@
       "href": "./chat",
       "icon": "/images/chat.svg"
     },
+    "Resources": {
+      "href": "./resources",
+      "icon": "/images/circuit.svg"
+    },
     "Blog": {
       "href": "./blog",
       "icon": "/images/yarn.svg"
@@ -239,6 +243,15 @@
         "launcherSrc": "/images/terminal.svg",
         "closedLnchrDis": "inline-block",
         "showCloseBttn": true
+      }
+    },
+    "resourcesWrapper": {
+      "selector": "#resources-wrapper",
+      "options": {
+        "id": "resources-window",
+        "title": "Resources",
+        "mountTarget": "body",
+        "launcherSrc": "/images/yarn.svg"
       }
     },
     "blogWrapper": {

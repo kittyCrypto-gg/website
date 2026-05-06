@@ -1,8 +1,26 @@
+/********** ***********
+ * @module visits
+ *
+ * @description
+ * Handles visit counter display and client-side visit count retrieval.
+ *
+ * @author kitty crow
+ * @license MIT
+ *
+ * @website https://kittycrow.dev
+ * @repository
+ *
+ * @remarks
+ * This module is intended for the public-facing visit counter logic. It reads
+ * visit data from the backend and updates the counter UI without sending
+ * personal page data.
+ ********** ***********/
+
 import { renderCounter } from "./counter"
 
-const VISITS_API_BASE_URL = "https://srv.kittycrow.dev"
-const ENCODED_SITE_ORIGIN = encodeURIComponent(window.location.origin)
-const DEFAULT_STATS_ENDPOINT = `${VISITS_API_BASE_URL}/visits/stats/${ENCODED_SITE_ORIGIN}`
+const API = "https://srv.kittycrow.dev"
+const ORG = encodeURIComponent(window.location.origin)
+const DEF_EP = `${API}/visits/stats/${ORG}`
 
 export interface VisitCounterOptions {
     scope: "overall" | "page"
@@ -20,267 +38,255 @@ export interface RenderedVisitCounter {
     updatedAt: number
 }
 
-interface BaseVisitStats {
+interface BsStat {
     visits: number
     uniqueVisitors: number
     updatedAt: number
 }
 
-interface PageVisitStats extends BaseVisitStats {
+interface PgStat extends BsStat {
     page: string
 }
 
-let generatedCounterHostIndex = 0
+let hostIx = 0
 
 /**
- * Small object check helper.
+ * Record-ish check.
  *
- * @param {unknown} value Value to check.
- * @param {boolean} acceptArrays Whether arrays should count as records.
- * @returns {value is Record<string, unknown>} True when the value is a record.
+ * @param {unknown} val Value to check.
+ * @param {boolean} arrOk Whether arrays count as records.
+ * @returns {val is Record<string, unknown>} True for object records.
  */
-function isRecord(
-    value: unknown,
-    acceptArrays: boolean = false
-): value is Record<string, unknown> {
-    return value !== null && typeof value === "object" && (acceptArrays || !Array.isArray(value))
+function isRec(
+    val: unknown,
+    arrOk: boolean = false
+): val is Record<string, unknown> {
+    return val !== null && typeof val === "object" && (arrOk || !Array.isArray(val))
 }
 
 /**
- * Reads a required numeric field from a record.
+ * Reads a required number.
  *
- * @param {Record<string, unknown>} source Source record.
- * @param {string} fieldName Field name to read.
- * @returns {number} Parsed numeric value.
+ * @param {Record<string, unknown>} src Source record.
+ * @param {string} key Field key.
+ * @returns {number} Numeric field value.
  */
-function readRequiredNumber(source: Record<string, unknown>, fieldName: string): number {
-    const fieldValue = source[fieldName]
+function reqNum(src: Record<string, unknown>, key: string): number {
+    const val = src[key]
 
-    if (typeof fieldValue !== "number" || !Number.isFinite(fieldValue)) {
-        throw new Error(`Visit stats field "${fieldName}" is missing or invalid.`)
+    if (typeof val !== "number" || !Number.isFinite(val)) {
+        throw new Error(`Visit stats field "${key}" is missing or invalid.`)
     }
 
-    return fieldValue
+    return val
 }
 
 /**
- * Reads a required non-empty string field from a record.
+ * Reads a required string.
  *
- * @param {Record<string, unknown>} source Source record.
- * @param {string} fieldName Field name to read.
- * @returns {string} Parsed string value.
+ * @param {Record<string, unknown>} src Source record.
+ * @param {string} key Field key.
+ * @returns {string} String field value.
  */
-function readRequiredString(source: Record<string, unknown>, fieldName: string): string {
-    const fieldValue = source[fieldName]
+function reqStr(src: Record<string, unknown>, key: string): string {
+    const val = src[key]
 
-    if (typeof fieldValue !== "string" || !fieldValue.trim()) {
-        throw new Error(`Visit stats field "${fieldName}" is missing or invalid.`)
+    if (typeof val !== "string" || !val.trim()) {
+        throw new Error(`Visit stats field "${key}" is missing or invalid.`)
     }
 
-    return fieldValue
+    return val
 }
 
 /**
- * Parses the common visit stats payload.
+ * Parses base stats.
  *
- * @param {unknown} payload Raw response payload.
- * @returns {BaseVisitStats} Parsed stats object.
+ * @param {unknown} raw Raw payload.
+ * @returns {BsStat} Parsed base stats.
  */
-function parseBaseVisitStats(payload: unknown): BaseVisitStats {
-    if (!isRecord(payload)) {
+function prsBs(raw: unknown): BsStat {
+    if (!isRec(raw)) {
         throw new Error("Visit stats response is not a valid object.")
     }
 
     return {
-        visits: readRequiredNumber(payload, "visits"),
-        uniqueVisitors: readRequiredNumber(payload, "uniqueVisitors"),
-        updatedAt: readRequiredNumber(payload, "updatedAt")
+        visits: reqNum(raw, "visits"),
+        uniqueVisitors: reqNum(raw, "uniqueVisitors"),
+        updatedAt: reqNum(raw, "updatedAt")
     }
 }
 
 /**
- * Parses the page visit stats payload.
+ * Parses page stats.
  *
- * @param {unknown} payload Raw response payload.
- * @returns {PageVisitStats} Parsed page stats object.
+ * @param {unknown} raw Raw payload.
+ * @returns {PgStat} Parsed page stats.
  */
-function parsePageVisitStats(payload: unknown): PageVisitStats {
-    if (!isRecord(payload)) {
+function prsPg(raw: unknown): PgStat {
+    if (!isRec(raw)) {
         throw new Error("Page visit stats response is not a valid object.")
     }
 
     return {
-        ...parseBaseVisitStats(payload),
-        page: readRequiredString(payload, "page")
+        ...prsBs(raw),
+        page: reqStr(raw, "page")
     }
 }
 
 /**
- * Resolves the page path for page-scoped requests.
+ * Resolves the page path.
  *
- * @param {VisitCounterOptions} options Counter request options.
- * @returns {string | undefined} Requested page path, or undefined for overall scope.
+ * @param {VisitCounterOptions} opt Counter options.
+ * @returns {string | undefined} Page path, or undefined.
  */
-function resolveRequestedPage(options: VisitCounterOptions): string | undefined {
-    if (options.scope !== "page") {
+function getPg(opt: VisitCounterOptions): string | undefined {
+    if (opt.scope !== "page") {
         return undefined
     }
 
-    const explicitPage = options.page?.trim()
+    const pg = opt.page?.trim()
 
-    if (explicitPage) {
-        return explicitPage
+    if (pg) {
+        return pg
     }
 
-    const currentPath = window.location.pathname.trim()
-    const currentSearch = window.location.search.trim()
-    const currentPage = `${currentPath}${currentSearch}`
+    const path = window.location.pathname.trim()
+    const search = window.location.search.trim()
+    const cur = `${path}${search}`
 
-    if (currentPage) {
-        return currentPage
-    }
-
-    return "/"
+    return cur || "/"
 }
 
 /**
- * Builds the stats request URL.
+ * Builds the stats URL.
  *
- * @param {string} endpoint Base stats endpoint.
- * @param {string | undefined} page Page path for page-scoped requests.
- * @returns {string} Fully qualified request URL.
+ * @param {string} ep Base endpoint.
+ * @param {string | undefined} pg Page path.
+ * @returns {string} Request URL.
  */
-function buildStatsUrl(endpoint: string, page: string | undefined): string {
-    const requestUrl = new URL(endpoint, window.location.href)
+function mkUrl(ep: string, pg: string | undefined): string {
+    const url = new URL(ep, window.location.href)
 
-    if (page?.trim()) {
-        requestUrl.searchParams.set("page", page)
+    if (pg?.trim()) {
+        url.searchParams.set("page", pg)
     }
 
-    return requestUrl.toString()
+    return url.toString()
 }
 
 /**
- * Fetches visit stats from the backend.
+ * Fetches stats.
  *
- * @param {VisitCounterOptions} options Counter request options.
- * @returns {Promise<BaseVisitStats | PageVisitStats>} Parsed stats payload.
+ * @param {VisitCounterOptions} opt Counter options.
+ * @returns {Promise<BsStat | PgStat>} Parsed stats.
  */
-async function fetchVisitStats(options: VisitCounterOptions): Promise<BaseVisitStats | PageVisitStats> {
-    const endpoint = options.endpoint?.trim() || DEFAULT_STATS_ENDPOINT
-    const requestedPage = resolveRequestedPage(options)
-    const requestUrl = buildStatsUrl(endpoint, requestedPage)
-    const response = await fetch(requestUrl)
+async function fetStats(opt: VisitCounterOptions): Promise<BsStat | PgStat> {
+    const ep = opt.endpoint?.trim() || DEF_EP
+    const pg = getPg(opt)
+    const url = mkUrl(ep, pg)
+    const rsp = await fetch(url)
 
-    if (!response.ok) {
-        throw new Error(`Failed to load visit stats from "${requestUrl}" (${response.status}).`)
+    if (!rsp.ok) {
+        throw new Error(`Failed to load visit stats from "${url}" (${rsp.status}).`)
     }
 
-    const payload: unknown = await response.json()
+    const raw: unknown = await rsp.json()
 
-    if (requestedPage) {
-        return parsePageVisitStats(payload)
-    }
-
-    return parseBaseVisitStats(payload)
+    return pg ? prsPg(raw) : prsBs(raw)
 }
 
 /**
- * Resolves a target host element from an element reference or selector.
+ * Resolves the host target.
  *
- * @param {HTMLElement | string | undefined} target Target element or selector.
- * @returns {HTMLElement} Resolved host element.
+ * @param {HTMLElement | string | undefined} tgt Target element or selector.
+ * @returns {HTMLElement} Resolved target.
  */
-function resolveTargetElement(target?: HTMLElement | string): HTMLElement {
-    if (target instanceof HTMLElement) {
-        return target
+function getTgt(tgt?: HTMLElement | string): HTMLElement {
+    if (tgt instanceof HTMLElement) {
+        return tgt
     }
 
-    const targetSelector = target?.trim()
+    const sel = tgt?.trim()
 
-    if (!targetSelector) {
+    if (!sel) {
         return document.body
     }
 
-    const elementById = document.getElementById(targetSelector)
+    const byId = document.getElementById(sel)
 
-    if (elementById instanceof HTMLElement) {
-        return elementById
+    if (byId instanceof HTMLElement) {
+        return byId
     }
 
-    const elementBySelector = document.querySelector<HTMLElement>(targetSelector)
+    const bySel = document.querySelector<HTMLElement>(sel)
 
-    if (elementBySelector instanceof HTMLElement) {
-        return elementBySelector
+    if (bySel instanceof HTMLElement) {
+        return bySel
     }
 
-    throw new Error(`Target element "${targetSelector}" was not found.`)
+    throw new Error(`Target element "${sel}" was not found.`)
 }
 
 /**
- * Generates a unique id for a counter host created by this module.
+ * Gets the next generated host id.
  *
  * @returns {string} Unique host id.
  */
-function getNextCounterHostId(): string {
-    generatedCounterHostIndex += 1
+function nxtHostId(): string {
+    hostIx += 1
 
-    return `visits-counter-${generatedCounterHostIndex}`
+    return `visits-counter-${hostIx}`
 }
 
 /**
- * Prepares the element that will host the rendered counter.
+ * Prepares the render host.
  *
- * @param {HTMLElement | string | undefined} target Target element or selector.
- * @returns {HTMLElement} Host element with an id.
+ * @param {HTMLElement | string | undefined} tgt Target element or selector.
+ * @returns {HTMLElement} Host element.
  */
-function prepareCounterHost(target?: HTMLElement | string): HTMLElement {
-    const resolvedTarget = resolveTargetElement(target)
+function prepHost(tgt?: HTMLElement | string): HTMLElement {
+    const el = getTgt(tgt)
 
-    if (resolvedTarget === document.body) {
-        const generatedHost = document.createElement("div")
+    if (el === document.body) {
+        const host = document.createElement("div")
 
-        generatedHost.id = getNextCounterHostId()
-        document.body.appendChild(generatedHost)
+        host.id = nxtHostId()
+        document.body.appendChild(host)
 
-        return generatedHost
+        return host
     }
 
-    if (resolvedTarget.id) {
-        return resolvedTarget
+    if (el.id) {
+        return el
     }
 
-    resolvedTarget.id = getNextCounterHostId()
+    el.id = nxtHostId()
 
-    return resolvedTarget
+    return el
 }
 
 /**
- * Reads the requested metric from a stats payload.
+ * Reads the wanted stat value.
  *
- * @param {VisitCounterOptions["metric"]} metric Metric to read.
- * @param {BaseVisitStats | PageVisitStats} stats Stats payload.
- * @returns {number} Requested counter value.
+ * @param {VisitCounterOptions["metric"]} m Metric key.
+ * @param {BsStat | PgStat} stat Stats payload.
+ * @returns {number} Counter value.
  */
-function readCounterValue(
-    metric: VisitCounterOptions["metric"],
-    stats: BaseVisitStats | PageVisitStats
+function getVal(
+    m: VisitCounterOptions["metric"],
+    stat: BsStat | PgStat
 ): number {
-    return metric === "visits" ? stats.visits : stats.uniqueVisitors
+    return m === "visits" ? stat.visits : stat.uniqueVisitors
 }
 
 /**
- * Extracts the page field when available.
+ * Reads page from page stats.
  *
- * @param {BaseVisitStats | PageVisitStats} stats Stats payload.
- * @returns {string | undefined} Page path when present.
+ * @param {BsStat | PgStat} stat Stats payload.
+ * @returns {string | undefined} Page path, if present.
  */
-function readRenderedPage(stats: BaseVisitStats | PageVisitStats): string | undefined {
-    if (!("page" in stats)) {
-        return undefined
-    }
-
-    return stats.page
+function getRendPg(stat: BsStat | PgStat): string | undefined {
+    return "page" in stat ? stat.page : undefined
 }
 
 /**
@@ -290,15 +296,15 @@ function readRenderedPage(stats: BaseVisitStats | PageVisitStats): string | unde
  * @returns {string} Formatted timestamp.
  */
 export function formatVisitTimestamp(timestampMs: number): string {
-    const date = new Date(timestampMs)
-    const year = String(date.getUTCFullYear()).padStart(4, "0")
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0")
-    const day = String(date.getUTCDate()).padStart(2, "0")
-    const hours = String(date.getUTCHours()).padStart(2, "0")
-    const minutes = String(date.getUTCMinutes()).padStart(2, "0")
-    const seconds = String(date.getUTCSeconds()).padStart(2, "0")
+    const dt = new Date(timestampMs)
+    const yy = String(dt.getUTCFullYear()).padStart(4, "0")
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0")
+    const dd = String(dt.getUTCDate()).padStart(2, "0")
+    const hh = String(dt.getUTCHours()).padStart(2, "0")
+    const mi = String(dt.getUTCMinutes()).padStart(2, "0")
+    const ss = String(dt.getUTCSeconds()).padStart(2, "0")
 
-    return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`
+    return `${yy}.${mm}.${dd} ${hh}:${mi}:${ss}`
 }
 
 /**
@@ -310,20 +316,20 @@ export function formatVisitTimestamp(timestampMs: number): string {
 export async function renderVisits(
     options: VisitCounterOptions
 ): Promise<RenderedVisitCounter> {
-    const stats = await fetchVisitStats(options)
-    const counterValue = readCounterValue(options.metric, stats)
-    const counterHost = prepareCounterHost(options.target)
+    const stat = await fetStats(options)
+    const val = getVal(options.metric, stat)
+    const host = prepHost(options.target)
 
     renderCounter({
-        elementId: counterHost.id,
-        target: counterValue,
+        elementId: host.id,
+        target: val,
         durationMs: options.durationMs
     })
 
     return {
-        host: counterHost,
-        value: counterValue,
-        page: readRenderedPage(stats),
-        updatedAt: stats.updatedAt
+        host,
+        value: val,
+        page: getRendPg(stat),
+        updatedAt: stat.updatedAt
     }
 }
