@@ -308,6 +308,7 @@ function aplyBlogLyt(): void {
     sels.forEach((sel) => {
         const el = document.querySelector(sel);
         if (!(el instanceof HTMLElement)) return;
+        if (el.classList.contains("window-frame")) return;
 
         el.style.height = "auto";
         el.style.maxHeight = "none";
