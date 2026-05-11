@@ -57,6 +57,12 @@
 
 /* Menu styles */
 nav {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-x: clip;
+
     background-color: var(--nav-bg-colour);
     padding: var(--menu-padding);
 
@@ -69,10 +75,14 @@ nav {
     white-space: nowrap;
 }
 
-.menu-links,
-.menu-theme-inner {
+nav * {
     box-sizing: border-box;
+}
+
+.menu-links {
     inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
 
     display: flex;
     align-items: center;
@@ -91,10 +101,6 @@ nav {
     &::-webkit-scrollbar {
         display: none;
     }
-}
-
-.menu-links {
-    inline-size: 100%;
 }
 
 /* Menu buttons */
@@ -163,6 +169,10 @@ nav {
 /* Theme picker */
 .menu-theme-shell {
     inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-x: clip;
+
     display: flex;
     flex-direction: column;
     gap: var(--menu-theme-shell-gap);
@@ -170,7 +180,8 @@ nav {
 
 .menu-theme-head {
     inline-size: 100%;
-    min-width: 0;
+    min-inline-size: 0;
+    max-inline-size: 100%;
 
     display: flex;
     align-items: center;
@@ -184,7 +195,7 @@ nav {
 }
 
 .menu-theme-title {
-    min-width: 0;
+    min-inline-size: 0;
 
     display: inline-flex;
     align-items: center;
@@ -216,13 +227,17 @@ nav {
 }
 
 .menu-theme-new {
+    flex: 0 0 auto;
+
     color: var(--menu-theme-new-colour);
     background: var(--menu-theme-new-bg);
 }
 
 .menu-theme-prompt {
     display: inline-block;
-    min-width: 0;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .menu-theme-actions {
@@ -238,6 +253,8 @@ nav {
 
 .menu-theme-body {
     inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
     max-height: 0;
     overflow: hidden;
     opacity: 0;
@@ -254,8 +271,16 @@ nav {
 }
 
 .menu-theme-inner {
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+
+    display: flex;
+    align-items: center;
     justify-content: safe center;
     gap: var(--menu-theme-gap);
+
+    overflow-x: clip;
 }
 
 .menu-theme-caption {
@@ -266,13 +291,27 @@ nav {
 }
 
 .menu-themes {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-inline-size: 0;
+    max-inline-size: 100%;
 
     display: flex;
     align-items: center;
     gap: var(--menu-theme-gap);
 
+    overflow-x: auto;
+    overflow-y: hidden;
     white-space: nowrap;
+
+    padding: var(--menu-hover-bleed);
+
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-inline: var(--menu-hover-bleed);
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
 .menu-theme-item {
@@ -395,5 +434,33 @@ button {
     &.menu-eye::before {
         content: "👁️";
         opacity: var(--menu-eye-opacity);
+    }
+}
+
+:root {
+    --portrait-page-max-inline-size: 100vw;
+    --portrait-page-overflow-x-fallback: hidden;
+    --portrait-page-overflow-x: clip;
+}
+
+@media (orientation: portrait) {
+
+    html,
+    body {
+        max-inline-size: var(--portrait-page-max-inline-size);
+        overflow-x: var(--portrait-page-overflow-x-fallback);
+        overflow-x: var(--portrait-page-overflow-x);
+    }
+
+    body {
+        position: relative;
+    }
+
+    #root,
+    #app,
+    .frame {
+        max-inline-size: 100%;
+        overflow-x: var(--portrait-page-overflow-x-fallback);
+        overflow-x: var(--portrait-page-overflow-x);
     }
 }
