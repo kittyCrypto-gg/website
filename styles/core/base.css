@@ -145,3 +145,25 @@ body {
         opacity: 1;
     }
 }
+
+/* Firefox horizontal overflow containment */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    max-width: 100%;
+}
+
+body {
+    overflow-x: clip;
+}
+
+@supports not (overflow-x: clip) {
+    body {
+        overflow-x: hidden;
+    }
+}

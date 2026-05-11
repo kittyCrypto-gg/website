@@ -46,3 +46,20 @@
         writeCookie(currentDark); // only user toggles persist
     };
 })();
+
+(() => {
+    const cls = localStorage.getItem("kcThemeCaller");
+    const css = localStorage.getItem("kcThemeCss");
+
+    if (cls) {
+        document.documentElement.classList.add(cls);
+    }
+
+    if (css) {
+        const link = document.createElement("link");
+        link.id = "kc-theme-early";
+        link.rel = "stylesheet";
+        link.href = css;
+        document.head.appendChild(link);
+    }
+})();

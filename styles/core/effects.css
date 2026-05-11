@@ -3,58 +3,69 @@
 ========================================= */
 
 :root {
-    --effect-crt-z-index-phosphor: 2147483646;
-    --effect-crt-z-index-scanlines: 2147483647;
+  --effect-crt-z-index-phosphor: 2147483646;
+  --effect-crt-z-index-scanlines: 2147483647;
 
-    /* Independent master switches */
-    --effect-crt-phosphor-opacity: 0.02;
-    --effect-crt-scanline-opacity: 0.1;
+  /* Theme transitions */
+  --effect-theme-transition-duration: 220ms;
+  --effect-theme-transition-ease: ease;
+  --effect-theme-transition-props:
+    background-color,
+    border-color,
+    box-shadow,
+    caret-color,
+    color,
+    fill,
+    filter,
+    opacity,
+    outline-color,
+    stroke,
+    text-decoration-color,
+    text-shadow,
+    -webkit-backdrop-filter,
+    backdrop-filter;
 
-    /*
+  /* Independent master switches */
+  --effect-crt-phosphor-opacity: 0.02;
+  --effect-crt-scanline-opacity: 0.1;
+
+  /*
       Cell size.
       Your requested starting point:
       - horizontal width: 1px
       - vertical height: 3px
     */
-    --effect-crt-cell-width: 1px;
-    --effect-crt-cell-height: 3px;
+  --effect-crt-cell-width: 1px;
+  --effect-crt-cell-height: 3px;
 
-    /*
-      The SVG unit cell is authored in a 20 x 16 coordinate system.
-  
-      In that coordinate space:
-      - one phosphor bar is 2 units wide and 6 units tall
-      - one RGB triplet occupies 8 units
-      - the next triplet starts 10 units later
-      - alternate triplets are shifted vertically by 4 units
-  
-      Scaling maths:
-      - 2 SVG units = 1 phosphor cell width
-      - 6 SVG units = 1 phosphor cell height
-    */
-    --effect-crt-phosphor-pattern-width: calc(var(--effect-crt-cell-width) * 10);
-    --effect-crt-phosphor-pattern-height: calc(var(--effect-crt-cell-height) * 8 / 3);
+  /* phosphor pattern size */
+  --effect-crt-phosphor-pattern-width: calc(var(--effect-crt-cell-width) * 10);
+  --effect-crt-phosphor-pattern-height: calc(var(--effect-crt-cell-height) * 8 / 3);
 
-    /*
-      Mild post-process pass.
-      This does not truly reconstruct the image into RGB subpixels,
-      but it helps the underlying content feel like it is being
-      emitted through the phosphor lattice.
-    */
-    --effect-crt-phosphor-filter: saturate(1.30) contrast(1.14) brightness(1.03) blur(0.12px);
+  /* phosphor lattice filter */
+  --effect-crt-phosphor-filter: saturate(1.30) contrast(1.14) brightness(1.03) blur(0.12px);
 
-    /* Scanlines */
-    --effect-crt-scanline-colour-strong: rgba(0, 255, 255, 0.07);
-    --effect-crt-scanline-colour-soft: rgba(0, 255, 255, 0.025);
-    --effect-crt-scanline-pitch: clamp(5px, calc(8px - 0.3vh), 6px);
-    --effect-crt-scanline-travel-duration: 22000ms;
+  /* Scanlines */
+  --effect-crt-scanline-colour-strong: rgba(0, 255, 255, 0.07);
+  --effect-crt-scanline-colour-soft: rgba(0, 255, 255, 0.025);
+  --effect-crt-scanline-pitch: clamp(5px, calc(8px - 0.3vh), 6px);
+  --effect-crt-scanline-travel-duration: 22000ms;
 }
 
-/*
-    Needed so blend modes stay scoped cleanly to the page content.
-  */
+/* Needed so blend modes stay scoped cleanly to the page content. */
 body {
-    isolation: isolate;
+  isolation: isolate;
+}
+
+/* theme changing effect */
+html,
+body,
+body *,
+body *::before,
+body *::after {
+  transition-property: var(--effect-theme-transition-props);
+  transition-duration: var(--effect-theme-transition-duration);
+  transition-timing-function: var(--effect-theme-transition-ease);
 }
 
 /* One-line toggles */
@@ -63,80 +74,67 @@ body {
 /* <body class="effect-disable-phosphor effect-disable-scanlines"> */
 
 body:not(.effect-disable-phosphor)::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: var(--effect-crt-z-index-phosphor);
-    opacity: var(--effect-crt-phosphor-opacity);
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--effect-crt-z-index-phosphor);
+  opacity: var(--effect-crt-phosphor-opacity);
 
-    /*
-      True repeating unit cell.
-  
-      Horizontal sequence:
-        RGB   gap   RGB
-      Vertical sequence:
-        left triplet aligned
-        right triplet shifted by half a row
-  
-      The tile includes neighbour fragments at the top and bottom so
-      vertical tiling stays mathematically clean.
-    */
-    background-image: url("/images/trinitron.svg");
-    background-repeat: repeat;
-    background-position: 0 0;
-    background-size:
-        var(--effect-crt-phosphor-pattern-width) var(--effect-crt-phosphor-pattern-height);
+  /* phosphor pattern */
+  background-image: url("/images/trinitron.svg");
+  background-repeat: repeat;
+  background-position: 0 0;
+  background-size:
+    var(--effect-crt-phosphor-pattern-width) var(--effect-crt-phosphor-pattern-height);
 
-    /*
-      This is the approximation layer.
-      It makes the phosphor lattice interact with the scene below
-      instead of reading like flat confetti pasted on top.
-    */
-    mix-blend-mode: multiply;
-    filter: var(--effect-crt-phosphor-filter);
-    -webkit-backdrop-filter: saturate(1.08) contrast(1.03);
-    backdrop-filter: saturate(1.08) contrast(1.03);
+  /* phosphor approximation layer */
 
-    transform: translate3d(0, 0, 0);
-    will-change: opacity, filter;
+  mix-blend-mode: multiply;
+  filter: var(--effect-crt-phosphor-filter);
+  -webkit-backdrop-filter: saturate(1.08) contrast(1.03);
+  backdrop-filter: saturate(1.08) contrast(1.03);
+
+  transform: translate3d(0, 0, 0);
+  will-change: opacity, filter;
 }
 
 body:not(.effect-disable-scanlines)::after {
-    content: "";
-    position: fixed;
-    top: calc(-1 * var(--effect-crt-scanline-pitch));
-    right: 0;
-    left: 0;
-    height: calc(100vh + (var(--effect-crt-scanline-pitch) * 2));
-    pointer-events: none;
-    z-index: var(--effect-crt-z-index-scanlines);
-    opacity: var(--effect-crt-scanline-opacity);
+  content: "";
+  position: fixed;
+  top: calc(-1 * var(--effect-crt-scanline-pitch));
+  right: 0;
+  left: 0;
+  height: calc(100vh + (var(--effect-crt-scanline-pitch) * 2));
+  pointer-events: none;
+  z-index: var(--effect-crt-z-index-scanlines);
+  opacity: var(--effect-crt-scanline-opacity);
 
-    background-image:
-        repeating-linear-gradient(to bottom,
-            var(--effect-crt-scanline-colour-strong) 0,
-            var(--effect-crt-scanline-colour-strong) calc(var(--effect-crt-scanline-pitch) * 0.30),
-            var(--effect-crt-scanline-colour-soft) calc(var(--effect-crt-scanline-pitch) * 0.55),
-            transparent calc(var(--effect-crt-scanline-pitch) * 0.68),
-            transparent var(--effect-crt-scanline-pitch));
-    background-repeat: repeat-y;
-    background-size: 100% var(--effect-crt-scanline-pitch);
+  background-image:
+    repeating-linear-gradient(to bottom,
+      var(--effect-crt-scanline-colour-strong) 0,
+      var(--effect-crt-scanline-colour-strong) calc(var(--effect-crt-scanline-pitch) * 0.30),
+      var(--effect-crt-scanline-colour-soft) calc(var(--effect-crt-scanline-pitch) * 0.55),
+      transparent calc(var(--effect-crt-scanline-pitch) * 0.68),
+      transparent var(--effect-crt-scanline-pitch));
+  background-repeat: repeat-y;
+  background-size: 100% var(--effect-crt-scanline-pitch);
 
-    transform: translate3d(0, 0, 0);
-    animation: effect-crt-scanline-drift var(--effect-crt-scanline-travel-duration) linear infinite;
-    will-change: transform;
+  transform: translate3d(0, 0, 0);
+  animation: effect-crt-scanline-drift var(--effect-crt-scanline-travel-duration) linear infinite;
+  will-change: transform;
 }
 
 body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
-    animation: none;
+  animation: none;
 }
-@keyframes effect-crt-scanline-drift {
-    from {
-        transform: translate3d(0, 0, 0);
-    }
 
-    to {
-        transform: translate3d(0, calc(-1 * var(--effect-crt-scanline-pitch)), 0);
-    }
+@keyframes effect-crt-scanline-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, calc(-1 * var(--effect-crt-scanline-pitch)), 0);
+  }
 }

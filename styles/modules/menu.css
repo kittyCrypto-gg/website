@@ -5,6 +5,7 @@
 :root {
     --menu-padding: clamp(0.75rem, 2vw, 0.9375rem);
     --menu-gap: clamp(0.75rem, 2vw, 0.9375rem);
+    --menu-row-gap: clamp(0.45rem, 1.2vw, 0.625rem);
     --menu-border-width: 2px;
     --menu-button-padding-block: clamp(0.55rem, 1.5vw, 0.625rem);
     --menu-button-padding-inline: clamp(0.75rem, 2vw, 0.9375rem);
@@ -16,6 +17,38 @@
     --menu-button-transform-transition: 0.2s;
     --menu-button-icon-size: 1em;
     --menu-button-icon-gap: 0.5rem;
+    --menu-hover-bleed: clamp(0.35rem, 1vw, 0.7rem);
+
+    --menu-theme-shell-gap: clamp(0.35rem, 1vw, 0.5rem);
+    --menu-theme-head-gap: clamp(0.45rem, 1.2vw, 0.65rem);
+    --menu-theme-head-padding-block: clamp(0.2rem, 0.8vw, 0.35rem);
+    --menu-theme-head-padding-inline: clamp(0.35rem, 1vw, 0.55rem);
+    --menu-theme-collapse-duration: var(--phys-collapse-duration, 260ms);
+    --menu-theme-collapse-fade-duration: var(--phys-collapse-fade-duration, 180ms);
+    --menu-theme-collapse-ease: var(--phys-collapse-ease, ease);
+    --menu-theme-new-bg: var(--banner-green);
+    --menu-theme-new-colour: var(--body-text-colour-light);
+    --menu-theme-caption-bg: var(--banner-blue);
+    --menu-theme-caption-colour: var(--body-text-colour-light);
+    --menu-theme-pill-padding-block: 0.25em;
+    --menu-theme-pill-padding-inline: 0.55em;
+    --menu-theme-pill-radius: 999px;
+
+    --menu-theme-gap: clamp(0.35rem, 1vw, 0.5rem);
+    --menu-theme-padding-block: clamp(0.35rem, 1vw, 0.45rem);
+    --menu-theme-padding-inline: clamp(0.6rem, 1.5vw, 0.75rem);
+    --menu-theme-radius: calc(var(--menu-button-radius) * 0.8);
+    --menu-theme-font-size: clamp(0.78rem, 0.74rem + 0.2vw, 0.95rem);
+    --menu-theme-label-bg: var(--nav-bg-colour);
+    --menu-theme-label-border-colour: var(--nav-border-colour);
+    --menu-theme-dot-size: 0.72em;
+    --menu-theme-dot-border-width: 1.5px;
+    --menu-theme-dot-fill-size: 0.24em;
+    --menu-theme-dot-bg: var(--nav-bg-colour);
+    --menu-theme-dot-border-colour: var(--nav-border-colour);
+    --menu-theme-dot-fill-colour: var(--banner-blue);
+    --menu-theme-focus-size: 2px;
+
     --menu-crossed-line-height: 2px;
     --menu-crossed-line-colour: red;
     --menu-crossed-line-rotation: 45deg;
@@ -28,19 +61,40 @@ nav {
     padding: var(--menu-padding);
 
     display: flex;
-    gap: var(--menu-gap);
+    flex-direction: column;
+    gap: var(--menu-row-gap);
 
     border-bottom: var(--menu-border-width) solid var(--nav-border-colour);
 
+    white-space: nowrap;
+}
+
+.menu-links,
+.menu-theme-inner {
+    box-sizing: border-box;
+    inline-size: 100%;
+
+    display: flex;
+    align-items: center;
+    gap: var(--menu-gap);
+
     overflow-x: auto;
+    overflow-y: hidden;
     white-space: nowrap;
 
-    -webkit-overflow-scrolling: touch;
+    padding: var(--menu-hover-bleed);
 
-    /* Hide scrollbar on some browsers */
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-inline: var(--menu-hover-bleed);
+
     &::-webkit-scrollbar {
         display: none;
     }
+}
+
+.menu-links {
+    inline-size: 100%;
 }
 
 /* Menu buttons */
@@ -56,13 +110,13 @@ nav {
     text-decoration: none;
 
     color: var(--menu-button-text-colour);
-    background-color: var(--menu-button-bg-colour);
+    background: var(--menu-button-bg-colour);
 
     padding: var(--menu-button-padding-block) var(--menu-button-padding-inline);
     border-radius: var(--menu-button-radius);
 
     transition:
-        background-color var(--menu-button-bg-transition),
+        background var(--menu-button-bg-transition),
         transform var(--menu-button-transform-transition);
 
     font-size: var(--menu-button-font-size);
@@ -71,8 +125,11 @@ nav {
     text-align: center;
     white-space: nowrap;
 
+    transform-origin: center;
+    will-change: transform;
+
     &:hover {
-        background-color: var(--menu-button-hover-bg-colour);
+        background: var(--menu-button-hover-bg-colour);
         transform: scale(var(--menu-button-hover-scale));
     }
 }
@@ -101,6 +158,217 @@ nav {
 .menu-button-text {
     display: inline-block;
     min-width: 0;
+}
+
+/* Theme picker */
+.menu-theme-shell {
+    inline-size: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--menu-theme-shell-gap);
+}
+
+.menu-theme-head {
+    inline-size: 100%;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--menu-theme-head-gap);
+
+    padding: var(--menu-theme-head-padding-block) var(--menu-theme-head-padding-inline);
+
+    cursor: pointer;
+    user-select: none;
+}
+
+.menu-theme-title {
+    min-width: 0;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45em;
+
+    color: var(--menu-button-text-colour);
+    font-size: var(--menu-theme-font-size);
+    font-weight: var(--menu-button-font-weight);
+    line-height: 1;
+}
+
+.menu-theme-new,
+.menu-theme-caption {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: var(--menu-theme-pill-padding-block) var(--menu-theme-pill-padding-inline);
+    border-radius: var(--menu-theme-pill-radius);
+
+    font-size: 0.9em;
+    font-weight: 700;
+    line-height: 1;
+
+    box-shadow:
+        inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
+        0 1px 2px color-mix(in srgb, black 16%, transparent);
+}
+
+.menu-theme-new {
+    color: var(--menu-theme-new-colour);
+    background: var(--menu-theme-new-bg);
+}
+
+.menu-theme-prompt {
+    display: inline-block;
+    min-width: 0;
+}
+
+.menu-theme-actions {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-theme-toggle {
+    flex: 0 0 auto;
+}
+
+.menu-theme-body {
+    inline-size: 100%;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+
+    transition:
+        max-height var(--menu-theme-collapse-duration) var(--menu-theme-collapse-ease),
+        opacity var(--menu-theme-collapse-fade-duration) ease;
+}
+
+.menu-theme-body[aria-hidden="false"] {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.menu-theme-inner {
+    justify-content: safe center;
+    gap: var(--menu-theme-gap);
+}
+
+.menu-theme-caption {
+    flex: 0 0 auto;
+
+    color: var(--menu-theme-caption-colour);
+    background: var(--menu-theme-caption-bg);
+}
+
+.menu-themes {
+    flex: 0 0 auto;
+
+    display: flex;
+    align-items: center;
+    gap: var(--menu-theme-gap);
+
+    white-space: nowrap;
+}
+
+.menu-theme-item {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+}
+
+.menu-theme-radio {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.menu-theme-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45em;
+
+    color: var(--menu-button-text-colour);
+    background: var(--menu-theme-label-bg);
+
+    padding: var(--menu-theme-padding-block) var(--menu-theme-padding-inline);
+    border: 1px solid var(--menu-theme-label-border-colour);
+    border-radius: var(--menu-theme-radius);
+
+    font-size: var(--menu-theme-font-size);
+    font-weight: var(--menu-button-font-weight);
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+
+    transform-origin: center;
+    will-change: transform;
+
+    transition:
+        background var(--menu-button-bg-transition),
+        border-color var(--menu-button-bg-transition),
+        transform var(--menu-button-transform-transition);
+
+    &::before {
+        content: "";
+        inline-size: var(--menu-theme-dot-size);
+        block-size: var(--menu-theme-dot-size);
+
+        border: var(--menu-theme-dot-border-width) solid var(--menu-theme-dot-border-colour);
+        border-radius: 50%;
+
+        background: var(--menu-theme-dot-bg);
+        box-shadow:
+            inset 0 1px 1px color-mix(in srgb, black 18%, transparent),
+            0 1px 0 color-mix(in srgb, white 35%, transparent);
+
+        opacity: 0.9;
+
+        transition:
+            background var(--menu-button-transform-transition),
+            border-color var(--menu-button-transform-transition),
+            box-shadow var(--menu-button-transform-transition),
+            opacity var(--menu-button-transform-transition);
+    }
+
+    &:hover {
+        background: var(--menu-button-hover-bg-colour);
+        border-color: var(--nav-border-colour);
+        transform: translateY(-1px) scale(var(--menu-button-hover-scale));
+    }
+}
+
+.menu-theme-radio:checked+.menu-theme-label {
+    color: var(--menu-button-text-colour);
+    background: var(--menu-button-hover-bg-colour);
+    border-color: var(--nav-border-colour);
+
+    &::before {
+        border-color: var(--menu-theme-dot-fill-colour);
+        background:
+            radial-gradient(circle,
+                var(--menu-theme-dot-fill-colour) 0 var(--menu-theme-dot-fill-size),
+                transparent calc(var(--menu-theme-dot-fill-size) + 1px)),
+            var(--menu-theme-dot-bg);
+        box-shadow:
+            inset 0 1px 1px color-mix(in srgb, black 16%, transparent),
+            0 0 0 1px color-mix(in srgb, var(--menu-theme-dot-fill-colour) 35%, transparent),
+            0 1px 0 color-mix(in srgb, white 35%, transparent);
+        opacity: 1;
+    }
+}
+
+.menu-theme-radio:focus-visible+.menu-theme-label {
+    outline: var(--menu-theme-focus-size) solid var(--menu-button-hover-bg-colour);
+    outline-offset: 2px;
 }
 
 button {

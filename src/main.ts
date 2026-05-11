@@ -18,6 +18,10 @@ import { initNtcs } from "./notices.tsx";
 import { initNoticeBoard } from "./noticeBoard.tsx";
 import { bindToggleVisuals, showToggleVisual } from "./toggleIcons.ts";
 
+// import { mkCurTheme } from "./cursors/cursorTheme.tsx";
+
+// const cur = mkCurTheme("/data/cursors/macOS9");
+
 type TermMod = Readonly<{
     term: Readonly<{
         element: HTMLElement | null;

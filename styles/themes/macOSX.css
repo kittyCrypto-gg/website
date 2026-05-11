@@ -1,0 +1,1623 @@
+/* =========================================
+    Theme: MacOS X
+========================================= */
+
+/* Base */
+.osx {
+    /* Body */
+    --body-bg-colour: #2f65a7;
+    --osx-desktop-bg: #2f65a7;
+    --osx-desktop-image: url("/images/aqua.svg");
+    --body-text-colour: #101010;
+    --body-text-colour-light: #101010;
+
+    /* Mac OS X Aqua surface tokens */
+    --osx-page-frame-bg: #e2e4ea;
+    --osx-window-bg: #f8f8f8;
+    --osx-panel-bg: #f5f6f9;
+    --osx-panel-bg-raised: #ffffff;
+    --osx-panel-bg-sunken: #ffffff;
+    --osx-content-bg: #ffffff;
+    --osx-border-light: #ffffff;
+    --osx-border-mid: #9ba3b2;
+    --osx-border-dark: #5f6878;
+    --osx-blue: #2f78d8;
+    --osx-blue-mid: #5ea3ff;
+    --osx-blue-light: #c9e4ff;
+    --osx-blue-dark: #174f9f;
+    --osx-graphite: #8d96a4;
+    --osx-selection-bg: #3d7fd9;
+    --osx-selection-fg: #ffffff;
+
+    --osx-pinstripe-bg: repeating-linear-gradient(to bottom,
+            #ffffff 0px,
+            #ffffff 1px,
+            #dfe3eb 1px,
+            #dfe3eb 2px);
+
+    --osx-title-bg:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.82) 0%,
+            rgba(255, 255, 255, 0.36) 38%,
+            rgba(178, 186, 200, 0.34) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-title-fg: #1d1d1d;
+    --osx-title-inactive-bg:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.68) 0%,
+            rgba(255, 255, 255, 0.28) 42%,
+            rgba(190, 196, 208, 0.24) 100%),
+        repeating-linear-gradient(to bottom,
+            #f7f7f8 0px,
+            #f7f7f8 1px,
+            #e2e5ec 1px,
+            #e2e5ec 2px);
+    --osx-title-inactive-fg: #666666;
+
+    /* Structural surfaces */
+    --osx-frame-surface-bg:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(226, 228, 234, 0.9) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-header-surface-bg:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.86) 0%, rgba(226, 228, 234, 0.76) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-window-frame-bg: #ffffff;
+    --osx-window-body-bg:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(248, 248, 248, 0.92)),
+        var(--osx-pinstripe-bg);
+    --osx-module-shell-bg:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(226, 228, 234, 0.9) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-content-shell-bg: #ffffff;
+    --osx-module-panel-border-colour: #c4cbd8;
+    --osx-content-border-colour: #9ba3b2;
+    --osx-scrollbar-track-colour: #d8dde8;
+    --osx-scrollbar-track-border-colour: #aab2c0;
+    --osx-button-border-colour: #7a8aa2;
+    --osx-button-active-bg: linear-gradient(to bottom, #5fa5ff 0%, #b9d9ff 55%, #ffffff 100%);
+
+    /* Aqua traffic lights */
+    --osx-close-red: #ff5b53;
+    --osx-close-red-dark: #b4211d;
+    --osx-minimise-yellow: #ffbd2e;
+    --osx-minimise-yellow-dark: #b77b00;
+    --osx-zoom-green: #28c840;
+    --osx-zoom-green-dark: #0d7d20;
+
+    /* Aqua scrollbars and sliders */
+    --osx-scrollbar-size: 17px;
+    --osx-scrollbar-track: linear-gradient(to right, #eef0f6, #d3d8e3);
+    --osx-scrollbar-button-bg: linear-gradient(to bottom, #ffffff, #d6dce8);
+    --osx-scrollbar-thumb: linear-gradient(to right,
+            #dff1ff 0%,
+            #9fd0ff 20%,
+            #4d9dff 50%,
+            #1c6ed6 100%);
+    --osx-scrollbar-thumb-light: #dff1ff;
+    --osx-scrollbar-thumb-dark: #1c5ba9;
+    --osx-scrollbar-grip-light: rgba(255, 255, 255, 0.9);
+    --osx-scrollbar-grip-dark: rgba(0, 0, 0, 0.28);
+
+    /* Frame */
+    --frame-bg-colour: var(--osx-page-frame-bg);
+    --frame-bg-colour-rgb: 226, 228, 234;
+    --frame-border-light: #ffffff;
+    --frame-box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+
+    /* Banner & accent colours */
+    --banner-green: var(--osx-zoom-green);
+    --banner-blue: var(--osx-blue);
+    --banner-teal: var(--osx-blue-mid);
+    --banner-teal-bright: var(--osx-blue-light);
+    --banner-lilac: #8a94d8;
+    --banner-background: transparent;
+    --banner-text-main: var(--osx-blue-dark);
+    --banner-text-header: #111111;
+    --banner-text-footer: var(--osx-blue-dark);
+    --accent: var(--osx-blue);
+
+    /* Header */
+    --header-bg-colour: #f8f8f8;
+    --header-text-colour: #111111;
+
+    /* Terminal window */
+    --term-bg: linear-gradient(to bottom, #2e2e2e, #232323);
+    --term-header-bg: var(--osx-title-bg);
+    --term-header-fg: var(--osx-title-fg);
+    --term-title: var(--osx-title-fg);
+    --term-shadow: rgba(0, 0, 0, 0.36);
+
+    /* Navigation / Menu */
+    --nav-bg-colour:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.82) 0%,
+            rgba(238, 240, 246, 0.7) 100%),
+        var(--osx-pinstripe-bg);
+    --nav-border-colour: #9ba3b2;
+    --menu-button-bg-colour: linear-gradient(to bottom, #ffffff 0%, #f0f5ff 38%, #b9d9ff 58%, #5fa5ff 100%);
+    --menu-button-text-colour: #101010;
+    --menu-button-hover-bg-colour: linear-gradient(to bottom, #ffffff 0%, #fff7d7 38%, #ffd467 60%, #f6a900 100%);
+
+    /* Footer */
+    --footer-bg-colour:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.82) 0%,
+            rgba(215, 220, 230, 0.74) 100%),
+        var(--osx-pinstripe-bg);
+    --footer-text-colour: #101010;
+    --footer-border-colour: #9ba3b2;
+
+    /* Chatroom */
+    --chatroom-border-colour: #9ba3b2;
+    --chatroom-bg-colour: #ffffff;
+    --chatroom-text-colour: #101010;
+
+    /* Timestamps */
+    --timestamp-colour: #4e5664;
+    --chat-timestamp-colour: #5f6878;
+
+    /* Inputs */
+    --chat-input-border-colour: #8fa1bd;
+    --chat-input-bg-colour: #ffffff;
+    --chat-input-text-colour: #101010;
+
+    /* Buttons */
+    --chat-send-btn-bg-colour: linear-gradient(to bottom, #ffffff 0%, #f0f5ff 38%, #b9d9ff 58%, #5fa5ff 100%);
+    --chat-send-btn-text-colour: #101010;
+
+    /* Theme Toggle Button */
+    --toggle-btn-bg-colour: linear-gradient(to bottom, #ffffff 0%, #f0f5ff 38%, #b9d9ff 58%, #5fa5ff 100%);
+    --toggle-btn-text-colour: #101010;
+
+    /* Pending Indicator */
+    --pending-indicator-colour: var(--osx-blue);
+
+    /* Edit Modal */
+    --edit-modal-bg-colour: #f8f8f8;
+    --edit-modal-text-colour: #101010;
+    --edit-modal-shadow-colour: rgba(0, 0, 0, 0.36);
+    --edit-modal-userinfo-bg-colour: #f5f6f9;
+    --edit-modal-userinfo-text-colour: #101010;
+    --edit-modal-userinfo-border-colour: #9ba3b2;
+    --edit-modal-input-bg-colour: #ffffff;
+    --edit-modal-input-text-colour: #101010;
+    --edit-modal-input-border-colour: #8fa1bd;
+
+    /* Modal Buttons */
+    --edit-modal-btn-save-bg-colour: linear-gradient(to bottom, #ffffff 0%, #f0f5ff 38%, #b9d9ff 58%, #5fa5ff 100%);
+    --edit-modal-btn-save-hover-colour: linear-gradient(to bottom, #ffffff 0%, #fff7d7 38%, #ffd467 60%, #f6a900 100%);
+    --edit-modal-btn-cancel-bg-colour: linear-gradient(to bottom, #ffffff 0%, #f0f5ff 38%, #b9d9ff 58%, #5fa5ff 100%);
+    --edit-modal-btn-cancel-hover-colour: linear-gradient(to bottom, #ffffff 0%, #fff7d7 38%, #ffd467 60%, #f6a900 100%);
+
+    /* Window API */
+    --window-radius: 7px;
+    --window-border-width: 1px;
+    --window-border-colour: #8f98a8;
+    --window-bg: var(--osx-window-bg);
+    --window-content-bg: var(--osx-window-bg);
+    --window-header-bg: var(--osx-title-bg);
+    --window-header-fg: var(--osx-title-fg);
+    --window-header-top-border-radius: 7px;
+    --window-controls-gap: 0.35rem;
+    --window-btn-hover-scale: 1;
+    --window-btn-hover-transition: 0.15s ease;
+    --window-title-colour: var(--osx-title-fg);
+
+    /* 88 by 31 */
+    --kc-88by31-outer-radius: 6px;
+    --kc-88by31-outer-border-width: 1px;
+
+    /* About */
+    --about-frame-radius: 8px;
+    --profile-avatar-radius: 5px;
+    --jp-about-scrollbar-radius: 999px;
+
+    /* Avatars */
+    --avatar-radius: 5px;
+    --commit-identicon-radius: 5px;
+    --commit-identicon-svg-radius: 5px;
+
+    /* Calendar */
+    --cal-bg: var(--osx-panel-bg);
+    --cal-brd: #9ba3b2;
+    --cal-shadow: none;
+    --cal-radius: 8px;
+    --cal-radius-sm: 5px;
+    --cal-radius-xs: 4px;
+    --cal-chip-radius: 999px;
+    --cal-chip-bg: linear-gradient(to bottom, #ffffff, #dde6f4);
+    --cal-chip-bg-hover: linear-gradient(to bottom, #ffffff, #b9d9ff);
+    --cal-chip-brd: #9ba3b2;
+    --cal-chip-col: #101010;
+    --cal-chip-sel-bg: var(--osx-selection-bg);
+    --cal-chip-sel-brd: #174f9f;
+    --cal-chip-sel-col: var(--osx-selection-fg);
+    --cal-dypad-bg: #ffffff;
+    --cal-dypad-radius: 5px;
+    --cal-fcs-ring: 0 0 0 2px var(--osx-blue-light);
+
+    /* Chapter images */
+    --chapter-image-radius: 6px;
+
+    /* Chat */
+    --chat-input-radius: 5px;
+    --chat-action-radius: 999px;
+    --comment-message-radius: 7px;
+    --chat-message-bg-even: #ffffff;
+    --chat-message-bg-odd: #f4f8ff;
+    --temporary-notice-border-width: 1px;
+
+    /* Comments / guestbook */
+    --comments-box-radius: 6px;
+    --comment-field-radius: 5px;
+    --comment-post-btn-radius: 999px;
+    --comments-avatar-radius: 5px;
+    --comments-avatar-badge-radius: 4px;
+    --comments-box-scrollbar-thumb: #5ea3ff;
+    --comments-box-scrollbar-thumb-hover: #2f78d8;
+
+    /* Commits */
+    --commit-block-radius: 6px;
+    --commits-container-radius: 8px;
+
+    /* Counter */
+    --counter-radius: 6px;
+
+    /* CRT Control Desk UI, not phosphor or scanline effects */
+    --crt-ui-shadow-colour: rgba(0, 0, 0, 0.25);
+    --crt-ui-group-border: #9ba3b2;
+    --crt-ui-group-background: #f5f6f9;
+    --crt-ui-status-background: #ffffff;
+    --crt-ui-status-border: #8fa1bd;
+    --crt-ui-range-track-start: #cbd2df;
+    --crt-ui-range-track-end: #ffffff;
+    --crt-ui-range-thumb-background: linear-gradient(to right, #dff1ff, #2f78d8);
+    --crt-ui-radius: 8px;
+    --crt-ui-radius-sm: 5px;
+    --crt-ui-radius-md: 6px;
+    --crt-ui-radius-pill: 999px;
+    --crt-ui-border-width: 1px;
+    --crt-ui-thumb-border-width: 1px;
+    --crt-ui-button-hover-offset: 0px;
+    --crt-ui-backdrop-blur: 0px;
+
+    /* Effects modal */
+    --effects-modal-radius: 8px;
+    --effects-modal-section-radius: 6px;
+    --effects-modal-control-radius: 5px;
+
+    /* Email */
+    --email-card-radius: 6px;
+    --email-action-radius: 999px;
+
+    /* Keyboard */
+    --keyboard-key-radius: 5px;
+
+    /* Notices */
+    --ntcs-card-radius: 6px;
+
+    /* Reader */
+    --reader-radius: 8px;
+    --reader-controls-radius: 6px;
+    --story-dropdown-radius: 5px;
+
+    /* RSS / blog */
+    --rss-radius: 8px;
+    --rss-card-radius: 6px;
+    --rss-code-radius: 5px;
+    --rss-pill-radius: 999px;
+
+    /* SMS */
+    --msg-bubble-radius: 10px;
+    --msg-bubble-notch-radius: 3px;
+    --msg-strip-radius: 6px;
+
+    /* Socials */
+    --socials-card-radius: 6px;
+    --socials-segment-radius: 8px;
+
+    /* Stats */
+    --site-stats-radius: 8px;
+    --site-stats-item-radius: 6px;
+    --stats-segment-radius: 8px;
+
+    /* Terminal */
+    --terminal-radius: 8px;
+    --terminal-border-width: 1px;
+    --terminal-border-colour: #8f98a8;
+    --term-icon-radius: 5px;
+
+    /* Theme toggle */
+    --theme-toggle-radius: 999px;
+
+    /* Tooltip */
+    --tooltip-radius: 5px;
+
+    /* Layout */
+    --menu-button-radius: 999px;
+    --layout-frame-radius: 8px;
+}
+
+/* Dark variant for Mac OS X Aqua. */
+.osx.dark-mode,
+.dark-mode.osx,
+.dark-mode .osx {
+    --body-bg-colour: #67689f;
+    --osx-desktop-bg: #67689f;
+    --body-text-colour: #eeeeee;
+    --body-text-colour-light: #eeeeee;
+
+    --osx-page-frame-bg: #303744;
+    --osx-window-bg: #3a4250;
+    --osx-panel-bg: #424b5c;
+    --osx-panel-bg-raised: #4f596c;
+    --osx-panel-bg-sunken: #232936;
+    --osx-content-bg: #202633;
+    --osx-border-light: #758093;
+    --osx-border-mid: #8a94a6;
+    --osx-border-dark: #141923;
+    --osx-blue: #4d9dff;
+    --osx-blue-mid: #6fb2ff;
+    --osx-blue-light: #a9d4ff;
+    --osx-blue-dark: #225caa;
+    --osx-graphite: #9ca6b5;
+    --osx-selection-bg: #3d7fd9;
+    --osx-selection-fg: #ffffff;
+
+    --osx-pinstripe-bg: repeating-linear-gradient(to bottom,
+            #465064 0px,
+            #465064 1px,
+            #303746 1px,
+            #303746 2px);
+
+    --osx-title-bg:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.28) 0%,
+            rgba(255, 255, 255, 0.08) 40%,
+            rgba(0, 0, 0, 0.18) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-title-fg: #ffffff;
+    --osx-title-inactive-bg:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.2) 0%,
+            rgba(255, 255, 255, 0.06) 42%,
+            rgba(0, 0, 0, 0.16) 100%),
+        repeating-linear-gradient(to bottom,
+            #3d4657 0px,
+            #3d4657 1px,
+            #303746 1px,
+            #303746 2px);
+    --osx-title-inactive-fg: #d0d4dc;
+
+    --osx-frame-surface-bg:
+        linear-gradient(to bottom, rgba(79, 89, 108, 0.92) 0%, rgba(48, 55, 68, 0.92) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-header-surface-bg:
+        linear-gradient(to bottom, rgba(79, 89, 108, 0.92) 0%, rgba(48, 55, 68, 0.92) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-window-frame-bg: var(--osx-window-bg);
+    --osx-window-body-bg:
+        linear-gradient(to bottom, rgba(58, 66, 80, 0.94), rgba(48, 55, 68, 0.94)),
+        var(--osx-pinstripe-bg);
+    --osx-module-shell-bg:
+        linear-gradient(to bottom, rgba(79, 89, 108, 0.9) 0%, rgba(48, 55, 68, 0.9) 100%),
+        var(--osx-pinstripe-bg);
+    --osx-content-shell-bg: var(--osx-content-bg);
+    --osx-module-panel-border-colour: #8a94a6;
+    --osx-content-border-colour: #8a94a6;
+    --osx-scrollbar-track-colour: #303744;
+    --osx-scrollbar-track-border-colour: #4f596c;
+    --osx-button-border-colour: #8a94a6;
+    --osx-button-active-bg: linear-gradient(to bottom, #354052 0%, #4d586b 55%, #677386 100%);
+
+    --osx-close-red: #ff6860;
+    --osx-close-red-dark: #9d201a;
+    --osx-minimise-yellow: #ffc84a;
+    --osx-minimise-yellow-dark: #a36d00;
+    --osx-zoom-green: #3bd154;
+    --osx-zoom-green-dark: #0b7420;
+
+    --osx-scrollbar-track: linear-gradient(to right, #303744, #252b36);
+    --osx-scrollbar-button-bg: linear-gradient(to bottom, #5c6678, #343c4a);
+    --osx-scrollbar-thumb: linear-gradient(to right,
+            #5a78a3 0%,
+            #6fb2ff 30%,
+            #2f78d8 100%);
+    --osx-scrollbar-thumb-light: #a9d4ff;
+    --osx-scrollbar-thumb-dark: #225caa;
+    --osx-scrollbar-grip-light: rgba(255, 255, 255, 0.45);
+    --osx-scrollbar-grip-dark: rgba(0, 0, 0, 0.65);
+
+    --frame-bg-colour: var(--osx-page-frame-bg);
+    --frame-bg-colour-rgb: 48, 55, 68;
+    --frame-border-light: #758093;
+    --frame-box-shadow: 0 12px 28px rgba(0, 0, 0, 0.52);
+
+    --banner-green: var(--osx-zoom-green);
+    --banner-blue: var(--osx-blue);
+    --banner-teal: var(--osx-blue-mid);
+    --banner-teal-bright: var(--osx-blue-light);
+    --banner-lilac: #9aa5ff;
+    --banner-text-main: #eeeeee;
+    --banner-text-header: #ffffff;
+    --banner-text-footer: #eeeeee;
+    --accent: var(--osx-blue);
+
+    --header-bg-colour: #303744;
+    --header-text-colour: #eeeeee;
+
+    --term-bg: linear-gradient(to bottom, #2e2e2e, #232323);
+    --term-header-bg: var(--osx-title-bg);
+    --term-header-fg: var(--osx-title-fg);
+    --term-title: var(--osx-title-fg);
+    --term-shadow: rgba(0, 0, 0, 0.55);
+
+    --nav-bg-colour:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.16) 0%,
+            rgba(0, 0, 0, 0.12) 100%),
+        var(--osx-pinstripe-bg);
+    --nav-border-colour: #8a94a6;
+    --menu-button-bg-colour: linear-gradient(to bottom, #677386 0%, #4d586b 45%, #354052 100%);
+    --menu-button-text-colour: #eeeeee;
+    --menu-button-hover-bg-colour: linear-gradient(to bottom, #7b879b 0%, #637189 45%, #475874 100%);
+
+    --footer-bg-colour:
+        linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.14) 0%,
+            rgba(0, 0, 0, 0.14) 100%),
+        var(--osx-pinstripe-bg);
+    --footer-text-colour: #eeeeee;
+    --footer-border-colour: #8a94a6;
+
+    --chatroom-border-colour: #8a94a6;
+    --chatroom-bg-colour: #202633;
+    --chatroom-text-colour: #eeeeee;
+
+    --timestamp-colour: #b6bdca;
+    --chat-timestamp-colour: #a6afbe;
+
+    --chat-input-border-colour: #8a94a6;
+    --chat-input-bg-colour: #202633;
+    --chat-input-text-colour: #eeeeee;
+
+    --chat-send-btn-bg-colour: linear-gradient(to bottom, #677386 0%, #4d586b 45%, #354052 100%);
+    --chat-send-btn-text-colour: #eeeeee;
+
+    --toggle-btn-bg-colour: linear-gradient(to bottom, #677386 0%, #4d586b 45%, #354052 100%);
+    --toggle-btn-text-colour: #eeeeee;
+
+    --pending-indicator-colour: var(--osx-blue);
+
+    --edit-modal-bg-colour: #3a4250;
+    --edit-modal-text-colour: #eeeeee;
+    --edit-modal-shadow-colour: rgba(0, 0, 0, 0.82);
+    --edit-modal-userinfo-bg-colour: #424b5c;
+    --edit-modal-userinfo-text-colour: #eeeeee;
+    --edit-modal-userinfo-border-colour: #8a94a6;
+    --edit-modal-input-bg-colour: #202633;
+    --edit-modal-input-text-colour: #eeeeee;
+    --edit-modal-input-border-colour: #8a94a6;
+
+    --edit-modal-btn-save-bg-colour: linear-gradient(to bottom, #677386 0%, #4d586b 45%, #354052 100%);
+    --edit-modal-btn-save-hover-colour: linear-gradient(to bottom, #7b879b 0%, #637189 45%, #475874 100%);
+    --edit-modal-btn-cancel-bg-colour: linear-gradient(to bottom, #677386 0%, #4d586b 45%, #354052 100%);
+    --edit-modal-btn-cancel-hover-colour: linear-gradient(to bottom, #7b879b 0%, #637189 45%, #475874 100%);
+
+    --window-radius: 7px;
+    --window-border-width: 1px;
+    --window-border-colour: #758093;
+    --window-bg: var(--osx-window-bg);
+    --window-content-bg: var(--osx-window-bg);
+    --window-header-bg: var(--osx-title-bg);
+    --window-header-fg: var(--osx-title-fg);
+    --window-header-top-border-radius: 7px;
+    --window-controls-gap: 0.35rem;
+    --window-btn-hover-scale: 1;
+    --window-title-colour: var(--osx-title-fg);
+
+    --kc-88by31-outer-radius: 6px;
+    --about-frame-radius: 8px;
+    --profile-avatar-radius: 5px;
+    --avatar-radius: 5px;
+    --commit-identicon-radius: 5px;
+    --commit-identicon-svg-radius: 5px;
+
+    --cal-bg: var(--osx-panel-bg);
+    --cal-brd: #8a94a6;
+    --cal-shadow: none;
+    --cal-radius: 8px;
+    --cal-radius-sm: 5px;
+    --cal-radius-xs: 4px;
+    --cal-chip-radius: 999px;
+    --cal-chip-bg: #4f596c;
+    --cal-chip-bg-hover: #637189;
+    --cal-chip-brd: #8a94a6;
+    --cal-chip-col: #eeeeee;
+    --cal-chip-sel-bg: var(--osx-selection-bg);
+    --cal-chip-sel-brd: #a9d4ff;
+    --cal-chip-sel-col: var(--osx-selection-fg);
+    --cal-dypad-bg: #202633;
+    --cal-dypad-radius: 5px;
+    --cal-fcs-ring: 0 0 0 2px var(--osx-blue-light);
+
+    --chapter-image-radius: 6px;
+
+    --chat-message-bg-even: #202633;
+    --chat-message-bg-odd: #2a3140;
+    --chat-input-radius: 5px;
+    --chat-action-radius: 999px;
+    --comment-message-radius: 7px;
+    --comments-box-radius: 6px;
+    --comment-field-radius: 5px;
+    --comment-post-btn-radius: 999px;
+    --comments-avatar-radius: 5px;
+    --comments-avatar-badge-radius: 4px;
+    --comments-box-scrollbar-thumb: #6fb2ff;
+    --comments-box-scrollbar-thumb-hover: #a9d4ff;
+
+    --crt-ui-shadow-colour: rgba(0, 0, 0, 0.55);
+    --crt-ui-group-border: #8a94a6;
+    --crt-ui-group-background: #424b5c;
+    --crt-ui-status-background: #202633;
+    --crt-ui-status-border: #8a94a6;
+    --crt-ui-range-track-start: #202633;
+    --crt-ui-range-track-end: #596374;
+    --crt-ui-range-thumb-background: var(--osx-scrollbar-thumb);
+    --crt-ui-radius: 8px;
+    --crt-ui-radius-sm: 5px;
+    --crt-ui-radius-md: 6px;
+    --crt-ui-radius-pill: 999px;
+    --crt-ui-border-width: 1px;
+    --crt-ui-thumb-border-width: 1px;
+    --crt-ui-button-hover-offset: 0px;
+    --crt-ui-backdrop-blur: 0px;
+
+    --msg-bubble-radius: 10px;
+    --msg-bubble-notch-radius: 3px;
+    --msg-strip-radius: 6px;
+
+    --socials-card-radius: 6px;
+    --socials-segment-radius: 8px;
+
+    --site-stats-radius: 8px;
+    --site-stats-item-radius: 6px;
+    --stats-segment-radius: 8px;
+
+    --terminal-radius: 8px;
+    --terminal-border-width: 1px;
+    --terminal-border-colour: #758093;
+    --term-icon-radius: 5px;
+
+    --theme-toggle-radius: 999px;
+    --tooltip-radius: 5px;
+    --menu-button-radius: 999px;
+    --layout-frame-radius: 8px;
+}
+
+/* Desktop wallpaper */
+html.osx {
+    background-color: var(--osx-desktop-bg);
+}
+
+body.osx,
+html.osx body {
+    background-color: var(--osx-desktop-bg);
+    background-image: var(--osx-desktop-image);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% auto;
+    background-attachment: fixed;
+}
+
+body.osx.dark-mode,
+html.osx.dark-mode body,
+html.dark-mode.osx body,
+html.dark-mode body.osx {
+    background-color: var(--osx-desktop-bg);
+    background-image: var(--osx-desktop-image);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% auto;
+    background-attachment: fixed;
+    background-blend-mode: multiply;
+}
+
+@media (orientation: landscape) {
+
+    body.osx,
+    html.osx body,
+    body.osx.dark-mode,
+    html.osx.dark-mode body,
+    html.dark-mode.osx body,
+    html.dark-mode body.osx {
+        background-size: 100% auto;
+    }
+}
+
+@media (orientation: portrait) {
+
+    body.osx,
+    html.osx body,
+    body.osx.dark-mode,
+    html.osx.dark-mode body,
+    html.dark-mode.osx body,
+    html.dark-mode body.osx {
+        background-size: auto 100%;
+    }
+}
+
+/* Misc */
+.osx {
+    .frame {
+        background: var(--osx-frame-surface-bg);
+        color: var(--body-text-colour);
+        border: 1px solid var(--osx-border-mid);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 12px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    header {
+        background: var(--osx-header-surface-bg);
+        color: var(--header-text-colour);
+        border-color: var(--osx-border-mid);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    header,
+    footer,
+    nav,
+    .segment-header {
+        text-shadow: none;
+    }
+
+    nav {
+        color: var(--body-text-colour);
+        border: 1px solid var(--nav-border-colour);
+        background: var(--nav-bg-colour);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.95),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    footer {
+        color: var(--footer-text-colour);
+        border-top: 1px solid var(--footer-border-colour);
+        background: var(--footer-bg-colour);
+    }
+
+    .segment-header {
+        background: var(--osx-header-surface-bg);
+        color: var(--body-text-colour);
+        border-color: var(--osx-border-mid);
+    }
+
+    :where(button,
+        input,
+        textarea,
+        select,
+        .menu-button,
+        .button,
+        .theme-toggle-button,
+        .email-action,
+        .effects-modal__toggle,
+        .effects-modal__close,
+        .kc-click-header__control,
+        .rss-filters__toggle,
+        .rss-filters__clear,
+        .rss-author-filter__toggle,
+        .rss-author-filter__btn,
+        .rss-code-copy,
+        .story-dropdown__button,
+        .comment-location-dropdown__button,
+        #post-comment-button) {
+        border-radius: 999px;
+    }
+
+    :where(button,
+        select,
+        .menu-button,
+        .button,
+        .theme-toggle-button,
+        .email-action,
+        .effects-modal__toggle,
+        .effects-modal__close,
+        .kc-click-header__control,
+        .rss-filters__toggle,
+        .rss-filters__clear,
+        .rss-author-filter__toggle,
+        .rss-author-filter__btn,
+        .rss-code-copy,
+        .story-dropdown__button,
+        .comment-location-dropdown__button,
+        #post-comment-button) {
+        background: var(--menu-button-bg-colour);
+        color: var(--menu-button-text-colour);
+        border: 1px solid var(--osx-button-border-colour);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.95),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.20),
+            0 1px 2px rgba(0, 0, 0, 0.18);
+    }
+
+    :where(button,
+        select,
+        .menu-button,
+        .button,
+        .theme-toggle-button,
+        .email-action,
+        .effects-modal__toggle,
+        .effects-modal__close,
+        .kc-click-header__control,
+        .rss-filters__toggle,
+        .rss-filters__clear,
+        .rss-author-filter__toggle,
+        .rss-author-filter__btn,
+        .rss-code-copy,
+        .story-dropdown__button,
+        .comment-location-dropdown__button,
+        #post-comment-button):hover {
+        background: var(--menu-button-hover-bg-colour);
+    }
+
+    :where(button,
+        select,
+        .menu-button,
+        .button,
+        .theme-toggle-button,
+        .email-action,
+        .effects-modal__toggle,
+        .effects-modal__close,
+        .kc-click-header__control,
+        .rss-filters__toggle,
+        .rss-filters__clear,
+        .rss-author-filter__toggle,
+        .rss-author-filter__btn,
+        .rss-code-copy,
+        .story-dropdown__button,
+        .comment-location-dropdown__button,
+        #post-comment-button):active {
+        background: var(--osx-button-active-bg);
+        box-shadow:
+            inset 1px 1px 3px rgba(0, 0, 0, 0.24),
+            inset -1px -1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    :where(input, textarea, select) {
+        background: var(--chat-input-bg-colour);
+        color: var(--chat-input-text-colour);
+        border: 1px solid var(--chat-input-border-colour);
+        border-radius: 5px;
+        box-shadow:
+            inset 1px 1px 3px rgba(0, 0, 0, 0.18),
+            inset -1px -1px 0 rgba(255, 255, 255, 0.82);
+    }
+
+    ::selection {
+        background: var(--osx-selection-bg);
+        color: var(--osx-selection-fg);
+    }
+}
+
+/* Dark structural corrections */
+.osx.dark-mode,
+.dark-mode.osx,
+.dark-mode .osx {
+    .frame {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.18),
+            0 12px 28px rgba(0, 0, 0, 0.52);
+    }
+
+    header {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.16),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+    }
+
+    nav {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.16),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.32);
+    }
+
+    footer {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.14),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+    }
+
+    .segment-header {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.14),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+    }
+}
+
+/* Scrollbars */
+.osx {
+    * {
+        scrollbar-color: var(--osx-blue-mid) var(--osx-scrollbar-track-colour);
+        scrollbar-width: auto;
+    }
+
+    ::-webkit-scrollbar {
+        width: var(--osx-scrollbar-size);
+        height: var(--osx-scrollbar-size);
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--osx-scrollbar-track);
+        border: 1px solid var(--osx-scrollbar-track-border-colour);
+        border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        min-height: 2.75rem;
+        min-width: 2.75rem;
+        background: var(--osx-scrollbar-thumb);
+        border: 1px solid var(--osx-scrollbar-thumb-dark);
+        border-radius: 999px;
+        box-shadow:
+            inset 1px 1px 0 rgba(255, 255, 255, 0.92),
+            inset -1px -1px 0 rgba(0, 0, 0, 0.24);
+    }
+
+    ::-webkit-scrollbar-thumb:horizontal {
+        background: var(--osx-scrollbar-thumb);
+    }
+
+    ::-webkit-scrollbar-corner {
+        background: var(--osx-panel-bg);
+        border: 1px solid var(--osx-scrollbar-track-border-colour);
+    }
+
+    ::-webkit-scrollbar-button:single-button {
+        width: var(--osx-scrollbar-size);
+        height: var(--osx-scrollbar-size);
+        background: var(--osx-scrollbar-button-bg);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 8px 8px;
+        border: 1px solid var(--osx-border-mid);
+        border-radius: 999px;
+        box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.92);
+    }
+
+    ::-webkit-scrollbar-button:single-button:active {
+        background: var(--osx-button-active-bg);
+        box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.26);
+    }
+
+    ::-webkit-scrollbar-button:single-button:vertical:decrement {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23174f9f' d='M4 1 7 6H1z'/%3E%3C/svg%3E");
+    }
+
+    ::-webkit-scrollbar-button:single-button:vertical:increment {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23174f9f' d='M1 2h6L4 7z'/%3E%3C/svg%3E");
+    }
+
+    ::-webkit-scrollbar-button:single-button:horizontal:decrement {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23174f9f' d='M1 4 6 1v6z'/%3E%3C/svg%3E");
+    }
+
+    ::-webkit-scrollbar-button:single-button:horizontal:increment {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23174f9f' d='M7 4 2 7V1z'/%3E%3C/svg%3E");
+    }
+
+    input[type="range"] {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        padding: 0.375rem 0;
+        accent-color: var(--osx-blue-mid);
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+        height: 0.8rem;
+        background: linear-gradient(to bottom, var(--crt-ui-range-track-start), var(--crt-ui-range-track-end));
+        border: 1px solid var(--osx-border-mid);
+        border-radius: 999px;
+        box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.22);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 1.25rem;
+        height: 1.6rem;
+        margin-top: -0.45rem;
+        background: var(--crt-ui-range-thumb-background);
+        border: 1px solid var(--osx-scrollbar-thumb-dark);
+        border-radius: 999px;
+        box-shadow:
+            inset 1px 1px 0 rgba(255, 255, 255, 0.88),
+            inset -1px -1px 0 rgba(0, 0, 0, 0.24);
+    }
+
+    input[type="range"]::-moz-range-track {
+        height: 0.8rem;
+        background: linear-gradient(to bottom, var(--crt-ui-range-track-start), var(--crt-ui-range-track-end));
+        border: 1px solid var(--osx-border-mid);
+        border-radius: 999px;
+        box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.22);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+        width: 1.25rem;
+        height: 1.6rem;
+        background: var(--crt-ui-range-thumb-background);
+        border: 1px solid var(--osx-scrollbar-thumb-dark);
+        border-radius: 999px;
+        box-shadow:
+            inset 1px 1px 0 rgba(255, 255, 255, 0.88),
+            inset -1px -1px 0 rgba(0, 0, 0, 0.24);
+    }
+}
+
+/* Window */
+.osx {
+    .window-frame {
+        border-radius: 8px 8px 6px 6px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: var(--window-border-colour);
+        background: var(--osx-window-frame-bg);
+        box-shadow:
+            0 16px 34px rgba(0, 0, 0, 0.34),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+        overflow: hidden;
+    }
+
+    .window-header {
+        min-height: calc(var(--window-header-height) + 0.25rem);
+        border-radius: 7px 7px 0 0;
+        background: var(--osx-title-bg);
+        color: var(--osx-title-fg);
+        border: 0;
+        padding-inline: 0.55rem;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.96),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+    }
+
+    &.dark-mode .window-frame,
+    .dark-mode & .window-frame {
+        border-color: var(--window-border-colour);
+        background: var(--osx-window-frame-bg);
+        box-shadow:
+            0 16px 34px rgba(0, 0, 0, 0.58),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    &.dark-mode .window-header,
+    .dark-mode & .window-header {
+        background: var(--osx-title-bg);
+        color: var(--osx-title-fg);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.22),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.42);
+    }
+
+    .window-title {
+        color: currentColor;
+        font-weight: 700;
+        text-align: center;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+    }
+
+    &.dark-mode .window-title,
+    .dark-mode & .window-title {
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.58);
+    }
+
+    .window-controls {
+        display: flex;
+        gap: 0.35rem;
+    }
+
+    .window-controls .btn {
+        width: 0.78rem;
+        height: 0.78rem;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 0, 0, 0.28);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        transform: none;
+        overflow: hidden;
+        box-shadow:
+            inset 0 1px 1px rgba(255, 255, 255, 0.92),
+            inset 0 -1px 1px rgba(0, 0, 0, 0.30),
+            0 1px 1px rgba(255, 255, 255, 0.8);
+    }
+
+    .window-controls .btn::before {
+        content: "";
+        position: absolute;
+        inset: 1px 2px auto 2px;
+        height: 44%;
+        border-radius: 999px;
+        background: linear-gradient(to bottom,
+                rgba(255, 255, 255, 0.98),
+                rgba(255, 255, 255, 0.24));
+        pointer-events: none;
+    }
+
+    .window-controls .btn::after {
+        content: "";
+        opacity: 0;
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: rgba(0, 0, 0, 0.52);
+        font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+        font-size: 0.52rem;
+        font-weight: 700;
+        line-height: 1;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+        pointer-events: none;
+        transform: none;
+    }
+
+    .window-controls:hover .btn::after,
+    .window-controls .btn:focus-visible::after {
+        opacity: 1;
+    }
+
+    .window-controls .btn svg {
+        visibility: hidden;
+    }
+
+    .window-controls .btn.close {
+        background:
+            radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.98), transparent 22%),
+            radial-gradient(circle at 48% 20%, rgba(255, 255, 255, 0.44), transparent 42%),
+            radial-gradient(circle at 63% 75%, rgba(128, 0, 0, 0.44), transparent 48%),
+            linear-gradient(to bottom, #ffb8b2 0%, #ff7b73 28%, var(--osx-close-red) 58%, var(--osx-close-red-dark) 100%);
+        border-color: rgba(120, 26, 24, 0.72);
+    }
+
+    .window-controls .btn.minimise,
+    .window-controls .btn.toggle-view {
+        background:
+            radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.98), transparent 22%),
+            radial-gradient(circle at 48% 20%, rgba(255, 255, 255, 0.46), transparent 42%),
+            radial-gradient(circle at 63% 75%, rgba(110, 70, 0, 0.42), transparent 48%),
+            linear-gradient(to bottom, #fff0a6 0%, #ffd96a 28%, var(--osx-minimise-yellow) 58%, var(--osx-minimise-yellow-dark) 100%);
+        border-color: rgba(130, 85, 0, 0.72);
+    }
+
+    .window-controls .btn.float {
+        background:
+            radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.98), transparent 22%),
+            radial-gradient(circle at 48% 20%, rgba(255, 255, 255, 0.44), transparent 42%),
+            radial-gradient(circle at 63% 75%, rgba(0, 80, 12, 0.42), transparent 48%),
+            linear-gradient(to bottom, #adf8b8 0%, #72e884 28%, var(--osx-zoom-green) 58%, var(--osx-zoom-green-dark) 100%);
+        border-color: rgba(10, 95, 24, 0.72);
+    }
+
+    .window-controls .btn.close::after {
+        content: "×";
+    }
+
+    .window-controls .btn.minimise::after,
+    .window-controls .btn.toggle-view::after {
+        content: "−";
+    }
+
+    .window-controls .btn.float::after {
+        content: "+";
+    }
+
+    .window-controls .btn:active {
+        box-shadow:
+            inset 1px 1px 3px rgba(0, 0, 0, 0.38),
+            0 1px 1px rgba(255, 255, 255, 0.45);
+        filter: brightness(0.92);
+    }
+
+    .window-body {
+        background: var(--osx-window-body-bg);
+        color: var(--body-text-colour);
+    }
+
+    .window-launcher {
+        border-radius: 6px;
+        filter: none;
+    }
+}
+
+/* CRT UI */
+.osx {
+    .crt-ui-modal {
+        --crt-ui-background: var(--osx-page-frame-bg);
+        --crt-ui-panel: var(--osx-panel-bg);
+        --crt-ui-panel-border: var(--osx-border-mid);
+        --crt-ui-text: var(--body-text-colour);
+        --crt-ui-muted: var(--timestamp-colour);
+        --crt-ui-accent: var(--osx-blue);
+        --crt-ui-button: var(--menu-button-bg-colour);
+        --crt-ui-button-hover: var(--menu-button-hover-bg-colour);
+        --crt-ui-plot-background: var(--osx-content-bg);
+        --crt-ui-shadow: none;
+
+        font-family: var(--base-font-family);
+    }
+
+    .crt-ui-modal .crt-ui__panel,
+    .crt-ui-modal .crt-ui__controls,
+    .crt-ui-modal .crt-ui__plotPanel {
+        border-radius: 8px;
+        background: var(--crt-ui-panel);
+        border: 1px solid var(--osx-border-mid);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 3px 10px rgba(0, 0, 0, 0.20);
+        backdrop-filter: none;
+    }
+
+    .crt-ui-modal .crt-ui__group,
+    .crt-ui-modal .crt-ui__status {
+        border-radius: 6px;
+        border: 1px solid var(--osx-border-mid);
+        background: var(--crt-ui-group-background);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    }
+
+    .crt-ui-modal .crt-ui__status {
+        background: var(--crt-ui-status-background);
+    }
+
+    .crt-ui-modal :is(button, select) {
+        border-radius: 999px;
+        background: var(--crt-ui-button);
+        color: var(--crt-ui-text);
+        border: 1px solid var(--osx-button-border-colour);
+        transform: none;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.9),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+            0 1px 2px rgba(0, 0, 0, 0.16);
+    }
+
+    .crt-ui-modal :is(button, select):active {
+        background: var(--osx-button-active-bg);
+        box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.26);
+    }
+
+    .crt-ui-modal input[type="range"]::-webkit-slider-runnable-track {
+        height: 0.8rem;
+        border-radius: 999px;
+        background: linear-gradient(to bottom,
+                var(--crt-ui-range-track-start),
+                var(--crt-ui-range-track-end));
+        border: 1px solid var(--osx-border-mid);
+    }
+
+    .crt-ui-modal input[type="range"]::-webkit-slider-thumb {
+        width: 1.25rem;
+        height: 1.6rem;
+        margin-top: -0.45rem;
+        border-radius: 999px;
+        border: 1px solid var(--osx-scrollbar-thumb-dark);
+        background: var(--crt-ui-range-thumb-background);
+        box-shadow:
+            inset 1px 1px 0 rgba(255, 255, 255, 0.88),
+            inset -1px -1px 0 rgba(0, 0, 0, 0.24);
+    }
+
+    .crt-ui-modal input[type="range"]::-moz-range-track {
+        height: 0.8rem;
+        border-radius: 999px;
+        background: linear-gradient(to bottom,
+                var(--crt-ui-range-track-start),
+                var(--crt-ui-range-track-end));
+        border: 1px solid var(--osx-border-mid);
+    }
+
+    .crt-ui-modal input[type="range"]::-moz-range-thumb {
+        width: 1.25rem;
+        height: 1.6rem;
+        border-radius: 999px;
+        border: 1px solid var(--osx-scrollbar-thumb-dark);
+        background: var(--crt-ui-range-thumb-background);
+        box-shadow:
+            inset 1px 1px 0 rgba(255, 255, 255, 0.88),
+            inset -1px -1px 0 rgba(0, 0, 0, 0.24);
+    }
+
+    .crt-ui-modal .crt-ui__plotCanvas {
+        background: var(--crt-ui-plot-background);
+    }
+}
+
+/* Overrides */
+.osx {
+
+    :is(.kc-88by31-shell,
+        .kc-88by31__inner,
+        .about-frame,
+        .profile-row,
+        .jp-about,
+        .avatar-container,
+        .calendar,
+        .cal,
+        .cal__rootBody,
+        .cal__rootBodyInner,
+        .cal__sct,
+        .cal__sctBody,
+        .cal__dyPad,
+        .chapter-image,
+        .frame-chat,
+        #chatroom,
+        .chat-message,
+        .temporary-notice,
+        .comments-shell,
+        .comments-container,
+        .comments-box,
+        .comment-message,
+        .comment-location-dropdown__content,
+        .commits-outer-shell,
+        .commits-container-shell,
+        .commit-block,
+        .github-output-frame,
+        .clicker-counter,
+        .clicker-counter__window,
+        .effects-modal,
+        .effects-modal__section,
+        .effects-modal__control,
+        .email-wrapper,
+        .email-card,
+        .email-actions-bar,
+        .keyboard,
+        .key-grid,
+        .fn-grid,
+        .fn-key,
+        .modal,
+        .modal-overlay > *,
+        .ntcs-window,
+        .ntcs-card,
+        .phys,
+        .plot,
+        .presence-panel,
+        .presence-panel__metric,
+        .read-aloud-controls,
+        .read-aloud-header,
+        .read-aloud-fields,
+        .read-aloud-buttons,
+        .reader-container,
+        .reader-controls-top,
+        .reader-controls-bottom,
+        .story-dropdown__content,
+        .reader-paragraph,
+        .blog-wrapper,
+        .blog-container,
+        .rss-filters,
+        .rss-filters__body,
+        .rss-post-block,
+        .rss-post-content,
+        .rss-post-image,
+        .rss-post-tag,
+        .rss-code-frame,
+        .rss-code-toolbar,
+        .rss-code-choice,
+        .rss-author-filter,
+        .rss-author-filter__body,
+        .message,
+        .message-text,
+        .nickname-strip,
+        .socials-segment,
+        .socials-segment__item,
+        .site-stats-shell,
+        .site-stats,
+        .site-stats__item,
+        .stats-segment,
+        .tategaki-container,
+        #shell-wrapper,
+        #terminal-wrapper,
+        #terminal-scroll,
+        .tooltip-content) {
+        border-radius: 6px;
+    }
+
+    :is(.kc-88by31-shell,
+        .about-frame,
+        .comments-shell,
+        .comments-container,
+        .commits-outer-shell,
+        .commits-container-shell,
+        .effects-modal,
+        .email-wrapper,
+        .ntcs-window,
+        .presence-panel,
+        .reader-container,
+        .blog-wrapper,
+        .socials-segment,
+        .site-stats-shell) {
+        background: var(--osx-module-shell-bg);
+        border: 1px solid var(--osx-border-mid);
+        color: var(--body-text-colour);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 3px 10px rgba(0, 0, 0, 0.16);
+    }
+
+    :is(.cal,
+        .cal__sct,
+        .cal__dyPad,
+        .chat-message,
+        .comment-message,
+        .commit-block,
+        .effects-modal__section,
+        .effects-modal__control,
+        .email-card,
+        .ntcs-card,
+        .presence-panel__metric,
+        .read-aloud-controls,
+        .story-dropdown__content,
+        .rss-filters,
+        .rss-post-block,
+        .rss-code-frame,
+        .rss-author-filter,
+        .socials-segment__item,
+        .site-stats__item,
+        .stats-segment,
+        .tooltip-content) {
+        background: var(--osx-panel-bg);
+        color: var(--body-text-colour);
+        border: 1px solid var(--osx-module-panel-border-colour);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 1px 3px rgba(0, 0, 0, 0.10);
+    }
+
+    :is(#chatroom,
+        .comments-box,
+        .rss-post-content,
+        /* .reader-paragraph, */
+        .email-content,
+        .comment-location-dropdown__content,
+        .rss-code-choice-list,
+        #terminal-wrapper,
+        #terminal-scroll) {
+        background: var(--osx-content-shell-bg);
+        color: var(--body-text-colour);
+        border: 1px solid var(--osx-content-border-colour);
+        box-shadow:
+            inset 1px 1px 3px rgba(0, 0, 0, 0.13),
+            inset -1px -1px 0 rgba(255, 255, 255, 0.82);
+    }
+
+    .banner-scaler,
+    #banner,
+    #banner-wrapper,
+    .ascii-block,
+    .command-line,
+    .info-block {
+        background: transparent;
+        text-shadow: none;
+    }
+
+    .cal__selPill,
+    .rss-filters__summaryPill,
+    .rss-post-tag,
+    .presence-panel__pill,
+    .chat-location-badge {
+        border-radius: 999px;
+        background: var(--osx-panel-bg-raised);
+        color: var(--body-text-colour);
+        border: 1px solid var(--osx-border-mid);
+    }
+
+    .cal__chip,
+    .cal__itm,
+    .cal__wkItm,
+    .cal__clr,
+    .cal__rst {
+        border-radius: 999px;
+    }
+
+    .chapter-image,
+    .pfp,
+    .irl-pic,
+    .avatar-container img,
+    .commit-identicon,
+    .email-signature-logo-img,
+    .rss-post-image {
+        border-radius: 6px;
+    }
+
+    .message {
+        background: var(--osx-panel-bg);
+        color: var(--body-text-colour);
+        border: 1px solid var(--osx-module-panel-border-colour);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            0 1px 3px rgba(0, 0, 0, 0.10);
+    }
+
+    .message.in,
+    .message.out {
+        background: var(--osx-panel-bg);
+        color: var(--body-text-colour);
+    }
+
+    .nickname-strip {
+        background: var(--osx-selection-bg);
+        color: var(--osx-selection-fg);
+    }
+
+    .theme-toggle-button {
+        border-radius: 999px;
+    }
+
+    .tooltip-content {
+        background: #ffffe1;
+        color: #000;
+        border: 1px solid #777777;
+        border-radius: 5px;
+        box-shadow: 0 4px 9px rgba(0, 0, 0, 0.26);
+    }
+
+    .tooltip-trigger {
+        background: transparent;
+        color: inherit;
+    }
+
+    #term-icon {
+        border-radius: 5px;
+        filter: none;
+    }
+
+    .clicker-counter,
+    .clicker-counter__window {
+        border-radius: var(--counter-radius);
+    }
+}
+
+/* Dark mode */
+.osx.dark-mode,
+.dark-mode.osx,
+.dark-mode .osx {
+
+    :is(.kc-88by31-shell,
+        .about-frame,
+        .comments-shell,
+        .comments-container,
+        .commits-outer-shell,
+        .commits-container-shell,
+        .effects-modal,
+        .email-wrapper,
+        .ntcs-window,
+        .presence-panel,
+        .reader-container,
+        .blog-wrapper,
+        .socials-segment,
+        .site-stats-shell) {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.22),
+            0 3px 10px rgba(0, 0, 0, 0.38);
+    }
+
+    :is(.cal,
+        .cal__sct,
+        .cal__dyPad,
+        .chat-message,
+        .comment-message,
+        .commit-block,
+        .effects-modal__section,
+        .effects-modal__control,
+        .email-card,
+        .ntcs-card,
+        .presence-panel__metric,
+        .read-aloud-controls,
+        .story-dropdown__content,
+        .rss-filters,
+        .rss-post-block,
+        .rss-code-frame,
+        .rss-author-filter,
+        .socials-segment__item,
+        .site-stats__item,
+        .stats-segment) {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.16),
+            0 1px 3px rgba(0, 0, 0, 0.30);
+    }
+
+    :is(#chatroom,
+        .comments-box,
+        .rss-post-content,
+        .reader-paragraph,
+        .email-content,
+        .comment-location-dropdown__content,
+        .rss-code-choice-list,
+        #terminal-wrapper,
+        #terminal-scroll) {
+        box-shadow:
+            inset 1px 1px 3px rgba(0, 0, 0, 0.34),
+            inset -1px -1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .tooltip-content {
+        background: #2d3442;
+        color: #eeeeee;
+        border-color: #8a94a6;
+    }
+
+    .message,
+    .message.in,
+    .message.out {
+        background: var(--osx-panel-bg);
+        color: var(--body-text-colour);
+        border-color: var(--osx-border-mid);
+    }
+}
+
+/* Radii */
+.osx {
+
+    .window-header,
+    .window-body,
+    nav,
+    nav *,
+    .menu-button,
+    .button,
+    .modal,
+    .card,
+    .notice,
+    .terminal,
+    .comments,
+    .rss,
+    .guestbook,
+    .avatar,
+    .counter,
+    .stats,
+    .presence,
+    .kc-88by31,
+    .kc-88by31-shell,
+    .about-frame,
+    .profile-row,
+    .cal,
+    .cal *,
+    .chapter-image,
+    .frame-chat,
+    #chatroom,
+    .chat-message,
+    .comments-box,
+    .comment-message,
+    .commits-container,
+    .commit-block,
+    .clicker-counter,
+    .clicker-counter__window,
+    .crt-ui-modal,
+    .crt-ui-modal *,
+    .effects-modal,
+    .effects-modal *,
+    .email-wrapper,
+    .email-card,
+    .key-grid,
+    .fn-key,
+    .ntcs-card,
+    .presence-panel,
+    .reader-container,
+    .reader-paragraph,
+    .story-dropdown__content,
+    .blog-wrapper,
+    .rss-post-block,
+    .rss-code-frame,
+    .message,
+    .socials-segment,
+    .socials-segment__item,
+    .site-stats,
+    .site-stats__item,
+    .stats-segment,
+    .tooltip,
+    .tooltip-content {
+        border-radius: 6px;
+    }
+}

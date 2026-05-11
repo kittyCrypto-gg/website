@@ -1,0 +1,917 @@
+/* =========================================
+    Theme: Teto
+========================================= */
+
+.teto {
+    /* Palette */
+    --teto-50: #fff1f4;
+    --teto-75: #ffe8ee;
+    --teto-100: #ffd6df;
+    --teto-200: #ffb7c7;
+    --teto-300: #ff8fa7;
+    --teto-400: #ff5f7f;
+    --teto-500: #e83e5f;
+    --teto-600: #c81f45;
+    --teto-700: #971633;
+    --teto-800: #6f1028;
+    --teto-900: #430817;
+
+    --teto-burgundy: #6f1028;
+    --teto-burgundy-soft: #8e1b38;
+    --teto-crimson: #c81f45;
+    --teto-red: #e83e5f;
+    --teto-rose: #ff8fa7;
+    --teto-pink: #ffb7c7;
+    --teto-blush: #fff1f4;
+    --teto-cream: #fff8fa;
+    --teto-lilac: #a45aa0;
+
+    /* Body */
+    --body-bg-colour: var(--teto-50);
+    --body-text-colour: #331f25;
+    --body-text-colour-light: #331f25;
+
+    /* Frame */
+    --frame-bg-colour: #ffffff;
+    --frame-bg-colour-rgb: 255, 255, 255;
+    --frame-border-light: #ffd1dc;
+    --frame-box-shadow: 0 4px 14px rgba(111, 16, 40, 0.18);
+
+    /* Banner */
+    --banner-green: var(--teto-rose);
+    --banner-blue: var(--teto-red);
+    --banner-teal: var(--teto-crimson);
+    --banner-teal-bright: var(--teto-400);
+    --banner-lilac: var(--teto-lilac);
+    --banner-background: transparent;
+
+    --banner-text-main: var(--teto-crimson);
+    --banner-text-header: var(--teto-red);
+    --banner-text-footer: var(--teto-burgundy);
+    --accent: var(--teto-crimson);
+    --banner-scanline-colour: rgba(232, 62, 95, 0.035);
+
+    /* Header */
+    --header-bg-colour: var(--teto-100);
+    --header-text-colour: var(--teto-burgundy);
+
+    /* Terminal window */
+    --term-bg: linear-gradient(to bottom, #302025, #201116);
+    --term-header-bg: linear-gradient(to bottom, #ffe3ea, #ffc2d0);
+    --term-header-fg: var(--teto-burgundy);
+    --term-title: var(--teto-burgundy);
+    --term-shadow: rgba(111, 16, 40, 0.26);
+
+    /* Navigation / Menu */
+    --nav-bg-colour: var(--teto-100);
+    --nav-border-colour: var(--teto-burgundy);
+    --menu-button-bg-colour: var(--teto-200);
+    --menu-button-text-colour: var(--teto-burgundy);
+    --menu-button-hover-bg-colour: var(--teto-300);
+
+    --menu-theme-new-bg: var(--teto-red);
+    --menu-theme-new-colour: #ffffff;
+    --menu-theme-caption-bg: var(--teto-burgundy);
+    --menu-theme-caption-colour: #ffffff;
+    --menu-theme-label-bg: color-mix(in srgb, var(--teto-100) 72%, white);
+    --menu-theme-label-border-colour: color-mix(in srgb, var(--teto-burgundy) 42%, var(--teto-100));
+    --menu-theme-dot-bg: #fff8fa;
+    --menu-theme-dot-border-colour: color-mix(in srgb, var(--teto-burgundy) 55%, var(--teto-200));
+    --menu-theme-dot-fill-colour: var(--teto-red);
+
+    /* Footer */
+    --footer-bg-colour: var(--teto-100);
+    --footer-text-colour: var(--teto-burgundy);
+    --footer-border-colour: var(--teto-burgundy);
+
+    /* Chatroom */
+    --chatroom-border-colour: #e6b8c4;
+    --chatroom-bg-colour: #fffafb;
+    --chatroom-text-colour: #331f25;
+
+    /* Timestamps */
+    --timestamp-colour: #8d6470;
+    --chat-timestamp-colour: #9c7480;
+
+    /* Inputs */
+    --chat-input-border-colour: #e2adb9;
+    --chat-input-bg-colour: #ffffff;
+    --chat-input-text-colour: #331f25;
+
+    /* Buttons */
+    --chat-send-btn-bg-colour: var(--teto-crimson);
+    --chat-send-btn-text-colour: #ffffff;
+
+    /* Theme Toggle Button */
+    --toggle-btn-bg-colour: #ffffff;
+    --toggle-btn-text-colour: var(--teto-burgundy);
+
+    /* Pending Indicator */
+    --pending-indicator-colour: #ff8a00;
+
+    /* Edit Modal */
+    --edit-modal-bg-colour: #ffffff;
+    --edit-modal-text-colour: var(--teto-burgundy);
+    --edit-modal-shadow-colour: rgba(111, 16, 40, 0.24);
+    --edit-modal-userinfo-bg-colour: var(--teto-50);
+    --edit-modal-userinfo-text-colour: var(--teto-burgundy);
+    --edit-modal-userinfo-border-colour: var(--teto-200);
+    --edit-modal-input-bg-colour: #fffafa;
+    --edit-modal-input-text-colour: #331f25;
+    --edit-modal-input-border-colour: #e2adb9;
+
+    /* Modal Buttons */
+    --edit-modal-btn-save-bg-colour: var(--teto-crimson);
+    --edit-modal-btn-save-hover-colour: var(--teto-burgundy-soft);
+    --edit-modal-btn-cancel-bg-colour: #9f1d2e;
+    --edit-modal-btn-cancel-hover-colour: #781121;
+
+    /* Icons */
+    --decreaseFont-icon-colour: var(--teto-lilac);
+    --increaseFont-icon-colour: var(--decreaseFont-icon-colour);
+    --resetFont-icon-colour: var(--decreaseFont-icon-colour);
+    --togglePnum-icon-colour: var(--teto-red);
+    --clearBookmark-icon-colour: var(--teto-red);
+    --prevChapter-icon-colour: var(--teto-red);
+    --jumpToChapter-icon-colour: var(--teto-red);
+    --showInfo-icon-colour: var(--teto-red);
+    --imageNavArrow-bg-colour: var(--teto-red);
+
+    /* Tooltips */
+    --tooltip-bg-colour: #ffffff;
+    --tooltip-text-colour: var(--body-text-colour);
+    --tooltip-border-colour: var(--teto-burgundy);
+    --tooltip-shadow: 0 4px 14px rgba(111, 16, 40, 0.18);
+
+    /* Shared utility controls */
+    --kc-round-icon-btn-bg:
+        color-mix(in srgb, var(--teto-100) 72%, var(--chatroom-bg-colour));
+    --kc-round-icon-btn-bg-hover: var(--teto-300);
+    --kc-round-icon-btn-border:
+        color-mix(in srgb, var(--teto-burgundy) 30%, var(--teto-100));
+    --kc-round-icon-btn-border-hover: var(--teto-red);
+    --kc-round-icon-btn-fg: var(--teto-burgundy);
+    --kc-round-icon-btn-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--teto-red) 36%, transparent);
+
+    --kc-click-header-bg-hover:
+        color-mix(in srgb, var(--teto-300) 46%, transparent);
+    --kc-click-header-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--teto-red) 22%, transparent);
+
+    --kc-pill-migrate-shadow:
+        0 0 0 1px color-mix(in srgb, var(--teto-red) 18%, transparent),
+        0 0.42rem 1rem color-mix(in srgb, var(--teto-burgundy) 18%, transparent);
+
+    --kc-badge-snippet-label-fg: var(--body-text-colour);
+    --kc-badge-snippet-label-muted: var(--timestamp-colour);
+    --kc-badge-snippet-hint-bg: rgba(var(--frame-bg-colour-rgb), 0.62);
+    --kc-badge-snippet-hint-border: var(--chat-input-border-colour);
+    --kc-badge-snippet-code-fg: var(--body-text-colour);
+    --kc-badge-snippet-code-border:
+        color-mix(in srgb, var(--teto-burgundy) 18%, transparent);
+    --kc-badge-snippet-code-selection:
+        color-mix(in srgb, var(--teto-red) 18%, transparent);
+    --kc-badge-snippet-code-bg-start:
+        color-mix(in srgb, var(--teto-50) 92%, white);
+    --kc-badge-snippet-code-bg-end:
+        color-mix(in srgb, var(--teto-100) 72%, white);
+    --kc-badge-snippet-btn-bg: var(--menu-button-bg-colour);
+    --kc-badge-snippet-btn-fg: var(--menu-button-text-colour);
+    --kc-badge-snippet-btn-hover-bg: var(--menu-button-hover-bg-colour);
+    --kc-badge-snippet-btn-border: var(--nav-border-colour);
+    --kc-badge-snippet-focus-outline: 2px solid var(--accent);
+
+    /* CRT effects */
+    --effect-crt-scanline-colour-strong: rgba(255, 45, 85, 0.065);
+    --effect-crt-scanline-colour-soft: rgba(255, 45, 85, 0.025);
+
+    /* Calendar */
+    --cal-shadow: 0 0.45rem 1.2rem rgba(111, 16, 40, 0.12);
+    --cal-bg: color-mix(in srgb, var(--frame-bg-colour) 84%, var(--teto-50));
+    --cal-brd: color-mix(in srgb, var(--teto-burgundy) 24%, var(--teto-100));
+    --cal-hdr-brd: color-mix(in srgb, var(--teto-burgundy) 18%, transparent);
+    --cal-ttl-col: var(--teto-burgundy);
+    --cal-sub-col: var(--timestamp-colour);
+
+    --cal-chip-bg: color-mix(in srgb, var(--teto-100) 58%, white);
+    --cal-chip-bg-hover: color-mix(in srgb, var(--teto-200) 76%, white);
+    --cal-chip-col: var(--teto-burgundy);
+    --cal-chip-brd: color-mix(in srgb, var(--teto-burgundy) 22%, var(--teto-100));
+    --cal-chip-sel-bg: linear-gradient(135deg, var(--teto-300), var(--teto-red));
+    --cal-chip-sel-col: #ffffff;
+    --cal-chip-sel-brd: var(--teto-crimson);
+    --cal-chip-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--teto-50));
+    --cal-chip-empty-col: var(--timestamp-colour);
+    --cal-chip-empty-brd: color-mix(in srgb, var(--timestamp-colour) 42%, var(--teto-100));
+
+    --cal-sct-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--teto-50));
+    --cal-sct-brd: color-mix(in srgb, var(--teto-burgundy) 14%, transparent);
+
+    --cal-selpill-bg: color-mix(in srgb, var(--teto-red) 10%, var(--frame-bg-colour));
+    --cal-selpill-bg-hover: color-mix(in srgb, var(--teto-300) 60%, white);
+    --cal-selpill-col: var(--teto-burgundy);
+    --cal-selpill-brd: color-mix(in srgb, var(--teto-red) 22%, var(--teto-100));
+    --cal-selpill-brd-hover: var(--teto-red);
+    --cal-selpill-glow:
+        0 0 0 1px color-mix(in srgb, var(--teto-red) 18%, transparent),
+        0 0.45rem 1rem color-mix(in srgb, var(--teto-burgundy) 12%, transparent);
+
+    --cal-selbar-scroll-thumb: color-mix(in srgb, var(--teto-burgundy) 30%, transparent);
+    --cal-selbar-scroll-thumb-hover: color-mix(in srgb, var(--teto-burgundy) 45%, transparent);
+
+    --cal-rst-bg: color-mix(in srgb, var(--teto-lilac) 14%, var(--teto-100));
+    --cal-rst-col: var(--teto-burgundy);
+    --cal-rst-brd: color-mix(in srgb, var(--teto-lilac) 26%, var(--teto-100));
+    --cal-rst-bg-hover: color-mix(in srgb, var(--teto-lilac) 20%, var(--teto-200));
+
+    --cal-clr-bg: color-mix(in srgb, var(--teto-red) 12%, var(--teto-100));
+    --cal-clr-col: var(--teto-burgundy);
+    --cal-clr-brd: color-mix(in srgb, var(--teto-red) 24%, var(--teto-100));
+    --cal-clr-bg-hover: color-mix(in srgb, var(--teto-red) 18%, var(--teto-200));
+
+    --cal-mo-bg: color-mix(in srgb, var(--frame-bg-colour) 90%, var(--teto-50));
+    --cal-mo-brd: color-mix(in srgb, var(--teto-burgundy) 12%, transparent);
+    --cal-wk-col: var(--timestamp-colour);
+    --cal-dypad-bg: #fffafb;
+    --cal-fcs-ring: 0 0 0 2px color-mix(in srgb, var(--teto-red) 42%, transparent);
+
+    /* Chat and comments */
+    --chat-message-bg-even: #fffafb;
+    --chat-message-bg-odd: #fff1f4;
+    --chat-nick-colour: var(--teto-crimson);
+    --chat-actions-hover-bg-colour: var(--teto-200);
+    --chat-action-hover-bg-fallback: var(--teto-200);
+    --chat-send-btn-hover-bg-fallback: var(--teto-burgundy-soft);
+
+    --comments-box-scrollbar-thumb: var(--teto-300);
+    --comments-box-scrollbar-thumb-hover: var(--teto-red);
+    --comments-location-scrollbar-thumb: var(--teto-300);
+    --comments-location-scrollbar-thumb-hover: var(--teto-red);
+    --comments-chat-timestamp-fallback-colour: var(--timestamp-colour);
+
+    /* Commits */
+    --commit-block-even-mix: 86%;
+    --commits-scrollbar-track: color-mix(in srgb, var(--teto-50) 72%, transparent);
+    --commits-scrollbar-thumb: color-mix(in srgb, var(--teto-red) 48%, var(--teto-100));
+    --commits-scrollbar-thumb-hover: var(--teto-red);
+
+    /* Counter */
+    --counter-shell-top: #fff0f4;
+    --counter-shell-bottom: #ffd5df;
+    --counter-shell-border: #c68a9a;
+    --counter-cell-divider: #d69aaa;
+    --counter-cell-top: #fff8fa;
+    --counter-cell-bottom: #ffc4d1;
+    --counter-shadow-base: rgba(111, 16, 40, 0.24);
+    --counter-face-colour: var(--teto-burgundy);
+    --counter-shell-highlight: rgba(255, 255, 255, 0.58);
+    --counter-shell-shadow: rgba(111, 16, 40, 0.16);
+    --counter-cell-highlight: rgba(255, 255, 255, 0.5);
+    --counter-cell-shadow: rgba(111, 16, 40, 0.16);
+    --counter-cell-sheen-top: rgba(255, 255, 255, 0.32);
+    --counter-cell-sheen-bottom: rgba(232, 62, 95, 0.08);
+    --counter-window-gloss-1: rgba(255, 255, 255, 0.3);
+    --counter-window-gloss-2: rgba(255, 255, 255, 0.1);
+    --counter-window-gloss-3: rgba(111, 16, 40, 0.08);
+    --counter-window-gloss-4: rgba(255, 255, 255, 0.12);
+    --counter-window-gloss-5: rgba(111, 16, 40, 0.1);
+    --counter-face-shadow-strong: rgba(255, 255, 255, 0.35);
+    --counter-face-shadow-soft: rgba(111, 16, 40, 0.12);
+    --counter-credit-bg: rgba(255, 240, 244, 0.82);
+    --counter-credit-border: rgba(200, 31, 69, 0.26);
+    --counter-credit-colour: rgba(67, 8, 23, 0.72);
+    --counter-credit-link-colour: var(--teto-burgundy);
+    --counter-credit-link-hover-colour: var(--teto-crimson);
+    --counter-credit-shadow: 0 0.12rem 0.45rem rgba(111, 16, 40, 0.12);
+
+    /* CRT control desk */
+    --crt-ui-shadow-colour: rgba(111, 16, 40, 0.18);
+    --crt-ui-group-border: color-mix(in srgb, var(--teto-burgundy) 22%, var(--teto-100));
+    --crt-ui-group-background: color-mix(in srgb, var(--teto-50) 84%, white);
+    --crt-ui-status-background: #ffffff;
+    --crt-ui-status-border: color-mix(in srgb, var(--teto-burgundy) 28%, var(--teto-100));
+    --crt-ui-range-track-start: var(--teto-75);
+    --crt-ui-range-track-end: #ffffff;
+    --crt-ui-range-thumb-background: linear-gradient(to right, var(--teto-300), var(--teto-red));
+
+    /* Effects modal */
+    --effects-modal-section-bg: color-mix(in srgb, var(--frame-bg-colour) 88%, var(--teto-50));
+    --effects-modal-section-border: color-mix(in srgb, var(--teto-burgundy) 26%, transparent);
+    --effects-modal-muted: color-mix(in srgb, var(--body-text-colour) 72%, transparent);
+    --effects-modal-output-bg: color-mix(in srgb, var(--teto-red) 12%, transparent);
+    --effects-modal-output-border: color-mix(in srgb, var(--teto-red) 36%, transparent);
+    --effects-slider-track-bg: color-mix(in srgb, var(--teto-burgundy) 24%, transparent);
+    --effects-slider-thumb-bg: var(--toggle-btn-bg-colour);
+    --effects-slider-thumb-border: color-mix(in srgb, var(--teto-burgundy) 44%, black 8%);
+    --effects-slider-accent: var(--teto-red);
+
+    /* Email */
+    --email-bg-colour: #fffafb;
+    --email-border-colour: #edbdc9;
+    --email-header-bg-colour: #ffe8ee;
+    --email-header-border-colour: #edbdc9;
+    --email-row-odd-bg-colour: #fff3f6;
+    --email-row-even-bg-colour: #ffe0e8;
+    --email-text-colour: #331f25;
+    --email-meta-text-colour: #8d4d5f;
+    --email-content-text-colour: #4a2632;
+    --email-value-text-colour: #331f25;
+    --email-signature-sep-colour: rgba(51, 31, 37, 0.2);
+    --email-action-bg: rgba(255, 183, 199, 0.42);
+    --email-action-bg-hover: rgba(255, 143, 167, 0.62);
+    --email-action-border: rgba(200, 31, 69, 0.34);
+    --email-action-highlight: rgba(255, 255, 255, 0.65);
+    --email-action-shadow: rgba(111, 16, 40, 0.18);
+    --email-action-drop-shadow: rgba(111, 16, 40, 0.12);
+    --email-action-focus: rgba(232, 62, 95, 0.78);
+
+    --yamaka-ink: #331f25;
+    --yamaka-text: #4a2632;
+    --yamaka-muted: #8d4d5f;
+
+    /* Keyboard */
+    --keyboard-bg: color-mix(in srgb, var(--teto-50) 80%, white);
+    --keyboard-border-colour: color-mix(in srgb, var(--teto-burgundy) 24%, var(--teto-100));
+    --keyboard-key-bg: color-mix(in srgb, var(--teto-100) 64%, white);
+    --keyboard-key-bg-hover: var(--teto-200);
+    --keyboard-key-border-colour: color-mix(in srgb, var(--teto-burgundy) 28%, var(--teto-100));
+    --keyboard-key-text-colour: var(--teto-burgundy);
+    --keyboard-key-shadow: rgba(111, 16, 40, 0.14);
+
+    /* Notices */
+    --ntcs-card-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--teto-50));
+    --ntcs-card-border-colour: color-mix(in srgb, var(--teto-burgundy) 18%, var(--teto-100));
+    --ntcs-card-shadow: 0 0.45rem 1.1rem rgba(111, 16, 40, 0.12);
+
+    /* Reader */
+    --reader-bg: var(--frame-bg-colour);
+    --reader-text-colour: var(--body-text-colour);
+    --reader-controls-bg: color-mix(in srgb, var(--teto-50) 82%, white);
+    --reader-controls-border-colour: color-mix(in srgb, var(--teto-burgundy) 20%, var(--teto-100));
+    --reader-button-bg: var(--menu-button-bg-colour);
+    --reader-button-bg-hover: var(--menu-button-hover-bg-colour);
+    --reader-button-colour: var(--menu-button-text-colour);
+
+    --story-dropdown-bg: #ffffff;
+    --story-dropdown-border-colour: color-mix(in srgb, var(--teto-burgundy) 24%, var(--teto-100));
+    --story-dropdown-item-bg: #ffffff;
+    --story-dropdown-item-bg-hover: var(--teto-50);
+    --story-dropdown-item-colour: var(--body-text-colour);
+    --story-dropdown-current-bg: var(--teto-red);
+    --story-dropdown-current-colour: #ffffff;
+
+    /* RSS and blog */
+    --rss-content-colour: #4a2632;
+    --rss-list-marker-col: color-mix(in srgb, var(--teto-red) 76%, var(--menu-button-text-colour));
+    --rss-blockquote-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--teto-50));
+    --rss-blockquote-brd: color-mix(in srgb, var(--teto-red) 62%, var(--frame-border-light));
+    --rss-blockquote-col: var(--rss-content-colour);
+    --rss-blockquote-shadow: inset 0.65rem 0 1.2rem color-mix(in srgb, var(--teto-red) 10%, transparent);
+
+    --rss-code-bg: color-mix(in srgb, var(--chatroom-bg-colour) 82%, #430817 8%);
+    --rss-code-fg: #4a2632;
+    --rss-code-border: color-mix(in srgb, var(--teto-burgundy) 28%, var(--teto-100));
+    --rss-code-copy-bg: color-mix(in srgb, var(--teto-200) 78%, var(--rss-code-bg));
+    --rss-code-copy-fg: var(--teto-burgundy);
+    --rss-code-copy-hover-bg: var(--teto-300);
+    --rss-code-copy-hover-fg: var(--teto-burgundy);
+    --rss-code-scrollbar-thumb: color-mix(in srgb, var(--rss-code-fg) 42%, transparent);
+    --rss-code-scrollbar-thumb-hover: color-mix(in srgb, var(--rss-code-fg) 62%, transparent);
+
+    --rss-code-hljs-string: #a23c5a;
+    --rss-code-hljs-keyword: #b04add;
+    --rss-code-hljs-function: #c65c36;
+    --rss-code-hljs-comment: color-mix(in srgb, var(--body-text-colour) 58%, transparent);
+    --rss-code-hljs-number: #9a1f45;
+    --rss-code-hljs-operator: #c5301c;
+    --rss-code-hljs-title: #a23c5a;
+    --rss-code-hljs-built_in: #b9446c;
+    --rss-code-hljs-punctuation: #331f25;
+    --rss-code-hljs-name: #331f25;
+
+    --rss-code-switch-bg: color-mix(in srgb, var(--rss-code-bg) 78%, var(--frame-bg-colour));
+    --rss-code-switch-brd: color-mix(in srgb, var(--rss-code-border) 86%, transparent);
+    --rss-code-choice-bg: color-mix(in srgb, var(--teto-200) 52%, var(--rss-code-bg));
+    --rss-code-choice-bg-hover: color-mix(in srgb, var(--teto-300) 64%, var(--rss-code-bg));
+    --rss-code-choice-bg-active: color-mix(in srgb, var(--teto-red) 26%, var(--rss-code-bg));
+    --rss-code-choice-col-active: var(--teto-burgundy);
+    --rss-code-choice-brd: color-mix(in srgb, var(--rss-code-border) 78%, transparent);
+    --rss-code-choice-brd-hover: var(--teto-red);
+    --rss-code-choice-brd-active: color-mix(in srgb, var(--teto-red) 82%, var(--rss-code-border));
+    --rss-code-choice-dot-bg: transparent;
+    --rss-code-choice-dot-bg-active: var(--teto-red);
+    --rss-code-choice-dot-brd: color-mix(in srgb, var(--rss-code-fg) 68%, transparent);
+    --rss-code-choice-dot-brd-active: var(--teto-red);
+
+    --rss-post-hover-colour: var(--teto-red);
+    --rss-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--teto-50));
+    --rss-empty-brd: color-mix(in srgb, var(--teto-burgundy) 20%, var(--teto-100));
+    --rss-empty-shadow: var(--frame-box-shadow);
+
+    --rss-author-count-bg: color-mix(in srgb, var(--teto-200) 44%, transparent);
+    --rss-author-count-col: var(--teto-burgundy);
+
+    /* SMS */
+    --msg-in-bg: #c81f45;
+    --msg-in-strip-bg: #8e1b38;
+    --msg-in-strip-fg: #ffe8ee;
+    --msg-out-bg: #8f2f5a;
+    --msg-out-strip-bg: #6f2146;
+    --msg-out-strip-fg: #ffe4f1;
+    --msg-fg: #ffffff;
+    --msg-timestamp: #8d6470;
+
+    /* Socials */
+    --socials-card-bg: var(--chatroom-bg-colour);
+    --socials-card-text: var(--body-text-colour);
+    --socials-card-border-colour: var(--frame-border-light);
+    --socials-card-url-colour: var(--timestamp-colour);
+    --socials-card-hover-bg: var(--menu-button-hover-bg-colour);
+    --socials-card-hover-text: var(--menu-button-text-colour);
+    --socials-card-shadow: var(--frame-box-shadow);
+
+    /* Stats */
+    --site-stats-item-background: rgba(var(--frame-bg-colour-rgb), 0.22);
+    --site-stats-item-border: 1px solid color-mix(in srgb, var(--teto-burgundy) 36%, var(--teto-100));
+    --site-stats-item-box-shadow: 0 0.35rem 0.9rem rgba(111, 16, 40, 0.1);
+    --stats-segment-text-colour: var(--teto-burgundy);
+    --stats-segment-background: var(--teto-100);
+    --stats-segment-border: 1px solid var(--teto-burgundy);
+    --stats-segment-box-shadow: none;
+
+    /* Presence / status */
+    --presence-panel-accent: var(--teto-red);
+    --presence-panel-accent-soft: color-mix(in srgb, var(--teto-red) 12%, transparent);
+    --presence-panel-accent-wash: color-mix(in srgb, var(--teto-red) 7%, transparent);
+
+    /* Tategaki */
+    --tategaki-border-colour: color-mix(in srgb, var(--teto-red) 34%, transparent);
+
+    /* Terminal and windows */
+    --terminal-border-colour: rgba(111, 16, 40, 0.34);
+    --terminal-btn-close-colour: #8b0000;
+    --terminal-btn-toggle-colour: #9a5b00;
+    --terminal-btn-float-colour: #8e1b38;
+    --terminal-scrollbar-thumb: color-mix(in srgb, var(--term-header-fg) 42%, transparent);
+    --terminal-scrollbar-thumb-hover: color-mix(in srgb, var(--term-header-fg) 62%, transparent);
+
+    --window-border-colour: rgba(111, 16, 40, 0.34);
+    --window-bg: var(--frame-bg-colour);
+    --window-content-bg: transparent;
+    --window-header-bg: var(--term-header-bg);
+    --window-header-fg: var(--term-header-fg);
+    --window-title-colour: inherit;
+}
+
+.teto.dark-mode,
+.dark-mode.teto {
+    /* Palette */
+    --teto-50: #2a0d16;
+    --teto-75: #32101b;
+    --teto-100: #3a1321;
+    --teto-200: #4c182a;
+    --teto-300: #661f37;
+    --teto-400: #8e2a49;
+    --teto-500: #c83a5d;
+    --teto-600: #ff5f83;
+    --teto-700: #ff8fa7;
+    --teto-800: #ffc4d1;
+    --teto-900: #ffe8ee;
+
+    --teto-burgundy: #ffc4d1;
+    --teto-burgundy-soft: #ff8fa7;
+    --teto-crimson: #ff5f83;
+    --teto-red: #ff6b8d;
+    --teto-rose: #ff9ab0;
+    --teto-pink: #ffc4d1;
+    --teto-blush: #32101b;
+    --teto-cream: #241017;
+    --teto-lilac: #e7a8ff;
+
+    /* Body */
+    --body-bg-colour: #14070c;
+    --body-text-colour: #f7dce4;
+    --body-text-colour-light: #f7dce4;
+
+    /* Frame */
+    --frame-bg-colour: #211018;
+    --frame-bg-colour-rgb: 33, 16, 24;
+    --frame-border-light: #5a1f32;
+    --frame-box-shadow: 0 4px 24px 4px rgba(255, 95, 131, 0.13);
+
+    /* Banner */
+    --banner-green: #ff7f99;
+    --banner-blue: #ff5f83;
+    --banner-teal: #ff4f78;
+    --banner-teal-bright: #ff8fa7;
+    --banner-lilac: #e7a8ff;
+    --banner-background: transparent;
+
+    --banner-text-main: #ff7f99;
+    --banner-text-header: #ff9ab0;
+    --banner-text-footer: #ffc4d1;
+    --accent: #ff5f83;
+    --banner-scanline-colour: rgba(255, 95, 131, 0.035);
+
+    /* Header */
+    --header-bg-colour: #4a1728;
+    --header-text-colour: #ffd6df;
+
+    /* Terminal window */
+    --term-bg: linear-gradient(to bottom, #1c0d12, #100508);
+    --term-header-bg: linear-gradient(to bottom, #3a1321, #240a13);
+    --term-header-fg: #ffc4d1;
+    --term-title: #ffd6df;
+    --term-shadow: rgba(255, 95, 131, 0.16);
+
+    /* Navigation / Menu */
+    --nav-bg-colour: #330f1c;
+    --nav-border-colour: #ffc4d1;
+    --menu-button-bg-colour: #5c1b31;
+    --menu-button-text-colour: #ffd6df;
+    --menu-button-hover-bg-colour: #842844;
+
+    --menu-theme-new-bg: #ff5f83;
+    --menu-theme-new-colour: #1b070d;
+    --menu-theme-caption-bg: #ffc4d1;
+    --menu-theme-caption-colour: #1b070d;
+    --menu-theme-label-bg: #3a1321;
+    --menu-theme-label-border-colour: #7f2b45;
+    --menu-theme-dot-bg: #1b070d;
+    --menu-theme-dot-border-colour: #b94764;
+    --menu-theme-dot-fill-colour: #ff8fa7;
+
+    /* Footer */
+    --footer-bg-colour: #2c0d18;
+    --footer-text-colour: #ffd6df;
+    --footer-border-colour: #ffc4d1;
+
+    /* Chatroom */
+    --chatroom-border-colour: #5a1f32;
+    --chatroom-bg-colour: #1a0a10;
+    --chatroom-text-colour: #f7dce4;
+
+    /* Timestamps */
+    --timestamp-colour: #d69aaa;
+    --chat-timestamp-colour: #c48c9d;
+
+    /* Inputs */
+    --chat-input-border-colour: #6a263a;
+    --chat-input-bg-colour: #241017;
+    --chat-input-text-colour: #ffe8ee;
+
+    /* Buttons */
+    --chat-send-btn-bg-colour: #9f2e4d;
+    --chat-send-btn-text-colour: #ffffff;
+
+    /* Theme Toggle Button */
+    --toggle-btn-bg-colour: #241017;
+    --toggle-btn-text-colour: #ffe8ee;
+
+    /* Pending Indicator */
+    --pending-indicator-colour: #ffb347;
+
+    /* Edit Modal */
+    --edit-modal-bg-colour: #211018;
+    --edit-modal-text-colour: #ffd6df;
+    --edit-modal-shadow-colour: rgba(0, 0, 0, 0.55);
+    --edit-modal-userinfo-bg-colour: #2d111b;
+    --edit-modal-userinfo-text-colour: #ffd6df;
+    --edit-modal-userinfo-border-colour: #5a1f32;
+    --edit-modal-input-bg-colour: #1a0a10;
+    --edit-modal-input-text-colour: #ffe8ee;
+    --edit-modal-input-border-colour: #6a263a;
+
+    /* Modal Buttons */
+    --edit-modal-btn-save-bg-colour: #9f2e4d;
+    --edit-modal-btn-save-hover-colour: #c83a5d;
+    --edit-modal-btn-cancel-bg-colour: #b02a3d;
+    --edit-modal-btn-cancel-hover-colour: #d13950;
+
+    /* Tooltips */
+    --tooltip-bg-colour: #241017;
+    --tooltip-text-colour: #ffe8ee;
+    --tooltip-border-colour: #ffc4d1;
+    --tooltip-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+    /* Shared utility controls */
+    --kc-round-icon-btn-bg:
+        color-mix(in srgb, var(--menu-button-bg-colour) 74%, var(--chatroom-bg-colour));
+    --kc-round-icon-btn-bg-hover: var(--menu-button-hover-bg-colour);
+    --kc-round-icon-btn-border:
+        color-mix(in srgb, var(--frame-border-light) 70%, var(--menu-button-bg-colour));
+    --kc-round-icon-btn-border-hover: var(--banner-blue);
+    --kc-round-icon-btn-fg: var(--body-text-colour);
+    --kc-round-icon-btn-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--banner-blue) 38%, transparent);
+
+    --kc-click-header-bg-hover:
+        color-mix(in srgb, var(--menu-button-hover-bg-colour) 48%, transparent);
+    --kc-click-header-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--banner-blue) 24%, transparent);
+
+    --kc-pill-migrate-shadow:
+        0 0 0 1px color-mix(in srgb, var(--banner-blue) 22%, transparent),
+        0 0.42rem 1rem color-mix(in srgb, black 36%, transparent);
+
+    --kc-badge-snippet-label-fg: var(--body-text-colour);
+    --kc-badge-snippet-label-muted: var(--timestamp-colour);
+    --kc-badge-snippet-hint-bg: rgba(var(--frame-bg-colour-rgb), 0.62);
+    --kc-badge-snippet-hint-border: var(--chat-input-border-colour);
+    --kc-badge-snippet-code-fg: var(--body-text-colour);
+    --kc-badge-snippet-code-border:
+        color-mix(in srgb, var(--body-text-colour) 18%, transparent);
+    --kc-badge-snippet-code-selection:
+        color-mix(in srgb, var(--banner-blue) 24%, transparent);
+    --kc-badge-snippet-code-bg-start:
+        color-mix(in srgb, var(--body-bg-colour) 90%, #000 10%);
+    --kc-badge-snippet-code-bg-end:
+        color-mix(in srgb, var(--body-bg-colour) 58%, #4a1728 42%);
+    --kc-badge-snippet-btn-bg: var(--menu-button-bg-colour);
+    --kc-badge-snippet-btn-fg: var(--menu-button-text-colour);
+    --kc-badge-snippet-btn-hover-bg: var(--menu-button-hover-bg-colour);
+    --kc-badge-snippet-btn-border: var(--nav-border-colour);
+    --kc-badge-snippet-focus-outline: 2px solid var(--accent);
+
+    /* CRT effects */
+    --effect-crt-scanline-colour-strong: rgba(255, 95, 131, 0.075);
+    --effect-crt-scanline-colour-soft: rgba(255, 95, 131, 0.028);
+
+    /* Calendar */
+    --cal-shadow: 0 0.45rem 1.2rem rgba(0, 0, 0, 0.35);
+    --cal-bg: color-mix(in srgb, var(--frame-bg-colour) 82%, var(--chatroom-bg-colour));
+    --cal-brd: color-mix(in srgb, var(--frame-border-light) 70%, var(--menu-button-bg-colour));
+    --cal-hdr-brd: color-mix(in srgb, var(--frame-border-light) 45%, transparent);
+    --cal-ttl-col: var(--header-text-colour);
+    --cal-sub-col: var(--timestamp-colour);
+
+    --cal-chip-bg: color-mix(in srgb, var(--menu-button-bg-colour) 62%, var(--frame-bg-colour));
+    --cal-chip-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 70%, var(--frame-bg-colour));
+    --cal-chip-col: var(--menu-button-text-colour);
+    --cal-chip-brd: color-mix(in srgb, var(--frame-border-light) 50%, var(--menu-button-bg-colour));
+    --cal-chip-sel-bg: linear-gradient(135deg, #9f2e4d, #ff5f83);
+    --cal-chip-sel-col: #ffffff;
+    --cal-chip-sel-brd: #ff8fa7;
+    --cal-chip-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--frame-bg-colour));
+    --cal-chip-empty-col: var(--timestamp-colour);
+    --cal-chip-empty-brd: color-mix(in srgb, var(--timestamp-colour) 42%, var(--frame-border-light));
+
+    --cal-sct-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--frame-bg-colour));
+    --cal-sct-brd: color-mix(in srgb, var(--frame-border-light) 50%, transparent);
+
+    --cal-selpill-bg: color-mix(in srgb, var(--banner-blue) 12%, var(--frame-bg-colour));
+    --cal-selpill-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 64%, var(--frame-bg-colour));
+    --cal-selpill-col: var(--header-text-colour);
+    --cal-selpill-brd: color-mix(in srgb, var(--banner-blue) 28%, var(--frame-border-light));
+    --cal-selpill-brd-hover: var(--banner-blue);
+    --cal-selpill-glow:
+        0 0 0 1px color-mix(in srgb, var(--banner-blue) 18%, transparent),
+        0 0.45rem 1rem color-mix(in srgb, black 32%, transparent);
+
+    --cal-selbar-scroll-thumb: color-mix(in srgb, var(--body-text-colour) 30%, transparent);
+    --cal-selbar-scroll-thumb-hover: color-mix(in srgb, var(--body-text-colour) 45%, transparent);
+
+    --cal-rst-bg: color-mix(in srgb, var(--banner-lilac) 16%, var(--menu-button-bg-colour));
+    --cal-rst-col: var(--menu-button-text-colour);
+    --cal-rst-brd: color-mix(in srgb, var(--banner-lilac) 30%, var(--frame-border-light));
+    --cal-rst-bg-hover: color-mix(in srgb, var(--banner-lilac) 22%, var(--menu-button-hover-bg-colour));
+
+    --cal-clr-bg: color-mix(in srgb, var(--banner-blue) 16%, var(--menu-button-bg-colour));
+    --cal-clr-col: var(--menu-button-text-colour);
+    --cal-clr-brd: color-mix(in srgb, var(--banner-blue) 28%, var(--frame-border-light));
+    --cal-clr-bg-hover: color-mix(in srgb, var(--banner-blue) 22%, var(--menu-button-hover-bg-colour));
+
+    --cal-mo-bg: color-mix(in srgb, var(--frame-bg-colour) 86%, var(--chatroom-bg-colour));
+    --cal-mo-brd: color-mix(in srgb, var(--frame-border-light) 48%, transparent);
+    --cal-wk-col: var(--timestamp-colour);
+    --cal-dypad-bg: var(--chatroom-bg-colour);
+    --cal-fcs-ring: 0 0 0 2px color-mix(in srgb, var(--banner-blue) 48%, transparent);
+
+    /* Chat and comments */
+    --chat-message-bg-even: #1a0a10;
+    --chat-message-bg-odd: #241017;
+    --chat-nick-colour: #ff8fa7;
+    --chat-actions-hover-bg-colour: #5c1b31;
+    --chat-action-hover-bg-fallback: #5c1b31;
+    --chat-send-btn-hover-bg-fallback: #c83a5d;
+
+    --comments-box-scrollbar-thumb: #7f2b45;
+    --comments-box-scrollbar-thumb-hover: #ff8fa7;
+    --comments-location-scrollbar-thumb: #7f2b45;
+    --comments-location-scrollbar-thumb-hover: #ff8fa7;
+    --comments-chat-timestamp-fallback-colour: var(--timestamp-colour);
+
+    /* Commits */
+    --commit-block-even-mix: 88%;
+    --commits-scrollbar-track: color-mix(in srgb, var(--chatroom-bg-colour) 72%, transparent);
+    --commits-scrollbar-thumb: color-mix(in srgb, var(--banner-blue) 45%, var(--frame-bg-colour));
+    --commits-scrollbar-thumb-hover: var(--banner-blue);
+
+    /* Counter */
+    --counter-shell-top: #32101b;
+    --counter-shell-bottom: #1b070d;
+    --counter-shell-border: #100508;
+    --counter-cell-divider: #100508;
+    --counter-cell-top: #451526;
+    --counter-cell-bottom: #1a0a10;
+    --counter-shadow-base: #000;
+    --counter-face-colour: #ffe8ee;
+    --counter-shell-highlight: rgba(255, 255, 255, 0.08);
+    --counter-shell-shadow: rgba(0, 0, 0, 0.4);
+    --counter-cell-highlight: rgba(255, 255, 255, 0.06);
+    --counter-cell-shadow: rgba(0, 0, 0, 0.35);
+    --counter-cell-sheen-top: rgba(255, 255, 255, 0.04);
+    --counter-cell-sheen-bottom: rgba(0, 0, 0, 0.16);
+    --counter-window-gloss-1: rgba(255, 255, 255, 0.09);
+    --counter-window-gloss-2: rgba(255, 255, 255, 0.02);
+    --counter-window-gloss-3: rgba(0, 0, 0, 0.14);
+    --counter-window-gloss-4: rgba(255, 255, 255, 0.03);
+    --counter-window-gloss-5: rgba(0, 0, 0, 0.2);
+    --counter-face-shadow-strong: rgba(0, 0, 0, 0.9);
+    --counter-face-shadow-soft: rgba(255, 220, 230, 0.1);
+    --counter-credit-bg: rgba(50, 16, 27, 0.8);
+    --counter-credit-border: rgba(255, 196, 209, 0.18);
+    --counter-credit-colour: rgba(255, 232, 238, 0.74);
+    --counter-credit-link-colour: #ffc4d1;
+    --counter-credit-link-hover-colour: #ffffff;
+    --counter-credit-shadow: 0 0.12rem 0.55rem rgba(0, 0, 0, 0.34);
+
+    /* CRT control desk */
+    --crt-ui-shadow-colour: rgba(0, 0, 0, 0.55);
+    --crt-ui-group-border: #5a1f32;
+    --crt-ui-group-background: #2d111b;
+    --crt-ui-status-background: #1a0a10;
+    --crt-ui-status-border: #6a263a;
+    --crt-ui-range-track-start: #1a0a10;
+    --crt-ui-range-track-end: #5c1b31;
+    --crt-ui-range-thumb-background: linear-gradient(to right, #8e2a49, #ff5f83);
+
+    /* Effects modal */
+    --effects-modal-section-bg: color-mix(in srgb, var(--frame-bg-colour) 88%, transparent);
+    --effects-modal-section-border: color-mix(in srgb, var(--nav-border-colour) 38%, transparent);
+    --effects-modal-muted: color-mix(in srgb, var(--body-text-colour) 72%, transparent);
+    --effects-modal-output-bg: color-mix(in srgb, var(--banner-blue) 14%, transparent);
+    --effects-modal-output-border: color-mix(in srgb, var(--banner-blue) 38%, transparent);
+    --effects-slider-track-bg: color-mix(in srgb, var(--nav-border-colour) 34%, transparent);
+    --effects-slider-thumb-bg: var(--toggle-btn-bg-colour);
+    --effects-slider-thumb-border: color-mix(in srgb, var(--nav-border-colour) 70%, black 12%);
+    --effects-slider-accent: var(--banner-blue);
+
+    /* Email */
+    --email-bg-colour: #1a0a10;
+    --email-border-colour: #5a1f32;
+    --email-header-bg-colour: #241017;
+    --email-header-border-colour: #5a1f32;
+    --email-row-odd-bg-colour: #1d0b12;
+    --email-row-even-bg-colour: #2a0d16;
+    --email-text-colour: #ffe8ee;
+    --email-meta-text-colour: #d69aaa;
+    --email-content-text-colour: #ffd6df;
+    --email-value-text-colour: #ffe8ee;
+    --email-signature-sep-colour: rgba(255, 232, 238, 0.2);
+    --email-action-bg: rgba(142, 42, 73, 0.34);
+    --email-action-bg-hover: rgba(200, 58, 93, 0.52);
+    --email-action-border: rgba(255, 143, 167, 0.34);
+    --email-action-highlight: rgba(255, 214, 223, 0.2);
+    --email-action-shadow: rgba(0, 0, 0, 0.55);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.45);
+    --email-action-focus: rgba(255, 143, 167, 0.82);
+
+    --yamaka-ink: #ffe8ee;
+    --yamaka-text: #ffd6df;
+    --yamaka-muted: #d69aaa;
+
+    /* Keyboard */
+    --keyboard-bg: #241017;
+    --keyboard-border-colour: #5a1f32;
+    --keyboard-key-bg: #32101b;
+    --keyboard-key-bg-hover: #5c1b31;
+    --keyboard-key-border-colour: #6a263a;
+    --keyboard-key-text-colour: #ffe8ee;
+    --keyboard-key-shadow: rgba(0, 0, 0, 0.34);
+
+    /* Notices */
+    --ntcs-card-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--frame-bg-colour));
+    --ntcs-card-border-colour: color-mix(in srgb, var(--frame-border-light) 70%, transparent);
+    --ntcs-card-shadow: 0 0.45rem 1.1rem rgba(0, 0, 0, 0.34);
+
+    /* Reader */
+    --reader-bg: var(--frame-bg-colour);
+    --reader-text-colour: var(--body-text-colour);
+    --reader-controls-bg: color-mix(in srgb, var(--frame-bg-colour) 82%, var(--chatroom-bg-colour));
+    --reader-controls-border-colour: color-mix(in srgb, var(--frame-border-light) 70%, transparent);
+    --reader-button-bg: var(--menu-button-bg-colour);
+    --reader-button-bg-hover: var(--menu-button-hover-bg-colour);
+    --reader-button-colour: var(--menu-button-text-colour);
+
+    --story-dropdown-bg: #1a0a10;
+    --story-dropdown-border-colour: #5a1f32;
+    --story-dropdown-item-bg: #1a0a10;
+    --story-dropdown-item-bg-hover: #32101b;
+    --story-dropdown-item-colour: #ffe8ee;
+    --story-dropdown-current-bg: #9f2e4d;
+    --story-dropdown-current-colour: #ffffff;
+
+    /* RSS and blog */
+    --rss-content-colour: #ffd6df;
+    --rss-list-marker-col: color-mix(in srgb, var(--banner-blue) 82%, var(--menu-button-text-colour));
+    --rss-blockquote-bg: color-mix(in srgb, var(--chatroom-bg-colour) 82%, white 4%);
+    --rss-blockquote-brd: color-mix(in srgb, var(--banner-blue) 72%, var(--frame-border-light));
+    --rss-blockquote-col: var(--rss-content-colour);
+    --rss-blockquote-shadow: inset 0.65rem 0 1.2rem color-mix(in srgb, var(--banner-blue) 14%, transparent);
+
+    --rss-code-bg: color-mix(in srgb, var(--chatroom-bg-colour) 82%, white 4%);
+    --rss-code-fg: #ffe8ee;
+    --rss-code-border: color-mix(in srgb, var(--frame-border-light) 72%, var(--menu-button-bg-colour));
+    --rss-code-copy-bg: color-mix(in srgb, var(--menu-button-bg-colour) 80%, black);
+    --rss-code-copy-fg: #ffe8ee;
+    --rss-code-copy-hover-bg: var(--menu-button-hover-bg-colour);
+    --rss-code-copy-hover-fg: #ffc4d1;
+    --rss-code-scrollbar-thumb: color-mix(in srgb, var(--rss-code-fg) 42%, transparent);
+    --rss-code-scrollbar-thumb-hover: color-mix(in srgb, var(--rss-code-fg) 62%, transparent);
+
+    --rss-code-hljs-string: #ff9ab0;
+    --rss-code-hljs-keyword: #e7a8ff;
+    --rss-code-hljs-function: #ffad7a;
+    --rss-code-hljs-comment: color-mix(in srgb, var(--body-text-colour) 58%, transparent);
+    --rss-code-hljs-number: #ff7f99;
+    --rss-code-hljs-operator: #ff6b6b;
+    --rss-code-hljs-title: #ff9ab0;
+    --rss-code-hljs-built_in: #ff8fa7;
+    --rss-code-hljs-punctuation: #ffffff;
+    --rss-code-hljs-name: #ffffff;
+
+    --rss-code-switch-bg: color-mix(in srgb, var(--rss-code-bg) 84%, black);
+    --rss-code-switch-brd: color-mix(in srgb, var(--rss-code-border) 72%, white 8%);
+    --rss-code-choice-bg: color-mix(in srgb, var(--menu-button-bg-colour) 58%, black);
+    --rss-code-choice-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 78%, black);
+    --rss-code-choice-bg-active: color-mix(in srgb, var(--banner-blue) 34%, black);
+    --rss-code-choice-col-active: #ffe8ee;
+    --rss-code-choice-brd: color-mix(in srgb, var(--rss-code-border) 78%, transparent);
+    --rss-code-choice-brd-hover: #ffc4d1;
+    --rss-code-choice-brd-active: color-mix(in srgb, var(--banner-blue) 82%, var(--rss-code-border));
+    --rss-code-choice-dot-bg: transparent;
+    --rss-code-choice-dot-bg-active: color-mix(in srgb, var(--banner-blue) 88%, white);
+    --rss-code-choice-dot-brd: color-mix(in srgb, var(--rss-code-fg) 68%, transparent);
+    --rss-code-choice-dot-brd-active: color-mix(in srgb, var(--banner-blue) 88%, white);
+
+    --rss-post-hover-colour: var(--banner-blue);
+    --rss-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--frame-bg-colour));
+    --rss-empty-brd: color-mix(in srgb, var(--frame-border-light) 74%, var(--menu-button-bg-colour));
+    --rss-empty-shadow: var(--frame-box-shadow);
+
+    --rss-author-count-bg: color-mix(in srgb, var(--menu-button-bg-colour) 44%, transparent);
+    --rss-author-count-col: var(--menu-button-text-colour);
+
+    /* SMS */
+    --msg-in-bg: #9f2e4d;
+    --msg-in-strip-bg: #6f1028;
+    --msg-in-strip-fg: #ffe8ee;
+    --msg-out-bg: #6f2146;
+    --msg-out-strip-bg: #4c1831;
+    --msg-out-strip-fg: #ffe4f1;
+    --msg-fg: #ffffff;
+    --msg-timestamp: #d69aaa;
+
+    /* Socials */
+    --socials-card-bg: var(--chatroom-bg-colour);
+    --socials-card-text: var(--body-text-colour);
+    --socials-card-border-colour: var(--frame-border-light);
+    --socials-card-url-colour: var(--timestamp-colour);
+    --socials-card-hover-bg: var(--menu-button-hover-bg-colour);
+    --socials-card-hover-text: var(--menu-button-text-colour);
+    --socials-card-shadow: var(--frame-box-shadow);
+
+    /* Stats */
+    --site-stats-item-background: rgba(var(--frame-bg-colour-rgb), 0.22);
+    --site-stats-item-border: 1px solid color-mix(in srgb, var(--nav-border-colour) 38%, transparent);
+    --site-stats-item-box-shadow: 0 0.35rem 0.9rem rgba(0, 0, 0, 0.24);
+    --stats-segment-text-colour: var(--menu-button-text-colour);
+    --stats-segment-background: var(--nav-bg-colour);
+    --stats-segment-border: 1px solid var(--nav-border-colour);
+    --stats-segment-box-shadow: none;
+
+    /* Presence / status */
+    --presence-panel-accent: var(--teto-red);
+    --presence-panel-accent-soft: color-mix(in srgb, var(--teto-red) 12%, transparent);
+    --presence-panel-accent-wash: color-mix(in srgb, var(--teto-red) 7%, transparent);
+
+    /* Tategaki */
+    --tategaki-border-colour: color-mix(in srgb, var(--banner-blue) 34%, transparent);
+
+    /* Terminal and windows */
+    --terminal-border-colour: rgba(255, 196, 209, 0.2);
+    --terminal-btn-close-colour: #ffb3bd;
+    --terminal-btn-toggle-colour: #ffd37a;
+    --terminal-btn-float-colour: #ff8fa7;
+    --terminal-scrollbar-thumb: color-mix(in srgb, var(--term-header-fg) 42%, transparent);
+    --terminal-scrollbar-thumb-hover: color-mix(in srgb, var(--term-header-fg) 62%, transparent);
+
+    --window-border-colour: rgba(255, 196, 209, 0.2);
+    --window-bg: var(--frame-bg-colour);
+    --window-content-bg: transparent;
+    --window-header-bg: var(--term-header-bg);
+    --window-header-fg: var(--term-header-fg);
+    --window-title-colour: inherit;
+}

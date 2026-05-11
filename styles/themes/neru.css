@@ -1,0 +1,940 @@
+/* =========================================
+    Theme: Neru
+========================================= */
+
+.neru {
+    /* Palette */
+    --neru-50: #fff9e8;
+    --neru-75: #fff2c7;
+    --neru-100: #ffe8a3;
+    --neru-200: #ffd66f;
+    --neru-300: #ffc23a;
+    --neru-400: #f5ac00;
+    --neru-500: #d98e00;
+    --neru-600: #b86f00;
+    --neru-700: #875000;
+    --neru-800: #603700;
+    --neru-900: #362000;
+
+    --neru-ochre: #603700;
+    --neru-ochre-soft: #875000;
+    --neru-amber: #d98e00;
+    --neru-yellow: #f5ac00;
+    --neru-gold: #ffc23a;
+    --neru-honey: #ffd66f;
+    --neru-cream: #fff9e8;
+    --neru-ivory: #fffdf5;
+    --neru-lilac: #9c6bb0;
+
+    /* Body */
+    --body-bg-colour: var(--neru-50);
+    --body-text-colour: #332714;
+    --body-text-colour-light: #332714;
+
+    /* Frame */
+    --frame-bg-colour: #ffffff;
+    --frame-bg-colour-rgb: 255, 255, 255;
+    --frame-border-light: #ffe0a8;
+    --frame-box-shadow: 0 4px 14px rgba(96, 55, 0, 0.18);
+
+    /* Banner */
+    --banner-green: var(--neru-honey);
+    --banner-blue: var(--neru-yellow);
+    --banner-teal: var(--neru-amber);
+    --banner-teal-bright: var(--neru-400);
+    --banner-lilac: var(--neru-lilac);
+    --banner-background: transparent;
+
+    --banner-text-main: var(--neru-amber);
+    --banner-text-header: var(--neru-yellow);
+    --banner-text-footer: var(--neru-ochre);
+    --accent: var(--neru-amber);
+    --banner-scanline-colour: rgba(245, 172, 0, 0.035);
+
+    /* Header */
+    --header-bg-colour: var(--neru-100);
+    --header-text-colour: var(--neru-ochre);
+
+    /* Terminal window */
+    --term-bg: linear-gradient(to bottom, #302818, #201609);
+    --term-header-bg: linear-gradient(to bottom, #fff0c9, #ffd984);
+    --term-header-fg: var(--neru-ochre);
+    --term-title: var(--neru-ochre);
+    --term-shadow: rgba(96, 55, 0, 0.26);
+
+    /* Navigation / Menu */
+    --nav-bg-colour: var(--neru-100);
+    --nav-border-colour: var(--neru-ochre);
+    --menu-button-bg-colour: var(--neru-200);
+    --menu-button-text-colour: var(--neru-ochre);
+    --menu-button-hover-bg-colour: var(--neru-300);
+
+    --menu-theme-new-bg: var(--neru-yellow);
+    --menu-theme-new-colour: #332000;
+    --menu-theme-caption-bg: var(--neru-ochre);
+    --menu-theme-caption-colour: #ffffff;
+    --menu-theme-label-bg: color-mix(in srgb, var(--neru-100) 72%, white);
+    --menu-theme-label-border-colour: color-mix(in srgb, var(--neru-ochre) 42%, var(--neru-100));
+    --menu-theme-dot-bg: #fffdf5;
+    --menu-theme-dot-border-colour: color-mix(in srgb, var(--neru-ochre) 55%, var(--neru-200));
+    --menu-theme-dot-fill-colour: var(--neru-yellow);
+
+    /* Footer */
+    --footer-bg-colour: var(--neru-100);
+    --footer-text-colour: var(--neru-ochre);
+    --footer-border-colour: var(--neru-ochre);
+
+    /* Chatroom */
+    --chatroom-border-colour: #e6c384;
+    --chatroom-bg-colour: #fffdf5;
+    --chatroom-text-colour: #332714;
+
+    /* Timestamps */
+    --timestamp-colour: #8a6d3f;
+    --chat-timestamp-colour: #9c7d48;
+
+    /* Inputs */
+    --chat-input-border-colour: #e0b86f;
+    --chat-input-bg-colour: #ffffff;
+    --chat-input-text-colour: #332714;
+
+    /* Buttons */
+    --chat-send-btn-bg-colour: var(--neru-amber);
+    --chat-send-btn-text-colour: #ffffff;
+
+    /* Theme Toggle Button */
+    --toggle-btn-bg-colour: #ffffff;
+    --toggle-btn-text-colour: var(--neru-ochre);
+
+    /* Pending Indicator */
+    --pending-indicator-colour: #ff8a00;
+
+    /* Edit Modal */
+    --edit-modal-bg-colour: #ffffff;
+    --edit-modal-text-colour: var(--neru-ochre);
+    --edit-modal-shadow-colour: rgba(96, 55, 0, 0.24);
+    --edit-modal-userinfo-bg-colour: var(--neru-50);
+    --edit-modal-userinfo-text-colour: var(--neru-ochre);
+    --edit-modal-userinfo-border-colour: var(--neru-200);
+    --edit-modal-input-bg-colour: #fffdf5;
+    --edit-modal-input-text-colour: #332714;
+    --edit-modal-input-border-colour: #e0b86f;
+
+    /* Modal Buttons */
+    --edit-modal-btn-save-bg-colour: var(--neru-amber);
+    --edit-modal-btn-save-hover-colour: var(--neru-ochre-soft);
+    --edit-modal-btn-cancel-bg-colour: #9f6810;
+    --edit-modal-btn-cancel-hover-colour: #704600;
+
+    /* Icons */
+    --decreaseFont-icon-colour: var(--neru-lilac);
+    --increaseFont-icon-colour: var(--decreaseFont-icon-colour);
+    --resetFont-icon-colour: var(--decreaseFont-icon-colour);
+    --togglePnum-icon-colour: var(--neru-yellow);
+    --clearBookmark-icon-colour: var(--neru-yellow);
+    --prevChapter-icon-colour: var(--neru-yellow);
+    --jumpToChapter-icon-colour: var(--neru-yellow);
+    --showInfo-icon-colour: var(--neru-yellow);
+    --imageNavArrow-bg-colour: var(--neru-yellow);
+
+    /* Tooltips */
+    --tooltip-bg-colour: #ffffff;
+    --tooltip-text-colour: var(--body-text-colour);
+    --tooltip-border-colour: var(--neru-ochre);
+    --tooltip-shadow: 0 4px 14px rgba(96, 55, 0, 0.18);
+
+    /* Shared utility controls */
+    --kc-round-icon-btn-bg:
+        color-mix(in srgb, var(--neru-100) 72%, var(--chatroom-bg-colour));
+    --kc-round-icon-btn-bg-hover: var(--neru-300);
+    --kc-round-icon-btn-border:
+        color-mix(in srgb, var(--neru-ochre) 30%, var(--neru-100));
+    --kc-round-icon-btn-border-hover: var(--neru-yellow);
+    --kc-round-icon-btn-fg: var(--neru-ochre);
+    --kc-round-icon-btn-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--neru-yellow) 36%, transparent);
+
+    --kc-click-header-bg-hover:
+        color-mix(in srgb, var(--neru-300) 46%, transparent);
+    --kc-click-header-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--neru-yellow) 22%, transparent);
+
+    --kc-pill-migrate-shadow:
+        0 0 0 1px color-mix(in srgb, var(--neru-yellow) 18%, transparent),
+        0 0.42rem 1rem color-mix(in srgb, var(--neru-ochre) 18%, transparent);
+
+    --kc-badge-snippet-label-fg: var(--body-text-colour);
+    --kc-badge-snippet-label-muted: var(--timestamp-colour);
+    --kc-badge-snippet-hint-bg: rgba(var(--frame-bg-colour-rgb), 0.62);
+    --kc-badge-snippet-hint-border: var(--chat-input-border-colour);
+    --kc-badge-snippet-code-fg: var(--body-text-colour);
+    --kc-badge-snippet-code-border:
+        color-mix(in srgb, var(--neru-ochre) 18%, transparent);
+    --kc-badge-snippet-code-selection:
+        color-mix(in srgb, var(--neru-yellow) 18%, transparent);
+    --kc-badge-snippet-code-bg-start:
+        color-mix(in srgb, var(--neru-50) 92%, white);
+    --kc-badge-snippet-code-bg-end:
+        color-mix(in srgb, var(--neru-100) 72%, white);
+    --kc-badge-snippet-btn-bg: var(--menu-button-bg-colour);
+    --kc-badge-snippet-btn-fg: var(--menu-button-text-colour);
+    --kc-badge-snippet-btn-hover-bg: var(--menu-button-hover-bg-colour);
+    --kc-badge-snippet-btn-border: var(--nav-border-colour);
+    --kc-badge-snippet-focus-outline: 2px solid var(--accent);
+
+    /* CRT effects */
+    --effect-crt-scanline-colour-strong: rgba(255, 190, 40, 0.065);
+    --effect-crt-scanline-colour-soft: rgba(255, 190, 40, 0.025);
+
+    /* Calendar */
+    --cal-shadow: 0 0.45rem 1.2rem rgba(96, 55, 0, 0.12);
+    --cal-bg: color-mix(in srgb, var(--frame-bg-colour) 84%, var(--neru-50));
+    --cal-brd: color-mix(in srgb, var(--neru-ochre) 24%, var(--neru-100));
+    --cal-hdr-brd: color-mix(in srgb, var(--neru-ochre) 18%, transparent);
+    --cal-ttl-col: var(--neru-ochre);
+    --cal-sub-col: var(--timestamp-colour);
+
+    --cal-chip-bg: color-mix(in srgb, var(--neru-100) 58%, white);
+    --cal-chip-bg-hover: color-mix(in srgb, var(--neru-200) 76%, white);
+    --cal-chip-col: var(--neru-ochre);
+    --cal-chip-brd: color-mix(in srgb, var(--neru-ochre) 22%, var(--neru-100));
+    --cal-chip-sel-bg: linear-gradient(135deg, var(--neru-300), var(--neru-yellow));
+    --cal-chip-sel-col: #332000;
+    --cal-chip-sel-brd: var(--neru-amber);
+    --cal-chip-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--neru-50));
+    --cal-chip-empty-col: var(--timestamp-colour);
+    --cal-chip-empty-brd: color-mix(in srgb, var(--timestamp-colour) 42%, var(--neru-100));
+
+    --cal-sct-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--neru-50));
+    --cal-sct-brd: color-mix(in srgb, var(--neru-ochre) 14%, transparent);
+
+    --cal-selpill-bg: color-mix(in srgb, var(--neru-yellow) 10%, var(--frame-bg-colour));
+    --cal-selpill-bg-hover: color-mix(in srgb, var(--neru-300) 60%, white);
+    --cal-selpill-col: var(--neru-ochre);
+    --cal-selpill-brd: color-mix(in srgb, var(--neru-yellow) 22%, var(--neru-100));
+    --cal-selpill-brd-hover: var(--neru-yellow);
+    --cal-selpill-glow:
+        0 0 0 1px color-mix(in srgb, var(--neru-yellow) 18%, transparent),
+        0 0.45rem 1rem color-mix(in srgb, var(--neru-ochre) 12%, transparent);
+
+    --cal-selbar-scroll-thumb: color-mix(in srgb, var(--neru-ochre) 30%, transparent);
+    --cal-selbar-scroll-thumb-hover: color-mix(in srgb, var(--neru-ochre) 45%, transparent);
+
+    --cal-rst-bg: color-mix(in srgb, var(--neru-lilac) 14%, var(--neru-100));
+    --cal-rst-col: var(--neru-ochre);
+    --cal-rst-brd: color-mix(in srgb, var(--neru-lilac) 26%, var(--neru-100));
+    --cal-rst-bg-hover: color-mix(in srgb, var(--neru-lilac) 20%, var(--neru-200));
+
+    --cal-clr-bg: color-mix(in srgb, var(--neru-yellow) 12%, var(--neru-100));
+    --cal-clr-col: var(--neru-ochre);
+    --cal-clr-brd: color-mix(in srgb, var(--neru-yellow) 24%, var(--neru-100));
+    --cal-clr-bg-hover: color-mix(in srgb, var(--neru-yellow) 18%, var(--neru-200));
+
+    --cal-mo-bg: color-mix(in srgb, var(--frame-bg-colour) 90%, var(--neru-50));
+    --cal-mo-brd: color-mix(in srgb, var(--neru-ochre) 12%, transparent);
+    --cal-wk-col: var(--timestamp-colour);
+    --cal-dypad-bg: #fffdf5;
+    --cal-fcs-ring: 0 0 0 2px color-mix(in srgb, var(--neru-yellow) 42%, transparent);
+
+    /* Chat and comments */
+    --chat-message-bg-even: #fffdf5;
+    --chat-message-bg-odd: #fff8e0;
+    --chat-nick-colour: var(--neru-amber);
+    --chat-actions-hover-bg-colour: var(--neru-200);
+    --chat-action-hover-bg-fallback: var(--neru-200);
+    --chat-send-btn-hover-bg-fallback: var(--neru-ochre-soft);
+
+    --comments-box-scrollbar-thumb: var(--neru-300);
+    --comments-box-scrollbar-thumb-hover: var(--neru-yellow);
+    --comments-location-scrollbar-thumb: var(--neru-300);
+    --comments-location-scrollbar-thumb-hover: var(--neru-yellow);
+    --comments-chat-timestamp-fallback-colour: var(--timestamp-colour);
+
+    /* Commits */
+    --commit-block-even-mix: 86%;
+    --commits-scrollbar-track: color-mix(in srgb, var(--neru-50) 72%, transparent);
+    --commits-scrollbar-thumb: color-mix(in srgb, var(--neru-yellow) 48%, var(--neru-100));
+    --commits-scrollbar-thumb-hover: var(--neru-yellow);
+
+    /* Counter */
+    --counter-shell-top: #fff6d6;
+    --counter-shell-bottom: #ffd66f;
+    --counter-shell-border: #c69d4b;
+    --counter-cell-divider: #d6aa58;
+    --counter-cell-top: #fffdf5;
+    --counter-cell-bottom: #ffe09b;
+    --counter-shadow-base: rgba(96, 55, 0, 0.24);
+    --counter-face-colour: var(--neru-ochre);
+    --counter-shell-highlight: rgba(255, 255, 255, 0.58);
+    --counter-shell-shadow: rgba(96, 55, 0, 0.16);
+    --counter-cell-highlight: rgba(255, 255, 255, 0.5);
+    --counter-cell-shadow: rgba(96, 55, 0, 0.16);
+    --counter-cell-sheen-top: rgba(255, 255, 255, 0.32);
+    --counter-cell-sheen-bottom: rgba(245, 172, 0, 0.08);
+    --counter-window-gloss-1: rgba(255, 255, 255, 0.3);
+    --counter-window-gloss-2: rgba(255, 255, 255, 0.1);
+    --counter-window-gloss-3: rgba(96, 55, 0, 0.08);
+    --counter-window-gloss-4: rgba(255, 255, 255, 0.12);
+    --counter-window-gloss-5: rgba(96, 55, 0, 0.1);
+    --counter-face-shadow-strong: rgba(255, 255, 255, 0.35);
+    --counter-face-shadow-soft: rgba(96, 55, 0, 0.12);
+    --counter-credit-bg: rgba(255, 246, 214, 0.82);
+    --counter-credit-border: rgba(217, 142, 0, 0.26);
+    --counter-credit-colour: rgba(54, 32, 0, 0.72);
+    --counter-credit-link-colour: var(--neru-ochre);
+    --counter-credit-link-hover-colour: var(--neru-amber);
+    --counter-credit-shadow: 0 0.12rem 0.45rem rgba(96, 55, 0, 0.12);
+
+    /* CRT control desk */
+    --crt-ui-shadow-colour: rgba(96, 55, 0, 0.18);
+    --crt-ui-group-border: color-mix(in srgb, var(--neru-ochre) 22%, var(--neru-100));
+    --crt-ui-group-background: color-mix(in srgb, var(--neru-50) 84%, white);
+    --crt-ui-status-background: #ffffff;
+    --crt-ui-status-border: color-mix(in srgb, var(--neru-ochre) 28%, var(--neru-100));
+    --crt-ui-range-track-start: var(--neru-75);
+    --crt-ui-range-track-end: #ffffff;
+    --crt-ui-range-thumb-background: linear-gradient(to right, var(--neru-300), var(--neru-yellow));
+
+    /* Effects modal */
+    --effects-modal-section-bg: color-mix(in srgb, var(--frame-bg-colour) 88%, var(--neru-50));
+    --effects-modal-section-border: color-mix(in srgb, var(--neru-ochre) 26%, transparent);
+    --effects-modal-muted: color-mix(in srgb, var(--body-text-colour) 72%, transparent);
+    --effects-modal-output-bg: color-mix(in srgb, var(--neru-yellow) 12%, transparent);
+    --effects-modal-output-border: color-mix(in srgb, var(--neru-yellow) 36%, transparent);
+    --effects-slider-track-bg: color-mix(in srgb, var(--neru-ochre) 24%, transparent);
+    --effects-slider-thumb-bg: var(--toggle-btn-bg-colour);
+    --effects-slider-thumb-border: color-mix(in srgb, var(--neru-ochre) 44%, black 8%);
+    --effects-slider-accent: var(--neru-yellow);
+
+    /* Email */
+    --email-bg-colour: #fffdf5;
+    --email-border-colour: #edc984;
+    --email-header-bg-colour: #fff2c7;
+    --email-header-border-colour: #edc984;
+    --email-row-odd-bg-colour: #fff7dc;
+    --email-row-even-bg-colour: #ffe9ab;
+    --email-text-colour: #332714;
+    --email-meta-text-colour: #8a6432;
+    --email-content-text-colour: #4a3418;
+    --email-value-text-colour: #332714;
+    --email-signature-sep-colour: rgba(51, 39, 20, 0.2);
+    --email-action-bg: rgba(255, 214, 111, 0.42);
+    --email-action-bg-hover: rgba(255, 194, 58, 0.62);
+    --email-action-border: rgba(217, 142, 0, 0.34);
+    --email-action-highlight: rgba(255, 255, 255, 0.65);
+    --email-action-shadow: rgba(96, 55, 0, 0.18);
+    --email-action-drop-shadow: rgba(96, 55, 0, 0.12);
+    --email-action-focus: rgba(245, 172, 0, 0.78);
+
+    --yamaka-ink: #332714;
+    --yamaka-text: #4a3418;
+    --yamaka-muted: #8a6432;
+
+    /* Keyboard */
+    --keyboard-bg: color-mix(in srgb, var(--neru-50) 80%, white);
+    --keyboard-border-colour: color-mix(in srgb, var(--neru-ochre) 24%, var(--neru-100));
+    --keyboard-key-bg: color-mix(in srgb, var(--neru-100) 64%, white);
+    --keyboard-key-bg-hover: var(--neru-200);
+    --keyboard-key-border-colour: color-mix(in srgb, var(--neru-ochre) 28%, var(--neru-100));
+    --keyboard-key-text-colour: var(--neru-ochre);
+    --keyboard-key-shadow: rgba(96, 55, 0, 0.14);
+
+    /* Notices */
+    --ntcs-card-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--neru-50));
+    --ntcs-card-border-colour: color-mix(in srgb, var(--neru-ochre) 18%, var(--neru-100));
+    --ntcs-card-shadow: 0 0.45rem 1.1rem rgba(96, 55, 0, 0.12);
+
+    /* Reader */
+    --reader-bg: var(--frame-bg-colour);
+    --reader-text-colour: var(--body-text-colour);
+    --reader-controls-bg: color-mix(in srgb, var(--neru-50) 82%, white);
+    --reader-controls-border-colour: color-mix(in srgb, var(--neru-ochre) 20%, var(--neru-100));
+    --reader-button-bg: var(--menu-button-bg-colour);
+    --reader-button-bg-hover: var(--menu-button-hover-bg-colour);
+    --reader-button-colour: var(--menu-button-text-colour);
+
+    --story-dropdown-bg: #ffffff;
+    --story-dropdown-border-colour: color-mix(in srgb, var(--neru-ochre) 24%, var(--neru-100));
+    --story-dropdown-item-bg: #ffffff;
+    --story-dropdown-item-bg-hover: var(--neru-50);
+    --story-dropdown-item-colour: var(--body-text-colour);
+    --story-dropdown-current-bg: var(--neru-yellow);
+    --story-dropdown-current-colour: #332000;
+
+    /* RSS and blog */
+    --rss-content-colour: #4a3418;
+    --rss-list-marker-col: color-mix(in srgb, var(--neru-yellow) 76%, var(--menu-button-text-colour));
+    --rss-blockquote-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--neru-50));
+    --rss-blockquote-brd: color-mix(in srgb, var(--neru-yellow) 62%, var(--frame-border-light));
+    --rss-blockquote-col: var(--rss-content-colour);
+    --rss-blockquote-shadow: inset 0.65rem 0 1.2rem color-mix(in srgb, var(--neru-yellow) 10%, transparent);
+
+    --rss-code-bg: color-mix(in srgb, var(--chatroom-bg-colour) 82%, #362000 8%);
+    --rss-code-fg: #4a3418;
+    --rss-code-border: color-mix(in srgb, var(--neru-ochre) 28%, var(--neru-100));
+    --rss-code-copy-bg: color-mix(in srgb, var(--neru-200) 78%, var(--rss-code-bg));
+    --rss-code-copy-fg: var(--neru-ochre);
+    --rss-code-copy-hover-bg: var(--neru-300);
+    --rss-code-copy-hover-fg: var(--neru-ochre);
+    --rss-code-scrollbar-thumb: color-mix(in srgb, var(--rss-code-fg) 42%, transparent);
+    --rss-code-scrollbar-thumb-hover: color-mix(in srgb, var(--rss-code-fg) 62%, transparent);
+
+    --rss-code-hljs-string: #9d6b00;
+    --rss-code-hljs-keyword: #8a4add;
+    --rss-code-hljs-function: #b05e00;
+    --rss-code-hljs-comment: color-mix(in srgb, var(--body-text-colour) 58%, transparent);
+    --rss-code-hljs-number: #996100;
+    --rss-code-hljs-operator: #b86f00;
+    --rss-code-hljs-title: #9d6b00;
+    --rss-code-hljs-built_in: #b87900;
+    --rss-code-hljs-punctuation: #332714;
+    --rss-code-hljs-name: #332714;
+
+    --rss-code-switch-bg: color-mix(in srgb, var(--rss-code-bg) 78%, var(--frame-bg-colour));
+    --rss-code-switch-brd: color-mix(in srgb, var(--rss-code-border) 86%, transparent);
+    --rss-code-choice-bg: color-mix(in srgb, var(--neru-200) 52%, var(--rss-code-bg));
+    --rss-code-choice-bg-hover: color-mix(in srgb, var(--neru-300) 64%, var(--rss-code-bg));
+    --rss-code-choice-bg-active: color-mix(in srgb, var(--neru-yellow) 26%, var(--rss-code-bg));
+    --rss-code-choice-col-active: var(--neru-ochre);
+    --rss-code-choice-brd: color-mix(in srgb, var(--rss-code-border) 78%, transparent);
+    --rss-code-choice-brd-hover: var(--neru-yellow);
+    --rss-code-choice-brd-active: color-mix(in srgb, var(--neru-yellow) 82%, var(--rss-code-border));
+    --rss-code-choice-dot-bg: transparent;
+    --rss-code-choice-dot-bg-active: var(--neru-yellow);
+    --rss-code-choice-dot-brd: color-mix(in srgb, var(--rss-code-fg) 68%, transparent);
+    --rss-code-choice-dot-brd-active: var(--neru-yellow);
+
+    --rss-post-hover-colour: var(--neru-yellow);
+    --rss-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--neru-50));
+    --rss-empty-brd: color-mix(in srgb, var(--neru-ochre) 20%, var(--neru-100));
+    --rss-empty-shadow: var(--frame-box-shadow);
+
+    --rss-author-count-bg: color-mix(in srgb, var(--neru-200) 44%, transparent);
+    --rss-author-count-col: var(--neru-ochre);
+
+    /* SMS */
+    --msg-in-bg: #d98e00;
+    --msg-in-strip-bg: #875000;
+    --msg-in-strip-fg: #fff2c7;
+    --msg-out-bg: #91652a;
+    --msg-out-strip-bg: #6b4617;
+    --msg-out-strip-fg: #fff1cc;
+    --msg-fg: #ffffff;
+    --msg-timestamp: #8a6d3f;
+
+    /* Socials */
+    --socials-card-bg: var(--chatroom-bg-colour);
+    --socials-card-text: var(--body-text-colour);
+    --socials-card-border-colour: var(--frame-border-light);
+    --socials-card-url-colour: var(--timestamp-colour);
+    --socials-card-hover-bg: var(--menu-button-hover-bg-colour);
+    --socials-card-hover-text: var(--menu-button-text-colour);
+    --socials-card-shadow: var(--frame-box-shadow);
+
+    /* Stats */
+    --site-stats-item-background: rgba(var(--frame-bg-colour-rgb), 0.22);
+    --site-stats-item-border: 1px solid color-mix(in srgb, var(--neru-ochre) 36%, var(--neru-100));
+    --site-stats-item-box-shadow: 0 0.35rem 0.9rem rgba(96, 55, 0, 0.1);
+    --stats-segment-text-colour: var(--neru-ochre);
+    --stats-segment-background: var(--neru-100);
+    --stats-segment-border: 1px solid var(--neru-ochre);
+    --stats-segment-box-shadow: none;
+
+    /* Presence / status */
+    --presence-online-accent: #38d9c2;
+    --presence-online-accent-soft: rgba(56, 217, 194, 0.14);
+    --presence-online-accent-wash: rgba(56, 217, 194, 0.08);
+    --presence-panel-accent: var(--presence-online-accent);
+    --presence-panel-accent-soft: var(--presence-online-accent-soft);
+    --presence-panel-accent-wash: var(--presence-online-accent-wash);
+
+    /* Tategaki */
+    --tategaki-border-colour: color-mix(in srgb, var(--neru-yellow) 34%, transparent);
+
+    /* Terminal and windows */
+    --terminal-border-colour: rgba(96, 55, 0, 0.34);
+    --terminal-btn-close-colour: #8b3e00;
+    --terminal-btn-toggle-colour: #8a6100;
+    --terminal-btn-float-colour: #875000;
+    --terminal-scrollbar-thumb: color-mix(in srgb, var(--term-header-fg) 42%, transparent);
+    --terminal-scrollbar-thumb-hover: color-mix(in srgb, var(--term-header-fg) 62%, transparent);
+
+    --window-border-colour: rgba(96, 55, 0, 0.34);
+    --window-bg: var(--frame-bg-colour);
+    --window-content-bg: transparent;
+    --window-header-bg: var(--term-header-bg);
+    --window-header-fg: var(--term-header-fg);
+    --window-title-colour: inherit;
+}
+
+.neru.dark-mode,
+.dark-mode.neru {
+    /* Palette */
+    --neru-50: #281806;
+    --neru-75: #30200a;
+    --neru-100: #39270d;
+    --neru-200: #4c3412;
+    --neru-300: #66451a;
+    --neru-400: #8f6224;
+    --neru-500: #c58a32;
+    --neru-600: #f0b44f;
+    --neru-700: #ffd27a;
+    --neru-800: #ffe5ad;
+    --neru-900: #fff4d4;
+
+    --neru-ochre: #ffe5ad;
+    --neru-ochre-soft: #ffd27a;
+    --neru-amber: #f0b44f;
+    --neru-yellow: #ffc857;
+    --neru-gold: #ffd27a;
+    --neru-honey: #ffe5ad;
+    --neru-cream: #241707;
+    --neru-ivory: #1c1105;
+    --neru-lilac: #d6adff;
+
+    /* Body */
+    --body-bg-colour: #120b03;
+    --body-text-colour: #f7e6c4;
+    --body-text-colour-light: #f7e6c4;
+
+    /* Frame */
+    --frame-bg-colour: #211608;
+    --frame-bg-colour-rgb: 33, 22, 8;
+    --frame-border-light: #5a3b13;
+    --frame-box-shadow: 0 4px 24px 4px rgba(255, 200, 87, 0.13);
+
+    /* Banner */
+    --banner-green: #ffd27a;
+    --banner-blue: #ffc857;
+    --banner-teal: #f0b44f;
+    --banner-teal-bright: #ffe5ad;
+    --banner-lilac: #d6adff;
+    --banner-background: transparent;
+
+    --banner-text-main: #ffd27a;
+    --banner-text-header: #ffe5ad;
+    --banner-text-footer: #fff4d4;
+    --accent: #ffc857;
+    --banner-scanline-colour: rgba(255, 200, 87, 0.035);
+
+    /* Header */
+    --header-bg-colour: #4a310f;
+    --header-text-colour: #ffe5ad;
+
+    /* Terminal window */
+    --term-bg: linear-gradient(to bottom, #1c1206, #100903);
+    --term-header-bg: linear-gradient(to bottom, #39270d, #241504);
+    --term-header-fg: #ffe5ad;
+    --term-title: #fff4d4;
+    --term-shadow: rgba(255, 200, 87, 0.16);
+
+    /* Navigation / Menu */
+    --nav-bg-colour: #332008;
+    --nav-border-colour: #ffe5ad;
+    --menu-button-bg-colour: #5c3d14;
+    --menu-button-text-colour: #ffe5ad;
+    --menu-button-hover-bg-colour: #85591d;
+
+    --menu-theme-new-bg: #ffc857;
+    --menu-theme-new-colour: #1b1003;
+    --menu-theme-caption-bg: #ffe5ad;
+    --menu-theme-caption-colour: #1b1003;
+    --menu-theme-label-bg: #39270d;
+    --menu-theme-label-border-colour: #7f561f;
+    --menu-theme-dot-bg: #1b1003;
+    --menu-theme-dot-border-colour: #bf8430;
+    --menu-theme-dot-fill-colour: #ffd27a;
+
+    /* Footer */
+    --footer-bg-colour: #2c1b06;
+    --footer-text-colour: #ffe5ad;
+    --footer-border-colour: #ffe5ad;
+
+    /* Chatroom */
+    --chatroom-border-colour: #5a3b13;
+    --chatroom-bg-colour: #1a0f04;
+    --chatroom-text-colour: #f7e6c4;
+
+    /* Timestamps */
+    --timestamp-colour: #d6b77c;
+    --chat-timestamp-colour: #c4a66f;
+
+    /* Inputs */
+    --chat-input-border-colour: #6a4618;
+    --chat-input-bg-colour: #241707;
+    --chat-input-text-colour: #fff4d4;
+
+    /* Buttons */
+    --chat-send-btn-bg-colour: #9f6a25;
+    --chat-send-btn-text-colour: #ffffff;
+
+    /* Theme Toggle Button */
+    --toggle-btn-bg-colour: #241707;
+    --toggle-btn-text-colour: #fff4d4;
+
+    /* Pending Indicator */
+    --pending-indicator-colour: #ffb347;
+
+    /* Edit Modal */
+    --edit-modal-bg-colour: #211608;
+    --edit-modal-text-colour: #ffe5ad;
+    --edit-modal-shadow-colour: rgba(0, 0, 0, 0.55);
+    --edit-modal-userinfo-bg-colour: #2d1c08;
+    --edit-modal-userinfo-text-colour: #ffe5ad;
+    --edit-modal-userinfo-border-colour: #5a3b13;
+    --edit-modal-input-bg-colour: #1a0f04;
+    --edit-modal-input-text-colour: #fff4d4;
+    --edit-modal-input-border-colour: #6a4618;
+
+    /* Modal Buttons */
+    --edit-modal-btn-save-bg-colour: #9f6a25;
+    --edit-modal-btn-save-hover-colour: #c58a32;
+    --edit-modal-btn-cancel-bg-colour: #a56420;
+    --edit-modal-btn-cancel-hover-colour: #ca7f2b;
+
+    /* Tooltips */
+    --tooltip-bg-colour: #241707;
+    --tooltip-text-colour: #fff4d4;
+    --tooltip-border-colour: #ffe5ad;
+    --tooltip-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+    /* Shared utility controls */
+    --kc-round-icon-btn-bg:
+        color-mix(in srgb, var(--menu-button-bg-colour) 74%, var(--chatroom-bg-colour));
+    --kc-round-icon-btn-bg-hover: var(--menu-button-hover-bg-colour);
+    --kc-round-icon-btn-border:
+        color-mix(in srgb, var(--frame-border-light) 70%, var(--menu-button-bg-colour));
+    --kc-round-icon-btn-border-hover: var(--banner-blue);
+    --kc-round-icon-btn-fg: var(--body-text-colour);
+    --kc-round-icon-btn-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--banner-blue) 38%, transparent);
+
+    --kc-click-header-bg-hover:
+        color-mix(in srgb, var(--menu-button-hover-bg-colour) 48%, transparent);
+    --kc-click-header-focus-ring:
+        0 0 0 2px color-mix(in srgb, var(--banner-blue) 24%, transparent);
+
+    --kc-pill-migrate-shadow:
+        0 0 0 1px color-mix(in srgb, var(--banner-blue) 22%, transparent),
+        0 0.42rem 1rem color-mix(in srgb, black 36%, transparent);
+
+    --kc-badge-snippet-label-fg: var(--body-text-colour);
+    --kc-badge-snippet-label-muted: var(--timestamp-colour);
+    --kc-badge-snippet-hint-bg: rgba(var(--frame-bg-colour-rgb), 0.62);
+    --kc-badge-snippet-hint-border: var(--chat-input-border-colour);
+    --kc-badge-snippet-code-fg: var(--body-text-colour);
+    --kc-badge-snippet-code-border:
+        color-mix(in srgb, var(--body-text-colour) 18%, transparent);
+    --kc-badge-snippet-code-selection:
+        color-mix(in srgb, var(--banner-blue) 24%, transparent);
+    --kc-badge-snippet-code-bg-start:
+        color-mix(in srgb, var(--body-bg-colour) 90%, #000 10%);
+    --kc-badge-snippet-code-bg-end:
+        color-mix(in srgb, var(--body-bg-colour) 58%, #4a310f 42%);
+    --kc-badge-snippet-btn-bg: var(--menu-button-bg-colour);
+    --kc-badge-snippet-btn-fg: var(--menu-button-text-colour);
+    --kc-badge-snippet-btn-hover-bg: var(--menu-button-hover-bg-colour);
+    --kc-badge-snippet-btn-border: var(--nav-border-colour);
+    --kc-badge-snippet-focus-outline: 2px solid var(--accent);
+
+    /* CRT effects */
+    --effect-crt-scanline-colour-strong: rgba(255, 200, 87, 0.075);
+    --effect-crt-scanline-colour-soft: rgba(255, 200, 87, 0.028);
+
+    /* Calendar */
+    --cal-shadow: 0 0.45rem 1.2rem rgba(0, 0, 0, 0.35);
+    --cal-bg: color-mix(in srgb, var(--frame-bg-colour) 82%, var(--chatroom-bg-colour));
+    --cal-brd: color-mix(in srgb, var(--frame-border-light) 70%, var(--menu-button-bg-colour));
+    --cal-hdr-brd: color-mix(in srgb, var(--frame-border-light) 45%, transparent);
+    --cal-ttl-col: var(--header-text-colour);
+    --cal-sub-col: var(--timestamp-colour);
+
+    --cal-chip-bg: color-mix(in srgb, var(--menu-button-bg-colour) 62%, var(--frame-bg-colour));
+    --cal-chip-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 70%, var(--frame-bg-colour));
+    --cal-chip-col: var(--menu-button-text-colour);
+    --cal-chip-brd: color-mix(in srgb, var(--frame-border-light) 50%, var(--menu-button-bg-colour));
+    --cal-chip-sel-bg: linear-gradient(135deg, #9f6a25, #ffc857);
+    --cal-chip-sel-col: #1b1003;
+    --cal-chip-sel-brd: #ffd27a;
+    --cal-chip-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--frame-bg-colour));
+    --cal-chip-empty-col: var(--timestamp-colour);
+    --cal-chip-empty-brd: color-mix(in srgb, var(--timestamp-colour) 42%, var(--frame-border-light));
+
+    --cal-sct-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--frame-bg-colour));
+    --cal-sct-brd: color-mix(in srgb, var(--frame-border-light) 50%, transparent);
+
+    --cal-selpill-bg: color-mix(in srgb, var(--banner-blue) 12%, var(--frame-bg-colour));
+    --cal-selpill-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 64%, var(--frame-bg-colour));
+    --cal-selpill-col: var(--header-text-colour);
+    --cal-selpill-brd: color-mix(in srgb, var(--banner-blue) 28%, var(--frame-border-light));
+    --cal-selpill-brd-hover: var(--banner-blue);
+    --cal-selpill-glow:
+        0 0 0 1px color-mix(in srgb, var(--banner-blue) 18%, transparent),
+        0 0.45rem 1rem color-mix(in srgb, black 32%, transparent);
+
+    --cal-selbar-scroll-thumb: color-mix(in srgb, var(--body-text-colour) 30%, transparent);
+    --cal-selbar-scroll-thumb-hover: color-mix(in srgb, var(--body-text-colour) 45%, transparent);
+
+    --cal-rst-bg: color-mix(in srgb, var(--banner-lilac) 16%, var(--menu-button-bg-colour));
+    --cal-rst-col: var(--menu-button-text-colour);
+    --cal-rst-brd: color-mix(in srgb, var(--banner-lilac) 30%, var(--frame-border-light));
+    --cal-rst-bg-hover: color-mix(in srgb, var(--banner-lilac) 22%, var(--menu-button-hover-bg-colour));
+
+    --cal-clr-bg: color-mix(in srgb, var(--banner-blue) 16%, var(--menu-button-bg-colour));
+    --cal-clr-col: var(--menu-button-text-colour);
+    --cal-clr-brd: color-mix(in srgb, var(--banner-blue) 28%, var(--frame-border-light));
+    --cal-clr-bg-hover: color-mix(in srgb, var(--banner-blue) 22%, var(--menu-button-hover-bg-colour));
+
+    --cal-mo-bg: color-mix(in srgb, var(--frame-bg-colour) 86%, var(--chatroom-bg-colour));
+    --cal-mo-brd: color-mix(in srgb, var(--frame-border-light) 48%, transparent);
+    --cal-wk-col: var(--timestamp-colour);
+    --cal-dypad-bg: var(--chatroom-bg-colour);
+    --cal-fcs-ring: 0 0 0 2px color-mix(in srgb, var(--banner-blue) 48%, transparent);
+
+    /* Chat and comments */
+    --chat-message-bg-even: #1a0f04;
+    --chat-message-bg-odd: #241707;
+    --chat-nick-colour: #ffd27a;
+    --chat-actions-hover-bg-colour: #5c3d14;
+    --chat-action-hover-bg-fallback: #5c3d14;
+    --chat-send-btn-hover-bg-fallback: #c58a32;
+
+    --comments-box-scrollbar-thumb: #7f561f;
+    --comments-box-scrollbar-thumb-hover: #ffd27a;
+    --comments-location-scrollbar-thumb: #7f561f;
+    --comments-location-scrollbar-thumb-hover: #ffd27a;
+    --comments-chat-timestamp-fallback-colour: var(--timestamp-colour);
+
+    /* Commits */
+    --commit-block-even-mix: 88%;
+    --commits-scrollbar-track: color-mix(in srgb, var(--chatroom-bg-colour) 72%, transparent);
+    --commits-scrollbar-thumb: color-mix(in srgb, var(--banner-blue) 45%, var(--frame-bg-colour));
+    --commits-scrollbar-thumb-hover: var(--banner-blue);
+
+    /* Counter */
+    --counter-shell-top: #30200a;
+    --counter-shell-bottom: #1b1003;
+    --counter-shell-border: #100903;
+    --counter-cell-divider: #100903;
+    --counter-cell-top: #452d0d;
+    --counter-cell-bottom: #1a0f04;
+    --counter-shadow-base: #000;
+    --counter-face-colour: #fff4d4;
+    --counter-shell-highlight: rgba(255, 255, 255, 0.08);
+    --counter-shell-shadow: rgba(0, 0, 0, 0.4);
+    --counter-cell-highlight: rgba(255, 255, 255, 0.06);
+    --counter-cell-shadow: rgba(0, 0, 0, 0.35);
+    --counter-cell-sheen-top: rgba(255, 255, 255, 0.04);
+    --counter-cell-sheen-bottom: rgba(0, 0, 0, 0.16);
+    --counter-window-gloss-1: rgba(255, 255, 255, 0.09);
+    --counter-window-gloss-2: rgba(255, 255, 255, 0.02);
+    --counter-window-gloss-3: rgba(0, 0, 0, 0.14);
+    --counter-window-gloss-4: rgba(255, 255, 255, 0.03);
+    --counter-window-gloss-5: rgba(0, 0, 0, 0.2);
+    --counter-face-shadow-strong: rgba(0, 0, 0, 0.9);
+    --counter-face-shadow-soft: rgba(255, 235, 190, 0.1);
+    --counter-credit-bg: rgba(48, 32, 10, 0.8);
+    --counter-credit-border: rgba(255, 229, 173, 0.18);
+    --counter-credit-colour: rgba(255, 244, 212, 0.74);
+    --counter-credit-link-colour: #ffe5ad;
+    --counter-credit-link-hover-colour: #ffffff;
+    --counter-credit-shadow: 0 0.12rem 0.55rem rgba(0, 0, 0, 0.34);
+
+    /* CRT control desk */
+    --crt-ui-shadow-colour: rgba(0, 0, 0, 0.55);
+    --crt-ui-group-border: #5a3b13;
+    --crt-ui-group-background: #2d1c08;
+    --crt-ui-status-background: #1a0f04;
+    --crt-ui-status-border: #6a4618;
+    --crt-ui-range-track-start: #1a0f04;
+    --crt-ui-range-track-end: #5c3d14;
+    --crt-ui-range-thumb-background: linear-gradient(to right, #8f6224, #ffc857);
+
+    /* Effects modal */
+    --effects-modal-section-bg: color-mix(in srgb, var(--frame-bg-colour) 88%, transparent);
+    --effects-modal-section-border: color-mix(in srgb, var(--nav-border-colour) 38%, transparent);
+    --effects-modal-muted: color-mix(in srgb, var(--body-text-colour) 72%, transparent);
+    --effects-modal-output-bg: color-mix(in srgb, var(--banner-blue) 14%, transparent);
+    --effects-modal-output-border: color-mix(in srgb, var(--banner-blue) 38%, transparent);
+    --effects-slider-track-bg: color-mix(in srgb, var(--nav-border-colour) 34%, transparent);
+    --effects-slider-thumb-bg: var(--toggle-btn-bg-colour);
+    --effects-slider-thumb-border: color-mix(in srgb, var(--nav-border-colour) 70%, black 12%);
+    --effects-slider-accent: var(--banner-blue);
+
+    /* Email */
+    --email-bg-colour: #1a0f04;
+    --email-border-colour: #5a3b13;
+    --email-header-bg-colour: #241707;
+    --email-header-border-colour: #5a3b13;
+    --email-row-odd-bg-colour: #1d1104;
+    --email-row-even-bg-colour: #281806;
+    --email-text-colour: #fff4d4;
+    --email-meta-text-colour: #d6b77c;
+    --email-content-text-colour: #ffe5ad;
+    --email-value-text-colour: #fff4d4;
+    --email-signature-sep-colour: rgba(255, 244, 212, 0.2);
+    --email-action-bg: rgba(143, 98, 36, 0.34);
+    --email-action-bg-hover: rgba(197, 138, 50, 0.52);
+    --email-action-border: rgba(255, 210, 122, 0.34);
+    --email-action-highlight: rgba(255, 229, 173, 0.2);
+    --email-action-shadow: rgba(0, 0, 0, 0.55);
+    --email-action-drop-shadow: rgba(0, 0, 0, 0.45);
+    --email-action-focus: rgba(255, 210, 122, 0.82);
+
+    --yamaka-ink: #fff4d4;
+    --yamaka-text: #ffe5ad;
+    --yamaka-muted: #d6b77c;
+
+    /* Keyboard */
+    --keyboard-bg: #241707;
+    --keyboard-border-colour: #5a3b13;
+    --keyboard-key-bg: #30200a;
+    --keyboard-key-bg-hover: #5c3d14;
+    --keyboard-key-border-colour: #6a4618;
+    --keyboard-key-text-colour: #fff4d4;
+    --keyboard-key-shadow: rgba(0, 0, 0, 0.34);
+
+    /* Notices */
+    --ntcs-card-bg: color-mix(in srgb, var(--chatroom-bg-colour) 84%, var(--frame-bg-colour));
+    --ntcs-card-border-colour: color-mix(in srgb, var(--frame-border-light) 70%, transparent);
+    --ntcs-card-shadow: 0 0.45rem 1.1rem rgba(0, 0, 0, 0.34);
+
+    /* Reader */
+    --reader-bg: var(--frame-bg-colour);
+    --reader-text-colour: var(--body-text-colour);
+    --reader-controls-bg: color-mix(in srgb, var(--frame-bg-colour) 82%, var(--chatroom-bg-colour));
+    --reader-controls-border-colour: color-mix(in srgb, var(--frame-border-light) 70%, transparent);
+    --reader-button-bg: var(--menu-button-bg-colour);
+    --reader-button-bg-hover: var(--menu-button-hover-bg-colour);
+    --reader-button-colour: var(--menu-button-text-colour);
+
+    --story-dropdown-bg: #1a0f04;
+    --story-dropdown-border-colour: #5a3b13;
+    --story-dropdown-item-bg: #1a0f04;
+    --story-dropdown-item-bg-hover: #30200a;
+    --story-dropdown-item-colour: #fff4d4;
+    --story-dropdown-current-bg: #9f6a25;
+    --story-dropdown-current-colour: #ffffff;
+
+    /* RSS and blog */
+    --rss-content-colour: #ffe5ad;
+    --rss-list-marker-col: color-mix(in srgb, var(--banner-blue) 82%, var(--menu-button-text-colour));
+    --rss-blockquote-bg: color-mix(in srgb, var(--chatroom-bg-colour) 82%, white 4%);
+    --rss-blockquote-brd: color-mix(in srgb, var(--banner-blue) 72%, var(--frame-border-light));
+    --rss-blockquote-col: var(--rss-content-colour);
+    --rss-blockquote-shadow: inset 0.65rem 0 1.2rem color-mix(in srgb, var(--banner-blue) 14%, transparent);
+
+    --rss-code-bg: color-mix(in srgb, var(--chatroom-bg-colour) 82%, white 4%);
+    --rss-code-fg: #fff4d4;
+    --rss-code-border: color-mix(in srgb, var(--frame-border-light) 72%, var(--menu-button-bg-colour));
+    --rss-code-copy-bg: color-mix(in srgb, var(--menu-button-bg-colour) 80%, black);
+    --rss-code-copy-fg: #fff4d4;
+    --rss-code-copy-hover-bg: var(--menu-button-hover-bg-colour);
+    --rss-code-copy-hover-fg: #ffe5ad;
+    --rss-code-scrollbar-thumb: color-mix(in srgb, var(--rss-code-fg) 42%, transparent);
+    --rss-code-scrollbar-thumb-hover: color-mix(in srgb, var(--rss-code-fg) 62%, transparent);
+
+    --rss-code-hljs-string: #ffe5ad;
+    --rss-code-hljs-keyword: #d6adff;
+    --rss-code-hljs-function: #ffbf7a;
+    --rss-code-hljs-comment: color-mix(in srgb, var(--body-text-colour) 58%, transparent);
+    --rss-code-hljs-number: #ffd27a;
+    --rss-code-hljs-operator: #ffb84a;
+    --rss-code-hljs-title: #ffe5ad;
+    --rss-code-hljs-built_in: #ffd27a;
+    --rss-code-hljs-punctuation: #ffffff;
+    --rss-code-hljs-name: #ffffff;
+
+    --rss-code-switch-bg: color-mix(in srgb, var(--rss-code-bg) 84%, black);
+    --rss-code-switch-brd: color-mix(in srgb, var(--rss-code-border) 72%, white 8%);
+    --rss-code-choice-bg: color-mix(in srgb, var(--menu-button-bg-colour) 58%, black);
+    --rss-code-choice-bg-hover: color-mix(in srgb, var(--menu-button-hover-bg-colour) 78%, black);
+    --rss-code-choice-bg-active: color-mix(in srgb, var(--banner-blue) 34%, black);
+    --rss-code-choice-col-active: #fff4d4;
+    --rss-code-choice-brd: color-mix(in srgb, var(--rss-code-border) 78%, transparent);
+    --rss-code-choice-brd-hover: #ffe5ad;
+    --rss-code-choice-brd-active: color-mix(in srgb, var(--banner-blue) 82%, var(--rss-code-border));
+    --rss-code-choice-dot-bg: transparent;
+    --rss-code-choice-dot-bg-active: color-mix(in srgb, var(--banner-blue) 88%, white);
+    --rss-code-choice-dot-brd: color-mix(in srgb, var(--rss-code-fg) 68%, transparent);
+    --rss-code-choice-dot-brd-active: color-mix(in srgb, var(--banner-blue) 88%, white);
+
+    --rss-post-hover-colour: var(--banner-blue);
+    --rss-empty-bg: color-mix(in srgb, var(--chatroom-bg-colour) 88%, var(--frame-bg-colour));
+    --rss-empty-brd: color-mix(in srgb, var(--frame-border-light) 74%, var(--menu-button-bg-colour));
+    --rss-empty-shadow: var(--frame-box-shadow);
+
+    --rss-author-count-bg: color-mix(in srgb, var(--menu-button-bg-colour) 44%, transparent);
+    --rss-author-count-col: var(--menu-button-text-colour);
+
+    /* SMS */
+    --msg-in-bg: #9f6a25;
+    --msg-in-strip-bg: #603700;
+    --msg-in-strip-fg: #fff4d4;
+    --msg-out-bg: #6f4b20;
+    --msg-out-strip-bg: #4c3314;
+    --msg-out-strip-fg: #fff1cc;
+    --msg-fg: #ffffff;
+    --msg-timestamp: #d6b77c;
+
+    /* Socials */
+    --socials-card-bg: var(--chatroom-bg-colour);
+    --socials-card-text: var(--body-text-colour);
+    --socials-card-border-colour: var(--frame-border-light);
+    --socials-card-url-colour: var(--timestamp-colour);
+    --socials-card-hover-bg: var(--menu-button-hover-bg-colour);
+    --socials-card-hover-text: var(--menu-button-text-colour);
+    --socials-card-shadow: var(--frame-box-shadow);
+
+    /* Stats */
+    --site-stats-item-background: rgba(var(--frame-bg-colour-rgb), 0.22);
+    --site-stats-item-border: 1px solid color-mix(in srgb, var(--nav-border-colour) 38%, transparent);
+    --site-stats-item-box-shadow: 0 0.35rem 0.9rem rgba(0, 0, 0, 0.24);
+    --stats-segment-text-colour: var(--menu-button-text-colour);
+    --stats-segment-background: var(--nav-bg-colour);
+    --stats-segment-border: 1px solid var(--nav-border-colour);
+    --stats-segment-box-shadow: none;
+
+    /* Presence / status */
+    --presence-online-accent: #5fffe4;
+    --presence-online-accent-soft: rgba(95, 255, 228, 0.16);
+    --presence-online-accent-wash: rgba(95, 255, 228, 0.08);
+    --presence-panel-accent: var(--presence-online-accent);
+    --presence-panel-accent-soft: var(--presence-online-accent-soft);
+    --presence-panel-accent-wash: var(--presence-online-accent-wash);
+
+    /* Tategaki */
+    --tategaki-border-colour: color-mix(in srgb, var(--banner-blue) 34%, transparent);
+
+    /* Terminal and windows */
+    --terminal-border-colour: rgba(255, 229, 173, 0.2);
+    --terminal-btn-close-colour: #ffb38a;
+    --terminal-btn-toggle-colour: #ffe07a;
+    --terminal-btn-float-colour: #ffd27a;
+    --terminal-scrollbar-thumb: color-mix(in srgb, var(--term-header-fg) 42%, transparent);
+    --terminal-scrollbar-thumb-hover: color-mix(in srgb, var(--term-header-fg) 62%, transparent);
+
+    --window-border-colour: rgba(255, 229, 173, 0.2);
+    --window-bg: var(--frame-bg-colour);
+    --window-content-bg: transparent;
+    --window-header-bg: var(--term-header-bg);
+    --window-header-fg: var(--term-header-fg);
+    --window-title-colour: inherit;
+}
+
+/* Presence / status tone overrides */
+html.neru .presence-window .presence-panel[data-presence-tone="online"],
+html.neru .presence-panel[data-presence-tone="online"] {
+    --presence-panel-accent: var(--presence-online-accent);
+    --presence-panel-accent-soft: var(--presence-online-accent-soft);
+    --presence-panel-accent-wash: var(--presence-online-accent-wash);
+}
+
+html.dark-mode.neru .presence-window .presence-panel[data-presence-tone="online"],
+html.neru.dark-mode .presence-window .presence-panel[data-presence-tone="online"],
+html.dark-mode.neru .presence-panel[data-presence-tone="online"],
+html.neru.dark-mode .presence-panel[data-presence-tone="online"] {
+    --presence-panel-accent: var(--presence-online-accent);
+    --presence-panel-accent-soft: var(--presence-online-accent-soft);
+    --presence-panel-accent-wash: var(--presence-online-accent-wash);
+}

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import type { EffectsUiConfig } from "./uiFetch.ts";
+import type { fxUIconf } from "./uiFetch.ts";
 import * as modals from "./modals.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
 import { installMenuToggle } from "./menues.tsx";
@@ -16,7 +16,7 @@ type StoredPrefs = Readonly<Partial<Prefs>>;
 
 type Props = Readonly<{
     prefs: Prefs;
-    ui: EffectsUiConfig;
+    ui: fxUIconf;
 }>;
 
 type Ctx = Readonly<{
@@ -48,7 +48,7 @@ const SLIDER_STEP = 1;
 let defPrefs: Prefs | null = null;
 let mod: modals.Modal | null = null;
 let syncOn = false;
-let uiCfg: EffectsUiConfig | null = null;
+let uiCfg: fxUIconf | null = null;
 
 /**
  * Clamp thing. Keeps slider rubbish in bounds and stops NaN being annoying.
@@ -165,9 +165,9 @@ function msToSpd(durationMs: number): number {
 
 /**
  * Current ui config getter. Throws if init got skipped somewhere.
- * @returns {EffectsUiConfig}
+ * @returns {fxUIconf}
  */
-function ui(): EffectsUiConfig {
+function ui(): fxUIconf {
     if (!uiCfg) {
         throw new Error("Effects UI config has not been initialised.");
     }
@@ -805,10 +805,10 @@ function ensureSync(): void {
  * Creates the floating CRT effects button, applies saved preferences,
  * and wires the effects modal. Button plumbing is delegated to
  * `installMenuToggle` so every floating-modal toggle behaves the same.
- * @param {EffectsUiConfig} nextUi
+ * @param {fxUIconf} nextUi
  * @returns {void}
  */
-export function initEffectsControls(nextUi: EffectsUiConfig): void {
+export function initEffectsControls(nextUi: fxUIconf): void {
     uiCfg = nextUi;
 
     defs();

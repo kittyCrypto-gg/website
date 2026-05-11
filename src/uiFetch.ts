@@ -5,7 +5,13 @@ export type MainMenuEntry = string | Readonly<{
     icon?: string;
 }>;
 
-export type WindowJsonInitialFloatingPosition = Readonly<{
+export type MainThemeEntry = Readonly<{
+    name?: string;
+    location?: string;
+    caller?: string;
+}>;
+
+export type windowInitPos = Readonly<{
     x: string;
     y: string;
 }>;
@@ -19,7 +25,7 @@ export type WindowJsonOptions = Readonly<{
     insertAtStart?: boolean;
     closedLnchrDis?: string;
     initFloat?: boolean;
-    initFloatPos?: WindowJsonInitialFloatingPosition;
+    initFloatPos?: windowInitPos;
     initClosed?: boolean;
     initMini?: boolean;
     showCloseBttn?: boolean;
@@ -27,13 +33,13 @@ export type WindowJsonOptions = Readonly<{
     showFloatBttn?: boolean;
 }>;
 
-export type WindowJsonDefinition = Readonly<{
+export type windowDef = Readonly<{
     selector: string;
     forceFreshStateOnLoad?: boolean;
     options: WindowJsonOptions;
 }>;
 
-export type EffectsUiModalConfig = Readonly<{
+export type fxUImodConf = Readonly<{
     title: string;
     lead: string;
     closeTitle: string;
@@ -52,14 +58,14 @@ export type EffectsUiModalConfig = Readonly<{
     done: string;
 }>;
 
-export type EffectsUiConfig = Readonly<{
+export type fxUIconf = Readonly<{
     icon: string;
     iconPath?: string;
     title: string;
-    modal: EffectsUiModalConfig;
+    modal: fxUImodConf;
 }>;
 
-export type CrtUiModalConfig = Readonly<{
+export type crtUImodConf = Readonly<{
     title: string;
     lead: string;
     closeTitle: string;
@@ -94,11 +100,11 @@ export type CrtUiModalConfig = Readonly<{
     runningStatus: string;
 }>;
 
-export type CrtUiConfig = Readonly<{
+export type crtUIconf = Readonly<{
     icon: string;
     iconPath?: string;
     title: string;
-    modal: CrtUiModalConfig;
+    modal: crtUImodConf;
 }>;
 
 export type ToggleVisualConfig = Readonly<{
@@ -107,7 +113,7 @@ export type ToggleVisualConfig = Readonly<{
     title?: string;
 }>;
 
-export type ThemeToggleConfig = Readonly<{
+export type themeTglConf = Readonly<{
     dark: string;
     darkIconPath?: string;
     light: string;
@@ -115,7 +121,7 @@ export type ThemeToggleConfig = Readonly<{
     title?: string;
 }>;
 
-export type BinaryToggleConfig = Readonly<{
+export type toggleConf = Readonly<{
     enable: string;
     enableIconPath?: string;
     disable: string;
@@ -148,14 +154,15 @@ export type MainJson = Readonly<{
     headScripts?: readonly string[];
     headerInjections?: readonly string[];
     mainMenu: Record<string, MainMenuEntry>;
+    themes?: Record<string, MainThemeEntry>;
     header: string;
     footer: string;
-    themeToggle: ThemeToggleConfig;
-    readerModeToggle: BinaryToggleConfig;
-    readAloudToggle: BinaryToggleConfig;
-    effects: EffectsUiConfig;
-    crtUi?: CrtUiConfig;
-    windows?: Readonly<Record<string, WindowJsonDefinition>>;
+    themeToggle: themeTglConf;
+    readerModeToggle: toggleConf;
+    readAloudToggle: toggleConf;
+    effects: fxUIconf;
+    crtUi?: crtUIconf;
+    windows?: Readonly<Record<string, windowDef>>;
 }>;
 
 let uiDataPromise: Promise<MainJson> | null = null;
@@ -166,7 +173,7 @@ let ntcDataPromise: Promise<NtcJson> | null = null;
  * @param {RequestCache} [cacheMode="default"] Cache mode for fetch. The browser loves knobs.
  * @returns {Promise<T>} Parsed JSON payload.
  */
-async function fetchJson<T>(src: string, cacheMode: RequestCache = "default"): Promise<T> {
+export async function fetchJson<T>(src: string, cacheMode: RequestCache = "default"): Promise<T> {
     const response = await fetch(src, { cache: cacheMode });
 
     if (!response.ok) {

@@ -288,5 +288,40 @@
         "launcherSrc": "/images/webrings.svg"
       }
     }
+  },
+  "themes": {
+    "miku": {
+      "name": "Miku"
+    },
+    "teto": {
+      "name": "Teto",
+      "location": "/styles/themes/teto.css",
+      "caller": "teto"
+    },
+    "neru": {
+      "name": "Neru",
+      "location": "/styles/themes/neru.css",
+      "caller": "neru"
+    },
+    "macOS9": {
+      "name": "OS9",
+      "location": "/styles/themes/macOS9.css",
+      "caller": "os9"
+    },
+    "macOSX": {
+      "name": "OSX Aqua",
+      "location": "/styles/themes/macOSX.css",
+      "caller": "osx"
+    },
+    "windows98": {
+      "name": "98SE",
+      "location": "/styles/themes/windows98.css",
+      "caller": "w98"
+    },
+    "windowsXP": {
+      "name": "XP Luna",
+      "location": "/styles/themes/windowsXP.css",
+      "caller": "wxp"
+    }
   }
 }
