@@ -1,0 +1,1988 @@
+/* =========================================
+  Theme: GLaDOS Terminal
+  Caller: .glados
+========================================= */
+
+/* Light tokens */
+.glados {
+  /* Core palette */
+  --glados-wall: #241108;
+  --glados-wall-deep: #130904;
+  --glados-screen: #1b0c05;
+  --glados-screen-soft: #251108;
+  --glados-panel: #2f1608;
+  --glados-panel-raised: #3a1b0a;
+  --glados-panel-sunken: #120702;
+  --glados-panel-border: #6f3b0f;
+  --glados-amber-dim: #8f5318;
+  --glados-amber: #d7882a;
+  --glados-amber-soft: #e3a14a;
+  --glados-amber-bright: #ffc568;
+  --glados-amber-pale: #ffd89a;
+  --glados-ink: #0b0401;
+  --glados-shadow: #070201;
+  --glados-glow: rgba(255, 169, 66, 0.28);
+  --glados-glow-strong: rgba(255, 191, 104, 0.42);
+  --glados-line: rgba(255, 168, 66, 0.18);
+  --glados-line-strong: rgba(255, 191, 104, 0.36);
+  --glados-warning: #ffb347;
+  --glados-error: #ff7f4a;
+  --glados-ok: #ffd27d;
+
+  /* Body */
+  --body-bg-colour: var(--glados-wall);
+  --body-text-colour: var(--glados-amber-soft);
+  --body-text-colour-light: var(--glados-amber-soft);
+
+  /* Frame */
+  --frame-bg-colour: var(--glados-screen);
+  --frame-bg-colour-rgb: 27, 12, 5;
+  --frame-border-light: var(--glados-amber-dim);
+  --frame-box-shadow:
+    0 0 0 1px rgba(255, 191, 104, 0.16),
+    0 0 0 2px rgba(0, 0, 0, 0.32),
+    0 0 1.15rem rgba(255, 145, 41, 0.12),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.12);
+
+  /* Banner */
+  --banner-green: var(--glados-ok);
+  --banner-blue: var(--glados-amber-soft);
+  --banner-teal: var(--glados-amber);
+  --banner-teal-bright: var(--glados-amber-bright);
+  --banner-lilac: var(--glados-amber-soft);
+  --banner-background: transparent;
+  --banner-text-main: var(--glados-amber-soft);
+  --banner-text-header: var(--glados-amber-bright);
+  --banner-text-footer: var(--glados-amber-dim);
+  --banner-scanline-colour: rgba(255, 191, 104, 0.03);
+  --accent: var(--glados-amber-bright);
+
+  /* Header */
+  --header-bg-colour: rgba(18, 7, 2, 0.88);
+  --header-text-colour: var(--glados-amber-soft);
+
+  /* Terminal window */
+  --term-bg: var(--glados-screen);
+  --term-header-bg: var(--glados-panel-sunken);
+  --term-header-fg: var(--glados-amber-bright);
+  --term-title: var(--glados-amber-bright);
+  --term-shadow: rgba(0, 0, 0, 0.45);
+
+  /* Navigation / Menu */
+  --nav-bg-colour: rgba(17, 8, 3, 0.92);
+  --nav-border-colour: var(--glados-panel-border);
+  --menu-button-bg-colour: var(--glados-panel);
+  --menu-button-text-colour: var(--glados-amber-soft);
+  --menu-button-hover-bg-colour: var(--glados-panel-raised);
+
+  --menu-theme-new-bg: var(--glados-amber-bright);
+  --menu-theme-new-colour: var(--glados-ink);
+  --menu-theme-caption-bg: var(--glados-panel-sunken);
+  --menu-theme-caption-colour: var(--glados-amber-bright);
+  --menu-theme-label-bg: var(--glados-panel);
+  --menu-theme-label-border-colour: var(--glados-panel-border);
+  --menu-theme-dot-bg: var(--glados-panel-sunken);
+  --menu-theme-dot-border-colour: var(--glados-amber-dim);
+  --menu-theme-dot-fill-colour: var(--glados-amber-bright);
+
+  /* Footer */
+  --footer-bg-colour: rgba(17, 8, 3, 0.92);
+  --footer-text-colour: var(--glados-amber-soft);
+  --footer-border-colour: var(--glados-panel-border);
+
+  /* Chatroom */
+  --chatroom-border-colour: var(--glados-panel-border);
+  --chatroom-bg-colour: var(--glados-screen);
+  --chatroom-text-colour: var(--glados-amber-soft);
+
+  /* Timestamps */
+  --timestamp-colour: var(--glados-amber-dim);
+  --chat-timestamp-colour: var(--glados-amber-dim);
+
+  /* Inputs */
+  --chat-input-border-colour: var(--glados-panel-border);
+  --chat-input-bg-colour: var(--glados-panel-sunken);
+  --chat-input-text-colour: var(--glados-amber-bright);
+
+  /* Buttons */
+  --chat-send-btn-bg-colour: var(--glados-panel);
+  --chat-send-btn-text-colour: var(--glados-amber-soft);
+  --chat-send-btn-hover-bg-fallback: var(--glados-panel-raised);
+  --chat-action-hover-bg-fallback: var(--glados-panel-raised);
+
+  /* Theme Toggle Button */
+  --toggle-btn-bg-colour: var(--glados-panel);
+  --toggle-btn-text-colour: var(--glados-amber-soft);
+
+  /* Pending Indicator */
+  --pending-indicator-colour: var(--glados-warning);
+
+  /* Edit Modal */
+  --edit-modal-bg-colour: var(--glados-screen);
+  --edit-modal-text-colour: var(--glados-amber-soft);
+  --edit-modal-shadow-colour: rgba(0, 0, 0, 0.45);
+  --edit-modal-userinfo-bg-colour: var(--glados-panel);
+  --edit-modal-userinfo-text-colour: var(--glados-amber-bright);
+  --edit-modal-userinfo-border-colour: var(--glados-panel-border);
+  --edit-modal-input-bg-colour: var(--glados-panel-sunken);
+  --edit-modal-input-text-colour: var(--glados-amber-bright);
+  --edit-modal-input-border-colour: var(--glados-panel-border);
+
+  /* Modal Buttons */
+  --edit-modal-btn-save-bg-colour: var(--glados-panel);
+  --edit-modal-btn-save-hover-colour: var(--glados-panel-raised);
+  --edit-modal-btn-cancel-bg-colour: var(--glados-panel);
+  --edit-modal-btn-cancel-hover-colour: var(--glados-panel-raised);
+
+  /* Icons */
+  --decreaseFont-icon-colour: var(--glados-amber-soft);
+  --increaseFont-icon-colour: var(--glados-amber-soft);
+  --resetFont-icon-colour: var(--glados-amber-soft);
+  --togglePnum-icon-colour: var(--glados-amber-soft);
+  --clearBookmark-icon-colour: var(--glados-warning);
+  --prevChapter-icon-colour: var(--glados-amber-soft);
+  --jumpToChapter-icon-colour: var(--glados-amber-soft);
+  --showInfo-icon-colour: var(--glados-amber-soft);
+  --imageNavArrow-bg-colour: var(--glados-panel);
+
+  /* Tooltips */
+  --tooltip-bg-colour: var(--glados-panel-sunken);
+  --tooltip-text-colour: var(--glados-amber-bright);
+  --tooltip-border-colour: var(--glados-panel-border);
+  --tooltip-shadow: 0 0.35rem 0 rgba(0, 0, 0, 0.32);
+
+  /* Shared utility controls */
+  --kc-round-icon-btn-bg: var(--glados-panel);
+  --kc-round-icon-btn-bg-hover: var(--glados-panel-raised);
+  --kc-round-icon-btn-border: var(--glados-panel-border);
+  --kc-round-icon-btn-border-hover: var(--glados-amber-bright);
+  --kc-round-icon-btn-fg: var(--glados-amber-soft);
+  --kc-round-icon-btn-focus-ring: 0 0 0 2px rgba(255, 197, 104, 0.28);
+
+  --kc-click-header-bg-hover: rgba(255, 168, 66, 0.08);
+  --kc-click-header-focus-ring: 0 0 0 2px rgba(255, 197, 104, 0.22);
+
+  --kc-pill-migrate-shadow:
+    0 0 0 1px rgba(255, 168, 66, 0.16),
+    0 0.32rem 0 rgba(0, 0, 0, 0.28);
+
+  --kc-badge-snippet-label-fg: var(--body-text-colour);
+  --kc-badge-snippet-label-muted: var(--timestamp-colour);
+  --kc-badge-snippet-hint-bg: rgba(18, 7, 2, 0.84);
+  --kc-badge-snippet-hint-border: var(--chat-input-border-colour);
+  --kc-badge-snippet-code-fg: var(--glados-amber-bright);
+  --kc-badge-snippet-code-border: rgba(255, 168, 66, 0.16);
+  --kc-badge-snippet-code-selection: rgba(255, 197, 104, 0.18);
+  --kc-badge-snippet-code-bg-start: var(--glados-panel-sunken);
+  --kc-badge-snippet-code-bg-end: var(--glados-screen);
+  --kc-badge-snippet-btn-bg: var(--menu-button-bg-colour);
+  --kc-badge-snippet-btn-fg: var(--menu-button-text-colour);
+  --kc-badge-snippet-btn-hover-bg: var(--menu-button-hover-bg-colour);
+  --kc-badge-snippet-btn-border: var(--nav-border-colour);
+  --kc-badge-snippet-focus-outline: 2px solid var(--accent);
+
+  /* CRT effects */
+  --effect-crt-scanline-colour-strong: rgba(255, 168, 66, 0.055);
+  --effect-crt-scanline-colour-soft: rgba(255, 168, 66, 0.022);
+
+  /* Calendar */
+  --cal-shadow:
+    0 0 0 1px rgba(255, 168, 66, 0.14),
+    0 0.35rem 0 rgba(0, 0, 0, 0.24);
+  --cal-bg: var(--glados-screen);
+  --cal-brd: var(--glados-panel-border);
+  --cal-hdr-brd: rgba(255, 168, 66, 0.2);
+  --cal-ttl-col: var(--glados-amber-bright);
+  --cal-sub-col: var(--timestamp-colour);
+
+  --cal-radius: 0.4rem;
+  --cal-radius-sm: 0.3rem;
+  --cal-radius-xs: 0.25rem;
+  --cal-chip-radius: 0.25rem;
+  --cal-chip-bg: var(--glados-panel);
+  --cal-chip-bg-hover: var(--glados-panel-raised);
+  --cal-chip-col: var(--glados-amber-soft);
+  --cal-chip-brd: var(--glados-panel-border);
+  --cal-chip-sel-bg: var(--glados-amber);
+  --cal-chip-sel-col: var(--glados-ink);
+  --cal-chip-sel-brd: var(--glados-amber-bright);
+  --cal-chip-empty-bg: var(--glados-panel-sunken);
+  --cal-chip-empty-col: var(--timestamp-colour);
+  --cal-chip-empty-brd: var(--glados-panel-border);
+
+  --cal-sct-bg: var(--glados-panel);
+  --cal-sct-brd: var(--glados-panel-border);
+
+  --cal-selpill-bg: var(--glados-panel);
+  --cal-selpill-bg-hover: var(--glados-panel-raised);
+  --cal-selpill-col: var(--glados-amber-soft);
+  --cal-selpill-brd: var(--glados-panel-border);
+  --cal-selpill-brd-hover: var(--glados-amber-bright);
+  --cal-selpill-glow:
+    0 0 0 1px rgba(255, 168, 66, 0.18),
+    0 0.24rem 0 rgba(0, 0, 0, 0.2);
+
+  --cal-selbar-scroll-thumb: rgba(255, 168, 66, 0.4);
+  --cal-selbar-scroll-thumb-hover: rgba(255, 197, 104, 0.64);
+
+  --cal-rst-bg: var(--glados-panel);
+  --cal-rst-col: var(--glados-amber-soft);
+  --cal-rst-brd: var(--glados-panel-border);
+  --cal-rst-bg-hover: var(--glados-panel-raised);
+
+  --cal-clr-bg: var(--glados-panel);
+  --cal-clr-col: var(--glados-amber-soft);
+  --cal-clr-brd: var(--glados-panel-border);
+  --cal-clr-bg-hover: var(--glados-panel-raised);
+
+  --cal-mo-bg: var(--glados-screen);
+  --cal-mo-brd: var(--glados-panel-border);
+  --cal-wk-col: var(--glados-amber-dim);
+  --cal-dypad-bg: var(--glados-panel-sunken);
+  --cal-dypad-radius: 0.3rem;
+  --cal-fcs-ring: 0 0 0 2px rgba(255, 197, 104, 0.32);
+
+  /* Chat and comments */
+  --chat-message-bg-even: var(--glados-screen);
+  --chat-message-bg-odd: var(--glados-panel);
+  --chat-nick-colour: var(--glados-amber-bright);
+  --chat-actions-hover-bg-colour: var(--glados-panel-raised);
+
+  --comments-box-scrollbar-thumb: var(--glados-amber);
+  --comments-box-scrollbar-thumb-hover: var(--glados-amber-bright);
+  --comments-location-scrollbar-thumb: var(--glados-amber);
+  --comments-location-scrollbar-thumb-hover: var(--glados-amber-bright);
+  --comments-chat-timestamp-fallback-colour: var(--timestamp-colour);
+
+  /* Commits */
+  --commit-block-even-mix: 92%;
+  --commits-scrollbar-track: rgba(18, 7, 2, 0.88);
+  --commits-scrollbar-thumb: var(--glados-amber);
+  --commits-scrollbar-thumb-hover: var(--glados-amber-bright);
+
+  /* Counter */
+  --counter-shell-top: #3a1b0a;
+  --counter-shell-bottom: #211007;
+  --counter-shell-border: var(--glados-panel-border);
+  --counter-cell-divider: var(--glados-panel-border);
+  --counter-cell-top: #1d0c05;
+  --counter-cell-bottom: #120702;
+  --counter-shadow-base: rgba(0, 0, 0, 0.52);
+  --counter-face-colour: var(--glados-amber-bright);
+  --counter-shell-highlight: rgba(255, 214, 154, 0.06);
+  --counter-shell-shadow: rgba(0, 0, 0, 0.3);
+  --counter-cell-highlight: rgba(255, 214, 154, 0.04);
+  --counter-cell-shadow: rgba(0, 0, 0, 0.46);
+  --counter-cell-sheen-top: rgba(255, 214, 154, 0.04);
+  --counter-cell-sheen-bottom: rgba(0, 0, 0, 0.12);
+  --counter-window-gloss-1: rgba(255, 214, 154, 0.06);
+  --counter-window-gloss-2: rgba(255, 214, 154, 0.02);
+  --counter-window-gloss-3: rgba(0, 0, 0, 0.14);
+  --counter-window-gloss-4: rgba(255, 214, 154, 0.02);
+  --counter-window-gloss-5: rgba(0, 0, 0, 0.14);
+  --counter-face-shadow-strong: rgba(0, 0, 0, 0.72);
+  --counter-face-shadow-soft: rgba(255, 191, 104, 0.08);
+  --counter-credit-bg: rgba(18, 7, 2, 0.68);
+  --counter-credit-border: rgba(255, 168, 66, 0.18);
+  --counter-credit-colour: var(--glados-amber-dim);
+  --counter-credit-link-colour: var(--glados-amber-bright);
+  --counter-credit-link-hover-colour: #ffffff;
+  --counter-credit-shadow: none;
+
+  /* CRT control desk */
+  --crt-ui-shadow-colour: rgba(0, 0, 0, 0.45);
+  --crt-ui-group-border: var(--glados-panel-border);
+  --crt-ui-group-background: var(--glados-panel);
+  --crt-ui-status-background: var(--glados-panel-sunken);
+  --crt-ui-status-border: var(--glados-panel-border);
+  --crt-ui-range-track-start: var(--glados-panel-sunken);
+  --crt-ui-range-track-end: var(--glados-panel);
+  --crt-ui-range-thumb-background: var(--glados-amber-soft);
+  --crt-ui-radius: 0.45rem;
+  --crt-ui-radius-sm: 0.3rem;
+  --crt-ui-radius-md: 0.35rem;
+  --crt-ui-radius-pill: 999px;
+  --crt-ui-border-width: 1px;
+  --crt-ui-thumb-border-width: 1px;
+  --crt-ui-button-hover-offset: 0px;
+  --crt-ui-backdrop-blur: 0px;
+
+  /* Effects modal */
+  --effects-modal-radius: 0.45rem;
+  --effects-modal-section-radius: 0.35rem;
+  --effects-modal-control-radius: 0.35rem;
+  --effects-modal-section-bg: var(--glados-panel);
+  --effects-modal-section-border: var(--glados-panel-border);
+  --effects-modal-muted: var(--timestamp-colour);
+  --effects-modal-output-bg: rgba(255, 168, 66, 0.06);
+  --effects-modal-output-border: rgba(255, 168, 66, 0.16);
+  --effects-slider-track-bg: rgba(255, 168, 66, 0.1);
+  --effects-slider-thumb-bg: var(--glados-amber-soft);
+  --effects-slider-thumb-border: var(--glados-amber-bright);
+  --effects-slider-accent: var(--glados-amber-bright);
+
+  /* Email */
+  --email-card-radius: 0.4rem;
+  --email-action-radius: 0.25rem;
+  --email-bg-colour: var(--glados-screen);
+  --email-border-colour: var(--glados-panel-border);
+  --email-header-bg-colour: var(--glados-panel);
+  --email-header-border-colour: var(--glados-panel-border);
+  --email-row-odd-bg-colour: var(--glados-screen);
+  --email-row-even-bg-colour: var(--glados-panel);
+  --email-text-colour: var(--glados-amber-soft);
+  --email-meta-text-colour: var(--glados-amber-dim);
+  --email-content-text-colour: var(--glados-amber-bright);
+  --email-value-text-colour: var(--glados-amber-bright);
+  --email-signature-sep-colour: rgba(255, 168, 66, 0.16);
+  --email-action-bg: rgba(255, 168, 66, 0.08);
+  --email-action-bg-hover: rgba(255, 168, 66, 0.16);
+  --email-action-border: rgba(255, 168, 66, 0.2);
+  --email-action-highlight: rgba(255, 214, 154, 0.08);
+  --email-action-shadow: rgba(0, 0, 0, 0.28);
+  --email-action-drop-shadow: rgba(0, 0, 0, 0.22);
+  --email-action-focus: rgba(255, 197, 104, 0.6);
+
+  --yamaka-ink: var(--glados-amber-bright);
+  --yamaka-text: var(--glados-amber-soft);
+  --yamaka-muted: var(--glados-amber-dim);
+
+  /* Keyboard */
+  --keyboard-bg: var(--glados-screen);
+  --keyboard-border-colour: var(--glados-panel-border);
+  --keyboard-key-bg: var(--glados-panel);
+  --keyboard-key-bg-hover: var(--glados-panel-raised);
+  --keyboard-key-border-colour: var(--glados-panel-border);
+  --keyboard-key-text-colour: var(--glados-amber-soft);
+  --keyboard-key-shadow: rgba(0, 0, 0, 0.32);
+
+  /* Notices */
+  --ntcs-card-bg: var(--glados-panel);
+  --ntcs-card-border-colour: var(--glados-panel-border);
+  --ntcs-card-shadow: none;
+
+  /* Presence / status */
+  --presence-panel-accent: var(--glados-amber-bright);
+  --presence-panel-accent-soft: rgba(255, 191, 104, 0.12);
+  --presence-panel-accent-wash: rgba(255, 191, 104, 0.06);
+
+  /* Reader */
+  --reader-bg: var(--glados-screen);
+  --reader-text-colour: var(--glados-amber-soft);
+  --reader-controls-bg: var(--glados-panel-sunken);
+  --reader-controls-border-colour: var(--glados-panel-border);
+  --reader-button-bg: var(--glados-panel);
+  --reader-button-bg-hover: var(--glados-panel-raised);
+  --reader-button-colour: var(--glados-amber-soft);
+
+  --story-dropdown-bg: var(--glados-screen);
+  --story-dropdown-border-colour: var(--glados-panel-border);
+  --story-dropdown-item-bg: var(--glados-screen);
+  --story-dropdown-item-bg-hover: var(--glados-panel);
+  --story-dropdown-item-colour: var(--glados-amber-soft);
+  --story-dropdown-current-bg: var(--glados-amber);
+  --story-dropdown-current-colour: var(--glados-ink);
+
+  /* RSS and blog */
+  --rss-content-colour: var(--glados-amber-soft);
+  --rss-list-marker-col: var(--glados-amber-bright);
+  --rss-blockquote-bg: var(--glados-panel);
+  --rss-blockquote-brd: var(--glados-panel-border);
+  --rss-blockquote-col: var(--glados-amber-soft);
+  --rss-blockquote-shadow: inset 0.35rem 0 0 rgba(255, 168, 66, 0.12);
+
+  --rss-code-bg: var(--glados-panel-sunken);
+  --rss-code-fg: var(--glados-amber-bright);
+  --rss-code-border: var(--glados-panel-border);
+  --rss-code-copy-bg: var(--glados-panel);
+  --rss-code-copy-fg: var(--glados-amber-soft);
+  --rss-code-copy-hover-bg: var(--glados-panel-raised);
+  --rss-code-copy-hover-fg: var(--glados-amber-bright);
+  --rss-code-scrollbar-thumb: rgba(255, 168, 66, 0.4);
+  --rss-code-scrollbar-thumb-hover: rgba(255, 197, 104, 0.68);
+
+  --rss-code-hljs-string: #ffd89a;
+  --rss-code-hljs-keyword: #ffc568;
+  --rss-code-hljs-function: #ffcf85;
+  --rss-code-hljs-comment: rgba(255, 168, 66, 0.56);
+  --rss-code-hljs-number: #ffd89a;
+  --rss-code-hljs-operator: #ffc568;
+  --rss-code-hljs-title: #ffcf85;
+  --rss-code-hljs-built_in: #ffd89a;
+  --rss-code-hljs-punctuation: #ffc568;
+  --rss-code-hljs-name: #ffd89a;
+
+  --rss-code-switch-bg: var(--glados-screen);
+  --rss-code-switch-brd: var(--glados-panel-border);
+  --rss-code-choice-bg: var(--glados-panel);
+  --rss-code-choice-bg-hover: var(--glados-panel-raised);
+  --rss-code-choice-bg-active: rgba(255, 168, 66, 0.16);
+  --rss-code-choice-col-active: var(--glados-amber-bright);
+  --rss-code-choice-brd: var(--glados-panel-border);
+  --rss-code-choice-brd-hover: var(--glados-amber-bright);
+  --rss-code-choice-brd-active: var(--glados-amber-bright);
+  --rss-code-choice-dot-bg: transparent;
+  --rss-code-choice-dot-bg-active: var(--glados-amber);
+  --rss-code-choice-dot-brd: var(--glados-amber-dim);
+  --rss-code-choice-dot-brd-active: var(--glados-amber-bright);
+
+  --rss-post-hover-colour: var(--glados-amber-bright);
+  --rss-empty-bg: var(--glados-panel);
+  --rss-empty-brd: var(--glados-panel-border);
+  --rss-empty-shadow: var(--frame-box-shadow);
+
+  --rss-author-count-bg: rgba(255, 168, 66, 0.1);
+  --rss-author-count-col: var(--glados-amber-soft);
+
+  /* SMS */
+  --msg-in-bg: var(--glados-panel);
+  --msg-in-strip-bg: var(--glados-panel-sunken);
+  --msg-in-strip-fg: var(--glados-amber-bright);
+  --msg-out-bg: var(--glados-screen);
+  --msg-out-strip-bg: var(--glados-panel-sunken);
+  --msg-out-strip-fg: var(--glados-amber-soft);
+  --msg-fg: var(--glados-amber-soft);
+  --msg-timestamp: var(--glados-amber-dim);
+
+  /* Socials */
+  --socials-card-bg: var(--chatroom-bg-colour);
+  --socials-card-text: var(--body-text-colour);
+  --socials-card-border-colour: var(--frame-border-light);
+  --socials-card-url-colour: var(--timestamp-colour);
+  --socials-card-hover-bg: var(--menu-button-hover-bg-colour);
+  --socials-card-hover-text: var(--glados-amber-bright);
+  --socials-card-shadow: var(--frame-box-shadow);
+
+  /* Stats */
+  --site-stats-item-background: rgba(18, 7, 2, 0.68);
+  --site-stats-item-border: 1px solid rgba(255, 168, 66, 0.16);
+  --site-stats-item-box-shadow: 0 0.28rem 0 rgba(0, 0, 0, 0.22);
+  --stats-segment-text-colour: var(--glados-amber-bright);
+  --stats-segment-background: var(--glados-panel);
+  --stats-segment-border: 1px solid rgba(255, 168, 66, 0.16);
+  --stats-segment-box-shadow: none;
+
+  /* Tategaki */
+  --tategaki-border-colour: rgba(255, 168, 66, 0.2);
+
+  /* Terminal and windows */
+  --terminal-radius: 0.7rem;
+  --terminal-border-width: 1px;
+  --terminal-border-colour: rgba(255, 168, 66, 0.18);
+  --terminal-btn-close-colour: var(--glados-amber-bright);
+  --terminal-btn-toggle-colour: var(--glados-amber-soft);
+  --terminal-btn-float-colour: var(--glados-amber-soft);
+  --terminal-scrollbar-thumb: rgba(255, 168, 66, 0.46);
+  --terminal-scrollbar-thumb-hover: rgba(255, 197, 104, 0.72);
+
+  --window-radius: 0.7rem;
+  --window-border-width: 1px;
+  --window-border-colour: rgba(255, 168, 66, 0.16);
+  --window-bg: var(--glados-screen);
+  --window-content-bg: var(--glados-screen);
+  --window-header-bg: rgba(16, 7, 3, 0.95);
+  --window-header-fg: var(--glados-amber-bright);
+  --window-header-top-border-radius: 0.7rem;
+  --window-controls-gap: 0.45rem;
+  --window-btn-hover-scale: 1;
+  --window-btn-hover-transition: 0.12s ease;
+  --window-title-colour: var(--glados-amber-bright);
+
+  /* Shape tokens */
+  --kc-88by31-outer-radius: 0.45rem;
+  --kc-88by31-outer-border-width: 1px;
+  --about-frame-radius: 0.5rem;
+  --profile-avatar-radius: 0.4rem;
+  --jp-about-scrollbar-radius: 999px;
+  --avatar-radius: 0.4rem;
+  --commit-identicon-radius: 0.35rem;
+  --commit-identicon-svg-radius: 0.35rem;
+  --chapter-image-radius: 0.5rem;
+  --chat-input-radius: 0.3rem;
+  --chat-action-radius: 0.25rem;
+  --comment-message-radius: 0.35rem;
+  --temporary-notice-border-width: 1px;
+  --comments-box-radius: 0.45rem;
+  --comment-field-radius: 0.3rem;
+  --comment-post-btn-radius: 0.25rem;
+  --comments-avatar-radius: 0.35rem;
+  --comments-avatar-badge-radius: 999px;
+  --commit-block-radius: 0.4rem;
+  --commits-container-radius: 0.45rem;
+  --counter-radius: 0.45rem;
+  --email-card-radius: 0.45rem;
+  --keyboard-key-radius: 0.3rem;
+  --ntcs-card-radius: 0.45rem;
+  --reader-radius: 0.5rem;
+  --reader-controls-radius: 0.4rem;
+  --story-dropdown-radius: 0.4rem;
+  --rss-radius: 0.5rem;
+  --rss-card-radius: 0.45rem;
+  --rss-code-radius: 0.35rem;
+  --rss-pill-radius: 999px;
+  --msg-bubble-radius: 0.5rem;
+  --msg-bubble-notch-radius: 0.25rem;
+  --msg-strip-radius: 999px;
+  --socials-card-radius: 0.45rem;
+  --socials-segment-radius: 0.5rem;
+  --site-stats-radius: 0.5rem;
+  --site-stats-item-radius: 0.4rem;
+  --stats-segment-radius: 0.35rem;
+  --term-icon-radius: 0.35rem;
+  --theme-toggle-radius: 0.25rem;
+  --tooltip-radius: 0.35rem;
+  --menu-button-radius: 0.25rem;
+  --layout-frame-radius: 0.7rem;
+}
+
+/* Dark tokens */
+.glados.dark-mode,
+.dark-mode.glados {
+  --glados-wall: #120803;
+  --glados-wall-deep: #060201;
+  --glados-screen: #0d0502;
+  --glados-screen-soft: #140803;
+  --glados-panel: #1c0c04;
+  --glados-panel-raised: #281006;
+  --glados-panel-sunken: #090301;
+  --glados-panel-border: #6a350d;
+  --glados-amber-dim: #9d5919;
+  --glados-amber: #dd8425;
+  --glados-amber-soft: #f2a344;
+  --glados-amber-bright: #ffc969;
+  --glados-amber-pale: #ffe1a3;
+  --glados-ink: #020100;
+  --glados-shadow: #000000;
+  --glados-glow: rgba(255, 162, 51, 0.3);
+  --glados-glow-strong: rgba(255, 201, 105, 0.46);
+  --glados-line: rgba(255, 162, 51, 0.16);
+  --glados-line-strong: rgba(255, 201, 105, 0.32);
+  --glados-warning: #ffb24c;
+  --glados-error: #ff7b45;
+  --glados-ok: #ffd891;
+
+  --body-bg-colour: var(--glados-wall);
+  --body-text-colour: var(--glados-amber-soft);
+  --body-text-colour-light: var(--glados-amber-soft);
+
+  --frame-bg-colour: var(--glados-screen);
+  --frame-bg-colour-rgb: 13, 5, 2;
+  --frame-border-light: var(--glados-amber-dim);
+  --frame-box-shadow:
+    0 0 0 1px rgba(255, 201, 105, 0.14),
+    0 0 0 2px rgba(0, 0, 0, 0.36),
+    0 0 1.35rem rgba(255, 136, 37, 0.12),
+    inset 0 0 0 1px rgba(255, 201, 105, 0.1);
+
+  --header-bg-colour: rgba(9, 3, 1, 0.95);
+  --header-text-colour: var(--glados-amber-soft);
+
+  --term-bg: var(--glados-screen);
+  --term-header-bg: var(--glados-panel-sunken);
+  --term-header-fg: var(--glados-amber-bright);
+  --term-title: var(--glados-amber-bright);
+  --term-shadow: rgba(0, 0, 0, 0.7);
+
+  --nav-bg-colour: rgba(9, 3, 1, 0.95);
+  --nav-border-colour: var(--glados-panel-border);
+  --menu-button-bg-colour: var(--glados-panel);
+  --menu-button-text-colour: var(--glados-amber-soft);
+  --menu-button-hover-bg-colour: var(--glados-panel-raised);
+
+  --footer-bg-colour: rgba(9, 3, 1, 0.95);
+  --footer-text-colour: var(--glados-amber-soft);
+  --footer-border-colour: var(--glados-panel-border);
+
+  --chatroom-border-colour: var(--glados-panel-border);
+  --chatroom-bg-colour: var(--glados-screen);
+  --chatroom-text-colour: var(--glados-amber-soft);
+
+  --timestamp-colour: var(--glados-amber-dim);
+  --chat-timestamp-colour: var(--glados-amber-dim);
+
+  --chat-input-border-colour: var(--glados-panel-border);
+  --chat-input-bg-colour: var(--glados-panel-sunken);
+  --chat-input-text-colour: var(--glados-amber-bright);
+
+  --toggle-btn-bg-colour: var(--glados-panel);
+  --toggle-btn-text-colour: var(--glados-amber-soft);
+
+  --edit-modal-bg-colour: var(--glados-screen);
+  --edit-modal-text-colour: var(--glados-amber-soft);
+  --edit-modal-userinfo-bg-colour: var(--glados-panel);
+  --edit-modal-userinfo-text-colour: var(--glados-amber-bright);
+  --edit-modal-userinfo-border-colour: var(--glados-panel-border);
+  --edit-modal-input-bg-colour: var(--glados-panel-sunken);
+  --edit-modal-input-text-colour: var(--glados-amber-bright);
+  --edit-modal-input-border-colour: var(--glados-panel-border);
+
+  --tooltip-bg-colour: var(--glados-panel-sunken);
+  --tooltip-text-colour: var(--glados-amber-bright);
+  --tooltip-border-colour: var(--glados-panel-border);
+
+  --cal-bg: var(--glados-screen);
+  --cal-chip-bg: var(--glados-panel);
+  --cal-chip-bg-hover: var(--glados-panel-raised);
+  --cal-chip-col: var(--glados-amber-soft);
+  --cal-dypad-bg: var(--glados-panel-sunken);
+
+  --chat-message-bg-even: var(--glados-screen);
+  --chat-message-bg-odd: var(--glados-panel);
+
+  --email-bg-colour: var(--glados-screen);
+  --email-header-bg-colour: var(--glados-panel);
+  --email-row-odd-bg-colour: var(--glados-screen);
+  --email-row-even-bg-colour: var(--glados-panel);
+  --email-text-colour: var(--glados-amber-soft);
+  --email-content-text-colour: var(--glados-amber-bright);
+
+  --reader-bg: var(--glados-screen);
+  --reader-text-colour: var(--glados-amber-soft);
+  --reader-controls-bg: var(--glados-panel-sunken);
+
+  --rss-code-bg: var(--glados-panel-sunken);
+  --rss-code-fg: var(--glados-amber-bright);
+
+  --window-bg: var(--glados-screen);
+  --window-content-bg: var(--glados-screen);
+  --window-header-bg: rgba(8, 3, 1, 0.96);
+  --window-header-fg: var(--glados-amber-bright);
+}
+
+/* Wallpaper */
+body.glados,
+html.glados body {
+  background-color: var(--glados-wall);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 168, 66, 0.028) 0,
+      rgba(255, 168, 66, 0.028) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 168, 66, 0.12) 0%,
+      rgba(255, 168, 66, 0.07) 22%,
+      rgba(255, 168, 66, 0.02) 46%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse at center,
+      transparent 45%,
+      rgba(0, 0, 0, 0.24) 74%,
+      rgba(0, 0, 0, 0.42) 100%
+    ),
+    linear-gradient(to bottom, #2b1408 0%, #190b04 48%, #120603 100%);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 100% 3px, 100% 100%, 100% 100%, 100% 100%;
+  color: var(--body-text-colour);
+}
+
+body.glados.dark-mode,
+html.glados.dark-mode body,
+html.dark-mode.glados body {
+  background-color: var(--glados-wall);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 162, 51, 0.03) 0,
+      rgba(255, 162, 51, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 162, 51, 0.1) 0%,
+      rgba(255, 162, 51, 0.05) 20%,
+      rgba(255, 162, 51, 0.015) 44%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse at center,
+      transparent 42%,
+      rgba(0, 0, 0, 0.32) 74%,
+      rgba(0, 0, 0, 0.56) 100%
+    ),
+    linear-gradient(to bottom, #1a0b04 0%, #0f0502 52%, #070201 100%);
+}
+
+/* Theme rules */
+.glados {
+  color: var(--body-text-colour);
+}
+
+.glados,
+.glados button,
+.glados input,
+.glados textarea,
+.glados select,
+.glados .window-title,
+.glados .segment-header,
+.glados .nickname-strip,
+.glados .story-dropdown__content,
+.glados .rss-code-frame,
+.glados .tooltip-content {
+  font-family: var(--base-font-family);
+}
+
+.glados header,
+.glados footer,
+.glados nav,
+.glados .segment-header {
+  text-shadow: 0 0 0.35rem rgba(255, 168, 66, 0.16);
+}
+
+.glados ::selection {
+  background: var(--glados-amber);
+  color: var(--glados-ink);
+}
+
+/* Base panels */
+.glados .frame {
+  background-color: var(--frame-bg-colour);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  background-clip: padding-box;
+  box-shadow: var(--frame-box-shadow);
+  position: relative;
+}
+
+.glados nav {
+  background: var(--nav-bg-colour);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 191, 104, 0.06),
+    0 0.25rem 0 rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(0px);
+}
+
+.glados footer {
+  border-top: 1px solid rgba(255, 168, 66, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 191, 104, 0.05);
+}
+
+/* Button reset */
+.glados :is(
+  button,
+  input,
+  textarea,
+  select,
+  .menu-button,
+  .button,
+  .theme-toggle-button,
+  .email-action,
+  .effects-modal__toggle,
+  .effects-modal__close,
+  .kc-click-header__control,
+  .rss-filters__toggle,
+  .rss-filters__clear,
+  .rss-author-filter__toggle,
+  .rss-author-filter__btn,
+  .rss-code-copy,
+  .story-dropdown__button,
+  .comment-location-dropdown__button,
+  #post-comment-button
+) {
+  border-radius: 0.28rem;
+}
+
+/* Buttons */
+.glados :is(
+  button,
+  select,
+  .menu-button,
+  .button,
+  .theme-toggle-button,
+  .email-action,
+  .effects-modal__toggle,
+  .effects-modal__close,
+  .kc-click-header__control,
+  .rss-filters__toggle,
+  .rss-filters__clear,
+  .rss-author-filter__toggle,
+  .rss-author-filter__btn,
+  .rss-code-copy,
+  .story-dropdown__button,
+  .comment-location-dropdown__button,
+  #post-comment-button
+):not(.window-controls .btn) {
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.04), transparent),
+    var(--menu-button-bg-colour);
+  color: var(--menu-button-text-colour);
+  border: 1px solid rgba(255, 168, 66, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 154, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
+  transform: none;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    color 0.12s ease;
+}
+
+.glados :is(
+  button,
+  select,
+  .menu-button,
+  .button,
+  .theme-toggle-button,
+  .email-action,
+  .effects-modal__toggle,
+  .effects-modal__close,
+  .kc-click-header__control,
+  .rss-filters__toggle,
+  .rss-filters__clear,
+  .rss-author-filter__toggle,
+  .rss-author-filter__btn,
+  .rss-code-copy,
+  .story-dropdown__button,
+  .comment-location-dropdown__button,
+  #post-comment-button
+):not(.window-controls .btn):hover {
+  background:
+    linear-gradient(to bottom, rgba(255, 214, 154, 0.06), transparent),
+    var(--menu-button-hover-bg-colour);
+  color: var(--glados-amber-bright);
+  border-color: rgba(255, 197, 104, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 154, 0.08),
+    0 0 0 1px rgba(255, 168, 66, 0.08),
+    0 0 0.75rem rgba(255, 136, 37, 0.08);
+}
+
+.glados :is(
+  button,
+  select,
+  .menu-button,
+  .button,
+  .theme-toggle-button,
+  .email-action,
+  .effects-modal__toggle,
+  .effects-modal__close,
+  .kc-click-header__control,
+  .rss-filters__toggle,
+  .rss-filters__clear,
+  .rss-author-filter__toggle,
+  .rss-author-filter__btn,
+  .rss-code-copy,
+  .story-dropdown__button,
+  .comment-location-dropdown__button,
+  #post-comment-button
+):not(.window-controls .btn):active {
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.16), transparent),
+    var(--glados-panel-sunken);
+  border-color: rgba(255, 197, 104, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 -1px 0 rgba(255, 214, 154, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.22);
+}
+
+/* Inputs */
+.glados :is(input, textarea, select) {
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.02), transparent),
+    var(--chat-input-bg-colour);
+  color: var(--chat-input-text-colour);
+  border: 1px solid rgba(255, 168, 66, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, 0.32),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.04);
+  caret-color: var(--glados-amber-bright);
+}
+
+/* Global text glow for terminal-like areas */
+.glados :is(
+  #banner,
+  #banner-wrapper,
+  .ascii-block,
+  .command-line,
+  .info-block,
+  #terminal-content,
+  #terminal-scroll,
+  #terminal-wrapper,
+  .window-title,
+  .rss-code-frame,
+  .reader-container,
+  .tooltip-content,
+  .story-dropdown__content
+) {
+  text-shadow: 0 0 0.38rem rgba(255, 168, 66, 0.14);
+}
+
+/* Scrollbars */
+.glados * {
+  scrollbar-color: rgba(255, 168, 66, 0.48) rgba(18, 7, 2, 0.84);
+  scrollbar-width: auto;
+}
+
+.glados ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.glados ::-webkit-scrollbar-track {
+  background: rgba(18, 7, 2, 0.92);
+  border: 1px solid rgba(255, 168, 66, 0.12);
+}
+
+.glados ::-webkit-scrollbar-thumb {
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  background:
+    linear-gradient(to bottom, rgba(255, 214, 154, 0.08), transparent),
+    rgba(255, 168, 66, 0.36);
+  border: 1px solid rgba(255, 168, 66, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 154, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.glados ::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(to bottom, rgba(255, 214, 154, 0.1), transparent),
+    rgba(255, 197, 104, 0.54);
+}
+
+.glados ::-webkit-scrollbar-corner {
+  background: rgba(18, 7, 2, 0.92);
+  border: 1px solid rgba(255, 168, 66, 0.12);
+}
+
+.glados ::-webkit-scrollbar-button:single-button {
+  width: 14px;
+  height: 14px;
+  background-color: rgba(47, 22, 8, 0.95);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 7px 7px;
+  border: 1px solid rgba(255, 168, 66, 0.16);
+}
+
+.glados ::-webkit-scrollbar-button:single-button:active {
+  background-color: rgba(18, 7, 2, 0.95);
+}
+
+.glados ::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Cpath fill='%23f2a344' d='M4.5 1 8 7H1z'/%3E%3C/svg%3E");
+}
+
+.glados ::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Cpath fill='%23f2a344' d='M1 2h7L4.5 8z'/%3E%3C/svg%3E\");
+}
+
+.glados ::-webkit-scrollbar-button:single-button:horizontal:decrement {
+  background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Cpath fill='%23f2a344' d='M1 4.5 7 1v7z'/%3E%3C/svg%3E\");
+}
+
+.glados ::-webkit-scrollbar-button:single-button:horizontal:increment {
+  background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 9 9'%3E%3Cpath fill='%23f2a344' d='M8 4.5 2 8V1z'/%3E%3C/svg%3E\");
+}
+
+/* Ranges */
+.glados input[type=\"range\"] {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0.375rem 0;
+  accent-color: var(--glados-amber);
+}
+
+.glados input[type=\"range\"]::-webkit-slider-runnable-track,
+.glados input[type=\"range\"]::-moz-range-track {
+  height: 0.9rem;
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.04), transparent),
+    var(--glados-panel-sunken);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  border-radius: 999px;
+}
+
+.glados input[type=\"range\"]::-webkit-slider-thumb,
+.glados input[type=\"range\"]::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 214, 154, 0.32), transparent 42%),
+    linear-gradient(to bottom, rgba(255, 214, 154, 0.12), transparent),
+    var(--glados-amber-soft);
+  border: 1px solid rgba(255, 201, 105, 0.58);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.26),
+    0 0 0.55rem rgba(255, 136, 37, 0.18);
+}
+
+.glados input[type=\"range\"]::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -0.1rem;
+}
+
+/* Window shell */
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) {
+  border: 1px solid rgba(255, 168, 66, 0.16) !important;
+  border-radius: 0.75rem;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 168, 66, 0.035) 0%,
+      transparent 66%
+    ),
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.025), transparent),
+    var(--glados-screen);
+  background-clip: padding-box;
+  box-shadow:
+    0 0 0 1px rgba(255, 191, 104, 0.08),
+    0 0 1.15rem rgba(255, 136, 37, 0.08),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.08) !important;
+  overflow: hidden;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.32rem 1rem 0.32rem 6rem;
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 168, 66, 0.06),
+      transparent 22%,
+      transparent 78%,
+      rgba(255, 168, 66, 0.04)
+    ),
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.04), transparent),
+    var(--window-header-bg);
+  color: var(--window-header-fg);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 168, 66, 0.14) !important;
+  border-radius: 0.75rem 0.75rem 0 0;
+  box-shadow: inset 0 -1px 0 rgba(255, 191, 104, 0.05);
+  overflow: hidden;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-header::after {
+  content: \"\";
+  position: absolute;
+  inset: auto 1rem 0.45rem 6rem;
+  height: 1px;
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 168, 66, 0.18),
+      rgba(255, 168, 66, 0.03)
+    );
+  pointer-events: none;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-title {
+  position: relative;
+  z-index: 2;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  margin-inline: auto;
+  padding-inline: 0.65rem;
+  color: var(--window-title-colour);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow:
+    0 0 0.3rem rgba(255, 168, 66, 0.2),
+    0 0 0.9rem rgba(255, 136, 37, 0.06);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Unique GLaDOS controls */
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls {
+  position: absolute;
+  left: 0.75rem;
+  right: auto;
+  top: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: auto;
+  min-width: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls::after {
+  content: \"\";
+  width: 1.35rem;
+  height: 1px;
+  background: linear-gradient(to right, rgba(255, 168, 66, 0.28), transparent);
+  margin-left: 0.1rem;
+  flex: 0 0 auto;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  width: 1.05rem;
+  height: 1.05rem;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 214, 154, 0.28), transparent 38%),
+    linear-gradient(to bottom, rgba(255, 214, 154, 0.08), transparent),
+    rgba(30, 12, 4, 0.96);
+  border: 1px solid rgba(255, 168, 66, 0.24);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transform: none;
+  pointer-events: auto;
+  color: var(--glados-amber-soft);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.08),
+    0 0 0.55rem rgba(255, 136, 37, 0.08);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn:hover {
+  border-color: rgba(255, 197, 104, 0.48);
+  color: var(--glados-amber-bright);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.1),
+    0 0 0.75rem rgba(255, 136, 37, 0.16);
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn:active {
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 214, 154, 0.12), transparent 38%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.16), transparent),
+    rgba(18, 7, 2, 0.98);
+  border-color: rgba(255, 197, 104, 0.56);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.32),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.06),
+    0 0 0.42rem rgba(255, 136, 37, 0.1);
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn svg {
+  visibility: hidden;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn::after {
+  opacity: 1 !important;
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1;
+  color: currentColor;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Round, left, and unique */
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.close::after {
+  content: \"×\";
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.minimise::after {
+  content: \"–\";
+  font-size: 0.74rem;
+  transform: translate(-50%, -56%);
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.toggle-view::after {
+  content: \"◎\";
+  font-size: 0.6rem;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.float::after {
+  content: \"◉\";
+  font-size: 0.5rem;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.close {
+  order: 1;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.minimise {
+  order: 2;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.toggle-view {
+  order: 3;
+}
+
+.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn.float {
+  order: 4;
+  margin-left: 0;
+}
+
+.glados .window-launcher {
+  border-radius: 0.4rem;
+  filter: none;
+}
+
+/* CRT UI modal */
+.glados .crt-ui-modal {
+  --crt-ui-background: var(--glados-screen);
+  --crt-ui-panel: var(--glados-panel);
+  --crt-ui-panel-border: var(--glados-panel-border);
+  --crt-ui-text: var(--body-text-colour);
+  --crt-ui-muted: var(--timestamp-colour);
+  --crt-ui-accent: var(--glados-amber-bright);
+  --crt-ui-button: var(--menu-button-bg-colour);
+  --crt-ui-button-hover: var(--menu-button-hover-bg-colour);
+  --crt-ui-plot-background: var(--glados-panel-sunken);
+  --crt-ui-shadow: 0 0.55rem 0 rgba(0, 0, 0, 0.26);
+  font-family: var(--base-font-family);
+}
+
+.glados .crt-ui-modal :is(.crt-ui__panel, .crt-ui__controls, .crt-ui__plotPanel) {
+  background: var(--crt-ui-panel);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  border-radius: 0.55rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 191, 104, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
+  backdrop-filter: none;
+}
+
+.glados .crt-ui-modal :is(.crt-ui__group, .crt-ui__status) {
+  background: var(--crt-ui-group-background);
+  border: 1px solid rgba(255, 168, 66, 0.14);
+  border-radius: 0.38rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 154, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.glados .crt-ui-modal .crt-ui__status {
+  background: var(--crt-ui-status-background);
+}
+
+.glados .crt-ui-modal :is(button, select) {
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.04), transparent),
+    var(--crt-ui-button);
+  color: var(--crt-ui-text);
+  border: 1px solid rgba(255, 168, 66, 0.18);
+  border-radius: 0.3rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 154, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.24);
+  transform: none;
+}
+
+.glados .crt-ui-modal :is(button, select):hover {
+  background:
+    linear-gradient(to bottom, rgba(255, 214, 154, 0.06), transparent),
+    var(--crt-ui-button-hover);
+  color: var(--glados-amber-bright);
+}
+
+.glados .crt-ui-modal :is(button, select):active {
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.14), transparent),
+    var(--glados-panel-sunken);
+  border-color: rgba(255, 197, 104, 0.38);
+}
+
+.glados .crt-ui-modal input[type=\"range\"]::-webkit-slider-runnable-track,
+.glados .crt-ui-modal input[type=\"range\"]::-moz-range-track {
+  height: 0.9rem;
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.04), transparent),
+    var(--crt-ui-range-track-start);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  border-radius: 999px;
+}
+
+.glados .crt-ui-modal input[type=\"range\"]::-webkit-slider-thumb,
+.glados .crt-ui-modal input[type=\"range\"]::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 214, 154, 0.3), transparent 42%),
+    var(--crt-ui-range-thumb-background);
+  border: 1px solid rgba(255, 201, 105, 0.52);
+  border-radius: 999px;
+}
+
+.glados .crt-ui-modal input[type=\"range\"]::-webkit-slider-thumb {
+  margin-top: -0.1rem;
+}
+
+.glados .crt-ui-modal .crt-ui__plotCanvas {
+  background: var(--crt-ui-plot-background);
+}
+
+/* Radii on shared pieces */
+.glados :is(
+  .kc-88by31-shell,
+  .kc-88by31__inner,
+  .about-frame,
+  .intro-window,
+  .intro-frame,
+  .profile-row,
+  .jp-about,
+  .avatar-container,
+  .calendar,
+  .cal,
+  .cal__rootBody,
+  .cal__rootBodyInner,
+  .cal__sct,
+  .cal__sctBody,
+  .cal__dyPad,
+  .chapter-image,
+  .frame-chat,
+  #chatroom,
+  .chat-message,
+  .temporary-notice,
+  .comments-shell,
+  .comments-container,
+  .comments-box,
+  .comment-message,
+  .comment-location-dropdown__content,
+  .commits-outer-shell,
+  .commits-container-shell,
+  .commit-block,
+  .clicker-counter,
+  .clicker-counter__window,
+  .effects-modal,
+  .effects-modal__section,
+  .effects-modal__control,
+  .email-wrapper,
+  .email-card,
+  .email-actions-bar,
+  .keyboard,
+  .key-grid,
+  .fn-grid,
+  .fn-key,
+  .modal,
+  .modal-overlay > *,
+  .ntcs-window,
+  .ntcs-card,
+  .phys,
+  .plot,
+  .presence-panel,
+  .presence-panel__metric,
+  .read-aloud-controls,
+  .read-aloud-header,
+  .read-aloud-fields,
+  .read-aloud-buttons,
+  .reader-container,
+  .reader-controls-top,
+  .reader-controls-bottom,
+  .story-dropdown__content,
+  .reader-paragraph,
+  .blog-wrapper,
+  .blog-container,
+  .rss-filters,
+  .rss-filters__body,
+  .rss-post-block,
+  .rss-post-content,
+  .rss-post-image,
+  .rss-post-tag,
+  .rss-code-frame,
+  .rss-code-toolbar,
+  .rss-code-choice,
+  .rss-author-filter,
+  .rss-author-filter__body,
+  .message,
+  .message-text,
+  .nickname-strip,
+  .socials-segment,
+  .socials-segment__item,
+  .site-stats-shell,
+  .site-stats,
+  .site-stats__item,
+  .stats-segment,
+  .tategaki-container,
+  #shell-wrapper,
+  #terminal-wrapper,
+  #terminal-scroll,
+  #terminal-content,
+  .tooltip-content
+) {
+  border-radius: 0.45rem;
+}
+
+/* Outer shells */
+.glados :is(
+  .kc-88by31-shell,
+  .about-frame,
+  .intro-window,
+  .intro-frame,
+  .comments-shell,
+  .comments-container,
+  .commits-outer-shell,
+  .commits-container-shell,
+  .github-output-frame,
+  .github-outer-frame,
+  .effects-modal,
+  .email-wrapper,
+  .ntcs-window,
+  .presence-panel,
+  .reader-container,
+  .blog-wrapper,
+  .socials-segment,
+  .site-stats-shell
+) {
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 168, 66, 0.03) 0%,
+      transparent 68%
+    ),
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.025), transparent),
+    var(--glados-screen);
+  background-clip: padding-box;
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  box-shadow:
+    0 0 0 1px rgba(255, 191, 104, 0.08),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.04);
+}
+
+.glados .github-output-frame.github-output-frame {
+  box-shadow: none;
+}
+
+/* Mid panels */
+.glados :is(
+  .cal,
+  .cal__sct,
+  .cal__dyPad,
+  .chat-message,
+  .comment-message,
+  .commit-block,
+  .effects-modal__section,
+  .effects-modal__control,
+  .email-card,
+  .ntcs-card,
+  .presence-panel__metric,
+  .read-aloud-controls,
+  .story-dropdown__content,
+  .rss-filters,
+  .rss-post-block,
+  .rss-code-frame,
+  .rss-author-filter,
+  .socials-segment__item,
+  .site-stats__item,
+  .stats-segment,
+  .tooltip-content
+) {
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.03), transparent),
+    var(--glados-panel);
+  color: var(--body-text-colour);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 154, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* Recessed panels */
+.glados :is(
+  #chatroom,
+  .comments-box,
+  .rss-post-content,
+  .email-content,
+  .comment-location-dropdown__content,
+  .rss-code-choice-list,
+  #terminal-wrapper,
+  #terminal-scroll,
+  #terminal-content
+) {
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.02), transparent),
+    var(--glados-panel-sunken);
+  color: var(--body-text-colour);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(0, 0, 0, 0.26),
+    inset 0 0 0 1px rgba(255, 191, 104, 0.03);
+}
+
+/* Transparent banner pieces */
+.glados :is(.banner-scaler, #banner, #banner-wrapper, .ascii-block, .command-line, .info-block) {
+  background: transparent;
+}
+
+/* Pills */
+.glados :is(
+  .cal__selPill,
+  .rss-filters__summaryPill,
+  .rss-post-tag,
+  .presence-panel__pill,
+  .chat-location-badge
+) {
+  background: rgba(255, 168, 66, 0.08);
+  color: var(--glados-amber-soft);
+  border: 1px solid rgba(255, 168, 66, 0.18);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 214, 154, 0.03);
+}
+
+/* Image radii */
+.glados :is(
+  .cal__chip,
+  .cal__itm,
+  .cal__wkItm,
+  .cal__clr,
+  .cal__rst,
+  .chapter-image,
+  .pfp,
+  .irl-pic,
+  .avatar-container img,
+  .commit-identicon,
+  .email-signature-logo-img,
+  .rss-post-image
+) {
+  border-radius: 0.35rem;
+}
+
+/* Messages */
+.glados .message,
+.glados .message.in,
+.glados .message.out {
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.03), transparent),
+    var(--glados-panel);
+  color: var(--body-text-colour);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 154, 0.03),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.16);
+}
+
+.glados .nickname-strip {
+  background: rgba(255, 168, 66, 0.12);
+  color: var(--glados-amber-bright);
+  border-radius: 999px;
+}
+
+.glados .theme-toggle-button {
+  box-shadow: none;
+}
+
+.glados .tooltip-content {
+  background:
+    linear-gradient(to bottom, rgba(255, 168, 66, 0.03), transparent),
+    var(--glados-panel-sunken);
+  color: var(--body-text-colour);
+  border: 1px solid rgba(255, 168, 66, 0.16);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.18),
+    0 0.55rem 1.25rem rgba(0, 0, 0, 0.24);
+}
+
+.glados .tooltip-trigger {
+  background: transparent;
+  color: inherit;
+}
+
+.glados #term-icon {
+  border-radius: 0.35rem;
+  filter: none;
+}
+
+.glados .clicker-counter,
+.glados .clicker-counter__window {
+  border-radius: 0.45rem;
+}
+
+/* Keep most things softly rounded, but not the window controls */
+.glados :is(
+  .window-frame,
+  .window-header,
+  .window-body,
+  nav,
+  .menu-button,
+  .button,
+  .modal,
+  .card,
+  .notice,
+  .terminal,
+  .comments,
+  .rss,
+  .guestbook,
+  .avatar,
+  .counter,
+  .stats,
+  .presence,
+  .kc-88by31,
+  .kc-88by31-shell,
+  .about-frame,
+  .intro-window,
+  .intro-frame,
+  .profile-row,
+  .cal,
+  .chapter-image,
+  .frame-chat,
+  #chatroom,
+  .chat-message,
+  .comments-box,
+  .comment-message,
+  .commits-container,
+  .commit-block,
+  .clicker-counter,
+  .clicker-counter__window,
+  .crt-ui-modal,
+  .effects-modal,
+  .email-wrapper,
+  .email-card,
+  .key-grid,
+  .fn-key,
+  .ntcs-card,
+  .presence-panel,
+  .reader-container,
+  .reader-paragraph,
+  .story-dropdown__content,
+  .blog-wrapper,
+  .rss-post-block,
+  .rss-code-frame,
+  .message,
+  .socials-segment,
+  .socials-segment__item,
+  .site-stats,
+  .site-stats__item,
+  .stats-segment,
+  .tooltip,
+  .tooltip-content
+) {
+  border-radius: 0.45rem;
+}
+
+.glados :is(
+  button,
+  select,
+  .menu-button,
+  .button,
+  .theme-toggle-button,
+  .email-action,
+  .effects-modal__toggle,
+  .effects-modal__close,
+  .kc-click-header__control,
+  .rss-filters__toggle,
+  .rss-filters__clear,
+  .rss-author-filter__toggle,
+  .rss-author-filter__btn,
+  .rss-code-copy,
+  .story-dropdown__button,
+  .comment-location-dropdown__button,
+  #post-comment-button
+):not(.window-controls .btn),
+.glados .crt-ui-modal :is(button, select) {
+  border-radius: 0.28rem !important;
+}
+
+/* Dark structural rules */
+.glados.dark-mode .frame,
+.dark-mode.glados .frame {
+  background-color: var(--frame-bg-colour);
+  border: 1px solid rgba(255, 201, 105, 0.14);
+  background-clip: padding-box;
+  box-shadow: var(--frame-box-shadow);
+}
+
+.glados.dark-mode :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+),
+.dark-mode.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) {
+  border-color: rgba(255, 201, 105, 0.14) !important;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 162, 51, 0.03) 0%,
+      transparent 68%
+    ),
+    linear-gradient(to bottom, rgba(255, 162, 51, 0.025), transparent),
+    var(--glados-screen);
+  box-shadow:
+    0 0 0 1px rgba(255, 201, 105, 0.08),
+    0 0 1.35rem rgba(255, 136, 37, 0.08),
+    inset 0 0 0 1px rgba(255, 201, 105, 0.06) !important;
+}
+
+.glados.dark-mode :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-header,
+.dark-mode.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-header {
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 162, 51, 0.05),
+      transparent 22%,
+      transparent 78%,
+      rgba(255, 162, 51, 0.035)
+    ),
+    linear-gradient(to bottom, rgba(255, 162, 51, 0.04), transparent),
+    var(--window-header-bg);
+  color: var(--glados-amber-bright);
+  border-bottom: 1px solid rgba(255, 201, 105, 0.14) !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 201, 105, 0.05);
+}
+
+.glados.dark-mode :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn,
+.dark-mode.glados :is(
+  .window-frame,
+  #kitty-intro-wrapper.window-frame,
+  .intro-status-row__intro-shell.window-frame
+) .window-controls .btn {
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 214, 154, 0.22), transparent 38%),
+    linear-gradient(to bottom, rgba(255, 214, 154, 0.06), transparent),
+    rgba(17, 7, 3, 0.98);
+  border-color: rgba(255, 201, 105, 0.22);
+  color: var(--glados-amber-soft);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.36),
+    inset 0 0 0 1px rgba(255, 201, 105, 0.05),
+    0 0 0.6rem rgba(255, 136, 37, 0.08);
+}
+
+.glados.dark-mode :is(
+  .kc-88by31-shell,
+  .about-frame,
+  .intro-window,
+  .intro-frame,
+  .comments-shell,
+  .comments-container,
+  .commits-outer-shell,
+  .commits-container-shell,
+  .github-output-frame,
+  .github-outer-frame,
+  .effects-modal,
+  .email-wrapper,
+  .ntcs-window,
+  .presence-panel,
+  .reader-container,
+  .blog-wrapper,
+  .socials-segment,
+  .site-stats-shell
+),
+.dark-mode.glados :is(
+  .kc-88by31-shell,
+  .about-frame,
+  .intro-window,
+  .intro-frame,
+  .comments-shell,
+  .comments-container,
+  .commits-outer-shell,
+  .commits-container-shell,
+  .github-output-frame,
+  .github-outer-frame,
+  .effects-modal,
+  .email-wrapper,
+  .ntcs-window,
+  .presence-panel,
+  .reader-container,
+  .blog-wrapper,
+  .socials-segment,
+  .site-stats-shell
+) {
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 162, 51, 0.03) 0%,
+      transparent 68%
+    ),
+    linear-gradient(to bottom, rgba(255, 162, 51, 0.025), transparent),
+    var(--glados-screen);
+  border: 1px solid rgba(255, 201, 105, 0.14);
+  background-clip: padding-box;
+  box-shadow:
+    0 0 0 1px rgba(255, 201, 105, 0.07),
+    inset 0 0 0 1px rgba(255, 201, 105, 0.05);
+}
+
+.glados.dark-mode :is(
+  .cal,
+  .cal__sct,
+  .cal__dyPad,
+  .chat-message,
+  .comment-message,
+  .commit-block,
+  .effects-modal__section,
+  .effects-modal__control,
+  .email-card,
+  .ntcs-card,
+  .presence-panel__metric,
+  .read-aloud-controls,
+  .story-dropdown__content,
+  .rss-filters,
+  .rss-post-block,
+  .rss-code-frame,
+  .rss-author-filter,
+  .socials-segment__item,
+  .site-stats__item,
+  .stats-segment,
+  .tooltip-content
+),
+.dark-mode.glados :is(
+  .cal,
+  .cal__sct,
+  .cal__dyPad,
+  .chat-message,
+  .comment-message,
+  .commit-block,
+  .effects-modal__section,
+  .effects-modal__control,
+  .email-card,
+  .ntcs-card,
+  .presence-panel__metric,
+  .read-aloud-controls,
+  .story-dropdown__content,
+  .rss-filters,
+  .rss-post-block,
+  .rss-code-frame,
+  .rss-author-filter,
+  .socials-segment__item,
+  .site-stats__item,
+  .stats-segment,
+  .tooltip-content
+) {
+  background:
+    linear-gradient(to bottom, rgba(255, 162, 51, 0.03), transparent),
+    var(--glados-panel);
+  color: var(--body-text-colour);
+  border-color: rgba(255, 201, 105, 0.14);
+}
+
+.glados.dark-mode :is(
+  .cal__selPill,
+  .rss-filters__summaryPill,
+  .rss-post-tag,
+  .presence-panel__pill,
+  .chat-location-badge
+),
+.dark-mode.glados :is(
+  .cal__selPill,
+  .rss-filters__summaryPill,
+  .rss-post-tag,
+  .presence-panel__pill,
+  .chat-location-badge
+) {
+  background: rgba(255, 162, 51, 0.1);
+  color: var(--glados-amber-soft);
+  border-color: rgba(255, 201, 105, 0.18);
+}
+
+.glados.dark-mode .message,
+.glados.dark-mode .message.in,
+.glados.dark-mode .message.out,
+.dark-mode.glados .message,
+.dark-mode.glados .message.in,
+.dark-mode.glados .message.out {
+  background:
+    linear-gradient(to bottom, rgba(255, 162, 51, 0.03), transparent),
+    var(--glados-panel);
+  color: var(--body-text-colour);
+  border-color: rgba(255, 201, 105, 0.14);
+}

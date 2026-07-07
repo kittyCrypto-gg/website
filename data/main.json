@@ -322,6 +322,16 @@
       "name": "XP Luna",
       "location": "/styles/themes/windowsXP.css",
       "caller": "wxp"
+    },
+    "kernal": {
+      "name": "Kernal",
+      "location": "/styles/themes/commodore64.css",
+      "caller": "c64"
+    },
+    "gladOS": {
+      "name": "GlaDOS",
+      "location": "/styles/themes/gladOS.css",
+      "caller": "glados"
     }
   }
 }
