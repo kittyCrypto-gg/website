@@ -1,4 +1,4 @@
-# kittycrow.dev - Frontend - ${V6.3443}
+# kittycrow.dev - Frontend - ${V6.345}
 
 The public-facing frontend of https://kittycrow.dev 🐾
 
