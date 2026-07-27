@@ -1,10 +1,16 @@
 {
+    "name": "@kittycrypto/website",
+    "version": "1.0.0",
     "private": true,
     "type": "module",
+    "exports": {
+        "./static-ui": "./src/contracts/staticUi.tsx"
+    },
     "scripts": {
         "clean": "node -e \"import('node:fs').then(({ rmSync }) => rmSync('dist', { recursive: true, force: true }))\"",
         "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
-        "build": "tsx build.mts"
+        "build": "tsx build.mts",
+        "validate": "npm run typecheck && npm run build"
     },
     "devDependencies": {
         "@types/node": "^25.2.3",
