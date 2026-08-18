@@ -1,4 +1,5 @@
 type KanjiLayout = "vertical" | "horizontal";
+type IdeographicDescriptionOperator = "⿰" | "⿱";
 
 type RenderedWithStyles = Readonly<{
     html: string;
@@ -6,6 +7,28 @@ type RenderedWithStyles = Readonly<{
 }>;
 
 type KanjiGlyph = string | ComposedKanji;
+
+type ParsedGlyph = Readonly<{
+    glyph: KanjiGlyph;
+    next: number;
+}>;
+
+function escapeHTML(value: string): string {
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+}
+
+function parsePositiveNumberAttribute(element: Element, name: string): number | null {
+    const raw = element.getAttribute(name);
+    if (raw === null) return null;
+
+    const value = Number.parseFloat(raw);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return value;
+}
 
 class Tategaki {
     /**
@@ -17,7 +40,7 @@ class Tategaki {
     }
 
     /**
-     * @returns {string} CSS text for tategaki rendering.
+     * @returns {string} CSS text for tategaki and ruby rendering.
      */
     static getCSS(): string {
         return `
@@ -28,12 +51,15 @@ class Tategaki {
             }
 
             ruby {
-                ruby-position: side;
+                ruby-position: over;
+                ruby-align: center;
             }
 
             rt {
                 font-size: 0.5em;
                 line-height: 1;
+                user-select: none;
+                -webkit-user-select: none;
             }
 
             .manual-ruby {
@@ -80,28 +106,30 @@ class Tategaki {
 
 class Furigana {
     /**
-     * @param {string} base - Base text (kanji).
+     * @param {string} base - Base HTML.
      * @param {string} reading - Furigana reading.
      * @param {number | null} maxEm - Optional max width in em before nesting ruby.
      * @returns {string} Ruby HTML.
      */
     static render(base: string, reading: string, maxEm: number | null = null): string {
+        const safeReading = escapeHTML(reading);
+
         if (maxEm === null) {
-            return `<ruby>${base}<rt>${reading}</rt></ruby>`;
+            return `<ruby>${base}<rt>${safeReading}</rt></ruby>`;
         }
 
         const widthEm = Furigana.#estimateEmWidth(reading);
 
         if (widthEm <= maxEm) {
-            return `<ruby>${base}<rt>${reading}</rt></ruby>`;
+            return `<ruby>${base}<rt>${safeReading}</rt></ruby>`;
         }
 
-        const blocksNeeded = Math.ceil(widthEm / maxEm) - 1;
-        const slices = Furigana.#splitReading(reading, blocksNeeded);
+        const partsNeeded = Math.max(1, Math.ceil(widthEm / maxEm));
+        const slices = Furigana.#splitReading(reading, partsNeeded);
 
         let html = base;
         for (const slice of slices) {
-            html = `<ruby>${html}<rt>${slice}</rt></ruby>`;
+            html = `<ruby>${html}<rt>${escapeHTML(slice)}</rt></ruby>`;
         }
 
         return html;
@@ -138,12 +166,15 @@ class Furigana {
      */
     static #splitReading(text: string, parts: number): string[] {
         const chars = [...text];
-        const safeParts = Math.max(1, Math.floor(parts));
+        const safeParts = Math.max(1, Math.min(chars.length, Math.floor(parts)));
 
         const base = Math.floor(chars.length / safeParts);
         const rem = chars.length % safeParts;
 
-        const sizes: number[] = Array.from({ length: safeParts }, (_v, i) => base + (i < rem ? 1 : 0));
+        const sizes: number[] = Array.from(
+            { length: safeParts },
+            (_v, i) => base + (i < rem ? 1 : 0)
+        );
 
         const out: string[] = [];
         let idx = 0;
@@ -182,20 +213,50 @@ class ComposedKanji {
     }
 
     /**
-     * @returns {RenderedWithStyles} HTML + CSS for this composed kanji (including nested composed glyphs).
+     * @returns {string} Canonical IDS source for this composition.
+     */
+    toIDS(): string {
+        const operator: IdeographicDescriptionOperator = this.layout === "vertical" ? "⿱" : "⿰";
+        return `${operator}${ComposedKanji.#sourceOf(this.g1)}${ComposedKanji.#sourceOf(this.g2)}`;
+    }
+
+    /**
+     * @returns {RenderedWithStyles} HTML + CSS for this composed kanji.
      */
     renderWithStyles(): RenderedWithStyles {
+        const visual = this.#renderVisualWithStyles();
+        const source = escapeHTML(this.toIDS());
+
+        return {
+            html: `
+                <span class="kanji-composed" data-jp-source="${source}">
+                    <span class="kanji-source">${source}</span>
+                    <span class="kanji-visual" aria-hidden="true">${visual.html}</span>
+                </span>
+            `,
+            css: visual.css
+        };
+    }
+
+    /**
+     * @returns {RenderedWithStyles} Visual-only HTML used by top-level and nested compositions.
+     */
+    #renderVisualWithStyles(): RenderedWithStyles {
         const isVertical = this.layout === "vertical";
         const compValue = isVertical ? this.yC : this.xC;
         const absShift = Math.abs(compValue) * 50;
         const swap = compValue < 0;
 
-        const g1 = this.g1 instanceof ComposedKanji ? this.g1.renderWithStyles() : { html: this.g1, css: "" };
-        const g2 = this.g2 instanceof ComposedKanji ? this.g2.renderWithStyles() : { html: this.g2, css: "" };
+        const g1 = this.g1 instanceof ComposedKanji
+            ? this.g1.#renderVisualWithStyles()
+            : { html: escapeHTML(this.g1), css: "" };
+        const g2 = this.g2 instanceof ComposedKanji
+            ? this.g2.#renderVisualWithStyles()
+            : { html: escapeHTML(this.g2), css: "" };
 
         const [A, B] = swap ? [g2.html, g1.html] : [g1.html, g2.html];
 
-        const wrapperClass = `kanji-composed kanji-${this.layout}`;
+        const wrapperClass = `kanji-visual-composed kanji-${this.layout}`;
         const part1Class = `kanji-slot kanji-${this.uid}-${isVertical ? "top" : "left"}`;
         const part2Class = `kanji-slot kanji-${this.uid}-${isVertical ? "bottom" : "right"}`;
 
@@ -209,22 +270,22 @@ class ComposedKanji {
         const css = isVertical
             ? `
                 .kanji-${this.uid}-top {
-                transform: scaleY(0.5) translateY(${absShift}%);
-                transform-origin: top;
+                    transform: scaleY(0.5) translateY(${absShift}%);
+                    transform-origin: top;
                 }
                 .kanji-${this.uid}-bottom {
-                transform: scaleY(0.5) translateY(-${absShift}%);
-                transform-origin: bottom;
+                    transform: scaleY(0.5) translateY(-${absShift}%);
+                    transform-origin: bottom;
                 }
             `
             : `
                 .kanji-${this.uid}-left {
-                transform: scaleX(0.5) translateX(${absShift}%);
-                transform-origin: left;
+                    transform: scaleX(0.5) translateX(${absShift}%);
+                    transform-origin: left;
                 }
                 .kanji-${this.uid}-right {
-                transform: scaleX(0.5) translateX(-${absShift}%);
-                transform-origin: right;
+                    transform: scaleX(0.5) translateX(-${absShift}%);
+                    transform-origin: right;
                 }
             `;
 
@@ -234,30 +295,119 @@ class ComposedKanji {
         };
     }
 
+    static #sourceOf(glyph: KanjiGlyph): string {
+        return glyph instanceof ComposedKanji ? glyph.toIDS() : glyph;
+    }
+
     /**
-     * @returns {string} Base CSS for composed kanji slots.
+     * @returns {string} Base CSS for selectable-source composed kanji.
      */
     static getCSS(): string {
         return `
-        .kanji-composed {
-        display: inline-block;
-        font-size: 1em;
-        width: 1em;
-        height: 1em;
-        line-height: 1;
-        position: relative;
-      }
+            .kanji-composed {
+                display: inline-block;
+                font-size: 1em;
+                width: 1em;
+                height: 1em;
+                line-height: 1;
+                position: relative;
+                vertical-align: -0.08em;
+            }
 
-      .kanji-slot {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        text-align: center;
-        white-space: nowrap;
+            .kanji-source {
+                position: absolute;
+                inset: 0;
+                opacity: 0;
+                overflow: hidden;
+                white-space: nowrap;
+                user-select: all;
+                -webkit-user-select: all;
+                cursor: text;
+                z-index: 2;
+            }
+
+            .kanji-visual {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                user-select: none;
+                -webkit-user-select: none;
+                z-index: 1;
+            }
+
+            .kanji-visual-composed {
+                display: inline-block;
+                width: 100%;
+                height: 100%;
+                line-height: 1;
+                position: relative;
+            }
+
+            .kanji-slot {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                line-height: 1;
+                text-align: center;
+                white-space: nowrap;
+            }
+        `;
     }
-    `;
+}
+
+class IdeographicDescription {
+    static readonly operators: Readonly<Record<IdeographicDescriptionOperator, KanjiLayout>> = {
+        "⿰": "horizontal",
+        "⿱": "vertical"
+    };
+
+    /**
+     * Parse a binary IDS using U+2FF0 LEFT-TO-RIGHT and U+2FF1 ABOVE-TO-BELOW.
+     * Whitespace is ignored.
+     *
+     * @param {string} source - IDS source.
+     * @returns {KanjiGlyph} Parsed glyph tree.
+     */
+    static parse(source: string): KanjiGlyph {
+        const tokens = [...source].filter((token) => !/\s/u.test(token));
+        if (tokens.length === 0) {
+            throw new Error("IDS source is empty");
+        }
+
+        const parsed = IdeographicDescription.#parseAt(tokens, 0);
+        if (parsed.next !== tokens.length) {
+            throw new Error("IDS contains extra tokens after the first complete expression");
+        }
+
+        return parsed.glyph;
+    }
+
+    static #parseAt(tokens: readonly string[], index: number): ParsedGlyph {
+        const token = tokens[index];
+        if (token === undefined) {
+            throw new Error("IDS ended before all operands were supplied");
+        }
+
+        if (token === "⿰" || token === "⿱") {
+            const first = IdeographicDescription.#parseAt(tokens, index + 1);
+            const second = IdeographicDescription.#parseAt(tokens, first.next);
+
+            return {
+                glyph: new ComposedKanji(
+                    first.glyph,
+                    second.glyph,
+                    IdeographicDescription.operators[token]
+                ),
+                next: second.next
+            };
+        }
+
+        return {
+            glyph: token,
+            next: index + 1
+        };
     }
 }
 
@@ -266,24 +416,55 @@ class JPExtended {
      * @returns {void} Nothing.
      */
     static injectCSS(): void {
+        if (document.getElementById("jp-extended-styles") !== null) return;
+
         const style = document.createElement("style");
-        style.innerHTML = [
+        style.id = "jp-extended-styles";
+        style.textContent = [
             Tategaki.getCSS(),
             ComposedKanji.getCSS()
         ].join("\n");
         document.head.appendChild(style);
     }
 
+    static #injectDynamicCSS(css: string): void {
+        if (css.trim().length === 0) return;
+
+        const style = document.createElement("style");
+        style.textContent = css;
+        document.head.appendChild(style);
+    }
+
     /**
-     * @param {Node} node - Node containing jp-kanji markup or plain text.
+     * @param {string} source - Unicode IDS source.
+     * @returns {KanjiGlyph} Parsed composition.
+     */
+    static parseIDS(source: string): KanjiGlyph {
+        return IdeographicDescription.parse(source);
+    }
+
+    /**
+     * @param {Node} node - Node containing jp-kanji, jp-compose, or plain text.
      * @returns {KanjiGlyph} Either a string glyph or a composed glyph.
      */
     static buildKanji(node: Node): KanjiGlyph {
         if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? "").trim();
-
         if (!(node instanceof Element)) return (node.textContent ?? "").trim();
 
-        if (node.tagName.toLowerCase() !== "jp-kanji") {
+        const tagName = node.tagName.toLowerCase();
+
+        if (tagName === "jp-compose") {
+            const source = (node.getAttribute("ids") ?? node.textContent ?? "").trim();
+
+            try {
+                return IdeographicDescription.parse(source);
+            } catch (error: unknown) {
+                console.warn("[shodou] Invalid jp-compose IDS", source, error);
+                return source;
+            }
+        }
+
+        if (tagName !== "jp-kanji") {
             return (node.textContent ?? "").trim();
         }
 
@@ -294,15 +475,20 @@ class JPExtended {
         const x = Number.parseFloat(node.getAttribute("xcompress") ?? "0") || 0;
         const y = Number.parseFloat(node.getAttribute("ycompress") ?? "0") || 0;
 
-        const children = Array.from(node.childNodes).filter((n) => {
-            if (n.nodeType !== Node.TEXT_NODE) return true;
-            return ((n.textContent ?? "").trim() !== "");
+        const children = Array.from(node.childNodes).filter((child) => {
+            if (child.nodeType !== Node.TEXT_NODE) return true;
+            return (child.textContent ?? "").trim().length > 0;
         });
 
         if (children.length === 1 && children[0]?.nodeType === Node.TEXT_NODE) {
-            const chars = ((children[0].textContent ?? "").trim()).split("").filter(Boolean);
+            const chars = [...((children[0].textContent ?? "").trim())];
             if (chars.length === 2) {
-                return new ComposedKanji(chars[0] ?? "", chars[1] ?? "", layout, { xCompress: x, yCompress: y });
+                return new ComposedKanji(
+                    chars[0] ?? "",
+                    chars[1] ?? "",
+                    layout,
+                    { xCompress: x, yCompress: y }
+                );
             }
             return chars.join("");
         }
@@ -316,110 +502,167 @@ class JPExtended {
         return (node.textContent ?? "").trim();
     }
 
+    static #renderGlyph(glyph: KanjiGlyph): RenderedWithStyles {
+        if (glyph instanceof ComposedKanji) {
+            return glyph.renderWithStyles();
+        }
+
+        return {
+            html: escapeHTML(glyph),
+            css: ""
+        };
+    }
+
+    static #renderBaseNodes(nodes: readonly Node[]): RenderedWithStyles {
+        let html = "";
+        let css = "";
+
+        for (const node of nodes) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = (node.textContent ?? "").trim();
+                if (text.length > 0) html += escapeHTML(text);
+                continue;
+            }
+
+            if (!(node instanceof Element)) continue;
+
+            const tagName = node.tagName.toLowerCase();
+            if (tagName === "jp-reading") continue;
+
+            if (tagName === "jp-kanji" || tagName === "jp-compose") {
+                const rendered = JPExtended.#renderGlyph(JPExtended.buildKanji(node));
+                html += rendered.html;
+                css += rendered.css;
+                continue;
+            }
+
+            html += node.outerHTML;
+        }
+
+        return { html, css };
+    }
+
+    static #replaceWithRendered(
+        element: Element,
+        rendered: RenderedWithStyles,
+        reading: string | null,
+        maxEm: number | null
+    ): void {
+        const container = document.createElement("span");
+        container.className = "jp-rendered";
+        container.innerHTML = reading !== null && reading.length > 0
+            ? Furigana.render(rendered.html, reading, maxEm)
+            : rendered.html;
+
+        element.replaceWith(container);
+        JPExtended.#injectDynamicCSS(rendered.css);
+    }
+
+    static #parseFuriganaElement(element: Element): void {
+        const maxEm = parsePositiveNumberAttribute(element, "size");
+        const originalChildren = Array.from(element.childNodes);
+
+        const readingElement = originalChildren.find((node) => {
+            return node instanceof Element && node.tagName.toLowerCase() === "jp-reading";
+        });
+
+        const explicitReading = (element.getAttribute("reading") ?? "").trim();
+        let reading = explicitReading.length > 0
+            ? explicitReading
+            : (readingElement?.textContent ?? "").trim();
+
+        let baseNodes = originalChildren.filter((node) => node !== readingElement);
+
+        if (reading.length === 0) {
+            const hasComposedChild = baseNodes.some((node) => {
+                if (!(node instanceof Element)) return false;
+                const tagName = node.tagName.toLowerCase();
+                return tagName === "jp-kanji" || tagName === "jp-compose";
+            });
+
+            if (hasComposedChild) {
+                const legacyReadingIndex = baseNodes.findIndex((node) => {
+                    return node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim().length > 0;
+                });
+
+                if (legacyReadingIndex >= 0) {
+                    reading = (baseNodes[legacyReadingIndex]?.textContent ?? "").trim();
+                    baseNodes = baseNodes.filter((_node, index) => index !== legacyReadingIndex);
+                }
+            } else {
+                const rawChars = [...((element.textContent ?? "").trim())];
+                const mid = Math.floor(rawChars.length / 2);
+                const base = rawChars.slice(0, mid).join("");
+                reading = rawChars.slice(mid).join("");
+
+                JPExtended.#replaceWithRendered(
+                    element,
+                    { html: escapeHTML(base), css: "" },
+                    reading,
+                    maxEm
+                );
+                return;
+            }
+        }
+
+        const rendered = JPExtended.#renderBaseNodes(baseNodes);
+        JPExtended.#replaceWithRendered(
+            element,
+            rendered,
+            reading.length > 0 ? reading : null,
+            maxEm
+        );
+    }
+
     /**
+     * Parse custom XML-like Japanese markup.
+     *
+     * Preferred furigana syntax:
+     *   <jp-furigana reading="にほん">日本</jp-furigana>
+     *
+     * Furigana + IDS composition:
+     *   <jp-furigana reading="にほん"><jp-compose ids="⿱日本"></jp-compose></jp-furigana>
+     *
+     * Shorthand:
+     *   <jp-compose ids="⿱日本" reading="にほん"></jp-compose>
+     *
+     * Explicit child-reading form:
+     *   <jp-furigana><jp-compose ids="⿱日本"></jp-compose><jp-reading>にほん</jp-reading></jp-furigana>
+     *
+     * Existing jp-kanji nesting and legacy jp-furigana forms remain supported.
+     *
      * @returns {void} Nothing.
      */
     static parseCustomTags(): void {
-        // Step 1: jp-tategaki
-        document.querySelectorAll("jp-tategaki").forEach((el) => {
-            const wrapped = Tategaki.wrap(el.innerHTML);
+        // Step 1: tategaki wrappers.
+        document.querySelectorAll("jp-tategaki").forEach((element) => {
+            const wrapped = Tategaki.wrap(element.innerHTML);
             const container = document.createElement("div");
             container.innerHTML = wrapped;
-            el.replaceWith(container);
+            element.replaceWith(container);
         });
 
-        // Step 2: jp-furigana
-        document.querySelectorAll("jp-furigana").forEach((el) => {
-            const sizeAttr = el.getAttribute("size");
-            const size = sizeAttr !== null ? (Number.parseFloat(sizeAttr) || 0) : null;
-            const maxEm = sizeAttr !== null && size !== null && Number.isFinite(size) && size > 0 ? size : null;
-
-            const children = Array.from(el.childNodes);
-
-            const hasKanji = children.some((n) => {
-                return n instanceof Element && n.tagName.toLowerCase() === "jp-kanji";
-            });
-
-            let base = "";
-            let reading = "";
-
-            if (!hasKanji) {
-                const raw = (el.textContent ?? "").trim();
-                const mid = Math.floor(raw.length / 2);
-                base = raw.slice(0, mid);
-                reading = raw.slice(mid);
-
-                const output = Furigana.render(base, reading, maxEm);
-                const container = document.createElement("span");
-                container.innerHTML = output;
-                el.replaceWith(container);
-                return;
-            }
-
-            let readingFound = false;
-
-            for (const child of children) {
-                if (!readingFound && child.nodeType === Node.TEXT_NODE) {
-                    const t = (child.textContent ?? "").trim();
-                    if (t) {
-                        reading += t;
-                        readingFound = true;
-                        continue;
-                    }
-                }
-
-                if (child.nodeType === Node.TEXT_NODE) {
-                    base += (child.textContent ?? "").trim();
-                    continue;
-                }
-
-                if (!(child instanceof Element)) continue;
-                if (child.tagName.toLowerCase() !== "jp-kanji") continue;
-
-                const composed = JPExtended.buildKanji(child);
-
-                if (typeof composed === "string") {
-                    base += composed;
-                    continue;
-                }
-
-                const { html, css } = composed.renderWithStyles();
-                base += html;
-
-                const style = document.createElement("style");
-                style.innerHTML = css;
-                document.head.appendChild(style);
-            }
-
-            const output = Furigana.render(base, reading, maxEm);
-            const container = document.createElement("span");
-            container.innerHTML = output;
-            el.replaceWith(container);
+        // Step 2: furigana first, so nested compositions are consumed as ruby bases.
+        Array.from(document.querySelectorAll("jp-furigana")).forEach((element) => {
+            if (!element.isConnected) return;
+            JPExtended.#parseFuriganaElement(element);
         });
 
-        // Step 3: standalone jp-kanji
-        document.querySelectorAll("jp-kanji").forEach((node) => {
-            if (!(node instanceof Element)) return;
-            if (!node.isConnected) return;
+        // Step 3: standalone manual or IDS compositions. A reading attribute is a ruby shorthand.
+        Array.from(document.querySelectorAll("jp-compose, jp-kanji")).forEach((element) => {
+            if (!(element instanceof Element)) return;
+            if (!element.isConnected) return;
 
-            const composed = JPExtended.buildKanji(node);
+            const rendered = JPExtended.#renderGlyph(JPExtended.buildKanji(element));
+            const reading = (element.getAttribute("reading") ?? "").trim();
+            const maxEm = parsePositiveNumberAttribute(element, "size");
 
-            if (typeof composed === "string") {
-                const span = document.createElement("span");
-                span.textContent = composed;
-                node.replaceWith(span);
-                return;
-            }
-
-            const rendered = composed.renderWithStyles();
-
-            const span = document.createElement("span");
-            span.innerHTML = rendered.html;
-            node.replaceWith(span);
-
-            const style = document.createElement("style");
-            style.innerHTML = rendered.css;
-            document.head.appendChild(style);
+            JPExtended.#replaceWithRendered(
+                element,
+                rendered,
+                reading.length > 0 ? reading : null,
+                maxEm
+            );
         });
     }
 
