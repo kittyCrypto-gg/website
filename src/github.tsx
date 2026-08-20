@@ -2,6 +2,7 @@ import { drawTriangularIdenticon } from "./commitIdenticon.ts";
 import { Clusteriser } from "./clusterise.ts";
 import MediaStyler from "./mediaStyler.tsx";
 import { render2Frag } from "./reactHelpers.tsx";
+import { githubJson } from "./githubApi.ts";
 import type { JSX } from "react";
 import * as helpers from "./helpers.ts";
 
@@ -59,32 +60,15 @@ type SplitMsg = Readonly<{
 const styler = new MediaStyler();
 const NO_DESC = "No description given for this commit.";
 
-/**
- * Cheap check for the github commits payload shape.
- * not deep or anything, just making sure we got an array first.
- * @param {ApiRes} value
- * @returns {value is ApiItem[]}
- */
 function isApiArr(value: ApiRes): value is ApiItem[] {
     return Array.isArray(value);
 }
 
-/**
- * Checks one array item enough that we can pull fields out of it.
- * yeah, pretty light touch.
- * @param {unknown} value
- * @returns {value is ApiItem}
- */
 function isItem(value: unknown): value is ApiItem {
     if (typeof value !== "object" || value === null) return false;
     return typeof (value as Record<string, unknown>).sha === "string";
 }
 
-/**
- * Pulls out the bits this file actually cares about.
- * @param {ApiItem} item
- * @returns {Commit}
- */
 function pickCommit(item: ApiItem): Commit {
     return {
         sha: item.sha,
@@ -95,12 +79,6 @@ function pickCommit(item: ApiItem): Commit {
     };
 }
 
-/**
- * Splits commit text into summary + the rest.
- * first line wins, usual git message vibes.
- * @param {string} message
- * @returns {SplitMsg}
- */
 function splitMsg(message: string): SplitMsg {
     const lines = message.replace(/\r\n?/g, "\n").split("\n");
     const summary = (lines.shift() || "").trim();
@@ -112,22 +90,10 @@ function splitMsg(message: string): SplitMsg {
     };
 }
 
-/**
- * Escapes tooltip text and keeps line breaks.
- * tiny helper, but saves repeating the replace bit.
- * @param {string} description
- * @returns {string}
- */
 function tipHtml(description: string): string {
     return helpers.escapeHtml(description).replace(/\n/g, "<br />");
 }
 
-/**
- * Builds the html used inside the commit message area.
- * summary visible, rest tucked in the tooltip.
- * @param {string} message
- * @returns {Promise<string>}
- */
 async function msgHtml(message: string): Promise<string> {
     const { summary, description } = splitMsg(message);
     const safeSummary = helpers.escapeHtml(summary);
@@ -144,11 +110,6 @@ async function msgHtml(message: string): Promise<string> {
     return styler.replaceTooltips(tooltipMarkup);
 }
 
-/**
- * The visible commit body bit.
- * @param {{ commit: Commit; messageHtml: string }} props
- * @returns {JSX.Element}
- */
 function Body(props: { commit: Commit; messageHtml: string }): JSX.Element {
     const { commit, messageHtml } = props;
 
@@ -180,12 +141,6 @@ function Body(props: { commit: Commit; messageHtml: string }): JSX.Element {
     );
 }
 
-/**
- * Builds one commit block dom node.
- * identicon gets plugged in later.
- * @param {Commit} commit
- * @returns {Promise<HTMLDivElement>}
- */
 async function mkEl(commit: Commit): Promise<HTMLDivElement> {
     const html = await msgHtml(commit.message);
 
@@ -204,28 +159,10 @@ async function mkEl(commit: Commit): Promise<HTMLDivElement> {
     return block;
 }
 
-/**
- * Fetches commit history from github for one repo/branch.
- * basic mapping only, nothing fancy.
- * @param {string} owner
- * @param {string} repo
- * @param {string} branch
- * @returns {Promise<Commit[]>}
- */
 async function getCommits(owner: string, repo: string, branch: string = "main"): Promise<Commit[]> {
-    const url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}`;
-    const response = await fetch(url, {
-        headers: {
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "web-client"
-        }
-    });
-
-    if (!response.ok) {
-        throw new Error(`GitHub API error: ${response.status}`);
-    }
-
-    const data: ApiRes = await (response.json() as Promise<unknown>);
+    const data: ApiRes = await githubJson(
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?sha=${encodeURIComponent(branch)}`
+    );
     if (!isApiArr(data)) throw new Error("GitHub API payload is not an array");
 
     return data
@@ -233,14 +170,6 @@ async function getCommits(owner: string, repo: string, branch: string = "main"):
         .map((item) => pickCommit(item));
 }
 
-/**
- * Renders a list of commits into a container and wires clusterise up.
- * does the identicons too, so this one does a fair bit.
- * @param {readonly Commit[]} commits
- * @param {string} containerId
- * @param {string} clusterKey
- * @returns {Promise<void>}
- */
 async function showCommits(
     commits: readonly Commit[],
     containerId: string,
@@ -282,11 +211,6 @@ async function showCommits(
     inst.update(rows);
 }
 
-/**
- * Boots both commit lists.
- * two separate try blocks on purpose so one repo can fail without taking the other down.
- * @returns {Promise<void>}
- */
 const boot = async (): Promise<void> => {
     try {
         const frontendCommits = await getCommits("kittyCrypto-gg", "website");
