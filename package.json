@@ -4,7 +4,8 @@
     "private": true,
     "type": "module",
     "exports": {
-        "./static-ui": "./src/contracts/staticUi.tsx"
+        "./static-ui": "./src/contracts/staticUi.tsx",
+        "./github-api": "./src/githubApi.ts"
     },
     "scripts": {
         "clean": "node -e \"import('node:fs').then(({ rmSync }) => rmSync('dist', { recursive: true, force: true }))\"",
