@@ -11,6 +11,11 @@
     --mustard: #b48c32;
     --muted: #625d51;
     --shear: -7deg;
+
+    
+    --control-minimise: #d4ad3f;
+    --control-maximise: #4c9b96;
+    --control-close: #cf6654;
 }
 
 :root[data-mode="dark"] {
@@ -21,6 +26,10 @@
     --coral: #d87561;
     --mustard: #c5a34e;
     --muted: #b6ad98;
+
+    --control-minimise: #a9842e;
+    --control-maximise: #36726e;
+    --control-close: #a84c3d;
 }
 
 html {
@@ -182,10 +191,34 @@ h1 {
  * contents are counter-sheared back to upright.
  */
 .window-titlebar {
-    margin: -3px 1rem 0 -1rem;
+    position: relative;
+    margin: -3px -3px 0 -3px;
     color: var(--paper);
-    background: var(--teal);
+    background: transparent;
     border: 3px solid var(--ink);
+}
+
+.window-titlebar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--teal);
+    transform: translateX(-12px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.window-titlebar-inner {
+    position: relative;
+    z-index: 1;
+
+    transform: skewX(calc(var(--shear) * -1));
+    min-height: 3rem;
+    padding: 0.62rem 1.7rem 0.58rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
 }
 
 .window-titlebar-inner {
@@ -225,6 +258,14 @@ h1 {
     font-weight: 900;
     line-height: 1;
     cursor: pointer;
+
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform 120ms ease;
+}
+
+.window-control:hover {
+    transform: scale(1.08);
 }
 
 .window-control:hover,
@@ -241,6 +282,18 @@ h1 {
 .window-control:focus-visible {
     outline: 2px solid var(--mustard);
     outline-offset: 2px;
+}
+
+.window-control:nth-child(1) {
+    background: var(--control-minimise);
+}
+
+.window-control:nth-child(2) {
+    background: var(--control-maximise);
+}
+
+.window-control:nth-child(3) {
+    background: var(--control-close);
 }
 
 .window-inner {
@@ -277,17 +330,93 @@ h1 {
 
 .cut-button {
     appearance: none;
+    position: relative;
+    isolation: isolate;
+
     width: 100%;
     padding: 0.95rem 1.35rem;
-    border: 2px solid var(--ink);
+
+    /*
+     * The visible border is drawn by ::after.
+     * The button itself must NOT be clipped, otherwise the
+     * displaced colour plate gets chopped off again.
+     */
+    border: 0;
     border-radius: 0;
+    background: transparent;
+
     color: var(--paper);
-    background: var(--teal);
-    clip-path: polygon(0 0, 100% 0, 91% 100%, 0 100%);
+
     font-weight: 800;
     letter-spacing: 0.04em;
     text-align: left;
     cursor: pointer;
+}
+
+/*
+ * COLOUR PLATE
+ *
+ * Same shape as the button, but deliberately misregistered
+ * 12px to the left.
+ *
+ * Because .cut-button itself has no clip-path, the part that
+ * sticks out on the left remains visible.
+ */
+.cut-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: var(--teal);
+
+    clip-path: polygon(
+        0 0,
+        100% 0,
+        91% 100%,
+        0 100%
+    );
+
+    transform: translateX(-12px);
+
+    z-index: -1;
+    pointer-events: none;
+}
+
+/*
+ * REGISTERED GEOMETRY
+ *
+ * This stays exactly where the actual button is.
+ * Only this layer carries the black outline.
+ */
+.cut-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    border: 2px solid var(--ink);
+
+    clip-path: polygon(
+        0 0,
+        100% 0,
+        91% 100%,
+        0 100%
+    );
+
+    pointer-events: none;
+}
+
+/*
+ * Hover changes the ink plate colour only.
+ * Geometry does not move.
+ */
+.cut-button:hover::before,
+.cut-button:focus-visible::before {
+    background: var(--coral);
+}
+
+.cut-button:focus-visible {
+    outline: 3px solid var(--mustard);
+    outline-offset: 4px;
 }
 
 .cut-button:hover,
@@ -341,8 +470,8 @@ h1 {
     }
 
     .window-titlebar {
-        margin-inline: -0.65rem 0.6rem;
-    }
+    margin-inline: -3px;
+}
 
     .window-titlebar-inner {
         padding-inline: 1.45rem;
