@@ -51,9 +51,17 @@ html.atomic-age body {
         calc(50% - 35rem) 276rem;
 }
 
+/* Match the normal site header sizing and spacing used by the other themes. */
 .atomic-age #main-header {
     min-height: 0;
-    padding-right: 0;
+    margin: 0;
+    padding: var(--layout-header-padding);
+    font-size: var(--layout-header-font-size);
+    font-weight: 700;
+    line-height: normal;
+    letter-spacing: normal;
+    text-transform: none;
+    text-align: center;
 }
 
 .atomic-age #main-header::before,
@@ -238,10 +246,6 @@ html.atomic-age body {
             1rem 183rem,
             calc(100% - 1rem) 226rem,
             -1.5rem 270rem;
-    }
-
-    .atomic-age #main-header {
-        padding-right: 0;
     }
 }
 
