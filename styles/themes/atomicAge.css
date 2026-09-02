@@ -142,16 +142,32 @@ html.atomic-age body {
 }
 
 /*
- * All windows use the approved coherent shear. The angle reduces on narrower
- * viewports so transformed corners remain visible.
+ * Windows are straight by default. Only the explicitly approved short-window
+ * families may use the viewport-constrained Atomic Age shear.
  */
+.atomic-age .window-frame {
+    transform: none;
+    transform-origin: 50% 0;
+}
+
 .atomic-age :is(
-    .window-frame,
     #kitty-intro-wrapper.window-frame,
-    .intro-status-row__intro-shell.window-frame
+    #presence-window-wrapper.window-frame,
+    #webrings-wrapper.window-frame,
+    #sites-i-like.window-frame,
+    #my-button.window-frame,
+    #site-stats.window-frame,
+    .site-stats.window-frame,
+    .socials-segment.window-frame,
+    .window-frame[data-window-id="kitty-intro"],
+    .window-frame[data-window-id="presence-window"],
+    .window-frame[data-window-id="webrings-wrapper"],
+    .window-frame[data-window-id="sites-i-like"],
+    .window-frame[data-window-id="my-button"],
+    .window-frame[data-window-id="site-stats"],
+    .window-frame[data-window-id="socials"]
 ) {
     transform: skewX(var(--atomic-window-shear));
-    transform-origin: 50% 0;
 }
 
 .atomic-age .window-frame:not(.floating):not(.maximised):not(#shell-wrapper):not(#banner-wrapper) {
@@ -226,14 +242,35 @@ html.atomic-age body {
     z-index: 1;
 }
 
-/* Counter-shear readable window content while keeping the shell itself sheared. */
+/* Straight windows keep their contents straight too. */
 .atomic-age .window-frame .window-title,
 .atomic-age .window-frame .window-controls,
 .atomic-age .window-frame .window-content-root {
+    transform: none;
+}
+
+/* Only approved sheared windows counter-shear their readable contents. */
+.atomic-age :is(
+    #kitty-intro-wrapper.window-frame,
+    #presence-window-wrapper.window-frame,
+    #webrings-wrapper.window-frame,
+    #sites-i-like.window-frame,
+    #my-button.window-frame,
+    #site-stats.window-frame,
+    .site-stats.window-frame,
+    .socials-segment.window-frame,
+    .window-frame[data-window-id="kitty-intro"],
+    .window-frame[data-window-id="presence-window"],
+    .window-frame[data-window-id="webrings-wrapper"],
+    .window-frame[data-window-id="sites-i-like"],
+    .window-frame[data-window-id="my-button"],
+    .window-frame[data-window-id="site-stats"],
+    .window-frame[data-window-id="socials"]
+) :is(.window-title, .window-controls, .window-content-root) {
     transform: skewX(calc(var(--atomic-window-shear) * -1));
 }
 
-/* Window controls are genuinely sheared rectangles, never clipped polygons. */
+/* Window controls themselves retain the approved Atomic Age skewed-button language. */
 .atomic-age .window-frame .window-controls .btn {
     clip-path: none;
     transform: skewX(var(--atomic-window-shear));
@@ -249,13 +286,11 @@ html.atomic-age body {
 }
 
 /*
- * The terminal shell now shears exactly like the other windows. The xterm.js
- * surface stays upright through the normal content counter-shear. Every layer
- * surrounding that surface uses the exact terminal background so the exposed
- * wedges read as one continuous terminal field rather than a separate panel.
+ * The terminal is not on the skew whitelist, so its shell and content are
+ * straight. Every surrounding surface still uses the terminal background.
  */
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
-    transform: skewX(var(--atomic-window-shear)) !important;
+    transform: none !important;
     transform-origin: 50% 0;
     isolation: isolate;
     max-width: 100%;
@@ -279,7 +314,7 @@ html.atomic-age body {
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-title,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-content-root {
-    transform: skewX(calc(var(--atomic-window-shear) * -1));
+    transform: none;
 }
 
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-body,
@@ -344,9 +379,9 @@ html.atomic-age body {
 }
 
 /*
- * Tall counter-sheared content can visually extend beyond its sheared frame.
- * Atomic Age compensates only for the known long-content window families by
- * narrowing their upright content root and centring it inside the frame.
+ * The earlier long-window containment rule remains in place exactly as added.
+ * Straightening those windows removes the skew overflow that motivated it, but
+ * keeping the rule avoids regressing that later change during this whitelist pass.
  */
 .atomic-age :is(
     .comments-shell.window-frame,
