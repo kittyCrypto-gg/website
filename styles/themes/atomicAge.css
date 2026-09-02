@@ -156,15 +156,25 @@ html.atomic-age body {
     ) !important;
 }
 
-/* Headers stay with their windows. */
+/*
+ * Match the approved proof stacking exactly: the header itself must not create
+ * a stacking context. The translated teal plate is negative-z behind the
+ * registered black frame, while title and controls stay above it.
+ */
 .atomic-age .window-frame .window-header {
     position: relative;
     top: auto;
+    z-index: auto;
 }
 
-/* The approved off-register header plate always remains behind the registered geometry. */
 .atomic-age .window-frame .window-header::before {
     z-index: -1 !important;
+}
+
+.atomic-age .window-frame .window-title,
+.atomic-age .window-frame .window-controls {
+    position: relative;
+    z-index: 1;
 }
 
 /* Match the approved counter-shear to the responsive shell angle. */
