@@ -146,7 +146,7 @@ html.atomic-age body {
  * families may use the viewport-constrained Atomic Age shear.
  */
 .atomic-age .window-frame {
-    transform: none;
+    transform: none !important;
     transform-origin: 50% 0;
 }
 
@@ -170,7 +170,7 @@ html.atomic-age body {
     .window-frame[data-window-id="socials"],
     .window-frame[data-window-id="terminal"]
 ) {
-    transform: skewX(var(--atomic-window-shear));
+    transform: skewX(var(--atomic-window-shear)) !important;
 }
 
 .atomic-age .window-frame:not(.floating):not(.maximised):not(#shell-wrapper):not(#banner-wrapper) {
