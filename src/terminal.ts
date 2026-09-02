@@ -134,16 +134,25 @@ async function checkMobile(): Promise<boolean> {
     }
 
     if (!window.MobileDetect) {
-        const script = document.createElement("script");
-        script.src =
-            "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
-        script.async = true;
-        document.body.appendChild(script);
+        const sources = [
+            "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js",
+            "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js"
+        ];
 
-        await new Promise<void>((resolve) => {
-            script.onload = () => resolve();
-            script.onerror = () => resolve();
-        });
+        for (const src of sources) {
+            const script = document.createElement("script");
+            script.src = src;
+            script.async = true;
+            document.body.appendChild(script);
+
+            await new Promise<void>((resolve) => {
+                script.onload = () => resolve();
+                script.onerror = () => resolve();
+            });
+
+            if (window.MobileDetect) break;
+            script.remove();
+        }
     }
 
     const Ctor = window.MobileDetect;

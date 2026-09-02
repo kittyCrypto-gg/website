@@ -266,23 +266,31 @@ function applyHeadBits(doc: Document, injections: readonly string[]): void {
  * @returns {Promise<boolean>}
  */
 async function detectMobile(): Promise<boolean> {
-    const MOBILE_DETECT_CDN =
-        "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js";
+    const mobileDetectSources = [
+        "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js",
+        "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js"
+    ];
 
     if (
         !("MobileDetect" in window) ||
         typeof (window as unknown as { MobileDetect?: unknown }).MobileDetect === "undefined"
     ) {
-        await loader.loadScript(MOBILE_DETECT_CDN, { asModule: false });
+        for (const src of mobileDetectSources) {
+            try {
+                await loader.loadScript(src, { asModule: false });
+            } catch {
+                // Try the next source, then continue without MobileDetect if all fail.
+            }
+
+            if (typeof window.MobileDetect !== "undefined") break;
+        }
     }
 
     const ua = navigator.userAgent;
 
-    const MD = (window as unknown as { MobileDetect: new (ua: string) => { mobile: () => string | null } })
+    const MD = (window as unknown as { MobileDetect?: new (ua: string) => { mobile: () => string | null } })
         .MobileDetect;
-    const md = new MD(ua);
-
-    const mdHit = !!md.mobile();
+    const mdHit = MD ? !!new MD(ua).mobile() : false;
     const touch = navigator.maxTouchPoints > 0;
 
     const desktop = /\b(Windows NT|Macintosh|X11|Linux x86_64)\b/.test(ua) && !touch;
