@@ -201,10 +201,13 @@ html.atomic-age body {
 
 /*
  * The terminal/banner is the sole square window exception because terminal
- * content cannot follow a sheared coordinate system.
+ * content cannot follow a sheared coordinate system. It still needs its own
+ * stacking context so the approved negative-z teal header plate remains
+ * visible behind the registered frame, just like on transformed windows.
  */
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
     transform: none !important;
+    isolation: isolate;
     max-width: 100%;
     margin-inline: 0;
 }
