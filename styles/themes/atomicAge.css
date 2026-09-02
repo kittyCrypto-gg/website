@@ -80,6 +80,24 @@ html.atomic-age body {
 }
 
 /*
+ * Main navigation keeps a complete registered frame. Only the displaced colour
+ * plate gets the Atomic Age left-corner cut; the right edge is always square.
+ */
+.atomic-age .menu-button {
+    border: 2px solid var(--ink);
+    clip-path: none;
+    overflow: visible;
+}
+
+.atomic-age .menu-button::before {
+    clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.atomic-age .menu-button::after {
+    content: none;
+}
+
+/*
  * Theme picker pieces use the theme's real shear transform.
  * Do not fake the slant by clipping a rectangular element.
  */
@@ -159,16 +177,30 @@ html.atomic-age body {
 /*
  * Match the approved proof stacking exactly: the header itself must not create
  * a stacking context. The translated teal plate is negative-z behind the
- * registered black frame, while title and controls stay above it.
+ * registered frame, while title and controls stay above it.
  */
+.atomic-age .window-frame {
+    isolation: isolate;
+}
+
 .atomic-age .window-frame .window-header {
     position: relative;
     top: auto;
     z-index: auto;
+    overflow: visible;
+    color: var(--paper);
+    background: transparent;
+    border: 3px solid var(--ink);
 }
 
 .atomic-age .window-frame .window-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--teal);
+    transform: translateX(-12px);
     z-index: -1 !important;
+    pointer-events: none;
 }
 
 .atomic-age .window-frame .window-title,
@@ -184,7 +216,7 @@ html.atomic-age body {
     transform: skewX(calc(var(--atomic-window-shear) * -1));
 }
 
-/* Window controls are real sheared rectangles, never clipped polygons. */
+/* Window controls are genuinely sheared rectangles, never clipped polygons. */
 .atomic-age .window-frame .window-controls .btn {
     clip-path: none;
     transform: skewX(var(--atomic-window-shear));
@@ -201,9 +233,9 @@ html.atomic-age body {
 
 /*
  * The terminal/banner is the sole square window exception because terminal
- * content cannot follow a sheared coordinate system. It still needs its own
- * stacking context so the approved negative-z teal header plate remains
- * visible behind the registered frame, just like on transformed windows.
+ * content cannot follow a sheared coordinate system. The square shell still
+ * forms the same stacking context as the transformed windows, so the teal
+ * header plate remains visible behind the registered black frame.
  */
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
     transform: none !important;
@@ -212,10 +244,36 @@ html.atomic-age body {
     margin-inline: 0;
 }
 
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-header {
+    color: var(--paper);
+    background: transparent;
+    border: 3px solid var(--ink);
+}
+
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-header::before {
+    content: "";
+    background: var(--teal);
+    transform: translateX(-12px);
+    z-index: -1 !important;
+}
+
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-title,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-content-root {
     transform: none;
+}
+
+/* Terminal controls still use the approved Atomic Age control skew; only the shell stays square. */
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls .btn {
+    transform: skewX(var(--atomic-window-shear));
+}
+
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls .btn::after {
+    transform: skewX(calc(var(--atomic-window-shear) * -1));
+}
+
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls .btn:hover {
+    transform: skewX(var(--atomic-window-shear)) scale(1.08);
 }
 
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-body,
