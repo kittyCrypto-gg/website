@@ -13,70 +13,82 @@
                 <p class="eyebrow">Visual proof only</p>
                 <h1>Atomic Age</h1>
                 <p class="lede">
-                    One panel, one button family, one starburst, one atom and one restrained print palette.
-                    Nothing here is wired into the real website theme yet.
+                    The approved geometry applied to a representative window, header controls,
+                    navigation buttons, motifs and a working light/dark mode control.
                 </p>
             </div>
 
-            <div class="motif-pair" aria-label="Atomic Age motif studies">
-                <svg class="starburst" viewBox="0 0 180 180" role="img" aria-label="Unequal ray starburst">
-                    <line x1="90" y1="90" x2="90" y2="14" />
-                    <circle cx="90" cy="14" r="4" />
+            <div class="proof-header-side">
+                <button class="mode-toggle" id="mode-toggle" type="button" aria-pressed="false">
+                    <span class="mode-toggle-symbol" aria-hidden="true">☾</span>
+                    <span class="mode-toggle-text">Dark mode</span>
+                </button>
 
-                    <line x1="90" y1="90" x2="137" y2="26" />
-                    <line x1="90" y1="90" x2="166" y2="63" />
-                    <circle cx="166" cy="63" r="3.5" />
+                <div class="motif-pair" aria-label="Atomic Age motif studies">
+                    <svg class="starburst" viewBox="0 0 180 180" role="img" aria-label="Unequal ray starburst">
+                        <line x1="90" y1="90" x2="90" y2="14" />
+                        <circle cx="90" cy="14" r="4" />
 
-                    <line x1="90" y1="90" x2="143" y2="96" />
-                    <line x1="90" y1="90" x2="159" y2="133" />
-                    <line x1="90" y1="90" x2="112" y2="164" />
-                    <circle cx="112" cy="164" r="4" />
+                        <line x1="90" y1="90" x2="137" y2="26" />
+                        <line x1="90" y1="90" x2="166" y2="63" />
+                        <circle cx="166" cy="63" r="3.5" />
 
-                    <line x1="90" y1="90" x2="73" y2="133" />
-                    <line x1="90" y1="90" x2="34" y2="154" />
-                    <line x1="90" y1="90" x2="18" y2="106" />
-                    <circle cx="18" cy="106" r="3.5" />
+                        <line x1="90" y1="90" x2="143" y2="96" />
+                        <line x1="90" y1="90" x2="159" y2="133" />
+                        <line x1="90" y1="90" x2="112" y2="164" />
+                        <circle cx="112" cy="164" r="4" />
 
-                    <line x1="90" y1="90" x2="46" y2="72" />
-                    <line x1="90" y1="90" x2="28" y2="37" />
-                    <line x1="90" y1="90" x2="76" y2="48" />
-                </svg>
+                        <line x1="90" y1="90" x2="73" y2="133" />
+                        <line x1="90" y1="90" x2="34" y2="154" />
+                        <line x1="90" y1="90" x2="18" y2="106" />
+                        <circle cx="18" cy="106" r="3.5" />
 
-                <svg class="atom" viewBox="0 0 180 180" role="img" aria-label="Elliptical orbit atom">
-                    <g transform="rotate(0 90 90)">
-                        <ellipse cx="90" cy="90" rx="69" ry="25" />
-                    </g>
-                    <g transform="rotate(58 90 90)">
-                        <ellipse cx="90" cy="90" rx="69" ry="25" />
-                    </g>
-                    <g transform="rotate(118 90 90)">
-                        <ellipse cx="90" cy="90" rx="69" ry="25" />
-                    </g>
+                        <line x1="90" y1="90" x2="46" y2="72" />
+                        <line x1="90" y1="90" x2="28" y2="37" />
+                        <line x1="90" y1="90" x2="76" y2="48" />
+                    </svg>
 
-                    <circle class="nucleus" cx="90" cy="90" r="7" />
-                    <circle cx="159" cy="90" r="4.5" />
-                    <circle cx="57" cy="31" r="4.5" />
-                    <circle cx="47" cy="139" r="4.5" />
-                </svg>
+                    <svg class="atom" viewBox="0 0 180 180" role="img" aria-label="Elliptical orbit atom">
+                        <g transform="rotate(0 90 90)">
+                            <ellipse cx="90" cy="90" rx="69" ry="25" />
+                        </g>
+                        <g transform="rotate(58 90 90)">
+                            <ellipse cx="90" cy="90" rx="69" ry="25" />
+                        </g>
+                        <g transform="rotate(118 90 90)">
+                            <ellipse cx="90" cy="90" rx="69" ry="25" />
+                        </g>
+
+                        <circle class="nucleus" cx="90" cy="90" r="7" />
+                        <circle cx="159" cy="90" r="4.5" />
+                        <circle cx="57" cy="31" r="4.5" />
+                        <circle cx="47" cy="139" r="4.5" />
+                    </svg>
+                </div>
             </div>
         </header>
 
         <section class="proof-grid">
             <div>
                 <div class="window-shell">
-                    <div class="window-inner">
-                        <div class="window-titlebar">
-                            <div class="window-titlebar-row">
-                                <strong>Signal Console</strong>
-                                <span class="window-mark">•••</span>
+                    <div class="window-titlebar">
+                        <div class="window-titlebar-inner">
+                            <strong>Signal Console</strong>
+                            <div class="window-controls" aria-label="Window controls">
+                                <button class="window-control" type="button" aria-label="Minimise">−</button>
+                                <button class="window-control" type="button" aria-label="Float window">+</button>
+                                <button class="window-control window-control-close" type="button" aria-label="Close">×</button>
                             </div>
                         </div>
+                    </div>
 
+                    <div class="window-inner">
                         <div class="window-body">
                             <h2>A sheared rectangle, not a random polygon.</h2>
                             <p>
                                 The outer window is produced by one coherent shear transform. Its top and bottom remain parallel,
                                 its left and right edges remain parallel, and the content is counter-sheared so text remains upright.
+                                The header follows those same diagonals instead of introducing a conflicting rectangular strap.
                             </p>
                         </div>
                     </div>
@@ -100,5 +112,19 @@
             </div>
         </section>
     </main>
+
+    <script>
+        const toggle = document.getElementById("mode-toggle");
+        const text = toggle.querySelector(".mode-toggle-text");
+        const symbol = toggle.querySelector(".mode-toggle-symbol");
+
+        toggle.addEventListener("click", () => {
+            const dark = document.documentElement.dataset.mode !== "dark";
+            document.documentElement.dataset.mode = dark ? "dark" : "light";
+            toggle.setAttribute("aria-pressed", String(dark));
+            text.textContent = dark ? "Light mode" : "Dark mode";
+            symbol.textContent = dark ? "☀" : "☾";
+        });
+    </script>
 </body>
 </html>
