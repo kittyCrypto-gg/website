@@ -419,16 +419,6 @@ h1 {
     outline-offset: 4px;
 }
 
-.cut-button:hover,
-.cut-button:focus-visible {
-    background: var(--coral);
-}
-
-.cut-button:focus-visible {
-    outline: 3px solid var(--mustard);
-    outline-offset: 4px;
-}
-
 .palette-strip {
     display: grid;
     grid-template-columns: 40fr 17fr 15fr 8fr 6fr 5fr 5fr 4fr;
@@ -473,8 +463,8 @@ h1 {
     }
 
     .window-titlebar {
-    margin-inline: -3px;
-}
+        margin-inline: -3px;
+    }
 
     .window-titlebar-inner {
         padding-inline: 1.45rem;
