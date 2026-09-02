@@ -53,6 +53,7 @@ The logic lives server-side, where authority flows from token possession and cod
 ### Install
 
 ```bash
+git submodule update --init --recursive
 npm install
 ```
 
@@ -61,6 +62,10 @@ npm install
 ```bash
 npm run build
 ```
+
+The build first compiles the TypeScript application into `dist/`, then uses the
+pinned `vendor/pages` template to assemble clean routes and legacy `.html`
+redirects in `site/`. Configure the static host's publish directory as `site`.
 
 ---
 
