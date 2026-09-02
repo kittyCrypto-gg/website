@@ -9,7 +9,18 @@
     --teal: #397c78;
     --coral: #c95f4d;
     --mustard: #b48c32;
+    --muted: #625d51;
     --shear: -7deg;
+}
+
+:root[data-mode="dark"] {
+    --paper: #262925;
+    --paper-deep: #171a18;
+    --ink: #eee5cf;
+    --teal: #56918c;
+    --coral: #d87561;
+    --mustard: #c5a34e;
+    --muted: #b6ad98;
 }
 
 html {
@@ -23,6 +34,11 @@ body {
     color: var(--ink);
     background: var(--paper);
     font-family: "Trebuchet MS", "Gill Sans", Arial, sans-serif;
+    transition: background 160ms ease, color 160ms ease;
+}
+
+button {
+    font: inherit;
 }
 
 .proof {
@@ -37,6 +53,12 @@ body {
     gap: 2.5rem;
     align-items: center;
     margin-bottom: 4.5rem;
+}
+
+.proof-header-side {
+    display: grid;
+    justify-items: end;
+    gap: 1.4rem;
 }
 
 .eyebrow {
@@ -62,6 +84,40 @@ h1 {
     margin: 1.25rem 0 0;
     font-size: clamp(1rem, 1.6vw, 1.25rem);
     line-height: 1.55;
+}
+
+.mode-toggle {
+    appearance: none;
+    min-width: 10.5rem;
+    padding: 0.72rem 1.1rem;
+    border: 2px solid var(--ink);
+    border-radius: 0;
+    clip-path: polygon(0 0, 100% 0, 91% 100%, 0 100%);
+    color: var(--paper);
+    background: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+
+.mode-toggle:hover,
+.mode-toggle:focus-visible {
+    color: var(--ink);
+    background: var(--mustard);
+}
+
+.mode-toggle:focus-visible {
+    outline: 3px solid var(--coral);
+    outline-offset: 4px;
+}
+
+.mode-toggle-symbol {
+    font-size: 1.15em;
+    line-height: 1;
 }
 
 .motif-pair {
@@ -120,22 +176,24 @@ h1 {
     background: var(--paper);
 }
 
-.window-inner {
-    transform: skewX(calc(var(--shear) * -1));
-    padding: 0.3rem 2.1rem 2.3rem;
-}
-
+/*
+ * The title bar is a direct child of the sheared shell, so its left/right edges
+ * inherit exactly the same diagonal as the outer window. Only the title/control
+ * contents are counter-sheared back to upright.
+ */
 .window-titlebar {
-    margin: -0.3rem -2.1rem 2rem;
-    padding: 0.9rem 2.1rem 0.78rem;
+    margin: -3px 1rem 0 -1rem;
     color: var(--paper);
     background: var(--teal);
-    border-bottom: 3px solid var(--ink);
+    border: 3px solid var(--ink);
 }
 
-.window-titlebar-row {
+.window-titlebar-inner {
+    transform: skewX(calc(var(--shear) * -1));
+    min-height: 3rem;
+    padding: 0.62rem 1.7rem 0.58rem 2rem;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
 }
@@ -146,10 +204,48 @@ h1 {
     text-transform: uppercase;
 }
 
-.window-mark {
-    color: var(--mustard);
+.window-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+}
+
+.window-control {
+    appearance: none;
+    width: 2rem;
+    height: 1.65rem;
+    padding: 0 0.35rem;
+    border: 1.5px solid var(--paper);
+    border-radius: 0;
+    clip-path: polygon(0 0, 100% 0, 82% 100%, 0 100%);
+    color: var(--ink);
+    background: var(--paper);
+    display: inline-grid;
+    place-items: center;
     font-weight: 900;
-    letter-spacing: 0.12em;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.window-control:hover,
+.window-control:focus-visible {
+    background: var(--mustard);
+}
+
+.window-control-close:hover,
+.window-control-close:focus-visible {
+    color: var(--paper);
+    background: var(--coral);
+}
+
+.window-control:focus-visible {
+    outline: 2px solid var(--mustard);
+    outline-offset: 2px;
+}
+
+.window-inner {
+    transform: skewX(calc(var(--shear) * -1));
+    padding: 1.9rem 2.1rem 2.3rem;
 }
 
 .window-body h2 {
@@ -188,7 +284,6 @@ h1 {
     color: var(--paper);
     background: var(--teal);
     clip-path: polygon(0 0, 100% 0, 91% 100%, 0 100%);
-    font: inherit;
     font-weight: 800;
     letter-spacing: 0.04em;
     text-align: left;
@@ -221,7 +316,7 @@ h1 {
 
 .palette-note {
     margin: 0.65rem 0 0;
-    color: #625d51;
+    color: var(--muted);
     font-size: 0.82rem;
     line-height: 1.45;
 }
@@ -237,16 +332,23 @@ h1 {
         grid-template-columns: 1fr;
     }
 
+    .proof-header-side {
+        justify-items: start;
+    }
+
     .motif-pair {
         width: min(19rem, 80vw);
     }
 
-    .window-inner {
-        padding-inline: 1.6rem;
+    .window-titlebar {
+        margin-inline: -0.65rem 0.6rem;
     }
 
-    .window-titlebar {
-        margin-inline: -1.6rem;
+    .window-titlebar-inner {
+        padding-inline: 1.45rem;
+    }
+
+    .window-inner {
         padding-inline: 1.6rem;
     }
 }
