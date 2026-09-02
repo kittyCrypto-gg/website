@@ -331,6 +331,11 @@
       "name": "GlaDOS",
       "location": "/styles/themes/gladOS.css",
       "caller": "glados"
+    },
+    "atomicAge": {
+      "name": "Atomic Age",
+      "location": "/styles/themes/atomicAge.css",
+      "caller": "atomic-age"
     }
   }
 }
