@@ -80,11 +80,11 @@ html.atomic-age body {
 }
 
 /*
- * Main navigation keeps a complete registered frame. Only the displaced colour
- * plate gets the Atomic Age left-corner cut; the right edge is always square.
+ * Main navigation uses one registered frame above one displaced colour plate.
+ * Both share the same left-hand diagonal. The right edge stays square.
  */
 .atomic-age .menu-button {
-    border: 2px solid var(--ink);
+    border: 0;
     clip-path: none;
     overflow: visible;
 }
@@ -94,7 +94,24 @@ html.atomic-age body {
 }
 
 .atomic-age .menu-button::after {
-    content: none;
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 0;
+    clip-path: none;
+    background:
+        linear-gradient(var(--ink), var(--ink)) 12px 0 / calc(100% - 12px) 2px no-repeat,
+        linear-gradient(var(--ink), var(--ink)) 100% 0 / 2px 100% no-repeat,
+        linear-gradient(var(--ink), var(--ink)) 0 100% / 100% 2px no-repeat,
+        linear-gradient(
+            to bottom right,
+            transparent calc(50% - 1px),
+            var(--ink) calc(50% - 1px),
+            var(--ink) calc(50% + 1px),
+            transparent calc(50% + 1px)
+        ) 0 0 / 12px 100% no-repeat;
+    z-index: 1;
+    pointer-events: none;
 }
 
 /*
@@ -125,14 +142,14 @@ html.atomic-age body {
 }
 
 /*
- * Normal windows keep the approved coherent shear. Only the angle changes as
- * the viewport narrows so transformed corners remain visible.
+ * All windows use the approved coherent shear. The angle reduces on narrower
+ * viewports so transformed corners remain visible.
  */
 .atomic-age :is(
     .window-frame,
     #kitty-intro-wrapper.window-frame,
     .intro-status-row__intro-shell.window-frame
-):not(#shell-wrapper):not(#banner-wrapper) {
+) {
     transform: skewX(var(--atomic-window-shear));
     transform-origin: 50% 0;
 }
@@ -209,10 +226,10 @@ html.atomic-age body {
     z-index: 1;
 }
 
-/* Match the approved counter-shear to the responsive shell angle. */
-.atomic-age .window-frame:not(#shell-wrapper):not(#banner-wrapper) .window-title,
-.atomic-age .window-frame:not(#shell-wrapper):not(#banner-wrapper) .window-controls,
-.atomic-age .window-frame:not(#shell-wrapper):not(#banner-wrapper) .window-content-root {
+/* Counter-shear readable window content while keeping the shell itself sheared. */
+.atomic-age .window-frame .window-title,
+.atomic-age .window-frame .window-controls,
+.atomic-age .window-frame .window-content-root {
     transform: skewX(calc(var(--atomic-window-shear) * -1));
 }
 
@@ -232,16 +249,18 @@ html.atomic-age body {
 }
 
 /*
- * The terminal/banner is the sole square window exception because terminal
- * content cannot follow a sheared coordinate system. The square shell still
- * forms the same stacking context as the transformed windows, so the teal
- * header plate remains visible behind the registered black frame.
+ * The terminal shell now shears exactly like the other windows. The xterm.js
+ * surface stays upright through the normal content counter-shear. Every layer
+ * surrounding that surface uses the exact terminal background so the exposed
+ * wedges read as one continuous terminal field rather than a separate panel.
  */
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
-    transform: none !important;
+    transform: skewX(var(--atomic-window-shear)) !important;
+    transform-origin: 50% 0;
     isolation: isolate;
     max-width: 100%;
     margin-inline: 0;
+    background: var(--atomic-terminal-bg) !important;
 }
 
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-header {
@@ -260,32 +279,24 @@ html.atomic-age body {
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-title,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-content-root {
-    transform: none;
-}
-
-/* Terminal controls still use the approved Atomic Age control skew; only the shell stays square. */
-.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls .btn {
-    transform: skewX(var(--atomic-window-shear));
-}
-
-.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls .btn::after {
     transform: skewX(calc(var(--atomic-window-shear) * -1));
 }
 
-.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls .btn:hover {
-    transform: skewX(var(--atomic-window-shear)) scale(1.08);
-}
-
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-body,
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-content-root,
+.atomic-age #terminal-scroll,
 .atomic-age #terminal-wrapper,
+.atomic-age #terminal-content,
 .atomic-age #terminal,
 .atomic-age #term,
-.atomic-age #terminal-scroll,
-.atomic-age #terminal-content,
 .atomic-age #banner-wrapper,
-.atomic-age #banner {
+.atomic-age #banner,
+.atomic-age .xterm,
+.atomic-age .xterm .xterm-viewport,
+.atomic-age .xterm .xterm-screen,
+.atomic-age .xterm .composition-view {
     color: var(--atomic-terminal-fg);
-    background-color: var(--atomic-terminal-bg);
+    background-color: var(--atomic-terminal-bg) !important;
 }
 
 @media (max-width: 1200px) {
