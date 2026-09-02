@@ -61,6 +61,12 @@ html.atomic-age body {
     content: none;
 }
 
+/* Preserve the site's actual DOM order. */
+.atomic-age #main-menu,
+.atomic-age #main-header {
+    order: initial !important;
+}
+
 /*
  * Theme picker pieces use the theme's real shear transform.
  * Do not fake the slant by clipping a rectangular element.
@@ -138,10 +144,15 @@ html.atomic-age body {
     ) !important;
 }
 
-/* Headers stay with their windows. The approved titlebar artwork itself is untouched. */
+/* Headers stay with their windows. */
 .atomic-age .window-frame .window-header {
     position: relative;
     top: auto;
+}
+
+/* The approved off-register header plate always remains behind the registered geometry. */
+.atomic-age .window-frame .window-header::before {
+    z-index: -1 !important;
 }
 
 /* Match the approved counter-shear to the responsive shell angle. */
@@ -149,6 +160,21 @@ html.atomic-age body {
 .atomic-age .window-frame:not(#shell-wrapper):not(#banner-wrapper) .window-controls,
 .atomic-age .window-frame:not(#shell-wrapper):not(#banner-wrapper) .window-content-root {
     transform: skewX(calc(var(--atomic-window-shear) * -1));
+}
+
+/* Window controls are real sheared rectangles, never clipped polygons. */
+.atomic-age .window-frame .window-controls .btn {
+    clip-path: none;
+    transform: skewX(var(--atomic-window-shear));
+}
+
+.atomic-age .window-frame .window-controls .btn::after {
+    display: inline-block;
+    transform: skewX(calc(var(--atomic-window-shear) * -1));
+}
+
+.atomic-age .window-frame .window-controls .btn:hover {
+    transform: skewX(var(--atomic-window-shear)) scale(1.08);
 }
 
 /*
