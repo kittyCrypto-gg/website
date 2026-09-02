@@ -11,8 +11,6 @@
     --mustard: #b48c32;
     --muted: #625d51;
     --shear: -7deg;
-
-    
     --control-minimise: #d4ad3f;
     --control-maximise: #4c9b96;
     --control-close: #cf6654;
@@ -26,7 +24,6 @@
     --coral: #d87561;
     --mustard: #c5a34e;
     --muted: #b6ad98;
-
     --control-minimise: #a9842e;
     --control-maximise: #36726e;
     --control-close: #a84c3d;
@@ -185,11 +182,7 @@ h1 {
     background: var(--paper);
 }
 
-/*
- * The title bar is a direct child of the sheared shell, so its left/right edges
- * inherit exactly the same diagonal as the outer window. Only the title/control
- * contents are counter-sheared back to upright.
- */
+/* * The title bar is a direct child of the sheared shell, so its left/right edges * inherit exactly the same diagonal as the outer window. Only the title/control * contents are counter-sheared back to upright. */
 .window-titlebar {
     position: relative;
     margin: -3px -3px 0 -3px;
@@ -211,7 +204,6 @@ h1 {
 .window-titlebar-inner {
     position: relative;
     z-index: 1;
-
     transform: skewX(calc(var(--shear) * -1));
     min-height: 3rem;
     padding: 0.62rem 1.7rem 0.58rem 2rem;
@@ -258,7 +250,6 @@ h1 {
     font-weight: 900;
     line-height: 1;
     cursor: pointer;
-
     transform: scale(1);
     transform-origin: center;
     transition: transform 120ms ease;
@@ -332,86 +323,52 @@ h1 {
     appearance: none;
     position: relative;
     isolation: isolate;
-
     width: 100%;
     padding: 0.95rem 1.35rem;
 
-    /*
-     * The visible border is drawn by ::after.
-     * The button itself must NOT be clipped, otherwise the
-     * displaced colour plate gets chopped off again.
-     */
+    /* * The visible border is drawn by ::after. * The button itself must NOT be clipped, otherwise the * displaced colour plate gets chopped off again. */
     border: 0;
     border-radius: 0;
     background: transparent;
 
     color: var(--paper);
-
     font-weight: 800;
     letter-spacing: 0.04em;
     text-align: left;
     cursor: pointer;
 }
 
-/*
- * COLOUR PLATE
- *
- * Same shape as the button, but deliberately misregistered
- * 12px to the left.
- *
- * Because .cut-button itself has no clip-path, the part that
- * sticks out on the left remains visible.
- */
+/* * COLOUR PLATE * * Same shape as the button, but deliberately misregistered * 12px to the left. * * Because .cut-button itself has no clip-path, the part that * sticks out on the left remains visible. */
 .cut-button::before {
     content: "";
     position: absolute;
     inset: 0;
-
     background: var(--teal);
-
-    clip-path: polygon(
-        0 0,
-        100% 0,
-        91% 100%,
-        0 100%
-    );
-
+    clip-path: polygon(0 0, 100% 0, 91% 100%, 0 100%);
     transform: translateX(-12px);
-
     z-index: -1;
     pointer-events: none;
 }
 
-/*
- * REGISTERED GEOMETRY
- *
- * This stays exactly where the actual button is.
- * Only this layer carries the black outline.
- */
+/* * REGISTERED GEOMETRY * * This stays exactly where the actual button is. * Only this layer carries the black outline. */
 .cut-button::after {
     content: "";
     position: absolute;
     inset: 0;
-
     border: 2px solid var(--ink);
-
-    clip-path: polygon(
-        0 0,
-        100% 0,
-        91% 100%,
-        0 100%
-    );
-
+    clip-path: polygon(0 0, 100% 0, 91% 100%, 0 100%);
     pointer-events: none;
 }
 
-/*
- * Hover changes the ink plate colour only.
- * Geometry does not move.
- */
+/* * Hover changes the ink plate colour only. * Geometry does not move. */
 .cut-button:hover::before,
 .cut-button:focus-visible::before {
     background: var(--coral);
+}
+
+.cut-button:focus-visible {
+    outline: 3px solid var(--mustard);
+    outline-offset: 4px;
 }
 
 .cut-button:focus-visible {
@@ -427,14 +384,37 @@ h1 {
     border: 2px solid var(--ink);
 }
 
-.palette-strip span:nth-child(1) { background: var(--paper); }
-.palette-strip span:nth-child(2) { background: var(--ink); }
-.palette-strip span:nth-child(3) { background: var(--teal); }
-.palette-strip span:nth-child(4) { background: var(--coral); }
-.palette-strip span:nth-child(5) { background: var(--mustard); }
-.palette-strip span:nth-child(6) { background: var(--control-minimise); }
-.palette-strip span:nth-child(7) { background: var(--control-maximise); }
-.palette-strip span:nth-child(8) { background: var(--control-close); }
+.palette-strip span:nth-child(1) {
+    background: var(--paper);
+}
+
+.palette-strip span:nth-child(2) {
+    background: var(--ink);
+}
+
+.palette-strip span:nth-child(3) {
+    background: var(--teal);
+}
+
+.palette-strip span:nth-child(4) {
+    background: var(--coral);
+}
+
+.palette-strip span:nth-child(5) {
+    background: var(--mustard);
+}
+
+.palette-strip span:nth-child(6) {
+    background: var(--control-minimise);
+}
+
+.palette-strip span:nth-child(7) {
+    background: var(--control-maximise);
+}
+
+.palette-strip span:nth-child(8) {
+    background: var(--control-close);
+}
 
 .palette-note {
     margin: 0.65rem 0 0;
