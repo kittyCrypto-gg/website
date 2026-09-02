@@ -69,10 +69,14 @@ html.atomic-age body {
     content: none;
 }
 
-/* Preserve the site's actual DOM order. */
+/* Preserve the site's actual DOM order and normal menu-to-header spacing. */
 .atomic-age #main-menu,
 .atomic-age #main-header {
     order: initial !important;
+}
+
+.atomic-age #main-menu {
+    margin: 0;
 }
 
 /*
