@@ -569,3 +569,185 @@ html.atomic-age body {
         --atomic-long-window-inset: 1.5rem;
     }
 }
+
+/*
+ * WebKit 26.5+ fix: named random() cache keys are global, so the window shell
+ * and its counter-sheared descendants can reuse one sampled angle without
+ * storing random() in a registered @property. Older engines keep the fixed
+ * viewport-constrained fallback above.
+ */
+.atomic-age :is(
+    #kitty-intro-wrapper.window-frame,
+    #presence-window-wrapper.window-frame,
+    #webrings-wrapper.window-frame,
+    #sites-i-like.window-frame,
+    #my-button.window-frame,
+    #site-stats.window-frame,
+    .site-stats.window-frame,
+    .socials-segment.window-frame,
+    #shell-wrapper.window-frame,
+    #banner-wrapper.window-frame,
+    .window-frame[data-window-id="kitty-intro"],
+    .window-frame[data-window-id="presence-window"],
+    .window-frame[data-window-id="webrings-wrapper"],
+    .window-frame[data-window-id="sites-i-like"],
+    .window-frame[data-window-id="my-button"],
+    .window-frame[data-window-id="site-stats"],
+    .window-frame[data-window-id="socials"],
+    .window-frame[data-window-id="terminal"]
+) {
+    transform: skewX(var(--atomic-window-shear)) !important;
+}
+
+.atomic-age :is(
+    #kitty-intro-wrapper.window-frame,
+    #presence-window-wrapper.window-frame,
+    #webrings-wrapper.window-frame,
+    #sites-i-like.window-frame,
+    #my-button.window-frame,
+    #site-stats.window-frame,
+    .site-stats.window-frame,
+    .socials-segment.window-frame,
+    #shell-wrapper.window-frame,
+    #banner-wrapper.window-frame,
+    .window-frame[data-window-id="kitty-intro"],
+    .window-frame[data-window-id="presence-window"],
+    .window-frame[data-window-id="webrings-wrapper"],
+    .window-frame[data-window-id="sites-i-like"],
+    .window-frame[data-window-id="my-button"],
+    .window-frame[data-window-id="site-stats"],
+    .window-frame[data-window-id="socials"],
+    .window-frame[data-window-id="terminal"]
+) :is(.window-title, .window-controls, .window-content-root) {
+    transform: skewX(calc(var(--atomic-window-shear) * -1));
+}
+
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
+    transform: skewX(var(--atomic-window-shear)) !important;
+}
+
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame :is(
+    .window-title,
+    .window-controls,
+    .window-content-root
+) {
+    transform: skewX(calc(var(--atomic-window-shear) * -1));
+}
+
+@supports (transform: skewX(random(--atomic-cache-probe element-scoped, -1deg, 1deg))) {
+    .atomic-age :is(
+        #kitty-intro-wrapper.window-frame,
+        .window-frame[data-window-id="kitty-intro"]
+    ) {
+        transform: skewX(random(--atomic-kitty-intro-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        #kitty-intro-wrapper.window-frame,
+        .window-frame[data-window-id="kitty-intro"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-kitty-intro-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+
+    .atomic-age :is(
+        #presence-window-wrapper.window-frame,
+        .window-frame[data-window-id="presence-window"]
+    ) {
+        transform: skewX(random(--atomic-presence-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        #presence-window-wrapper.window-frame,
+        .window-frame[data-window-id="presence-window"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-presence-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+
+    .atomic-age :is(
+        #webrings-wrapper.window-frame,
+        .window-frame[data-window-id="webrings-wrapper"]
+    ) {
+        transform: skewX(random(--atomic-webrings-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        #webrings-wrapper.window-frame,
+        .window-frame[data-window-id="webrings-wrapper"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-webrings-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+
+    .atomic-age :is(
+        #sites-i-like.window-frame,
+        .window-frame[data-window-id="sites-i-like"]
+    ) {
+        transform: skewX(random(--atomic-sites-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        #sites-i-like.window-frame,
+        .window-frame[data-window-id="sites-i-like"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-sites-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+
+    .atomic-age :is(
+        #my-button.window-frame,
+        .window-frame[data-window-id="my-button"]
+    ) {
+        transform: skewX(random(--atomic-my-button-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        #my-button.window-frame,
+        .window-frame[data-window-id="my-button"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-my-button-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+
+    .atomic-age :is(
+        #site-stats.window-frame,
+        .site-stats.window-frame,
+        .window-frame[data-window-id="site-stats"]
+    ) {
+        transform: skewX(random(--atomic-stats-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        #site-stats.window-frame,
+        .site-stats.window-frame,
+        .window-frame[data-window-id="site-stats"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-stats-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+
+    .atomic-age :is(
+        .socials-segment.window-frame,
+        .window-frame[data-window-id="socials"]
+    ) {
+        transform: skewX(random(--atomic-socials-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        .socials-segment.window-frame,
+        .window-frame[data-window-id="socials"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-socials-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+
+    .atomic-age :is(
+        #shell-wrapper.window-frame,
+        #banner-wrapper.window-frame,
+        .window-frame[data-window-id="terminal"]
+    ) {
+        transform: skewX(random(--atomic-terminal-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg)) !important;
+    }
+
+    .atomic-age :is(
+        #shell-wrapper.window-frame,
+        #banner-wrapper.window-frame,
+        .window-frame[data-window-id="terminal"]
+    ) :is(.window-title, .window-controls, .window-content-root) {
+        transform: skewX(calc(random(--atomic-terminal-shear, calc(var(--atomic-window-safe-shear-limit) * -1), var(--atomic-window-safe-shear-limit), 0.25deg) * -1));
+    }
+}
