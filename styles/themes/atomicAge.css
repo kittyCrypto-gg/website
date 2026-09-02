@@ -8,8 +8,31 @@
  * the behavioural corrections explicitly requested for the real site DOM.
  */
 
+/*
+ * Registered custom properties make a sampled random value real rather than
+ * re-evaluating random() every time var() is substituted. The sampled window
+ * shear therefore inherits into its counter-sheared contents exactly.
+ */
+@property --atomic-local-shear {
+    syntax: "<angle>";
+    inherits: true;
+    initial-value: -7deg;
+}
+
+@property --atomic-nav-cut {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 12px;
+}
+
 .atomic-age {
+    /* Deterministic fallbacks for browsers without CSS random(). */
     --atomic-window-shear: var(--shear);
+    --atomic-shear-min: -8deg;
+    --atomic-shear-max: -6deg;
+    --atomic-nav-cut-min: 9px;
+    --atomic-nav-cut-max: 15px;
+
     --atomic-window-viewport-gutter: clamp(3rem, 7vw, 6rem);
     --atomic-window-dock-gutter: clamp(1rem, 2.5vw, 2.25rem);
 
@@ -81,16 +104,18 @@ html.atomic-age body {
 
 /*
  * Main navigation uses one registered frame above one displaced colour plate.
- * Both share the same left-hand diagonal. The right edge stays square.
+ * Both share the same per-button random left diagonal. The right edge stays square.
  */
 .atomic-age .menu-button {
+    --atomic-nav-cut: 12px;
+
     border: 0;
     clip-path: none;
     overflow: visible;
 }
 
 .atomic-age .menu-button::before {
-    clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%);
+    clip-path: polygon(var(--atomic-nav-cut) 0, 100% 0, 100% 100%, 0 100%);
 }
 
 .atomic-age .menu-button::after {
@@ -100,7 +125,7 @@ html.atomic-age body {
     border: 0;
     clip-path: none;
     background:
-        linear-gradient(var(--ink), var(--ink)) 12px 0 / calc(100% - 12px) 2px no-repeat,
+        linear-gradient(var(--ink), var(--ink)) var(--atomic-nav-cut) 0 / calc(100% - var(--atomic-nav-cut)) 2px no-repeat,
         linear-gradient(var(--ink), var(--ink)) 100% 0 / 2px 100% no-repeat,
         linear-gradient(var(--ink), var(--ink)) 0 100% / 100% 2px no-repeat,
         linear-gradient(
@@ -109,23 +134,25 @@ html.atomic-age body {
             var(--ink) calc(50% - 1px),
             var(--ink) calc(50% + 1px),
             transparent calc(50% + 1px)
-        ) 0 0 / 12px 100% no-repeat;
+        ) 0 0 / var(--atomic-nav-cut) 100% no-repeat;
     z-index: 1;
     pointer-events: none;
 }
 
 /*
- * Theme picker pieces use the theme's real shear transform.
- * Do not fake the slant by clipping a rectangular element.
+ * Theme-picker pieces are genuinely sheared. Each visible piece receives its
+ * own angle while staying inside the viewport-safe range for the current width.
  */
 .atomic-age .menu-theme-new,
 .atomic-age .menu-theme-caption,
 .atomic-age .menu-theme-label,
 .atomic-age .menu-theme-toggle {
+    --atomic-local-shear: var(--atomic-window-shear);
+
     clip-path: none;
     border-radius: 0;
     box-shadow: none;
-    transform: skewX(var(--atomic-window-shear));
+    transform: skewX(var(--atomic-local-shear));
     transform-origin: center;
 }
 
@@ -133,24 +160,26 @@ html.atomic-age body {
 .atomic-age .menu-theme-radio:checked + .menu-theme-label,
 .atomic-age .menu-theme-toggle:hover,
 .atomic-age .menu-theme-toggle:focus-visible {
-    transform: skewX(var(--atomic-window-shear));
+    transform: skewX(var(--atomic-local-shear));
 }
 
-/* Keep the theme-picker plus/minus glyph upright inside its genuinely sheared button. */
+/* Keep the theme-picker plus/minus glyph upright using its parent's exact sampled angle. */
 .atomic-age .menu-theme-toggle > svg {
-    transform: skewX(calc(var(--atomic-window-shear) * -1));
+    transform: skewX(calc(var(--atomic-local-shear) * -1));
 }
 
 /*
- * All windows use the approved coherent shear. The angle reduces on narrower
- * viewports so transformed corners remain visible.
+ * Every window gets its own coherent shear. Registered --atomic-local-shear is
+ * inherited by its contents so counter-shearing always cancels that exact angle.
  */
 .atomic-age :is(
     .window-frame,
     #kitty-intro-wrapper.window-frame,
     .intro-status-row__intro-shell.window-frame
 ) {
-    transform: skewX(var(--atomic-window-shear));
+    --atomic-local-shear: var(--atomic-window-shear);
+
+    transform: skewX(var(--atomic-local-shear));
     transform-origin: 50% 0;
 }
 
@@ -226,36 +255,37 @@ html.atomic-age body {
     z-index: 1;
 }
 
-/* Counter-shear readable window content while keeping the shell itself sheared. */
+/* Counter-shear readable window content with the window's exact sampled angle. */
 .atomic-age .window-frame .window-title,
 .atomic-age .window-frame .window-controls,
 .atomic-age .window-frame .window-content-root {
-    transform: skewX(calc(var(--atomic-window-shear) * -1));
+    transform: skewX(calc(var(--atomic-local-shear) * -1));
 }
 
-/* Window controls are genuinely sheared rectangles, never clipped polygons. */
+/* Each control gets its own small random shear, independent of its window. */
 .atomic-age .window-frame .window-controls .btn {
+    --atomic-local-shear: var(--atomic-window-shear);
+
     clip-path: none;
-    transform: skewX(var(--atomic-window-shear));
+    transform: skewX(var(--atomic-local-shear));
 }
 
 .atomic-age .window-frame .window-controls .btn::after {
     display: inline-block;
-    transform: skewX(calc(var(--atomic-window-shear) * -1));
+    transform: skewX(calc(var(--atomic-local-shear) * -1));
 }
 
 .atomic-age .window-frame .window-controls .btn:hover {
-    transform: skewX(var(--atomic-window-shear)) scale(1.08);
+    transform: skewX(var(--atomic-local-shear)) scale(1.08);
 }
 
 /*
- * The terminal shell now shears exactly like the other windows. The xterm.js
- * surface stays upright through the normal content counter-shear. Every layer
- * surrounding that surface uses the exact terminal background so the exposed
- * wedges read as one continuous terminal field rather than a separate panel.
+ * The terminal shell shears like every other window. xterm.js stays upright via
+ * the inherited inverse angle, while every surrounding surface uses the exact
+ * terminal background so the exposed wedges read as one continuous field.
  */
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
-    transform: skewX(var(--atomic-window-shear)) !important;
+    transform: skewX(var(--atomic-local-shear)) !important;
     transform-origin: 50% 0;
     isolation: isolate;
     max-width: 100%;
@@ -279,7 +309,7 @@ html.atomic-age body {
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-title,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-content-root {
-    transform: skewX(calc(var(--atomic-window-shear) * -1));
+    transform: skewX(calc(var(--atomic-local-shear) * -1));
 }
 
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-body,
@@ -299,9 +329,45 @@ html.atomic-age body {
     background-color: var(--atomic-terminal-bg) !important;
 }
 
+/*
+ * Experimental CSS random() layer. A named random key shares the sampled value
+ * only within one element; different matched elements receive independent values.
+ * Continuous angle ranges make exact visual duplicates vanishingly unlikely.
+ */
+@supports (transform: skewX(random(-1deg, 1deg))) {
+    .atomic-age .menu-button {
+        --atomic-nav-cut: random(
+            --atomic-nav-cut-random,
+            var(--atomic-nav-cut-min),
+            var(--atomic-nav-cut-max)
+        );
+    }
+
+    .atomic-age .menu-theme-new,
+    .atomic-age .menu-theme-caption,
+    .atomic-age .menu-theme-label,
+    .atomic-age .menu-theme-toggle,
+    .atomic-age :is(
+        .window-frame,
+        #kitty-intro-wrapper.window-frame,
+        .intro-status-row__intro-shell.window-frame
+    ),
+    .atomic-age .window-frame .window-controls .btn {
+        --atomic-local-shear: random(
+            --atomic-shear-random,
+            var(--atomic-shear-min),
+            var(--atomic-shear-max)
+        );
+    }
+}
+
 @media (max-width: 1200px) {
     .atomic-age {
         --atomic-window-shear: -5deg;
+        --atomic-shear-min: -6deg;
+        --atomic-shear-max: -4deg;
+        --atomic-nav-cut-min: 8px;
+        --atomic-nav-cut-max: 13px;
         --atomic-window-viewport-gutter: clamp(2.75rem, 7vw, 5rem);
     }
 }
@@ -309,6 +375,10 @@ html.atomic-age body {
 @media (max-width: 820px) {
     .atomic-age {
         --atomic-window-shear: -3deg;
+        --atomic-shear-min: -4deg;
+        --atomic-shear-max: -2deg;
+        --atomic-nav-cut-min: 6px;
+        --atomic-nav-cut-max: 10px;
         --atomic-window-viewport-gutter: clamp(2.25rem, 8vw, 3.5rem);
         --atomic-window-dock-gutter: clamp(0.75rem, 3vw, 1.5rem);
     }
@@ -338,6 +408,10 @@ html.atomic-age body {
 @media (max-width: 480px) {
     .atomic-age {
         --atomic-window-shear: -2deg;
+        --atomic-shear-min: -2.5deg;
+        --atomic-shear-max: -1deg;
+        --atomic-nav-cut-min: 4px;
+        --atomic-nav-cut-max: 8px;
         --atomic-window-viewport-gutter: 2rem;
         --atomic-window-dock-gutter: 0.75rem;
     }
