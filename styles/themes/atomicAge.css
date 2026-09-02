@@ -142,7 +142,7 @@ html.atomic-age body {
 }
 
 /*
- * Windows are straight by default. Only the explicitly approved short-window
+ * Windows are straight by default. Only the explicitly approved window
  * families may use the viewport-constrained Atomic Age shear.
  */
 .atomic-age .window-frame {
@@ -159,13 +159,16 @@ html.atomic-age body {
     #site-stats.window-frame,
     .site-stats.window-frame,
     .socials-segment.window-frame,
+    #shell-wrapper.window-frame,
+    #banner-wrapper.window-frame,
     .window-frame[data-window-id="kitty-intro"],
     .window-frame[data-window-id="presence-window"],
     .window-frame[data-window-id="webrings-wrapper"],
     .window-frame[data-window-id="sites-i-like"],
     .window-frame[data-window-id="my-button"],
     .window-frame[data-window-id="site-stats"],
-    .window-frame[data-window-id="socials"]
+    .window-frame[data-window-id="socials"],
+    .window-frame[data-window-id="terminal"]
 ) {
     transform: skewX(var(--atomic-window-shear));
 }
@@ -259,13 +262,16 @@ html.atomic-age body {
     #site-stats.window-frame,
     .site-stats.window-frame,
     .socials-segment.window-frame,
+    #shell-wrapper.window-frame,
+    #banner-wrapper.window-frame,
     .window-frame[data-window-id="kitty-intro"],
     .window-frame[data-window-id="presence-window"],
     .window-frame[data-window-id="webrings-wrapper"],
     .window-frame[data-window-id="sites-i-like"],
     .window-frame[data-window-id="my-button"],
     .window-frame[data-window-id="site-stats"],
-    .window-frame[data-window-id="socials"]
+    .window-frame[data-window-id="socials"],
+    .window-frame[data-window-id="terminal"]
 ) :is(.window-title, .window-controls, .window-content-root) {
     transform: skewX(calc(var(--atomic-window-shear) * -1));
 }
@@ -286,11 +292,12 @@ html.atomic-age body {
 }
 
 /*
- * The terminal is not on the skew whitelist, so its shell and content are
- * straight. Every surrounding surface still uses the terminal background.
+ * The terminal is on the skew whitelist. xterm.js stays upright via the normal
+ * counter-shear, while every surrounding surface uses the exact terminal
+ * background so the exposed wedges read as one continuous field.
  */
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
-    transform: none !important;
+    transform: skewX(var(--atomic-window-shear)) !important;
     transform-origin: 50% 0;
     isolation: isolate;
     max-width: 100%;
@@ -314,7 +321,7 @@ html.atomic-age body {
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-title,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-controls,
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-content-root {
-    transform: none;
+    transform: skewX(calc(var(--atomic-window-shear) * -1));
 }
 
 .atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame .window-body,
