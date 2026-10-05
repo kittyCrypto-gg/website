@@ -43,16 +43,15 @@
 @import url("./modules/stats.css");
 
 /*
- * The theme picker must expose the same horizontal slider in every theme.
- * Theme-specific scrollbar rules are allowed to style the rest of the page,
- * but they must not hide or replace this control.
+ * Keep theme-picker overflow behaviour consistent across every theme.
+ * The scrollbar appears only when the row actually overflows, but theme-level
+ * scrollbar rules must not hide it when it is needed.
  */
 #main-menu-theme-shell .menu-theme-inner > #main-menu-themes {
-    overflow-x: scroll !important;
+    overflow-x: auto !important;
     overflow-y: hidden !important;
     scrollbar-width: thin !important;
     scrollbar-color: var(--nav-border-colour) transparent !important;
-    scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
 }
 
