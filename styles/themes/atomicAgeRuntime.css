@@ -18,29 +18,28 @@
     visibility: visible;
 }
 
-/*
- * Floating side controls all share .theme-toggle-button. AtomicAgeBase uses a
- * more specific dark-mode selector for this pseudo-element, so explicitly keep
- * every non-theme control on its own accessible label in every colour mode.
- */
-.atomic-age .theme-toggle-button:not(#theme-toggle)::after,
-.atomic-age.dark-mode .theme-toggle-button:not(#theme-toggle)::after,
-.dark-mode.atomic-age .theme-toggle-button:not(#theme-toggle)::after,
-.atomic-age.light-mode .theme-toggle-button:not(#theme-toggle)::after,
-.light-mode.atomic-age .theme-toggle-button:not(#theme-toggle)::after {
-    content: attr(aria-label) !important;
+/* Keep floating side controls consistent with the rest of the site: icon-only. */
+.atomic-age .theme-toggle-button {
+    width: var(--theme-toggle-size);
+    min-width: var(--theme-toggle-size);
+    height: var(--theme-toggle-size);
+    padding: 0;
+    gap: 0;
+    justify-content: center;
 }
 
-/* The actual theme control alone keeps action-oriented Light/Dark wording. */
-.atomic-age #theme-toggle.theme-toggle-button::after,
-.atomic-age.light-mode #theme-toggle.theme-toggle-button::after,
-.light-mode.atomic-age #theme-toggle.theme-toggle-button::after {
-    content: "Dark mode" !important;
+.atomic-age .theme-toggle-button::after,
+.atomic-age.dark-mode .theme-toggle-button::after,
+.dark-mode.atomic-age .theme-toggle-button::after,
+.atomic-age.light-mode .theme-toggle-button::after,
+.light-mode.atomic-age .theme-toggle-button::after {
+    content: none !important;
+    display: none !important;
 }
 
-.atomic-age.dark-mode #theme-toggle.theme-toggle-button::after,
-.dark-mode.atomic-age #theme-toggle.theme-toggle-button::after {
-    content: "Light mode" !important;
+/* Match the shared menu layout: keep the theme-picker heading centred. */
+.atomic-age .menu-theme-head {
+    justify-content: center;
 }
 
 /*
