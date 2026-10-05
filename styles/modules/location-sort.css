@@ -15,17 +15,14 @@
     position: sticky;
     top: 0;
     z-index: calc(var(--comments-location-dropdown-z-index) + 1);
-
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
     align-items: center;
     gap: var(--comments-location-sort-gap);
-
     box-sizing: border-box;
     inline-size: 100%;
     min-inline-size: 0;
     padding: var(--comments-location-sort-padding);
-
     background: color-mix(in srgb, var(--chat-input-bg-colour) 92%, var(--chat-input-text-colour));
     color: var(--chat-input-text-colour);
     border-bottom: var(--comment-field-border-width) solid var(--chat-input-border-colour);
@@ -109,7 +106,6 @@
     border-radius: var(--comment-field-radius);
     background: var(--chat-input-bg-colour);
     color: var(--chat-input-text-colour);
-    box-shadow: var(--comment-field-shadow);
     font: inherit;
     font-size: var(--comment-field-font-size);
     line-height: 1.2;
@@ -121,8 +117,7 @@
 }
 
 .comment-location-sort__search:focus {
-    border-color: var(--chat-input-border-colour);
-    box-shadow: var(--comment-field-focus-shadow);
+    box-shadow: 0 0 0 var(--comment-field-border-width) var(--chat-input-border-colour);
 }
 
 .comment-location-dropdown__options {
