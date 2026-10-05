@@ -25,6 +25,7 @@ interface FlagRes {
 }
 
 type Regions = Record<string, Record<string, Row>>;
+type LocationSortMode = "continent" | "alpha";
 
 interface Row {
     local_name: string;
@@ -70,6 +71,8 @@ export class locApi {
     private onChg: (() => void) | null = null;
     private pickerEl: HTMLDivElement | null = null;
     private pickerBtn: HTMLButtonElement | null = null;
+    private pickerMenu: HTMLDivElement | null = null;
+    private sortMode: LocationSortMode = "continent";
 
     /**
      * stores the bits and defaults, not much else
@@ -120,6 +123,7 @@ export class locApi {
         this.pickerEl?.remove();
         this.pickerEl = null;
         this.pickerBtn = null;
+        this.pickerMenu = null;
         this.selEl.classList.remove("comment-location-native");
 
         this.data = null;
@@ -133,7 +137,8 @@ export class locApi {
         const selKey = this.selEl.value;
 
         this.data = await this.fetchDat();
-        this.fill();
+        this.fillSelect();
+        this.rebuildMenu();
 
         if (!selKey) {
             this.clearFlag();
@@ -311,12 +316,25 @@ export class locApi {
      */
     private fill(): void {
         this.ndInit();
+        this.fillSelect();
+        this.rndPick();
+    }
 
+    /**
+     * rebuild native select without replacing the custom picker
+     * @returns {void}
+     */
+    private fillSelect(): void {
         this.selEl.replaceChildren();
         this.addPh();
+
+        if (this.sortMode === "alpha") {
+            this.addAlpha();
+            return;
+        }
+
         this.addTop();
         this.addRegs();
-        this.rndPick();
     }
 
     /**
@@ -380,7 +398,7 @@ export class locApi {
             }
 
             const entries = Object.entries(reg)
-                .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey, "en"));
+                .sort(([leftKey], [rightKey]) => englishName(leftKey).localeCompare(englishName(rightKey), "en", { sensitivity: "base" }));
 
             if (entries.length === 0) {
                 continue;
@@ -398,6 +416,43 @@ export class locApi {
 
             this.selEl.appendChild(group);
         }
+    }
+
+    /**
+     * flat alphabetical list by English location name
+     * @returns {void}
+     */
+    private addAlpha(): void {
+        for (const [locationKey, row] of this.allLocations()) {
+            const option = document.createElement("option");
+            option.value = locationKey;
+            option.textContent = mkLbl(locationKey, row.local_name);
+            this.selEl.appendChild(option);
+        }
+    }
+
+    /**
+     * unique locations sorted by their English key-derived name
+     * @returns {Array<[string, Row]>}
+     */
+    private allLocations(): Array<[string, Row]> {
+        if (!this.data) return [];
+
+        const items: Array<[string, Row]> = [];
+        const seen = new Set<string>();
+
+        for (const regName of this.regOrder) {
+            const reg = this.data[regName];
+            if (!helpers.isRecord(reg)) continue;
+
+            for (const [locationKey, row] of Object.entries(reg)) {
+                if (!isRow(row) || seen.has(locationKey)) continue;
+                seen.add(locationKey);
+                items.push([locationKey, row]);
+            }
+        }
+
+        return items.sort(([leftKey], [rightKey]) => englishName(leftKey).localeCompare(englishName(rightKey), "en", { sensitivity: "base" }));
     }
 
     /**
@@ -424,7 +479,6 @@ export class locApi {
         const menu = document.createElement("div");
         menu.id = `${this.selEl.id}-dropdown-menu`;
         menu.className = "comment-location-dropdown__content";
-        menu.setAttribute("role", "listbox");
 
         this.fillMenu(menu);
 
@@ -438,6 +492,7 @@ export class locApi {
 
         this.pickerEl = picker;
         this.pickerBtn = button;
+        this.pickerMenu = menu;
 
         this.syncPick();
     }
@@ -448,9 +503,31 @@ export class locApi {
      * @returns {void}
      */
     private fillMenu(menu: HTMLDivElement): void {
+        const toolbar = document.createElement("div");
+        toolbar.className = "comment-location-sort";
+        toolbar.setAttribute("role", "group");
+        toolbar.setAttribute("aria-label", "Sort locations");
+
+        const label = document.createElement("span");
+        label.className = "comment-location-sort__label";
+        label.textContent = "Sort by";
+
+        const segments = document.createElement("div");
+        segments.className = "comment-location-sort__segments";
+
+        const continent = this.mkSortBtn("continent", "Continent");
+        const alpha = this.mkSortBtn("alpha", "A–Z");
+        segments.append(continent, alpha);
+        toolbar.append(label, segments);
+
+        const options = document.createElement("div");
+        options.className = "comment-location-dropdown__options";
+        options.setAttribute("role", "listbox");
+        options.setAttribute("aria-label", "Locations");
+
         for (const child of Array.from(this.selEl.children)) {
             if (child instanceof HTMLOptionElement) {
-                menu.appendChild(this.mkPickItm(child));
+                options.appendChild(this.mkPickItm(child));
                 continue;
             }
 
@@ -462,16 +539,77 @@ export class locApi {
             group.className = "comment-location-dropdown__group";
             group.textContent = child.label;
             group.setAttribute("aria-hidden", "true");
-            menu.appendChild(group);
+            options.appendChild(group);
 
             for (const option of Array.from(child.children)) {
                 if (!(option instanceof HTMLOptionElement)) {
                     continue;
                 }
 
-                menu.appendChild(this.mkPickItm(option));
+                options.appendChild(this.mkPickItm(option));
             }
         }
+
+        menu.append(toolbar, options);
+    }
+
+    /**
+     * one sort segment
+     * @param {LocationSortMode} mode
+     * @param {string} label
+     * @returns {HTMLButtonElement}
+     */
+    private mkSortBtn(mode: LocationSortMode, label: string): HTMLButtonElement {
+        const button = document.createElement("button");
+        const current = this.sortMode === mode;
+
+        button.type = "button";
+        button.className = "comment-location-dropdown__button comment-location-sort__button";
+        button.textContent = label;
+        button.dataset.sortMode = mode;
+        button.classList.toggle("is-active", current);
+        button.setAttribute("aria-pressed", current ? "true" : "false");
+
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.setSortMode(mode);
+        });
+
+        return button;
+    }
+
+    /**
+     * switch sorting without losing the selected location or replacing picker shell
+     * @param {LocationSortMode} mode
+     * @returns {void}
+     */
+    private setSortMode(mode: LocationSortMode): void {
+        if (mode === this.sortMode) return;
+
+        const selected = this.selEl.value;
+        this.sortMode = mode;
+        this.fillSelect();
+
+        if (selected && Array.from(this.selEl.options).some((option) => option.value === selected)) {
+            this.selEl.value = selected;
+        }
+
+        this.rebuildMenu();
+        this.syncPick();
+
+        const activeSort = this.pickerMenu?.querySelector<HTMLButtonElement>(`.comment-location-sort__button[data-sort-mode="${mode}"]`);
+        activeSort?.focus();
+    }
+
+    /**
+     * redraw dropdown content while preserving its outer hover/focus shell
+     * @returns {void}
+     */
+    private rebuildMenu(): void {
+        if (!this.pickerMenu) return;
+        this.pickerMenu.replaceChildren();
+        this.fillMenu(this.pickerMenu);
     }
 
     /**
@@ -680,21 +818,30 @@ function normDat(value: unknown): Regions {
  * @returns {string}
  */
 function mkLbl(locationKey: string, localName: string): string {
-    const englishName = fmtEng(locationKey);
+    const englishNameValue = englishName(locationKey);
 
-    return sameNm(englishName, localName)
-        ? englishName
-        : `${englishName} (${localName})`;
+    return sameNm(englishNameValue, localName)
+        ? englishNameValue
+        : `${englishNameValue} (${localName})`;
+}
+
+/**
+ * English display name derived from the canonical location key
+ * @param {string} value
+ * @returns {string}
+ */
+function englishName(value: string): string {
+    return fmtEng(value);
 }
 
 /**
  * compare names, roughly
- * @param {string} englishName
+ * @param {string} englishNameValue
  * @param {string} localName
  * @returns {boolean}
  */
-function sameNm(englishName: string, localName: string): boolean {
-    return normNm(englishName) === normNm(localName);
+function sameNm(englishNameValue: string, localName: string): boolean {
+    return normNm(englishNameValue) === normNm(localName);
 }
 
 /**
