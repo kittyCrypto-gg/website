@@ -1,5 +1,6 @@
 import * as config from "./config.ts";
 import * as helpers from "./helpers.ts";
+import { THEME_CHANGED_EVENT } from "./themeChanger.ts";
 
 type MobileDetectInstance = Readonly<{
     mobile: () => unknown;
@@ -78,6 +79,10 @@ type WebUiTheme = "dark" | "light";
 
 export const TERMINAL_READY_EVENT = "kc:terminal-ready";
 
+const sessionTokenKey = "kc-session-token";
+const terminalInteractionKey = "kc-terminal-interacted-token";
+const pendingInteractionValue = "__pending__";
+
 export type TerminalReadyDetail = Readonly<{
     textarea: HTMLTextAreaElement;
 }>;
@@ -91,6 +96,94 @@ export type TerminalModule = Readonly<{
     isReady: () => boolean;
     dispose: () => void;
 }>;
+
+/**
+ * Reads one session-storage value without letting storage failures break the terminal.
+ * @param {string} key Storage key.
+ * @returns {string | null} Stored value when available.
+ */
+function readSessionValue(key: string): string | null {
+    try {
+        return window.sessionStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Writes one session-storage value without letting storage failures break the terminal.
+ * @param {string} key Storage key.
+ * @param {string} value Value to persist.
+ * @returns {void} Nothing.
+ */
+function writeSessionValue(key: string, value: string): void {
+    try {
+        window.sessionStorage.setItem(key, value);
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
+/**
+ * Removes one session-storage value without letting storage failures break the terminal.
+ * @param {string} key Storage key.
+ * @returns {void} Nothing.
+ */
+function dropSessionValue(key: string): void {
+    try {
+        window.sessionStorage.removeItem(key);
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
+/**
+ * Marks the current terminal session as user-interacted.
+ * A pending marker covers the tiny interval before a new shell token exists.
+ * @returns {void} Nothing.
+ */
+function markTerminalInteracted(): void {
+    const token = readSessionValue(sessionTokenKey);
+    writeSessionValue(terminalInteractionKey, token || pendingInteractionValue);
+}
+
+/**
+ * Binds a pending interaction marker to a newly-created shell token and drops stale markers.
+ * @param {string} token Current terminal session token.
+ * @returns {void} Nothing.
+ */
+function bindInteractionToSession(token: string): void {
+    const marker = readSessionValue(terminalInteractionKey);
+
+    if (marker === pendingInteractionValue) {
+        writeSessionValue(terminalInteractionKey, token);
+        return;
+    }
+
+    if (marker && marker !== token) {
+        dropSessionValue(terminalInteractionKey);
+    }
+}
+
+/**
+ * Reports whether the user has sent any input to the current shell session.
+ * @returns {boolean} True after the first user input byte/sequence.
+ */
+function hasTerminalInteracted(): boolean {
+    const marker = readSessionValue(terminalInteractionKey);
+    if (!marker) return false;
+
+    const token = readSessionValue(sessionTokenKey);
+
+    if (marker === pendingInteractionValue) {
+        if (token) {
+            writeSessionValue(terminalInteractionKey, token);
+        }
+        return true;
+    }
+
+    return !!token && marker === token;
+}
 
 /**
  * @param {XtermTerminal} term - Xterm terminal instance.
@@ -370,10 +463,9 @@ function attachScrollTracking(term: XtermTerminal, followState: FollowState): Sc
  * @returns {Promise<SessionTokenResult>} Session token and whether it was newly created.
  */
 async function getOrCreateSessionToken(): Promise<SessionTokenResult> {
-    const key = "kc-session-token";
-
-    const existing = sessionStorage.getItem(key);
+    const existing = readSessionValue(sessionTokenKey);
     if (existing && existing.length > 0) {
+        bindInteractionToSession(existing);
         return { token: existing, isNew: false };
     }
 
@@ -399,7 +491,8 @@ async function getOrCreateSessionToken(): Promise<SessionTokenResult> {
         throw new Error("Session endpoint returned no sessionToken");
     }
 
-    sessionStorage.setItem(key, token);
+    writeSessionValue(sessionTokenKey, token);
+    bindInteractionToSession(token);
     return { token, isNew: true };
 }
 
@@ -508,7 +601,8 @@ async function attachWebSocketTransport(
         clearOpenTimer();
 
         if (ev.code === 4001) {
-            sessionStorage.removeItem("kc-session-token");
+            dropSessionValue(sessionTokenKey);
+            dropSessionValue(terminalInteractionKey);
             term.writeln("\r\n[session ended, reconnecting with a new token…]");
             scrollCtl.forceFollowAndScroll();
 
@@ -694,6 +788,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     });
 
     term.onData((data: string) => {
+        markTerminalInteracted();
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         ws.send(data);
     });
@@ -774,6 +869,21 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     await connectWs();
 
+    /**
+     * Re-runs the decorative terminal output after a site-theme change only while
+     * the current shell session is still untouched by the user.
+     * @returns {void} Nothing.
+     */
+    const refreshUntouchedTerminal = (): void => {
+        if (hasTerminalInteracted()) return;
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+        ws.send("clear\rnekofetch\r");
+        scrollCtl?.forceFollowAndScroll();
+    };
+
+    document.addEventListener(THEME_CHANGED_EVENT, refreshUntouchedTerminal);
+
     if (typeof term.onRender === "function") {
         term.onRender(() => {
             scrollCtl?.maybeScroll();
@@ -827,6 +937,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         term,
         fitAddon,
         sendSeq: (seq: string): void => {
+            markTerminalInteracted();
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(seq);
         },
@@ -834,6 +945,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         events,
         isReady: (): boolean => ready,
         dispose: (): void => {
+            document.removeEventListener(THEME_CHANGED_EVENT, refreshUntouchedTerminal);
             detachResizeHandlers();
             detachResizeObserver();
 
