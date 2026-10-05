@@ -162,15 +162,48 @@ function addSheet(key: string, theme: MainThemeEntry, root: Document): void {
 }
 
 /**
- * Loads every declared theme stylesheet once so switching themes only changes classes.
- * @param {ThemeMap} themes Theme map from main.json.
+ * Removes one theme stylesheet link if it exists.
+ * @param {string} key Theme key from main.json.
  * @param {Document} root Document to change.
  * @returns {void}
  */
-function loadSheets(themes: ThemeMap, root: Document): void {
-    Object.entries(themes).forEach(([key, theme]) => {
-        addSheet(key, theme, root);
+function dropSheet(key: string, root: Document): void {
+    const old = root.getElementById(linkId(key));
+    if (old instanceof HTMLLinkElement) old.remove();
+}
+
+/**
+ * Removes every theme stylesheet except the active one.
+ * @param {ThemeMap} themes Theme map from main.json.
+ * @param {string} keep Theme key to keep loaded.
+ * @param {Document} root Document to change.
+ * @returns {void}
+ */
+function dropSheets(themes: ThemeMap, keep: string, root: Document): void {
+    Object.keys(themes).forEach((key) => {
+        if (key !== keep) dropSheet(key, root);
     });
+
+    root.querySelectorAll<HTMLLinkElement>("link[data-theme-key]").forEach((link) => {
+        if (link.dataset.themeKey !== keep) link.remove();
+    });
+}
+
+/**
+ * Loads only the active theme stylesheet and removes inactive theme stylesheets.
+ * @param {ThemeMap} themes Theme map from main.json.
+ * @param {string} key Active theme key.
+ * @param {Document} root Document to change.
+ * @returns {void}
+ */
+function loadSheet(themes: ThemeMap, key: string, root: Document): void {
+    const theme = themes[key];
+
+    if (theme) {
+        addSheet(key, theme, root);
+    }
+
+    dropSheets(themes, key, root);
 }
 
 /**
@@ -235,6 +268,8 @@ export function setTheme(
     const theme = themes[next];
     const caller = cleanCall(theme?.caller);
 
+    loadSheet(themes, next, root);
+
     html.classList.remove(...calls(themes));
 
     if (caller) {
@@ -249,12 +284,11 @@ export function setTheme(
 }
 
 /**
- * Preloads all theme CSS and restores the saved picker state.
+ * Loads the active theme CSS and restores the saved picker state.
  * @param {ThemeMap} themes Theme map from main.json.
  * @param {Document} root Document to change.
  * @returns {string} Active theme key.
  */
 export function initThemes(themes: ThemeMap, root: Document = document): string {
-    loadSheets(themes, root);
     return setTheme(themes, initKey(themes, root.documentElement), false, root);
 }
