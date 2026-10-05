@@ -1,21 +1,19 @@
 @import url("./atomicAge.css");
 
 /*
- * Keep the terminal at its final docked width before the Window API mounts it.
- * bootTerm() and initUi() start in parallel, so xterm can render before
- * #shell-wrapper receives .window-frame. Reserving the same gutter up front
- * prevents the visible first-load shrink when that class is added.
+ * Keep the terminal/banner shell at one explicit docked width throughout boot.
+ * The source markup uses width:auto inside a column flex container, so allowing
+ * only max-width leaves the used width dependent on changing window/xterm
+ * contents. Fix the cross-size itself before and after Window API mounting.
  */
-.atomic-age :is(#shell-wrapper, #banner-wrapper):not(.window-frame) {
+.atomic-age :is(#shell-wrapper, #banner-wrapper):not(.floating):not(.maximised) {
+    width: calc(
+        100% - var(--atomic-window-viewport-gutter) - var(--atomic-window-viewport-gutter)
+    ) !important;
     max-width: calc(
         100% - var(--atomic-window-viewport-gutter) - var(--atomic-window-viewport-gutter)
-    );
-    margin-inline: auto;
-    visibility: hidden;
-}
-
-.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
-    visibility: visible;
+    ) !important;
+    margin-inline: auto !important;
 }
 
 /* Keep floating side controls consistent with the rest of the site: icon-only. */
