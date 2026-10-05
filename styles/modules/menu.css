@@ -290,7 +290,8 @@ nav * {
     background: var(--menu-theme-caption-bg);
 }
 
-.menu-themes {
+/* Keep the theme picker scrollable and visible regardless of theme-level scrollbar rules. */
+.menu-theme-inner .menu-themes {
     flex: 0 1 auto;
     min-inline-size: 0;
     max-inline-size: 100%;
@@ -305,12 +306,23 @@ nav * {
 
     padding: var(--menu-hover-bleed);
 
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--nav-border-colour) transparent;
     -webkit-overflow-scrolling: touch;
     scroll-padding-inline: var(--menu-hover-bleed);
 
     &::-webkit-scrollbar {
-        display: none;
+        display: block;
+        height: 0.5rem;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--nav-border-colour);
+        border-radius: 999px;
     }
 }
 
