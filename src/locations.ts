@@ -25,43 +25,32 @@ interface FlagRes {
 }
 
 type Regions = Record<string, Record<string, Row>>;
-type LocationSortMode = "continent" | "alpha";
+type LocationSortMode = "region" | "alpha";
+type LocationEntry = Readonly<{
+    locationKey: string;
+    row: Row;
+    region: string;
+}>;
 
 interface Row {
     local_name: string;
     emoji: string;
 }
 
-const DEF_REG_ORDER = [
-    "europe", "asia", "america", "oceania", "africa",
-] as const;
-
+const DEF_REG_ORDER = ["africa", "america", "asia", "europe", "oceania"] as const;
 const DEF_REG_LABELS: Readonly<Record<string, string>> = {
-    europe: "Europe",
-    asia: "Asia",
-    america: "America",
-    oceania: "Oceania",
     africa: "Africa",
+    america: "Americas",
+    asia: "Asia",
+    europe: "Europe",
+    oceania: "Oceania",
 };
-
-const DEF_TOP_KEYS = [
-    "scotland",
-    "england",
-    "wales",
-    "northern ireland",
-    "ireland",
-    "united states of america",
-    "japan",
-    "spain",
-    "argentina"
-] as const;
 
 export class locApi {
     private readonly selEl: HTMLSelectElement;
     private readonly flagEl: HTMLElement;
     private readonly dataUrl: string;
     private readonly flagsUrl: string;
-    private readonly topKeys: readonly string[];
     private readonly regOrder: readonly string[];
     private readonly regLabels: Readonly<Record<string, string>>;
     private readonly phLabel: string;
@@ -72,33 +61,27 @@ export class locApi {
     private pickerEl: HTMLDivElement | null = null;
     private pickerBtn: HTMLButtonElement | null = null;
     private pickerMenu: HTMLDivElement | null = null;
-    private sortMode: LocationSortMode = "continent";
+    private optionsEl: HTMLDivElement | null = null;
+    private searchEl: HTMLInputElement | null = null;
+    private sortMode: LocationSortMode = "region";
+    private searchQuery = "";
+    private expandedGroups = new Set<string>();
 
-    /**
-     * stores the bits and defaults, not much else
-     * @param {Opts} options
-     * @returns {void}
-     */
     public constructor(options: Opts) {
         this.selEl = options.selectElement;
         this.flagEl = options.flagElement;
         this.dataUrl = options.locationsUrl;
         this.flagsUrl = noSlash(options.flagsBaseUrl);
-        this.topKeys = options.mostFrequentKeys ?? DEF_TOP_KEYS;
         this.regOrder = options.regionOrder ?? DEF_REG_ORDER;
         this.regLabels = options.regionLabels ?? DEF_REG_LABELS;
         this.phLabel = options.placeholderLabel ?? "Location (Optional)";
         this.emptyLabel = options.emptyFlagLabel ?? "Select a location";
     }
 
-    /**
-     * load data, make options, wire it
-     * then paints current flag if any
-     * @returns {Promise<void>}
-     */
     public async init(): Promise<void> {
         this.data = await this.fetchDat();
-        this.fill();
+        this.fillSelect();
+        this.rndPick();
         this.bind();
         this.syncPick();
 
@@ -110,10 +93,6 @@ export class locApi {
         await this.show(this.selEl.value);
     }
 
-    /**
-     * tidy the picker, mostly
-     * @returns {void}
-     */
     public destroy(): void {
         if (this.onChg) {
             this.selEl.removeEventListener("change", this.onChg);
@@ -124,45 +103,32 @@ export class locApi {
         this.pickerEl = null;
         this.pickerBtn = null;
         this.pickerMenu = null;
+        this.optionsEl = null;
+        this.searchEl = null;
         this.selEl.classList.remove("comment-location-native");
-
         this.data = null;
     }
 
-    /**
-     * reloads json and tries not to lose the value
-     * @returns {Promise<void>}
-     */
     public async reload(): Promise<void> {
-        const selKey = this.selEl.value;
-
+        const selectedKey = this.selEl.value;
         this.data = await this.fetchDat();
         this.fillSelect();
+
+        if (selectedKey && Array.from(this.selEl.options).some((option) => option.value === selectedKey)) {
+            this.selEl.value = selectedKey;
+        }
+
         this.rebuildMenu();
-
-        if (!selKey) {
-            this.clearFlag();
-            this.syncPick();
-            return;
-        }
-
-        const row = this.find(selKey);
-        if (!row) {
-            this.clearFlag();
-            this.syncPick();
-            return;
-        }
-
-        this.selEl.value = selKey;
         this.syncPick();
-        await this.show(selKey);
+
+        if (!selectedKey || !this.find(selectedKey)) {
+            this.clearFlag();
+            return;
+        }
+
+        await this.show(selectedKey);
     }
 
-    /**
-     * set it from code, empty means clear
-     * @param {string} locationKey
-     * @returns {Promise<void>}
-     */
     public async setValue(locationKey: string): Promise<void> {
         this.ndInit();
 
@@ -173,8 +139,7 @@ export class locApi {
             return;
         }
 
-        const row = this.find(locationKey);
-        if (!row) {
+        if (!this.find(locationKey)) {
             throw new Error(`Location not found in dataset: ${locationKey}`);
         }
 
@@ -183,56 +148,27 @@ export class locApi {
         await this.show(locationKey);
     }
 
-    /**
-     * current key
-     * @returns {string}
-     */
     public getValue(): string {
         return this.selEl.value;
     }
 
-    /**
-     * gets the row-ish public shape
-     * @param {string} locationKey
-     * @returns {Loc | null}
-     */
     public getLocation(locationKey: string): Loc | null {
         this.ndInit();
-
         const row = this.find(locationKey);
         if (!row) return null;
-
-        return {
-            localName: row.local_name,
-            flag: row.emoji
-        };
+        return { localName: row.local_name, flag: row.emoji };
     }
 
-    /**
-     * blank flag display
-     * @returns {void}
-     */
     public clearFlag(): void {
         this.flagEl.replaceChildren();
         this.flagEl.textContent = this.emptyLabel;
     }
 
-    /**
-     * redraw the current flag thing
-     * @returns {Promise<FlagRes | null>}
-     */
     public async renderCurrentFlag(): Promise<FlagRes | null> {
         const locationKey = this.selEl.value;
-
         this.syncPick();
 
-        if (!locationKey) {
-            this.clearFlag();
-            return null;
-        }
-
-        const row = this.find(locationKey);
-        if (!row) {
+        if (!locationKey || !this.find(locationKey)) {
             this.clearFlag();
             return null;
         }
@@ -240,47 +176,22 @@ export class locApi {
         return this.show(locationKey);
     }
 
-    /**
-     * png url for a loc
-     * @param {string} locationKey
-     * @returns {string}
-     */
     public getFlagUrl(locationKey: string): string {
         this.ndInit();
-
         const row = this.find(locationKey);
-        if (!row) {
-            throw new Error(`Location not found in dataset: ${locationKey}`);
-        }
-
-        const code = flagCode(row.emoji);
-        return `${this.flagsUrl}/${code}.png`;
+        if (!row) throw new Error(`Location not found in dataset: ${locationKey}`);
+        return `${this.flagsUrl}/${flagCode(row.emoji)}.png`;
     }
 
-    /**
-     * label for ui, nothing fancy
-     * @param {string} locationKey
-     * @returns {string}
-     */
     public getLabel(locationKey: string): string {
         this.ndInit();
-
         const row = this.find(locationKey);
-        if (!row) {
-            throw new Error(`Location not found in dataset: ${locationKey}`);
-        }
-
+        if (!row) throw new Error(`Location not found in dataset: ${locationKey}`);
         return mkLbl(locationKey, row.local_name);
     }
 
-    /**
-     * wire change listener again
-     * @returns {void}
-     */
     private bind(): void {
-        if (this.onChg) {
-            this.selEl.removeEventListener("change", this.onChg);
-        }
+        if (this.onChg) this.selEl.removeEventListener("change", this.onChg);
 
         this.onChg = () => {
             this.syncPick();
@@ -290,57 +201,29 @@ export class locApi {
         this.selEl.addEventListener("change", this.onChg);
     }
 
-    /**
-     * fetch and clean the json
-     * @returns {Promise<Regions>}
-     */
     private async fetchDat(): Promise<Regions> {
         const response = await fetch(this.dataUrl);
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch ${this.dataUrl} (${response.status})`);
-        }
+        if (!response.ok) throw new Error(`Failed to fetch ${this.dataUrl} (${response.status})`);
 
         const value: unknown = await response.json();
-
-        if (!helpers.isRecord(value)) {
-            throw new Error("Locations JSON must contain an object at the root");
-        }
-
+        if (!helpers.isRecord(value)) throw new Error("Locations JSON must contain an object at the root");
         return normDat(value);
     }
 
-    /**
-     * make the select again
-     * @returns {void}
-     */
-    private fill(): void {
-        this.ndInit();
-        this.fillSelect();
-        this.rndPick();
-    }
-
-    /**
-     * rebuild native select without replacing the custom picker
-     * @returns {void}
-     */
     private fillSelect(): void {
+        this.ndInit();
+        const selected = this.selEl.value;
         this.selEl.replaceChildren();
         this.addPh();
 
-        if (this.sortMode === "alpha") {
-            this.addAlpha();
-            return;
-        }
+        if (this.sortMode === "alpha") this.addAlphaGroups();
+        else this.addRegs();
 
-        this.addTop();
-        this.addRegs();
+        if (selected && Array.from(this.selEl.options).some((option) => option.value === selected)) {
+            this.selEl.value = selected;
+        }
     }
 
-    /**
-     * placeholder option
-     * @returns {void}
-     */
     private addPh(): void {
         const ph = document.createElement("option");
         ph.value = "";
@@ -348,69 +231,20 @@ export class locApi {
         this.selEl.appendChild(ph);
     }
 
-    /**
-     * top group, if anything matches
-     * @returns {void}
-     */
-    private addTop(): void {
-        const items = this.topKeys
-            .map((locationKey) => {
-                const row = this.find(locationKey);
-                if (!row) return null;
-
-                return {
-                    locationKey,
-                    row
-                };
-            })
-            .filter(notNull);
-
-        if (items.length === 0) {
-            return;
-        }
-
-        const group = document.createElement("optgroup");
-        group.label = "Most Frequent";
-
-        for (const item of items) {
-            const option = document.createElement("option");
-            option.value = item.locationKey;
-            option.textContent = mkLbl(item.locationKey, item.row.local_name);
-            group.appendChild(option);
-        }
-
-        this.selEl.appendChild(group);
-    }
-
-    /**
-     * region groups, skips weird stuff
-     * @returns {void}
-     */
     private addRegs(): void {
-        if (!this.data) {
-            return;
-        }
+        if (!this.data) return;
 
-        for (const regName of this.regOrder) {
-            const reg = this.data[regName];
-            if (!helpers.isRecord(reg)) {
-                continue;
-            }
-
-            const entries = Object.entries(reg)
-                .sort(([leftKey], [rightKey]) => englishName(leftKey).localeCompare(englishName(rightKey), "en", { sensitivity: "base" }));
-
-            if (entries.length === 0) {
-                continue;
-            }
+        for (const regName of this.regionKeys()) {
+            const entries = this.entriesForRegion(regName);
+            if (!entries.length) continue;
 
             const group = document.createElement("optgroup");
-            group.label = this.regLabels[regName] ?? regName;
+            group.label = this.regionLabel(regName);
 
-            for (const [locationKey, row] of entries) {
+            for (const entry of entries) {
                 const option = document.createElement("option");
-                option.value = locationKey;
-                option.textContent = mkLbl(locationKey, row.local_name);
+                option.value = entry.locationKey;
+                option.textContent = mkLbl(entry.locationKey, entry.row.local_name);
                 group.appendChild(option);
             }
 
@@ -418,47 +252,70 @@ export class locApi {
         }
     }
 
-    /**
-     * flat alphabetical list by English location name
-     * @returns {void}
-     */
-    private addAlpha(): void {
-        for (const [locationKey, row] of this.allLocations()) {
-            const option = document.createElement("option");
-            option.value = locationKey;
-            option.textContent = mkLbl(locationKey, row.local_name);
-            this.selEl.appendChild(option);
+    private addAlphaGroups(): void {
+        const byLetter = new Map<string, LocationEntry[]>();
+
+        for (const entry of this.allLocations()) {
+            const letter = englishName(entry.locationKey).charAt(0).toUpperCase();
+            if (!/^[A-Z]$/.test(letter)) continue;
+            const items = byLetter.get(letter) ?? [];
+            items.push(entry);
+            byLetter.set(letter, items);
+        }
+
+        for (const letter of Array.from(byLetter.keys()).sort()) {
+            const group = document.createElement("optgroup");
+            group.label = letter;
+
+            for (const entry of byLetter.get(letter) ?? []) {
+                const option = document.createElement("option");
+                option.value = entry.locationKey;
+                option.textContent = mkLbl(entry.locationKey, entry.row.local_name);
+                group.appendChild(option);
+            }
+
+            this.selEl.appendChild(group);
         }
     }
 
-    /**
-     * unique locations sorted by their English key-derived name
-     * @returns {Array<[string, Row]>}
-     */
-    private allLocations(): Array<[string, Row]> {
+    private regionKeys(): string[] {
         if (!this.data) return [];
+        const configured = this.regOrder.filter((key) => helpers.isRecord(this.data?.[key]));
+        const extras = Object.keys(this.data).filter((key) => !configured.includes(key));
+        return [...configured, ...extras].sort((left, right) => this.regionLabel(left).localeCompare(this.regionLabel(right), "en", { sensitivity: "base" }));
+    }
 
-        const items: Array<[string, Row]> = [];
+    private regionLabel(region: string): string {
+        return this.regLabels[region] ?? englishName(region);
+    }
+
+    private entriesForRegion(region: string): LocationEntry[] {
+        if (!this.data) return [];
+        const reg = this.data[region];
+        if (!helpers.isRecord(reg)) return [];
+
+        return Object.entries(reg)
+            .filter((entry): entry is [string, Row] => isRow(entry[1]))
+            .map(([locationKey, row]) => ({ locationKey, row, region }))
+            .sort((left, right) => englishName(left.locationKey).localeCompare(englishName(right.locationKey), "en", { sensitivity: "base" }));
+    }
+
+    private allLocations(): LocationEntry[] {
+        if (!this.data) return [];
         const seen = new Set<string>();
+        const items: LocationEntry[] = [];
 
-        for (const regName of this.regOrder) {
-            const reg = this.data[regName];
-            if (!helpers.isRecord(reg)) continue;
-
-            for (const [locationKey, row] of Object.entries(reg)) {
-                if (!isRow(row) || seen.has(locationKey)) continue;
-                seen.add(locationKey);
-                items.push([locationKey, row]);
+        for (const region of this.regionKeys()) {
+            for (const entry of this.entriesForRegion(region)) {
+                if (seen.has(entry.locationKey)) continue;
+                seen.add(entry.locationKey);
+                items.push(entry);
             }
         }
 
-        return items.sort(([leftKey], [rightKey]) => englishName(leftKey).localeCompare(englishName(rightKey), "en", { sensitivity: "base" }));
+        return items.sort((left, right) => englishName(left.locationKey).localeCompare(englishName(right.locationKey), "en", { sensitivity: "base" }));
     }
 
-    /**
-     * make the fake dropdown bit
-     * @returns {void}
-     */
     private rndPick(): void {
         const parent = this.selEl.parentElement;
         if (!parent) return;
@@ -480,85 +337,58 @@ export class locApi {
         menu.id = `${this.selEl.id}-dropdown-menu`;
         menu.className = "comment-location-dropdown__content";
 
-        this.fillMenu(menu);
-
         picker.append(button, menu);
 
-        if (this.flagEl.parentElement === parent) {
-            parent.insertBefore(picker, this.flagEl);
-        } else {
-            parent.appendChild(picker);
-        }
+        if (this.flagEl.parentElement === parent) parent.insertBefore(picker, this.flagEl);
+        else parent.appendChild(picker);
 
         this.pickerEl = picker;
         this.pickerBtn = button;
         this.pickerMenu = menu;
-
+        this.fillMenu(menu);
         this.syncPick();
     }
 
-    /**
-     * menu items from native select
-     * @param {HTMLDivElement} menu
-     * @returns {void}
-     */
     private fillMenu(menu: HTMLDivElement): void {
         const toolbar = document.createElement("div");
         toolbar.className = "comment-location-sort";
         toolbar.setAttribute("role", "group");
-        toolbar.setAttribute("aria-label", "Sort locations");
+        toolbar.setAttribute("aria-label", "Location browser controls");
 
         const label = document.createElement("span");
         label.className = "comment-location-sort__label";
-        label.textContent = "Sort by";
+        label.textContent = "Browse by";
 
         const segments = document.createElement("div");
         segments.className = "comment-location-sort__segments";
+        segments.append(this.mkSortBtn("region", "Region"), this.mkSortBtn("alpha", "A–Z"));
 
-        const continent = this.mkSortBtn("continent", "Continent");
-        const alpha = this.mkSortBtn("alpha", "A–Z");
-        segments.append(continent, alpha);
-        toolbar.append(label, segments);
+        const search = document.createElement("input");
+        search.type = "search";
+        search.className = "comment-location-sort__search";
+        search.value = this.searchQuery;
+        search.placeholder = "Filter regions or countries…";
+        search.autocomplete = "off";
+        search.spellcheck = false;
+        search.setAttribute("aria-label", "Filter locations by English name");
+        search.addEventListener("input", () => {
+            this.searchQuery = search.value;
+            this.renderOptions();
+        });
+
+        toolbar.append(label, segments, search);
 
         const options = document.createElement("div");
         options.className = "comment-location-dropdown__options";
         options.setAttribute("role", "listbox");
         options.setAttribute("aria-label", "Locations");
 
-        for (const child of Array.from(this.selEl.children)) {
-            if (child instanceof HTMLOptionElement) {
-                options.appendChild(this.mkPickItm(child));
-                continue;
-            }
-
-            if (!(child instanceof HTMLOptGroupElement)) {
-                continue;
-            }
-
-            const group = document.createElement("div");
-            group.className = "comment-location-dropdown__group";
-            group.textContent = child.label;
-            group.setAttribute("aria-hidden", "true");
-            options.appendChild(group);
-
-            for (const option of Array.from(child.children)) {
-                if (!(option instanceof HTMLOptionElement)) {
-                    continue;
-                }
-
-                options.appendChild(this.mkPickItm(option));
-            }
-        }
-
         menu.append(toolbar, options);
+        this.searchEl = search;
+        this.optionsEl = options;
+        this.renderOptions();
     }
 
-    /**
-     * one sort segment
-     * @param {LocationSortMode} mode
-     * @param {string} label
-     * @returns {HTMLButtonElement}
-     */
     private mkSortBtn(mode: LocationSortMode, label: string): HTMLButtonElement {
         const button = document.createElement("button");
         const current = this.sortMode === mode;
@@ -569,7 +399,6 @@ export class locApi {
         button.dataset.sortMode = mode;
         button.classList.toggle("is-active", current);
         button.setAttribute("aria-pressed", current ? "true" : "false");
-
         button.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -579,230 +408,233 @@ export class locApi {
         return button;
     }
 
-    /**
-     * switch sorting without losing the selected location or replacing picker shell
-     * @param {LocationSortMode} mode
-     * @returns {void}
-     */
     private setSortMode(mode: LocationSortMode): void {
         if (mode === this.sortMode) return;
 
-        const selected = this.selEl.value;
         this.sortMode = mode;
+        this.expandedGroups.clear();
         this.fillSelect();
-
-        if (selected && Array.from(this.selEl.options).some((option) => option.value === selected)) {
-            this.selEl.value = selected;
-        }
-
         this.rebuildMenu();
         this.syncPick();
 
-        const activeSort = this.pickerMenu?.querySelector<HTMLButtonElement>(`.comment-location-sort__button[data-sort-mode="${mode}"]`);
-        activeSort?.focus();
+        this.pickerMenu
+            ?.querySelector<HTMLButtonElement>(`.comment-location-sort__button[data-sort-mode="${mode}"]`)
+            ?.focus();
     }
 
-    /**
-     * redraw dropdown content while preserving its outer hover/focus shell
-     * @returns {void}
-     */
     private rebuildMenu(): void {
         if (!this.pickerMenu) return;
         this.pickerMenu.replaceChildren();
+        this.optionsEl = null;
+        this.searchEl = null;
         this.fillMenu(this.pickerMenu);
     }
 
-    /**
-     * one fake dropdown item
-     * @param {HTMLOptionElement} option
-     * @returns {HTMLButtonElement}
-     */
+    private renderOptions(): void {
+        const options = this.optionsEl;
+        if (!options) return;
+        options.replaceChildren();
+
+        const query = searchKey(this.searchQuery);
+        if (query) {
+            this.renderSearchResults(options, query);
+            this.syncPick();
+            return;
+        }
+
+        const placeholder = this.selEl.options.item(0);
+        if (placeholder) options.appendChild(this.mkPickItm(placeholder));
+
+        if (this.sortMode === "region") this.renderRegionGroups(options);
+        else this.renderLetterGroups(options);
+
+        this.syncPick();
+    }
+
+    private renderRegionGroups(options: HTMLDivElement): void {
+        for (const region of this.regionKeys()) {
+            const entries = this.entriesForRegion(region);
+            if (!entries.length) continue;
+
+            const groupId = `region:${region}`;
+            options.appendChild(this.mkGroupButton(groupId, this.regionLabel(region)));
+
+            if (!this.expandedGroups.has(groupId)) continue;
+            for (const entry of entries) options.appendChild(this.mkLocationItem(entry, true));
+        }
+    }
+
+    private renderLetterGroups(options: HTMLDivElement): void {
+        const byLetter = new Map<string, LocationEntry[]>();
+
+        for (const entry of this.allLocations()) {
+            const letter = englishName(entry.locationKey).charAt(0).toUpperCase();
+            if (!/^[A-Z]$/.test(letter)) continue;
+            const entries = byLetter.get(letter) ?? [];
+            entries.push(entry);
+            byLetter.set(letter, entries);
+        }
+
+        for (const letter of Array.from(byLetter.keys()).sort()) {
+            const groupId = `letter:${letter}`;
+            options.appendChild(this.mkGroupButton(groupId, letter));
+
+            if (!this.expandedGroups.has(groupId)) continue;
+            for (const entry of byLetter.get(letter) ?? []) options.appendChild(this.mkLocationItem(entry, true));
+        }
+    }
+
+    private renderSearchResults(options: HTMLDivElement, query: string): void {
+        const matchingRegions = this.regionKeys().filter((region) => searchKey(this.regionLabel(region)).startsWith(query));
+        const matchingLocations = this.allLocations().filter((entry) => searchKey(englishName(entry.locationKey)).startsWith(query));
+
+        for (const region of matchingRegions) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "comment-location-dropdown__group comment-location-dropdown__group--toggle comment-location-dropdown__group--search";
+            button.textContent = `▶ ${this.regionLabel(region)}`;
+            button.addEventListener("click", () => {
+                this.sortMode = "region";
+                this.searchQuery = "";
+                this.expandedGroups.clear();
+                this.expandedGroups.add(`region:${region}`);
+                this.fillSelect();
+                this.rebuildMenu();
+                this.syncPick();
+            });
+            options.appendChild(button);
+        }
+
+        for (const entry of matchingLocations) options.appendChild(this.mkLocationItem(entry, false));
+
+        if (!matchingRegions.length && !matchingLocations.length) {
+            const empty = document.createElement("div");
+            empty.className = "comment-location-dropdown__empty";
+            empty.setAttribute("role", "status");
+            empty.textContent = "No matches";
+            options.appendChild(empty);
+        }
+    }
+
+    private mkGroupButton(groupId: string, label: string): HTMLButtonElement {
+        const expanded = this.expandedGroups.has(groupId);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "comment-location-dropdown__group comment-location-dropdown__group--toggle";
+        button.textContent = `${expanded ? "▼" : "▶"} ${label}`;
+        button.setAttribute("aria-expanded", expanded ? "true" : "false");
+        button.addEventListener("click", () => {
+            if (expanded) this.expandedGroups.delete(groupId);
+            else this.expandedGroups.add(groupId);
+            this.renderOptions();
+        });
+        return button;
+    }
+
+    private mkLocationItem(entry: LocationEntry, nested: boolean): HTMLButtonElement {
+        const option = document.createElement("option");
+        option.value = entry.locationKey;
+        option.textContent = mkLbl(entry.locationKey, entry.row.local_name);
+        const item = this.mkPickItm(option);
+        if (nested) item.classList.add("comment-location-dropdown__item--nested");
+        return item;
+    }
+
     private mkPickItm(option: HTMLOptionElement): HTMLButtonElement {
         const item = document.createElement("button");
-
         item.type = "button";
         item.className = "comment-location-dropdown__item";
         item.textContent = option.textContent || this.phLabel;
         item.dataset.locationKey = option.value;
         item.setAttribute("role", "option");
 
-        if (!option.value) {
-            item.classList.add("comment-location-dropdown__item--placeholder");
-        }
-
-        item.addEventListener("click", () => {
-            this.pickVal(option.value);
-        });
-
+        if (!option.value) item.classList.add("comment-location-dropdown__item--placeholder");
+        item.addEventListener("click", () => this.pickVal(option.value));
         return item;
     }
 
-    /**
-     * select from fake dropdown
-     * @param {string} locationKey
-     * @returns {void}
-     */
     private pickVal(locationKey: string): void {
         this.selEl.value = locationKey;
         this.selEl.dispatchEvent(new Event("change", { bubbles: true }));
-
         const active = document.activeElement;
-        if (active instanceof HTMLElement) {
-            active.blur();
-        }
+        if (active instanceof HTMLElement) active.blur();
     }
 
-    /**
-     * make fake dropdown match native one
-     * @returns {void}
-     */
     private syncPick(): void {
-        if (this.pickerBtn) {
-            this.pickerBtn.textContent = this.selLbl();
-        }
+        if (this.pickerBtn) this.pickerBtn.textContent = this.selLbl();
 
         this.pickerEl
             ?.querySelectorAll<HTMLButtonElement>(".comment-location-dropdown__item")
             .forEach((item) => {
                 const isCurrent = item.dataset.locationKey === this.selEl.value;
-
                 item.classList.toggle("is-current", isCurrent);
                 item.setAttribute("aria-selected", isCurrent ? "true" : "false");
             });
     }
 
-    /**
-     * visible selected label
-     * @returns {string}
-     */
     private selLbl(): string {
-        const selected = Array
-            .from(this.selEl.options)
-            .find((option) => option.value === this.selEl.value);
-
+        const selected = Array.from(this.selEl.options).find((option) => option.value === this.selEl.value);
         const label = selected?.textContent?.trim() ?? "";
-        return label.length > 0 ? label : this.phLabel;
+        return label.length ? label : this.phLabel;
     }
 
-    /**
-     * find row in cache
-     * @param {string} locationKey
-     * @returns {Row | null}
-     */
     private find(locationKey: string): Row | null {
-        if (!this.data) {
-            return null;
-        }
+        if (!this.data) return null;
 
-        for (const regName of this.regOrder) {
-            const reg = this.data[regName];
-            if (!helpers.isRecord(reg)) {
-                continue;
-            }
-
-            const row = reg[locationKey];
-            if (isRow(row)) {
-                return row;
-            }
+        for (const region of Object.values(this.data)) {
+            if (!helpers.isRecord(region)) continue;
+            const row = region[locationKey];
+            if (isRow(row)) return row;
         }
 
         return null;
     }
 
-    /**
-     * show a flag, checks png first
-     * @param {string} locationKey
-     * @returns {Promise<FlagRes>}
-     */
     private async show(locationKey: string): Promise<FlagRes> {
         const row = this.find(locationKey);
-
-        if (!row) {
-            throw new Error(`Location not found in dataset: ${locationKey}`);
-        }
+        if (!row) throw new Error(`Location not found in dataset: ${locationKey}`);
 
         const code = flagCode(row.emoji);
         const url = `${this.flagsUrl}/${code}.png`;
-
         await needAst(url);
 
         const image = document.createElement("img");
         image.src = url;
         image.alt = `${mkLbl(locationKey, row.local_name)} flag`;
-
         this.flagEl.replaceChildren(image);
 
         return {
             locationKey,
             label: mkLbl(locationKey, row.local_name),
             flagCode: code,
-            flagUrl: url
+            flagUrl: url,
         };
     }
 
-    /**
-     * complain if init didnt happen
-     * @returns {void}
-     */
     private ndInit(): void {
-        if (this.data) {
-            return;
-        }
-
-        throw new Error("LocationApi has not been initialised. Call init() first.");
+        if (!this.data) throw new Error("LocationApi has not been initialised. Call init() first.");
     }
 }
 
-/**
- * factory, tiny thing
- * @param {Opts} options
- * @returns {locApi}
- */
 export function createLocationApi(options: Opts): locApi {
     return new locApi(options);
 }
 
-/**
- * checks the asset exists
- * @param {string} assetUrl
- * @returns {Promise<void>}
- */
 async function needAst(assetUrl: string): Promise<void> {
     const response = await fetch(assetUrl);
-
-    if (response.ok) {
-        return;
-    }
-
-    throw new Error(`Failed to fetch ${assetUrl} (${response.status})`);
+    if (!response.ok) throw new Error(`Failed to fetch ${assetUrl} (${response.status})`);
 }
 
-/**
- * clean up raw data into rows we can use
- * skips odd stuff
- * @param {unknown} value
- * @returns {Regions}
- */
 function normDat(value: unknown): Regions {
-    if (!helpers.isRecord(value)) {
-        throw new Error("Locations JSON must contain an object at the root");
-    }
-
+    if (!helpers.isRecord(value)) throw new Error("Locations JSON must contain an object at the root");
     const data: Regions = {};
 
     for (const [regName, regValue] of Object.entries(value)) {
-        if (!helpers.isRecord(regValue)) {
-            continue;
-        }
-
+        if (!helpers.isRecord(regValue)) continue;
         const reg: Record<string, Row> = {};
 
         for (const [locationKey, locationValue] of Object.entries(regValue)) {
-            if (!isRow(locationValue)) {
-                continue;
-            }
-
-            reg[locationKey] = locationValue;
+            if (isRow(locationValue)) reg[locationKey] = locationValue;
         }
 
         data[regName] = reg;
@@ -811,55 +643,29 @@ function normDat(value: unknown): Regions {
     return data;
 }
 
-/**
- * label, with local name if needed
- * @param {string} locationKey
- * @param {string} localName
- * @returns {string}
- */
 function mkLbl(locationKey: string, localName: string): string {
     const englishNameValue = englishName(locationKey);
-
     return sameNm(englishNameValue, localName)
         ? englishNameValue
         : `${englishNameValue} (${localName})`;
 }
 
-/**
- * English display name derived from the canonical location key
- * @param {string} value
- * @returns {string}
- */
 function englishName(value: string): string {
     return fmtEng(value);
 }
 
-/**
- * compare names, roughly
- * @param {string} englishNameValue
- * @param {string} localName
- * @returns {boolean}
- */
 function sameNm(englishNameValue: string, localName: string): boolean {
     return normNm(englishNameValue) === normNm(localName);
 }
 
-/**
- * name cleanup for compareing
- * @param {string} value
- * @returns {string}
- */
 function normNm(value: string): string {
-    return value
-        .trim()
-        .toLocaleLowerCase("en");
+    return value.trim().toLocaleLowerCase("en");
 }
 
-/**
- * dumb title-ish case from key
- * @param {string} value
- * @returns {string}
- */
+function searchKey(value: string): string {
+    return value.trim().toLocaleLowerCase("en");
+}
+
 function fmtEng(value: string): string {
     return value
         .split(" ")
@@ -868,72 +674,26 @@ function fmtEng(value: string): string {
         .join(" ");
 }
 
-/**
- * emoji flag to code string
- * @param {string} flag
- * @returns {string}
- */
 function flagCode(flag: string): string {
     const symbols = Array.from(flag);
-
-    if (symbols.length === 0) {
-        throw new Error("Flag value is empty");
-    }
-
-    return symbols
-        .map((symbol) => regAsc(symbol))
-        .join("")
-        .toLowerCase();
+    if (!symbols.length) throw new Error("Flag value is empty");
+    return symbols.map((symbol) => regAsc(symbol)).join("").toLowerCase();
 }
 
-/**
- * regional symbol to ascii letter
- * @param {string} symbol
- * @returns {string}
- */
 function regAsc(symbol: string): string {
     const codePoint = symbol.codePointAt(0);
-
-    if (!codePoint) {
-        throw new Error(`Invalid regional indicator symbol: ${symbol}`);
-    }
-
+    if (!codePoint) throw new Error(`Invalid regional indicator symbol: ${symbol}`);
     const asciiCode = codePoint - 127397;
-
-    if (asciiCode < 65 || asciiCode > 90) {
-        throw new Error(`Symbol is not a regional indicator letter: ${symbol}`);
-    }
-
+    if (asciiCode < 65 || asciiCode > 90) throw new Error(`Symbol is not a regional indicator letter: ${symbol}`);
     return String.fromCharCode(asciiCode);
 }
 
-/**
- * one slash off the end
- * @param {string} value
- * @returns {string}
- */
 function noSlash(value: string): string {
-    return value.endsWith("/")
-        ? value.slice(0, -1)
-        : value;
+    return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
-/**
- * row shape, loose check
- * @param {unknown} value
- * @returns {value is Row}
- */
 function isRow(value: unknown): value is Row {
     return helpers.isRecord(value)
         && typeof value.emoji === "string"
         && typeof value.local_name === "string";
-}
-
-/**
- * removes nulls from maps
- * @param {T | null} value
- * @returns {value is T}
- */
-function notNull<T>(value: T | null): value is T {
-    return value !== null;
 }

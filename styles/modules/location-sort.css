@@ -1,5 +1,5 @@
 /* =========================================
-    Module: Location Sort Toggle
+    Module: Location Browser Controls
 ========================================= */
 
 :root {
@@ -15,17 +15,14 @@
     position: sticky;
     top: 0;
     z-index: calc(var(--comments-location-dropdown-z-index) + 1);
-
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
     align-items: center;
     gap: var(--comments-location-sort-gap);
-
     box-sizing: border-box;
     inline-size: 100%;
     min-inline-size: 0;
     padding: var(--comments-location-sort-padding);
-
     background: color-mix(in srgb, var(--chat-input-bg-colour) 92%, var(--chat-input-text-colour));
     color: var(--chat-input-text-colour);
     border-bottom: var(--comment-field-border-width) solid var(--chat-input-border-colour);
@@ -57,15 +54,12 @@
     inline-size: 100%;
     max-inline-size: 100%;
     box-sizing: border-box;
-
     padding: var(--comments-location-sort-button-padding-block) var(--comments-location-sort-button-padding-inline);
-
     border: 0;
     border-radius: 0;
     background-image: none;
     background-color: var(--chat-input-bg-colour);
     color: var(--chat-input-text-colour);
-
     font: inherit;
     font-size: var(--comment-field-font-size);
     line-height: 1.15;
@@ -73,9 +67,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-
     cursor: pointer;
-
     transition:
         background-color var(--comment-post-btn-hover-transition),
         color var(--comment-post-btn-hover-transition),
@@ -104,8 +96,82 @@
     box-shadow: var(--comments-location-sort-active-shadow);
 }
 
+.comment-location-sort__search {
+    grid-column: 1 / -1;
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-inline-size: 0;
+    padding: var(--comment-field-padding);
+    border: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+    border-radius: var(--comment-field-radius);
+    background: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+    font: inherit;
+    font-size: var(--comment-field-font-size);
+    line-height: 1.2;
+    outline: none;
+}
+
+.comment-location-sort__search::placeholder {
+    color: color-mix(in srgb, var(--chat-input-text-colour) 58%, transparent);
+}
+
+.comment-location-sort__search:focus {
+    box-shadow: 0 0 0 var(--comment-field-border-width) var(--chat-input-border-colour);
+}
+
 .comment-location-dropdown__options {
     min-inline-size: 100%;
+}
+
+.comment-location-dropdown__group.comment-location-dropdown__group--toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 100%;
+    min-inline-size: 100%;
+    appearance: none;
+    font: inherit;
+    font-size: calc(var(--comment-field-font-size) * 0.9);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background-color var(--comment-post-btn-hover-transition),
+        color var(--comment-post-btn-hover-transition);
+}
+
+.comment-location-dropdown__group.comment-location-dropdown__group--toggle:hover,
+.comment-location-dropdown__group.comment-location-dropdown__group--toggle:focus-visible,
+.comment-location-dropdown__group.comment-location-dropdown__group--toggle[aria-expanded="true"] {
+    background-color: var(--menu-button-hover-bg-colour);
+    opacity: 1;
+}
+
+.comment-location-dropdown__group.comment-location-dropdown__group--toggle:focus-visible {
+    outline: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+    outline-offset: -3px;
+}
+
+.comment-location-dropdown__group--search {
+    color: var(--chat-input-text-colour);
+}
+
+.comment-location-dropdown__item--nested {
+    justify-content: flex-start !important;
+    padding-inline-start: calc(var(--comment-field-padding-inline) * 1.75) !important;
+    text-align: left !important;
+}
+
+.comment-location-dropdown__empty {
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: calc(var(--comment-field-padding-block) * 1.5) var(--comment-field-padding-inline);
+    background: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+    font-size: var(--comment-field-font-size);
+    font-style: italic;
+    text-align: center;
+    opacity: 0.65;
 }
 
 @media (max-width: 32rem) {
@@ -115,5 +181,10 @@
 
     .comment-location-sort__label {
         text-align: center;
+    }
+
+    .comment-location-sort__segments,
+    .comment-location-sort__search {
+        grid-column: 1;
     }
 }
