@@ -1,0 +1,119 @@
+/* =========================================
+    Module: Location Sort Toggle
+========================================= */
+
+:root {
+    --comments-location-sort-gap: clamp(0.4rem, 1vw, 0.55rem);
+    --comments-location-sort-padding: clamp(0.45rem, 1vw, 0.6rem);
+    --comments-location-sort-label-size: calc(clamp(0.75rem, 0.72rem + 0.12vw, 0.82rem) * var(--kc-text-scale));
+    --comments-location-sort-button-padding-block: clamp(0.45rem, 1vw, 0.55rem);
+    --comments-location-sort-button-padding-inline: clamp(0.65rem, 1.4vw, 0.85rem);
+    --comments-location-sort-active-shadow: inset 0 0 0 1px currentColor;
+}
+
+.comment-location-sort {
+    position: sticky;
+    top: 0;
+    z-index: calc(var(--comments-location-dropdown-z-index) + 1);
+
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: var(--comments-location-sort-gap);
+
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-inline-size: 0;
+    padding: var(--comments-location-sort-padding);
+
+    background: color-mix(in srgb, var(--chat-input-bg-colour) 92%, var(--chat-input-text-colour));
+    color: var(--chat-input-text-colour);
+    border-bottom: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+    box-shadow: var(--frame-box-shadow);
+}
+
+.comment-location-sort__label {
+    min-inline-size: 0;
+    font-size: var(--comments-location-sort-label-size);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.72;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.comment-location-sort__segments {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-inline-size: 0;
+    overflow: hidden;
+    border: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+    border-radius: var(--comment-field-radius);
+}
+
+.comment-location-sort__button.comment-location-dropdown__button {
+    min-inline-size: 0;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+
+    padding: var(--comments-location-sort-button-padding-block) var(--comments-location-sort-button-padding-inline);
+
+    border: 0;
+    border-radius: 0;
+    background-image: none;
+    background-color: var(--chat-input-bg-colour);
+    color: var(--chat-input-text-colour);
+
+    font: inherit;
+    font-size: var(--comment-field-font-size);
+    line-height: 1.15;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    cursor: pointer;
+
+    transition:
+        background-color var(--comment-post-btn-hover-transition),
+        color var(--comment-post-btn-hover-transition),
+        box-shadow var(--comment-post-btn-hover-transition),
+        transform var(--comment-post-btn-hover-transition);
+}
+
+.comment-location-sort__button.comment-location-dropdown__button + .comment-location-sort__button.comment-location-dropdown__button {
+    border-left: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+}
+
+.comment-location-sort__button.comment-location-dropdown__button:hover,
+.comment-location-sort__button.comment-location-dropdown__button:focus-visible {
+    background-color: var(--menu-button-hover-bg-colour);
+}
+
+.comment-location-sort__button.comment-location-dropdown__button:focus-visible {
+    outline: var(--comment-field-border-width) solid var(--chat-input-border-colour);
+    outline-offset: -3px;
+}
+
+.comment-location-sort__button.comment-location-dropdown__button.is-active,
+.comment-location-sort__button.comment-location-dropdown__button[aria-pressed="true"] {
+    background-color: var(--menu-button-hover-bg-colour);
+    font-weight: 700;
+    box-shadow: var(--comments-location-sort-active-shadow);
+}
+
+.comment-location-dropdown__options {
+    min-inline-size: 100%;
+}
+
+@media (max-width: 32rem) {
+    .comment-location-sort {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .comment-location-sort__label {
+        text-align: center;
+    }
+}
