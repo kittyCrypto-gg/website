@@ -7,23 +7,17 @@
   --effect-crt-z-index-scanlines: 2147483647;
 
   /* Theme transitions */
-  --effect-theme-transition-duration: 220ms;
+  --effect-theme-transition-duration: 0ms;
   --effect-theme-transition-ease: ease;
   --effect-theme-transition-props:
     background-color,
     border-color,
-    box-shadow,
     caret-color,
     color,
     fill,
-    filter,
-    opacity,
     outline-color,
     stroke,
-    text-decoration-color,
-    text-shadow,
-    -webkit-backdrop-filter,
-    backdrop-filter;
+    text-decoration-color;
 
   /* Independent master switches */
   --effect-crt-phosphor-opacity: 0.02;
@@ -34,21 +28,28 @@
       Your requested starting point:
       - horizontal width: 1px
       - vertical height: 3px
-    */
+  */
   --effect-crt-cell-width: 1px;
   --effect-crt-cell-height: 3px;
 
-  /* phosphor pattern size */
-  --effect-crt-phosphor-pattern-width: calc(var(--effect-crt-cell-width) * 10);
-  --effect-crt-phosphor-pattern-height: calc(var(--effect-crt-cell-height) * 8 / 3);
+  /* Phosphor pattern size */
+  --effect-crt-phosphor-pattern-width:
+    calc(var(--effect-crt-cell-width) * 10);
+  --effect-crt-phosphor-pattern-height:
+    calc(var(--effect-crt-cell-height) * 8 / 3);
 
-  /* phosphor lattice filter */
-  --effect-crt-phosphor-filter: saturate(1.30) contrast(1.14) brightness(1.03) blur(0.12px);
+  /* Phosphor lattice filter */
+  --effect-crt-phosphor-filter:
+    saturate(1.30)
+    contrast(1.14)
+    brightness(1.03)
+    blur(0.12px);
 
   /* Scanlines */
   --effect-crt-scanline-colour-strong: rgba(0, 255, 255, 0.07);
   --effect-crt-scanline-colour-soft: rgba(0, 255, 255, 0.025);
-  --effect-crt-scanline-pitch: clamp(5px, calc(8px - 0.3vh), 6px);
+  --effect-crt-scanline-pitch:
+    clamp(5px, calc(8px - 0.3vh), 6px);
   --effect-crt-scanline-travel-duration: 22000ms;
 }
 
@@ -57,12 +58,27 @@ body {
   isolation: isolate;
 }
 
-/* theme changing effect */
+/*
+    Theme changing effect.
+
+    Keep this limited to inexpensive paint properties.
+
+    Deliberately NOT transitioned globally:
+    - box-shadow
+    - text-shadow
+    - filter
+    - backdrop-filter
+    - opacity
+
+    Those properties can cause substantially more painting/compositing work,
+    especially when applied to every element on the page.
+
+    Pseudo-elements are also excluded so the CRT layers do not get caught up
+    in every theme change.
+*/
 html,
 body,
-body *,
-body *::before,
-body *::after {
+body * {
   transition-property: var(--effect-theme-transition-props);
   transition-duration: var(--effect-theme-transition-duration);
   transition-timing-function: var(--effect-theme-transition-ease);
@@ -81,15 +97,15 @@ body:not(.effect-disable-phosphor)::before {
   z-index: var(--effect-crt-z-index-phosphor);
   opacity: var(--effect-crt-phosphor-opacity);
 
-  /* phosphor pattern */
+  /* Phosphor pattern */
   background-image: url("/images/trinitron.svg");
   background-repeat: repeat;
   background-position: 0 0;
   background-size:
-    var(--effect-crt-phosphor-pattern-width) var(--effect-crt-phosphor-pattern-height);
+    var(--effect-crt-phosphor-pattern-width)
+    var(--effect-crt-phosphor-pattern-height);
 
-  /* phosphor approximation layer */
-
+  /* Phosphor approximation layer */
   mix-blend-mode: multiply;
   filter: var(--effect-crt-phosphor-filter);
   -webkit-backdrop-filter: saturate(1.08) contrast(1.03);
@@ -105,23 +121,39 @@ body:not(.effect-disable-scanlines)::after {
   top: calc(-1 * var(--effect-crt-scanline-pitch));
   right: 0;
   left: 0;
-  height: calc(100vh + (var(--effect-crt-scanline-pitch) * 2));
+  height: calc(
+    100vh + (var(--effect-crt-scanline-pitch) * 2)
+  );
   pointer-events: none;
   z-index: var(--effect-crt-z-index-scanlines);
   opacity: var(--effect-crt-scanline-opacity);
 
   background-image:
-    repeating-linear-gradient(to bottom,
+    repeating-linear-gradient(
+      to bottom,
       var(--effect-crt-scanline-colour-strong) 0,
-      var(--effect-crt-scanline-colour-strong) calc(var(--effect-crt-scanline-pitch) * 0.30),
-      var(--effect-crt-scanline-colour-soft) calc(var(--effect-crt-scanline-pitch) * 0.55),
-      transparent calc(var(--effect-crt-scanline-pitch) * 0.68),
-      transparent var(--effect-crt-scanline-pitch));
+      var(--effect-crt-scanline-colour-strong)
+        calc(var(--effect-crt-scanline-pitch) * 0.30),
+      var(--effect-crt-scanline-colour-soft)
+        calc(var(--effect-crt-scanline-pitch) * 0.55),
+      transparent
+        calc(var(--effect-crt-scanline-pitch) * 0.68),
+      transparent
+        var(--effect-crt-scanline-pitch)
+    );
+
   background-repeat: repeat-y;
-  background-size: 100% var(--effect-crt-scanline-pitch);
+  background-size:
+    100%
+    var(--effect-crt-scanline-pitch);
 
   transform: translate3d(0, 0, 0);
-  animation: effect-crt-scanline-drift var(--effect-crt-scanline-travel-duration) linear infinite;
+  animation:
+    effect-crt-scanline-drift
+    var(--effect-crt-scanline-travel-duration)
+    linear
+    infinite;
+
   will-change: transform;
 }
 
@@ -135,6 +167,11 @@ body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
   }
 
   to {
-    transform: translate3d(0, calc(-1 * var(--effect-crt-scanline-pitch)), 0);
+    transform:
+      translate3d(
+        0,
+        calc(-1 * var(--effect-crt-scanline-pitch)),
+        0
+      );
   }
 }
