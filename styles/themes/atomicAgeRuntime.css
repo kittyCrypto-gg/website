@@ -32,9 +32,9 @@
 }
 
 /*
- * Atomic Age navigation is wider than the standard themes, but it must remain
- * a single row. Tighten each button to its content and scroll the row when the
- * available width is smaller than the full navigation.
+ * Atomic Age navigation must remain on one row. Buttons share the available
+ * horizontal space when they fit, but never shrink below their content width.
+ * If the viewport cannot accommodate that minimum width, the row scrolls.
  */
 .atomic-age .menu-links {
     flex-wrap: nowrap;
@@ -48,7 +48,7 @@
 }
 
 .atomic-age .menu-button {
-    flex: 0 0 auto;
+    flex: 1 1 0;
     min-width: max-content;
-    padding: 0.75rem 1rem;
+    padding: 0.8rem 1.1rem;
 }
