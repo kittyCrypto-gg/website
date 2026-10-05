@@ -19,8 +19,7 @@
     z-index: var(--theme-toggle-z-index);
     position: fixed;
     bottom: var(--theme-toggle-offset);
-    right: max(var(--theme-toggle-inline-offset),
-            calc((100% - var(--frame-width)) / 2 + var(--theme-toggle-inline-offset)));
+    right: var(--theme-toggle-inline-offset);
 
     width: var(--theme-toggle-size);
     height: var(--theme-toggle-size);
