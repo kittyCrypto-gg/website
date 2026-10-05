@@ -11,24 +11,36 @@
         100% - var(--atomic-window-viewport-gutter) - var(--atomic-window-viewport-gutter)
     );
     margin-inline: auto;
+    visibility: hidden;
+}
+
+.atomic-age :is(#shell-wrapper, #banner-wrapper).window-frame {
+    visibility: visible;
 }
 
 /*
- * Floating side controls all share .theme-toggle-button. Use each button's
- * accessible label instead of stamping the theme action onto every control.
+ * Floating side controls all share .theme-toggle-button. AtomicAgeBase uses a
+ * more specific dark-mode selector for this pseudo-element, so explicitly keep
+ * every non-theme control on its own accessible label in every colour mode.
  */
-.atomic-age .theme-toggle-button::after {
-    content: attr(aria-label);
+.atomic-age .theme-toggle-button:not(#theme-toggle)::after,
+.atomic-age.dark-mode .theme-toggle-button:not(#theme-toggle)::after,
+.dark-mode.atomic-age .theme-toggle-button:not(#theme-toggle)::after,
+.atomic-age.light-mode .theme-toggle-button:not(#theme-toggle)::after,
+.light-mode.atomic-age .theme-toggle-button:not(#theme-toggle)::after {
+    content: attr(aria-label) !important;
 }
 
-/* The actual theme control keeps action-oriented Light/Dark wording. */
-.atomic-age #theme-toggle.theme-toggle-button::after {
-    content: "Dark mode";
+/* The actual theme control alone keeps action-oriented Light/Dark wording. */
+.atomic-age #theme-toggle.theme-toggle-button::after,
+.atomic-age.light-mode #theme-toggle.theme-toggle-button::after,
+.light-mode.atomic-age #theme-toggle.theme-toggle-button::after {
+    content: "Dark mode" !important;
 }
 
 .atomic-age.dark-mode #theme-toggle.theme-toggle-button::after,
 .dark-mode.atomic-age #theme-toggle.theme-toggle-button::after {
-    content: "Light mode";
+    content: "Light mode" !important;
 }
 
 /*
