@@ -9,6 +9,7 @@
     --comments-location-sort-button-padding-block: clamp(0.45rem, 1vw, 0.55rem);
     --comments-location-sort-button-padding-inline: clamp(0.65rem, 1.4vw, 0.85rem);
     --comments-location-sort-active-shadow: inset 0 0 0 1px currentColor;
+    --comments-location-letter-min-width: clamp(3.25rem, 9vw, 4.75rem);
 }
 
 .comment-location-sort {
@@ -160,6 +161,42 @@
     justify-content: flex-start !important;
     padding-inline-start: calc(var(--comment-field-padding-inline) * 1.75) !important;
     text-align: left !important;
+}
+
+/*
+ * A–Z is a compact alphabet selector, not a 20+ row menu. Keep the letter
+ * controls together at the top and let them wrap across the available width.
+ * Search results are deliberately excluded so filtered countries remain a
+ * simple full-width list.
+ */
+.comment-location-dropdown__content:has(.comment-location-sort__button[data-sort-mode="alpha"][aria-pressed="true"]):has(.comment-location-sort__search:placeholder-shown) .comment-location-dropdown__options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--comment-field-border-width);
+}
+
+.comment-location-dropdown__content:has(.comment-location-sort__button[data-sort-mode="alpha"][aria-pressed="true"]):has(.comment-location-sort__search:placeholder-shown) .comment-location-dropdown__item--placeholder {
+    order: -1;
+    flex: 1 0 100%;
+    inline-size: 100%;
+    min-inline-size: 100%;
+}
+
+.comment-location-dropdown__content:has(.comment-location-sort__button[data-sort-mode="alpha"][aria-pressed="true"]):has(.comment-location-sort__search:placeholder-shown) .comment-location-dropdown__group--toggle:not(.comment-location-dropdown__group--search) {
+    order: 0;
+    flex: 1 1 var(--comments-location-letter-min-width);
+    inline-size: auto;
+    min-inline-size: var(--comments-location-letter-min-width);
+    max-inline-size: none;
+    padding-inline: clamp(0.45rem, 1.25vw, 0.75rem);
+}
+
+.comment-location-dropdown__content:has(.comment-location-sort__button[data-sort-mode="alpha"][aria-pressed="true"]):has(.comment-location-sort__search:placeholder-shown) .comment-location-dropdown__item--nested {
+    order: 1;
+    flex: 1 0 100%;
+    inline-size: 100%;
+    min-inline-size: 100%;
 }
 
 .comment-location-dropdown__empty {
