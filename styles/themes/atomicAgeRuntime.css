@@ -1,0 +1,32 @@
+@import url("./atomicAge.css");
+
+/*
+ * Keep the terminal at its final docked width before the Window API mounts it.
+ * bootTerm() and initUi() start in parallel, so xterm can render before
+ * #shell-wrapper receives .window-frame. Reserving the same gutter up front
+ * prevents the visible first-load shrink when that class is added.
+ */
+.atomic-age :is(#shell-wrapper, #banner-wrapper):not(.window-frame) {
+    max-width: calc(
+        100% - var(--atomic-window-viewport-gutter) - var(--atomic-window-viewport-gutter)
+    );
+    margin-inline: auto;
+}
+
+/*
+ * Floating side controls all share .theme-toggle-button. Use each button's
+ * accessible label instead of stamping the theme action onto every control.
+ */
+.atomic-age .theme-toggle-button::after {
+    content: attr(aria-label);
+}
+
+/* The actual theme control keeps action-oriented Light/Dark wording. */
+.atomic-age #theme-toggle.theme-toggle-button::after {
+    content: "Dark mode";
+}
+
+.atomic-age.dark-mode #theme-toggle.theme-toggle-button::after,
+.dark-mode.atomic-age #theme-toggle.theme-toggle-button::after {
+    content: "Light mode";
+}

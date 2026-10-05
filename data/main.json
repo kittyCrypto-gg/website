@@ -334,7 +334,7 @@
     },
     "atomicAge": {
       "name": "Atomic Age",
-      "location": "/styles/themes/atomicAge.css",
+      "location": "/styles/themes/atomicAgeRuntime.css",
       "caller": "atomic-age"
     }
   }
