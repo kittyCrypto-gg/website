@@ -3,6 +3,13 @@ import type { MainThemeEntry } from "./uiFetch.ts";
 
 export type ThemeMap = Readonly<Record<string, MainThemeEntry>>;
 
+export const THEME_CHANGED_EVENT = "kc:theme-changed";
+
+export type ThemeChangedDetail = Readonly<{
+    previous: string;
+    current: string;
+}>;
+
 const storeKey = "kcTheme";
 const callKey = "kcThemeCaller";
 const cssKey = "kcThemeCss";
@@ -231,6 +238,7 @@ export function setTheme(
     root: Document = document
 ): string {
     const html = root.documentElement;
+    const previous = keyFromHtml(themes, html) || baseKey(themes);
     const next = themes[key] ? key : baseKey(themes);
     const theme = themes[next];
     const caller = cleanCall(theme?.caller);
@@ -243,6 +251,12 @@ export function setTheme(
 
     if (keep && next) {
         savePick(next, theme);
+    }
+
+    if (keep && next && next !== previous) {
+        root.dispatchEvent(new CustomEvent<ThemeChangedDetail>(THEME_CHANGED_EVENT, {
+            detail: { previous, current: next }
+        }));
     }
 
     return next;
