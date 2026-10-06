@@ -39,7 +39,7 @@ function normaliseReaderParams(): void {
 
     const currentUrl = new URL(window.location.href)
 
-    if (currentUrl.pathname !== "/reader") {
+    if (!/^\/reader(?:\/|\.html)?$/.test(currentUrl.pathname)) {
         return
     }
 
