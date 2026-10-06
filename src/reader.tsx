@@ -1270,7 +1270,7 @@ async function populatePicker(root: Document = document): Promise<void> {
         const storyNames = Object.keys(stories);
 
         const makeStoryHref = (storyName: string): string =>
-            `?story=${encodeURIComponent(storyName)}&chapter=1`;
+            `${window.location.pathname}?story=${encodeURIComponent(storyName)}&chapter=1`;
 
         const makeStoryItem = (storyName: string): HTMLAnchorElement => {
             const item = root.createElement("a");
