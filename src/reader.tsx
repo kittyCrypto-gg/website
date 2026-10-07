@@ -559,6 +559,7 @@ const langTipModal: Modal = factory.create({
     id: LANG_TIP_MODAL_ID,
     mode: "non-blocking",
     readerModeCompatible: false,
+    modalClassName: "did-you-know-tip",
     content: LANG_TIP_MODAL_HTML,
     closeOnOutsideClick: false,
     decorators: [
@@ -635,6 +636,7 @@ const readerModeTipModal: Modal = factory.create({
     id: READER_MODE_TIP_MODAL_ID,
     mode: "non-blocking",
     readerModeCompatible: false,
+    modalClassName: "did-you-know-tip",
     position: {
         target: "#reader-toggle"
     },

@@ -603,6 +603,12 @@
 }
 
 
+/* Shared "Did you know?" treatment. Positioning remains opt-in. */
+.modal.did-you-know-tip {
+    border: 1px solid var(--tooltip-border-colour);
+    box-shadow: var(--tooltip-shadow);
+}
+
 /* Positioned non-blocking callouts follow a live target in the viewport. */
 .modal.non-blocking.modal-positioned,
 #non-blocking-modal-stack .modal.non-blocking.modal-positioned {

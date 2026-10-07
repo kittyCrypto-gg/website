@@ -1457,6 +1457,7 @@ const effectsTipModal = modals.factory.create({
     id: EFFECTS_TIP_MODAL_ID,
     mode: "non-blocking",
     readerModeCompatible: false,
+    modalClassName: "did-you-know-tip",
     position: {
         target: "#effects-toggle"
     },
