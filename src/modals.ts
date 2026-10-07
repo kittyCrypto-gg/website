@@ -2,10 +2,17 @@ import * as winApi from "./window.ts";
 import * as helpers from "./helpers.ts";
 
 type ModalMode = "blocking" | "non-blocking";
+type ModalPlacement = "left" | "right" | "top" | "bottom";
 
 type ModalPosition = Readonly<{
     target: string | Element;
     gap?: number;
+}>;
+
+type PositionCandidate = Readonly<{
+    placement: ModalPlacement;
+    space: number;
+    required: number;
 }>;
 
 type DecInfo = Readonly<{
@@ -1006,9 +1013,151 @@ export class ModalSession {
     }
 
     /**
-     * Keeps the bubble to the left of its target while placing the pointer
-     * near the bubble's lower-right corner. If viewport clamping moves the
-     * bubble, the pointer follows vertically so it still aims at the target.
+     * Returns the current visible viewport bounds.
+     *
+     * VisualViewport is used when available so zooming and mobile browser
+     * chrome do not leave an anchored callout off-screen.
+     *
+     * @returns {{ left: number; top: number; right: number; bottom: number }}
+     */
+    #viewportBounds(): {
+        left: number;
+        top: number;
+        right: number;
+        bottom: number;
+    } {
+        const viewport = window.visualViewport;
+        const left = viewport?.offsetLeft ?? 0;
+        const top = viewport?.offsetTop ?? 0;
+        const width = viewport?.width ?? window.innerWidth;
+        const height = viewport?.height ?? window.innerHeight;
+
+        return {
+            left,
+            top,
+            right: left + width,
+            bottom: top + height
+        };
+    }
+
+    /**
+     * Chooses whichever side gives the callout the healthiest fit in the
+     * current viewport. No direction is preferred or hard-coded.
+     *
+     * @param {DOMRect} targetRect
+     * @param {DOMRect} modalRect
+     * @param {{ left: number; top: number; right: number; bottom: number }} viewport
+     * @param {number} gap
+     * @returns {ModalPlacement}
+     */
+    #bestPlacement(
+        targetRect: DOMRect,
+        modalRect: DOMRect,
+        viewport: {
+            left: number;
+            top: number;
+            right: number;
+            bottom: number;
+        },
+        gap: number
+    ): ModalPlacement {
+        const candidates: PositionCandidate[] = [
+            {
+                placement: "left",
+                space: targetRect.left - viewport.left,
+                required: modalRect.width + gap
+            },
+            {
+                placement: "right",
+                space: viewport.right - targetRect.right,
+                required: modalRect.width + gap
+            },
+            {
+                placement: "top",
+                space: targetRect.top - viewport.top,
+                required: modalRect.height + gap
+            },
+            {
+                placement: "bottom",
+                space: viewport.bottom - targetRect.bottom,
+                required: modalRect.height + gap
+            }
+        ];
+
+        candidates.sort(
+            (a, b) =>
+                (b.space - b.required) -
+                (a.space - a.required)
+        );
+
+        return candidates[0]?.placement ?? "bottom";
+    }
+
+    /**
+     * Calculates the natural modal origin for one target-facing side.
+     *
+     * @param {ModalPlacement} placement
+     * @param {DOMRect} targetRect
+     * @param {DOMRect} modalRect
+     * @param {number} gap
+     * @returns {{ left: number; top: number }}
+     */
+    #placementOrigin(
+        placement: ModalPlacement,
+        targetRect: DOMRect,
+        modalRect: DOMRect,
+        gap: number
+    ): {
+        left: number;
+        top: number;
+    } {
+        const targetX =
+            targetRect.left +
+            targetRect.width / 2;
+
+        const targetY =
+            targetRect.top +
+            targetRect.height / 2;
+
+        const origins: Record<ModalPlacement, {
+            left: number;
+            top: number;
+        }> = {
+            left: {
+                left: targetRect.left - modalRect.width - gap,
+                top: targetY - modalRect.height / 2
+            },
+            right: {
+                left: targetRect.right + gap,
+                top: targetY - modalRect.height / 2
+            },
+            top: {
+                left: targetX - modalRect.width / 2,
+                top: targetRect.top - modalRect.height - gap
+            },
+            bottom: {
+                left: targetX - modalRect.width / 2,
+                top: targetRect.bottom + gap
+            }
+        };
+
+        return origins[placement];
+    }
+
+    /**
+     * @param {number} value
+     * @param {number} min
+     * @param {number} max
+     * @returns {number}
+     */
+    #clampPos(value: number, min: number, max: number): number {
+        return Math.max(min, Math.min(value, max));
+    }
+
+    /**
+     * Places an anchored modal on the best available side of its target,
+     * clamps the modal to the viewport, then derives the speech-bubble tail
+     * position from the target's real viewport coordinates.
      *
      * @returns {void}
      */
@@ -1019,56 +1168,82 @@ export class ModalSession {
 
         const targetRect = target.getBoundingClientRect();
         const modalRect = this.#mEl.getBoundingClientRect();
+        const viewport = this.#viewportBounds();
 
         const gap = Math.max(0, this.#pos?.gap ?? 14);
         const viewportPad = 12;
-        const pointerInset = 24;
+        const pointerPad = 18;
+
+        const placement = this.#bestPlacement(
+            targetRect,
+            modalRect,
+            viewport,
+            gap
+        );
+
+        const origin = this.#placementOrigin(
+            placement,
+            targetRect,
+            modalRect,
+            gap
+        );
+
+        const minLeft = viewport.left + viewportPad;
+        const maxLeft = Math.max(
+            minLeft,
+            viewport.right - modalRect.width - viewportPad
+        );
+
+        const minTop = viewport.top + viewportPad;
+        const maxTop = Math.max(
+            minTop,
+            viewport.bottom - modalRect.height - viewportPad
+        );
+
+        const left = this.#clampPos(
+            origin.left,
+            minLeft,
+            maxLeft
+        );
+
+        const top = this.#clampPos(
+            origin.top,
+            minTop,
+            maxTop
+        );
+
+        const targetX =
+            targetRect.left +
+            targetRect.width / 2;
+
         const targetY =
             targetRect.top +
             targetRect.height / 2;
 
-        const desiredLeft =
-            targetRect.left -
-            modalRect.width -
-            gap;
-
-        const desiredTop =
-            targetY -
-            modalRect.height +
-            pointerInset;
-
-        const maxLeft =
-            globalThis.innerWidth -
-            modalRect.width -
-            viewportPad;
-
-        const maxTop =
-            globalThis.innerHeight -
-            modalRect.height -
-            viewportPad;
-
-        const left = Math.max(
-            viewportPad,
-            Math.min(desiredLeft, maxLeft)
+        const pointerX = this.#clampPos(
+            targetX - left,
+            pointerPad,
+            Math.max(pointerPad, modalRect.width - pointerPad)
         );
 
-        const top = Math.max(
-            viewportPad,
-            Math.min(desiredTop, maxTop)
+        const pointerY = this.#clampPos(
+            targetY - top,
+            pointerPad,
+            Math.max(pointerPad, modalRect.height - pointerPad)
         );
 
-        const pointerY = Math.max(
-            18,
-            Math.min(
-                targetY - top,
-                modalRect.height - 18
-            )
-        );
+        this.#mEl.dataset.modalPlacement = placement;
 
         this.#mEl.style.left = `${Math.round(left)}px`;
         this.#mEl.style.top = `${Math.round(top)}px`;
         this.#mEl.style.right = "auto";
         this.#mEl.style.bottom = "auto";
+
+        this.#mEl.style.setProperty(
+            "--modal-text-bubble-pointer-x",
+            `${Math.round(pointerX)}px`
+        );
+
         this.#mEl.style.setProperty(
             "--modal-text-bubble-pointer-y",
             `${Math.round(pointerY)}px`
@@ -1108,6 +1283,17 @@ export class ModalSession {
         observer.observe(this.#mEl);
 
         this.#pCln.push(() => observer.disconnect());
+
+        const viewport = window.visualViewport;
+
+        viewport?.addEventListener("resize", queue);
+        viewport?.addEventListener("scroll", queue);
+
+        this.#pCln.push(() => {
+            viewport?.removeEventListener("resize", queue);
+            viewport?.removeEventListener("scroll", queue);
+        });
+
         this.#qPos();
     }
 

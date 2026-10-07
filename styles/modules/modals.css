@@ -607,41 +607,161 @@
 .modal.non-blocking.modal-positioned,
 #non-blocking-modal-stack .modal.non-blocking.modal-positioned {
     position: fixed;
+
+    top: auto;
     right: auto;
+    bottom: auto;
+    left: auto;
+
     margin: 0;
 }
 
-/* Optional speech-bubble treatment for anchored hints. */
+/* Optional compact speech-bubble treatment for anchored hints. */
 .modal.modal-text-bubble {
-    --modal-text-bubble-pointer-size: 0.9rem;
-    --modal-text-bubble-pointer-y: calc(100% - 1.5rem);
+    --modal-text-bubble-pointer-size: 0.8rem;
+    --modal-text-bubble-pointer-x: 50%;
+    --modal-text-bubble-pointer-y: 50%;
+
+    min-width: 0;
+    width: fit-content;
+    max-width:
+        min(
+            22.5rem,
+            calc(100dvw - var(--modal-viewport-gap-left) - var(--modal-viewport-gap-right))
+        );
+
+    height: auto;
+    max-height:
+        calc(
+            100dvh -
+            var(--modal-viewport-gap-top) -
+            var(--modal-viewport-gap-bottom)
+        );
 
     overflow: visible;
 
+    background: var(--edit-modal-bg-colour, var(--tooltip-bg-colour));
     border: 1px solid var(--tooltip-border-colour);
+    border-radius: var(--modal-radius);
     box-shadow: var(--tooltip-shadow);
+
+    overflow-wrap: anywhere;
 }
 
+.modal.modal-text-bubble :where(
+    .modal-header,
+    .modal-content,
+    p,
+    label,
+    .kc-modal-actions,
+    .modal-note
+) {
+    max-width: 100%;
+    min-width: 0;
+}
+
+.modal.modal-text-bubble::before,
 .modal.modal-text-bubble::after {
     content: "";
 
     position: absolute;
-    top: var(--modal-text-bubble-pointer-y);
-    right: calc(var(--modal-text-bubble-pointer-size) * -0.52);
 
-    width: var(--modal-text-bubble-pointer-size);
-    height: var(--modal-text-bubble-pointer-size);
-
-    background: var(--edit-modal-bg-colour, var(--tooltip-bg-colour));
-
-    border-top: 1px solid var(--tooltip-border-colour);
-    border-right: 1px solid var(--tooltip-border-colour);
-
-    transform:
-        translateY(-50%)
-        rotate(45deg);
+    width: 0;
+    height: 0;
 
     pointer-events: none;
+}
+
+/* Bubble to the left of the target: tail leaves the right edge. */
+.modal.modal-text-bubble[data-modal-placement="left"]::before {
+    top: var(--modal-text-bubble-pointer-y);
+    right: calc(var(--modal-text-bubble-pointer-size) * -1);
+
+    border-top: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-bottom: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-left: var(--modal-text-bubble-pointer-size) solid var(--tooltip-border-colour);
+
+    transform: translateY(-50%);
+}
+
+.modal.modal-text-bubble[data-modal-placement="left"]::after {
+    top: var(--modal-text-bubble-pointer-y);
+    right: calc(var(--modal-text-bubble-pointer-size) * -0.82);
+
+    border-top: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-bottom: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-left: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid var(--edit-modal-bg-colour, var(--tooltip-bg-colour));
+
+    transform: translateY(-50%);
+}
+
+/* Bubble to the right of the target: tail leaves the left edge. */
+.modal.modal-text-bubble[data-modal-placement="right"]::before {
+    top: var(--modal-text-bubble-pointer-y);
+    left: calc(var(--modal-text-bubble-pointer-size) * -1);
+
+    border-top: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-bottom: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-right: var(--modal-text-bubble-pointer-size) solid var(--tooltip-border-colour);
+
+    transform: translateY(-50%);
+}
+
+.modal.modal-text-bubble[data-modal-placement="right"]::after {
+    top: var(--modal-text-bubble-pointer-y);
+    left: calc(var(--modal-text-bubble-pointer-size) * -0.82);
+
+    border-top: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-bottom: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-right: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid var(--edit-modal-bg-colour, var(--tooltip-bg-colour));
+
+    transform: translateY(-50%);
+}
+
+/* Bubble above the target: tail leaves the bottom edge. */
+.modal.modal-text-bubble[data-modal-placement="top"]::before {
+    bottom: calc(var(--modal-text-bubble-pointer-size) * -1);
+    left: var(--modal-text-bubble-pointer-x);
+
+    border-right: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-left: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-top: var(--modal-text-bubble-pointer-size) solid var(--tooltip-border-colour);
+
+    transform: translateX(-50%);
+}
+
+.modal.modal-text-bubble[data-modal-placement="top"]::after {
+    bottom: calc(var(--modal-text-bubble-pointer-size) * -0.82);
+    left: var(--modal-text-bubble-pointer-x);
+
+    border-right: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-left: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-top: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid var(--edit-modal-bg-colour, var(--tooltip-bg-colour));
+
+    transform: translateX(-50%);
+}
+
+/* Bubble below the target: tail leaves the top edge. */
+.modal.modal-text-bubble[data-modal-placement="bottom"]::before {
+    top: calc(var(--modal-text-bubble-pointer-size) * -1);
+    left: var(--modal-text-bubble-pointer-x);
+
+    border-right: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-left: var(--modal-text-bubble-pointer-size) solid transparent;
+    border-bottom: var(--modal-text-bubble-pointer-size) solid var(--tooltip-border-colour);
+
+    transform: translateX(-50%);
+}
+
+.modal.modal-text-bubble[data-modal-placement="bottom"]::after {
+    top: calc(var(--modal-text-bubble-pointer-size) * -0.82);
+    left: var(--modal-text-bubble-pointer-x);
+
+    border-right: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-left: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid transparent;
+    border-bottom: calc(var(--modal-text-bubble-pointer-size) * 0.78) solid var(--edit-modal-bg-colour, var(--tooltip-bg-colour));
+
+    transform: translateX(-50%);
 }
 
 /* These are modal-specific helpers used by your KC modals */
