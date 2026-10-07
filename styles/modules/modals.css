@@ -613,28 +613,35 @@
  * Plain tips keep their normal rectangular modal geometry, but the visible
  * border lives on a dedicated layer so CRT can distort the border without
  * applying a second whole-modal filter to the already-distorted text.
+ *
+ * The layer itself never extends outside the modal's layout box. Its 1px
+ * shadow is painted outward instead, so the visible border remains outside
+ * without becoming scrollable overflow.
  */
 .modal.did-you-know-tip:not(.modal-text-bubble) {
-    border-color: transparent;
+    border: 0;
 }
 
 .modal.did-you-know-tip:not(.modal-text-bubble)::before {
     content: "";
 
     position: absolute;
-    inset: -1px;
+    inset: 0;
 
-    box-sizing: border-box;
-
-    border: 1px solid var(--tooltip-border-colour);
     border-radius: inherit;
+    box-shadow: 0 0 0 1px var(--tooltip-border-colour);
 
     pointer-events: none;
 }
 
+.modal.non-blocking.did-you-know-tip:not(.modal-text-bubble),
 #non-blocking-modal-stack
 .modal.non-blocking.did-you-know-tip:not(.modal-text-bubble) {
     position: relative;
+
+    height: auto;
+    overflow-x: clip;
+    overflow-y: auto;
 }
 
 /* Positioned non-blocking callouts follow a live target in the viewport. */

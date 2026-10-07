@@ -20,8 +20,9 @@
     text-decoration-color;
 
   /* Independent master switches */
-  --effect-crt-phosphor-opacity: 0.02;
-  --effect-crt-scanline-opacity: 0.1;
+  /* UI defaults: phosphor 40%, scanlines 30%. */
+  --effect-crt-phosphor-opacity: 0.048;
+  --effect-crt-scanline-opacity: 0.09;
   --effect-crt-cell-width: 1px;
   --effect-crt-cell-height: 3px;
 

@@ -583,13 +583,13 @@ function readCss(): Prefs {
     return {
         phosphorEnabled: !body.classList.contains("effect-disable-phosphor"),
         phosphorOpacity: clamp(
-            num(rootStyle.getPropertyValue("--effect-crt-phosphor-opacity"), 0.02),
+            num(rootStyle.getPropertyValue("--effect-crt-phosphor-opacity"), 0.048),
             PHOS_OP_MIN,
             PHOS_OP_MAX
         ),
         scanlinesEnabled: !body.classList.contains("effect-disable-scanlines"),
         scanlineOpacity: clamp(
-            num(rootStyle.getPropertyValue("--effect-crt-scanline-opacity"), 0.1),
+            num(rootStyle.getPropertyValue("--effect-crt-scanline-opacity"), 0.09),
             SCAN_OP_MIN,
             SCAN_OP_MAX
         ),
