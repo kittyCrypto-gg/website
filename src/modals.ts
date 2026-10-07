@@ -674,6 +674,7 @@ export class ModalSession {
     #pRaf: number | null;
     #bubbleSvg: SVGSVGElement | null;
     #bubblePath: SVGPathElement | null;
+    #bubbleGeometrySignature: string;
     #wOn: boolean;
 
     constructor(spec: SessSpec) {
@@ -702,6 +703,7 @@ export class ModalSession {
         this.#pRaf = null;
         this.#bubbleSvg = null;
         this.#bubblePath = null;
+        this.#bubbleGeometrySignature = "";
         this.#wOn = false;
 
         this.#mEl = document.createElement("div");
@@ -1651,6 +1653,66 @@ export class ModalSession {
     }
 
     /**
+     * Produces a compact signature of the CSS-driven bubble geometry.
+     *
+     * The SVG path itself is generated in JavaScript, so a CSS custom
+     * property edit does not naturally invalidate the path. Comparing this
+     * signature lets live CSS tuning redraw only when a geometry value
+     * actually changes.
+     *
+     * @returns {string}
+     */
+    #bubbleGeometrySig(): string {
+        if (!this.#txtBubble) return "";
+
+        const geometry = this.#bubbleGeometry();
+
+        return [
+            geometry.radius,
+            geometry.tailLength,
+            geometry.tailHalfWidth,
+            geometry.strokeWidth,
+            geometry.tailANeck,
+            geometry.tailATip,
+            geometry.tailBNeck,
+            geometry.tailBTip
+        ].join("|");
+    }
+
+    /**
+     * Watches CSS-driven bubble geometry while the bubble is open.
+     *
+     * This is intentionally low-frequency and only runs for text bubbles.
+     * It makes DevTools/theme CSS edits immediately visible without forcing
+     * a resize or scroll just to regenerate the SVG path.
+     *
+     * @returns {void}
+     */
+    #bindBubbleGeometry(): void {
+        if (!this.#txtBubble) return;
+
+        this.#bubbleGeometrySignature =
+            this.#bubbleGeometrySig();
+
+        const timer = globalThis.setInterval(() => {
+            if (!this.#mEl.isConnected) return;
+
+            const next =
+                this.#bubbleGeometrySig();
+
+            if (next === this.#bubbleGeometrySignature) return;
+
+            this.#bubbleGeometrySignature = next;
+            this.#qPos();
+        }, 100);
+
+        this.#pCln.push(() => {
+            globalThis.clearInterval(timer);
+            this.#bubbleGeometrySignature = "";
+        });
+    }
+
+    /**
      * Watches the anchor and viewport so a positioned modal follows its
      * target through scrolling, resizing and layout changes.
      *
@@ -1661,6 +1723,8 @@ export class ModalSession {
 
         const target = this.#posTarget();
         if (!target) return;
+
+        this.#bindBubbleGeometry();
 
         const queue = (): void => this.#qPos();
 
