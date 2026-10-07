@@ -9,7 +9,7 @@ import { createMenu } from "./menu.tsx";
 import { createHeader } from "./header.ts";
 import { createFooter } from "./footer.ts";
 import { fetchUiData } from "./uiFetch.ts";
-import { readerModeFocus, readerModeKeep } from "./reader.tsx";
+import { initReaderModeTip, readerModeFocus, readerModeKeep } from "./reader.tsx";
 import { initEffectsControls } from "./effects.tsx";
 import * as crtNoise from "./crtUi.tsx";
 import * as helpers from "./helpers.ts";
@@ -870,6 +870,7 @@ async function initUi(): Promise<void> {
 
         void showToggleVisual(readerToggle, "enable", FLOAT_TOGGLE_ICON_SPEC);
         document.body.appendChild(readerToggle);
+        initReaderModeTip(readerToggle);
 
         await setupReaderToggle({
             focus: readerModeFocus,

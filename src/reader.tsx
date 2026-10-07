@@ -229,6 +229,42 @@ function LangTipModal(): ReactElement {
 /**
  * @returns {ReactElement}
  */
+function ReaderModeTipModal(): ReactElement {
+    return (
+        <>
+            <div className="modal-header">
+                <h3>Did you know?</h3>
+            </div>
+
+            <div className="modal-content">
+                <p>
+                    Too many distractions? Try Reader Mode for a cleaner reading experience.
+                </p>
+
+                <label className="kc-checkbox-row">
+                    <input id="kc-reader-mode-help-hide" type="checkbox" />
+                    <span>Do not show this tip again</span>
+                </label>
+
+                <div className="kc-modal-actions">
+                    <button
+                        id="kc-reader-mode-help-close"
+                        type="button"
+                        style={{ display: "block", margin: "0 auto" }}
+                    >
+                        Close
+                    </button>
+                </div>
+
+                <p className="modal-note">You can close this window with <kbd>Esc</kbd>.</p>
+            </div>
+        </>
+    );
+}
+
+/**
+ * @returns {ReactElement}
+ */
 function ReaderCtrls(): ReactElement {
     return (
         <>
@@ -451,9 +487,13 @@ const infoModal: Modal = factory.create({
 
 const LANG_TIP_MODAL_ID = "kc-language-tooltips-help-modal";
 const LANG_TIP_HIDE_KEY = "languageTooltipsHelpModalHide";
+const READER_MODE_TIP_MODAL_ID = "kc-reader-mode-help-modal";
+const READER_MODE_TIP_HIDE_KEY = "readerModeHelpModalHide";
 
 let langTipShown = false;
 let langTipObs: IntersectionObserver | null = null;
+let readerModeTipShown = false;
+let readerModeTipObs: IntersectionObserver | null = null;
 let ctrlBottomObs: IntersectionObserver | null = null;
 let ctrlMarkerAbove = false;
 let ctrlBottomSeen = false;
@@ -483,6 +523,15 @@ function writeLsBool(key: string, value: boolean): void {
 function showLangTip(): boolean {
     if (langTipShown) return false;
     if (readLsBool(LANG_TIP_HIDE_KEY)) return false;
+    return true;
+}
+
+/**
+ * @returns {boolean}
+ */
+function showReaderModeTip(): boolean {
+    if (readerModeTipShown) return false;
+    if (readLsBool(READER_MODE_TIP_HIDE_KEY)) return false;
     return true;
 }
 
@@ -560,6 +609,79 @@ function initLangObs(root: Document = document): void {
         langTipObs.observe(el);
     }
 }
+
+
+const READER_MODE_TIP_MODAL_HTML = (): string => render2Mkup(<ReaderModeTipModal />);
+
+const persistReaderModeTipHide: ModalDecorator = {
+    mount: (ctx: ModalCtx) => {
+        const box = ctx.modalEl.querySelector("#kc-reader-mode-help-hide");
+        if (!(box instanceof HTMLInputElement)) return;
+
+        box.checked = readLsBool(READER_MODE_TIP_HIDE_KEY);
+
+        const onChange = (): void => {
+            const nextHidden = box.checked;
+            writeLsBool(READER_MODE_TIP_HIDE_KEY, nextHidden);
+            if (nextHidden) ctx.close();
+        };
+
+        box.addEventListener("change", onChange);
+        return () => box.removeEventListener("change", onChange);
+    }
+};
+
+const readerModeTipModal: Modal = factory.create({
+    id: READER_MODE_TIP_MODAL_ID,
+    mode: "non-blocking",
+    readerModeCompatible: false,
+    content: READER_MODE_TIP_MODAL_HTML,
+    closeOnOutsideClick: false,
+    decorators: [
+        closeOnClick("#kc-reader-mode-help-close"),
+        persistReaderModeTipHide
+    ]
+});
+
+/**
+ * @returns {void}
+ */
+function openReaderModeTip(): void {
+    if (!showReaderModeTip()) return;
+    if (readerModeTipModal.isOpen()) return;
+
+    readerModeTipModal.open();
+    readerModeTipShown = true;
+}
+
+/**
+ * Reuses the existing reader "Did you know?" observer logic for the
+ * Reader Mode toggle.
+ *
+ * @param {HTMLButtonElement} button
+ * @returns {void}
+ */
+export function initReaderModeTip(button: HTMLButtonElement): void {
+    if (!showReaderModeTip()) return;
+
+    readerModeTipObs?.disconnect();
+
+    readerModeTipObs = new IntersectionObserver(
+        (entries: IntersectionObserverEntry[]) => {
+            const anyVisible = entries.some((entry) => entry.isIntersecting);
+            if (!anyVisible) return;
+
+            openReaderModeTip();
+
+            readerModeTipObs?.disconnect();
+            readerModeTipObs = null;
+        },
+        { threshold: 0.15 }
+    );
+
+    readerModeTipObs.observe(button);
+}
+
 
 // Reader-specific cookie helpers to avoid collision with main.js
 /**

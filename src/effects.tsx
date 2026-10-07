@@ -11,6 +11,7 @@ type Prefs = Readonly<{
     scanlinesEnabled: boolean;
     scanlineOpacity: number;
     scanlineSpeed: number;
+    textShadowEnabled: boolean;
     textShadowIntensity: number;
 }>;
 
@@ -25,10 +26,15 @@ type Ctx = Readonly<{
     modalEl: HTMLDivElement;
 }>;
 
+type ModalDecorator = ReturnType<typeof modals.closeOnClick>;
+type ModalCtx = Parameters<NonNullable<ModalDecorator["mount"]>>[0];
+
 const STORAGE_KEY = "kcEffectsPrefs";
 const BTN_ID = "effects-toggle";
 const MOD_ID = "screen-effects";
 const BTN_BOTTOM = "80px";
+const EFFECTS_TIP_MODAL_ID = "kc-effects-help-modal";
+const EFFECTS_TIP_HIDE_KEY = "effectsHelpModalHide";
 
 const PHOS_OP_MIN = 0;
 const PHOS_OP_MAX = 0.12;
@@ -50,6 +56,7 @@ const SCAN_MS_MAX = 22000;
  */
 const TEXT_SHADOW_MIN = 0;
 const TEXT_SHADOW_MAX = 100;
+const TEXT_SHADOW_DEFAULT_PERCENT = 15;
 const TEXT_SHADOW_BASE_PERCENT = 20;
 const TEXT_SHADOW_CURVE_EXPONENT = 1.55;
 
@@ -68,6 +75,8 @@ let mod: modals.Modal | null = null;
 let syncOn = false;
 let uiCfg: fxUIconf | null = null;
 let textShadowObserver: MutationObserver | null = null;
+let effectsTipShown = false;
+let effectsTipObs: IntersectionObserver | null = null;
 
 /**
  * 
@@ -585,16 +594,15 @@ function readCss(): Prefs {
             SCAN_OP_MAX
         ),
         scanlineSpeed: DEF_SCAN_SPD,
-        textShadowIntensity: body.classList.contains("effect-disable-text-shadow")
-            ? 0
-            : clamp(
-                num(
-                    rootStyle.getPropertyValue("--effect-crt-text-shadow-intensity"),
-                    TEXT_SHADOW_BASE_PERCENT
-                ),
-                TEXT_SHADOW_MIN,
-                TEXT_SHADOW_MAX
-            )
+        textShadowEnabled: !body.classList.contains("effect-disable-text-shadow"),
+        textShadowIntensity: clamp(
+            num(
+                rootStyle.getPropertyValue("--effect-crt-text-shadow-intensity"),
+                TEXT_SHADOW_DEFAULT_PERCENT
+            ),
+            TEXT_SHADOW_MIN,
+            TEXT_SHADOW_MAX
+        )
     };
 }
 
@@ -633,6 +641,8 @@ function stored(): StoredPrefs | null {
                 typeof record.scanlineOpacity === "number" ? record.scanlineOpacity : undefined,
             scanlineSpeed:
                 typeof record.scanlineSpeed === "number" ? record.scanlineSpeed : undefined,
+            textShadowEnabled:
+                typeof record.textShadowEnabled === "boolean" ? record.textShadowEnabled : undefined,
             textShadowIntensity:
                 typeof record.textShadowIntensity === "number"
                     ? record.textShadowIntensity
@@ -673,6 +683,9 @@ function merge(base: Prefs, fromStore: StoredPrefs | null): Prefs {
         TEXT_SHADOW_MIN,
         TEXT_SHADOW_MAX
     );
+    const textShadowEnabled =
+        textShadowIntensity > 0 &&
+        (fromStore.textShadowEnabled ?? base.textShadowEnabled);
 
     return {
         phosphorEnabled: phosphorOpacity > 0 && (fromStore.phosphorEnabled ?? base.phosphorEnabled),
@@ -680,6 +693,7 @@ function merge(base: Prefs, fromStore: StoredPrefs | null): Prefs {
         scanlinesEnabled: scanlineOpacity > 0 && (fromStore.scanlinesEnabled ?? base.scanlinesEnabled),
         scanlineOpacity,
         scanlineSpeed,
+        textShadowEnabled,
         textShadowIntensity
     };
 }
@@ -720,16 +734,17 @@ function live(): Prefs {
             )
         );
 
-    const textShadowIntensity = body.classList.contains("effect-disable-text-shadow")
-        ? 0
-        : clamp(
-            num(
-                rootStyle.getPropertyValue("--effect-crt-text-shadow-intensity"),
-                base.textShadowIntensity
-            ),
-            TEXT_SHADOW_MIN,
-            TEXT_SHADOW_MAX
-        );
+    const textShadowIntensity = clamp(
+        num(
+            rootStyle.getPropertyValue("--effect-crt-text-shadow-intensity"),
+            base.textShadowIntensity
+        ),
+        TEXT_SHADOW_MIN,
+        TEXT_SHADOW_MAX
+    );
+    const textShadowEnabled =
+        textShadowIntensity > 0 &&
+        !body.classList.contains("effect-disable-text-shadow");
 
     return {
         phosphorEnabled: phosphorOpacity > 0 && !body.classList.contains("effect-disable-phosphor"),
@@ -737,6 +752,7 @@ function live(): Prefs {
         phosphorOpacity,
         scanlineOpacity,
         scanlineSpeed,
+        textShadowEnabled,
         textShadowIntensity
     };
 }
@@ -800,7 +816,7 @@ function apply(prefs: Prefs): void {
     document.body.classList.toggle("effect-static-scanlines", prefs.scanlineSpeed <= 0);
     document.body.classList.toggle(
         "effect-disable-text-shadow",
-        textShadowIntensity <= 0
+        !prefs.textShadowEnabled || textShadowIntensity <= 0
     );
 }
 
@@ -869,6 +885,7 @@ function syncMod(modalEl: HTMLDivElement, prefs: Prefs): void {
         TEXT_SHADOW_MAX
     );
 
+    syncChk(modalEl, "#effects-text-shadow-enabled", !prefs.textShadowEnabled || textShadowIntensity === 0);
     syncChk(modalEl, "#effects-phosphor-enabled", !prefs.phosphorEnabled || phosphorPercent === 0);
     syncChk(modalEl, "#effects-scanlines-enabled", !prefs.scanlinesEnabled || scanlinePercent === 0);
 
@@ -935,6 +952,15 @@ function Panel(props: Props): ReactElement {
                         <p>Controls the animated RGB separation applied to text and SVG graphics.</p>
                     </div>
 
+                    <label className="effects-modal__toggle" htmlFor="effects-text-shadow-enabled">
+                        <input
+                            id="effects-text-shadow-enabled"
+                            type="checkbox"
+                            defaultChecked={!props.prefs.textShadowEnabled || textShadowIntensity === 0}
+                        />
+                        <span>Disable text distortion</span>
+                    </label>
+
                     <div className="effects-modal__control">
                         <div className="effects-modal__control-meta">
                             <label htmlFor="effects-text-shadow-intensity">{text.intensityLabel}</label>
@@ -953,7 +979,7 @@ function Panel(props: Props): ReactElement {
                         />
 
                         <p className="effects-modal__hint">
-                            0% disables distortion. 20% is the base CRT strength. The upper range ramps aggressively, with 100% deliberately excessive.
+                            15% is the default strength. 20% is the original base CRT strength. The upper range ramps aggressively, with 100% deliberately excessive.
                         </p>
                     </div>
                 </section>
@@ -1200,6 +1226,36 @@ const onScanSpd = (ev: Event, ctx: Ctx): void => {
 };
 
 /**
+ * Handles the text-distortion disable toggle.
+ *
+ * Disabling preserves the current slider value so the user's preferred
+ * strength is restored when the effect is enabled again.
+ *
+ * @param {Event} ev
+ * @param {Ctx} ctx
+ * @returns {void}
+ */
+const onTextShadowTgl = (ev: Event, ctx: Ctx): void => {
+    const target = ev.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    const cur = live();
+    const nextIntensity =
+        cur.textShadowIntensity > 0
+            ? cur.textShadowIntensity
+            : defs().textShadowIntensity;
+
+    const next: Prefs = {
+        ...cur,
+        textShadowEnabled: !target.checked,
+        textShadowIntensity: nextIntensity
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
  * Handles CRT text-distortion intensity.
  *
  * Controls the shared chromatic-aberration strength applied to rendered
@@ -1221,6 +1277,7 @@ const onTextShadowIntensity = (ev: Event, ctx: Ctx): void => {
 
     const next: Prefs = {
         ...live(),
+        textShadowEnabled: intensity > 0,
         textShadowIntensity: intensity
     };
 
@@ -1242,6 +1299,7 @@ const onReset = (_ev: Event, ctx: Ctx): void => {
         scanlinesEnabled: true,
         scanlineOpacity: base.scanlineOpacity,
         scanlineSpeed: base.scanlineSpeed,
+        textShadowEnabled: true,
         textShadowIntensity: base.textShadowIntensity
     };
 
@@ -1264,6 +1322,7 @@ function ensureMod(): modals.Modal {
         content: rndrMod,
         decorators: [
             modals.closeOnClick("[data-effects-close]"),
+            modals.onModalEvent("#effects-text-shadow-enabled", "change", onTextShadowTgl),
             modals.onModalEvent("#effects-phosphor-enabled", "change", onPhosTgl),
             modals.onModalEvent("#effects-scanlines-enabled", "change", onScanTgl),
             modals.onModalEvent("#effects-phosphor-opacity", "input", onPhosOp),
@@ -1322,6 +1381,130 @@ function ensureSync(): void {
     window.addEventListener("storage", onStore);
 }
 
+
+/**
+ * Small non-blocking helper matching the reader's existing "Did you know?"
+ * tip behaviour.
+ *
+ * @returns {ReactElement}
+ */
+function EffectsTipModal(): ReactElement {
+    return (
+        <>
+            <div className="modal-header">
+                <h3>Did you know?</h3>
+            </div>
+
+            <div className="modal-content">
+                <p>
+                    Effects too distracting? Disable or soften them using the CRT effects button.
+                </p>
+
+                <label className="kc-checkbox-row">
+                    <input id="kc-effects-help-hide" type="checkbox" />
+                    <span>Do not show this tip again</span>
+                </label>
+
+                <div className="kc-modal-actions">
+                    <button
+                        id="kc-effects-help-close"
+                        type="button"
+                        style={{ display: "block", margin: "0 auto" }}
+                    >
+                        Close
+                    </button>
+                </div>
+
+                <p className="modal-note">You can close this window with <kbd>Esc</kbd>.</p>
+            </div>
+        </>
+    );
+}
+
+/**
+ * @returns {boolean}
+ */
+function showEffectsTip(): boolean {
+    if (effectsTipShown) return false;
+    if (localStorage.getItem(EFFECTS_TIP_HIDE_KEY) === "true") return false;
+    return true;
+}
+
+const EFFECTS_TIP_MODAL_HTML = (): string => render2Mkup(<EffectsTipModal />);
+
+const persistEffectsTipHide: ModalDecorator = {
+    mount: (ctx: ModalCtx) => {
+        const box = ctx.modalEl.querySelector("#kc-effects-help-hide");
+        if (!(box instanceof HTMLInputElement)) return;
+
+        box.checked = localStorage.getItem(EFFECTS_TIP_HIDE_KEY) === "true";
+
+        const onChange = (): void => {
+            localStorage.setItem(
+                EFFECTS_TIP_HIDE_KEY,
+                box.checked ? "true" : "false"
+            );
+
+            if (box.checked) ctx.close();
+        };
+
+        box.addEventListener("change", onChange);
+        return () => box.removeEventListener("change", onChange);
+    }
+};
+
+const effectsTipModal = modals.factory.create({
+    id: EFFECTS_TIP_MODAL_ID,
+    mode: "non-blocking",
+    readerModeCompatible: false,
+    content: EFFECTS_TIP_MODAL_HTML,
+    closeOnOutsideClick: false,
+    decorators: [
+        modals.closeOnClick("#kc-effects-help-close"),
+        persistEffectsTipHide
+    ]
+});
+
+/**
+ * @returns {void}
+ */
+function openEffectsTip(): void {
+    if (!showEffectsTip()) return;
+    if (effectsTipModal.isOpen()) return;
+
+    effectsTipModal.open();
+    effectsTipShown = true;
+}
+
+/**
+ * Reuses the reader tip's visibility-trigger pattern for the fixed effects
+ * button.
+ *
+ * @param {HTMLButtonElement} button
+ * @returns {void}
+ */
+function initEffectsTip(button: HTMLButtonElement): void {
+    if (!showEffectsTip()) return;
+
+    effectsTipObs?.disconnect();
+
+    effectsTipObs = new IntersectionObserver(
+        (entries: IntersectionObserverEntry[]) => {
+            const anyVisible = entries.some((entry) => entry.isIntersecting);
+            if (!anyVisible) return;
+
+            openEffectsTip();
+
+            effectsTipObs?.disconnect();
+            effectsTipObs = null;
+        },
+        { threshold: 0.15 }
+    );
+
+    effectsTipObs.observe(button);
+}
+
+
 /**
  * Creates the floating CRT effects button, applies saved preferences,
  * and wires the effects modal. Button plumbing is delegated to
@@ -1338,7 +1521,7 @@ export function initEffectsControls(nextUi: fxUIconf): void {
     defs();
     apply(resolved());
 
-    installMenuToggle({
+    const effectsToggle = installMenuToggle({
         id: BTN_ID,
         bottom: BTN_BOTTOM,
         cfg: nextUi,
@@ -1350,6 +1533,8 @@ export function initEffectsControls(nextUi: fxUIconf): void {
         },
         openModal: openMod
     });
+
+    initEffectsTip(effectsToggle.button);
 
     if (mod?.isOpen()) {
         mod.setContent(rndrMod());
