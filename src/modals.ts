@@ -20,8 +20,10 @@ type BubbleGeometry = Readonly<{
     tailLength: number;
     tailHalfWidth: number;
     strokeWidth: number;
-    tipRoundness: number;
-    neckRoundness: number;
+    tailANeck: number;
+    tailATip: number;
+    tailBNeck: number;
+    tailBTip: number;
 }>;
 
 type DecInfo = Readonly<{
@@ -1266,20 +1268,36 @@ export class ModalSession {
                 "--modal-text-bubble-stroke-width",
                 1
             ),
-            tipRoundness: this.#clampPos(
+            tailANeck: this.#clampPos(
                 this.#bubbleCssNumber(
-                    "--modal-text-bubble-tip-roundness",
-                    0.34
-                ),
-                0,
-                1
-            ),
-            neckRoundness: this.#clampPos(
-                this.#bubbleCssNumber(
-                    "--modal-text-bubble-neck-roundness",
+                    "--modal-text-bubble-tail-a-neck",
                     0.42
                 ),
-                0,
+                -1,
+                1
+            ),
+            tailATip: this.#clampPos(
+                this.#bubbleCssNumber(
+                    "--modal-text-bubble-tail-a-tip",
+                    0.34
+                ),
+                -1,
+                1
+            ),
+            tailBNeck: this.#clampPos(
+                this.#bubbleCssNumber(
+                    "--modal-text-bubble-tail-b-neck",
+                    0.42
+                ),
+                -1,
+                1
+            ),
+            tailBTip: this.#clampPos(
+                this.#bubbleCssNumber(
+                    "--modal-text-bubble-tail-b-tip",
+                    0.34
+                ),
+                -1,
                 1
             )
         };
@@ -1382,12 +1400,20 @@ export class ModalSession {
         );
 
         const tail = geometry.tailLength;
-        const tailControl =
-            tail *
-            geometry.neckRoundness;
 
-        const tipRoundness =
-            geometry.tipRoundness;
+        const tailANeck =
+            tail *
+            geometry.tailANeck;
+
+        const tailBNeck =
+            tail *
+            geometry.tailBNeck;
+
+        const tailATip =
+            geometry.tailATip;
+
+        const tailBTip =
+            geometry.tailBTip;
 
         const paths: Record<ModalPlacement, string> = {
             left: [
@@ -1395,11 +1421,11 @@ export class ModalSession {
                 `H ${right - radius}`,
                 `Q ${right} ${top} ${right} ${top + radius}`,
                 `V ${py - verticalHalf}`,
-                `C ${right + tailControl} ${py - verticalHalf}`,
-                `${right + tail} ${py - verticalHalf * tipRoundness}`,
+                `C ${right + tailANeck} ${py - verticalHalf}`,
+                `${right + tail} ${py - verticalHalf * tailATip}`,
                 `${right + tail} ${py}`,
-                `C ${right + tail} ${py + verticalHalf * tipRoundness}`,
-                `${right + tailControl} ${py + verticalHalf}`,
+                `C ${right + tail} ${py + verticalHalf * tailBTip}`,
+                `${right + tailBNeck} ${py + verticalHalf}`,
                 `${right} ${py + verticalHalf}`,
                 `V ${bottom - radius}`,
                 `Q ${right} ${bottom} ${right - radius} ${bottom}`,
@@ -1419,11 +1445,11 @@ export class ModalSession {
                 `H ${left + radius}`,
                 `Q ${left} ${bottom} ${left} ${bottom - radius}`,
                 `V ${py + verticalHalf}`,
-                `C ${left - tailControl} ${py + verticalHalf}`,
-                `${left - tail} ${py + verticalHalf * tipRoundness}`,
+                `C ${left - tailANeck} ${py + verticalHalf}`,
+                `${left - tail} ${py + verticalHalf * tailATip}`,
                 `${left - tail} ${py}`,
-                `C ${left - tail} ${py - verticalHalf * tipRoundness}`,
-                `${left - tailControl} ${py - verticalHalf}`,
+                `C ${left - tail} ${py - verticalHalf * tailBTip}`,
+                `${left - tailBNeck} ${py - verticalHalf}`,
                 `${left} ${py - verticalHalf}`,
                 `V ${top + radius}`,
                 `Q ${left} ${top} ${left + radius} ${top}`,
@@ -1437,11 +1463,11 @@ export class ModalSession {
                 `V ${bottom - radius}`,
                 `Q ${right} ${bottom} ${right - radius} ${bottom}`,
                 `H ${px + horizontalHalf}`,
-                `C ${px + horizontalHalf} ${bottom + tailControl}`,
-                `${px + horizontalHalf * tipRoundness} ${bottom + tail}`,
+                `C ${px + horizontalHalf} ${bottom + tailANeck}`,
+                `${px + horizontalHalf * tailATip} ${bottom + tail}`,
                 `${px} ${bottom + tail}`,
-                `C ${px - horizontalHalf * tipRoundness} ${bottom + tail}`,
-                `${px - horizontalHalf} ${bottom + tailControl}`,
+                `C ${px - horizontalHalf * tailBTip} ${bottom + tail}`,
+                `${px - horizontalHalf} ${bottom + tailBNeck}`,
                 `${px - horizontalHalf} ${bottom}`,
                 `H ${left + radius}`,
                 `Q ${left} ${bottom} ${left} ${bottom - radius}`,
@@ -1453,11 +1479,11 @@ export class ModalSession {
             bottom: [
                 `M ${left + radius} ${top}`,
                 `H ${px - horizontalHalf}`,
-                `C ${px - horizontalHalf} ${top - tailControl}`,
-                `${px - horizontalHalf * tipRoundness} ${top - tail}`,
+                `C ${px - horizontalHalf} ${top - tailANeck}`,
+                `${px - horizontalHalf * tailATip} ${top - tail}`,
                 `${px} ${top - tail}`,
-                `C ${px + horizontalHalf * tipRoundness} ${top - tail}`,
-                `${px + horizontalHalf} ${top - tailControl}`,
+                `C ${px + horizontalHalf * tailBTip} ${top - tail}`,
+                `${px + horizontalHalf} ${top - tailBNeck}`,
                 `${px + horizontalHalf} ${top}`,
                 `H ${right - radius}`,
                 `Q ${right} ${top} ${right} ${top + radius}`,

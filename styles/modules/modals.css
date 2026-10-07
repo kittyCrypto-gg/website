@@ -630,11 +630,21 @@
     --modal-text-bubble-stroke-width: 1px;
 
     /*
-        0 = angular/sharp.
-        1 = maximally soft/rounded.
+        Tail edges A and B are independent cubic Bézier curves.
+
+        Values are signed from -1 to 1:
+        negative = bend inward / concave,
+        0        = neutral,
+        positive = bend outward / convex.
+
+        "neck" affects how each edge leaves the main frame.
+        "tip" affects how each edge approaches the nipple apex.
     */
-    --modal-text-bubble-tip-roundness: 0.34;
-    --modal-text-bubble-neck-roundness: 0.42;
+    --modal-text-bubble-tail-a-neck: 0.42;
+    --modal-text-bubble-tail-a-tip: 0.34;
+
+    --modal-text-bubble-tail-b-neck: 0.42;
+    --modal-text-bubble-tail-b-tip: 0.34;
     --modal-text-bubble-pointer-x: 50%;
     --modal-text-bubble-pointer-y: 50%;
 
