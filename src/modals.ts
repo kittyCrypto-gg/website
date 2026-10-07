@@ -1273,7 +1273,7 @@ export class ModalSession {
             tailANeck: this.#clampPos(
                 this.#bubbleCssNumber(
                     "--modal-text-bubble-tail-a-neck",
-                    0.42
+                    -0.42
                 ),
                 -1,
                 1
@@ -1281,7 +1281,7 @@ export class ModalSession {
             tailATip: this.#clampPos(
                 this.#bubbleCssNumber(
                     "--modal-text-bubble-tail-a-tip",
-                    0.34
+                    0.1
                 ),
                 -1,
                 1
@@ -1289,7 +1289,7 @@ export class ModalSession {
             tailBNeck: this.#clampPos(
                 this.#bubbleCssNumber(
                     "--modal-text-bubble-tail-b-neck",
-                    0.42
+                    0.1
                 ),
                 -1,
                 1
@@ -1297,7 +1297,7 @@ export class ModalSession {
             tailBTip: this.#clampPos(
                 this.#bubbleCssNumber(
                     "--modal-text-bubble-tail-b-tip",
-                    0.34
+                    0.42
                 ),
                 -1,
                 1
@@ -1403,13 +1403,19 @@ export class ModalSession {
 
         const tail = geometry.tailLength;
 
-        const tailANeck =
+        /*
+         * Neck values control how far the interior control point reaches
+         * toward the tip. They never move the first/last control point off
+         * the frame tangent, so arbitrary signed values cannot detach the
+         * tail from the bubble outline.
+         */
+        const tailANeckReach =
             tail *
-            geometry.tailANeck;
+            ((geometry.tailANeck + 1) / 2);
 
-        const tailBNeck =
+        const tailBNeckReach =
             tail *
-            geometry.tailBNeck;
+            ((geometry.tailBNeck + 1) / 2);
 
         const tailATip =
             geometry.tailATip;
@@ -1417,17 +1423,27 @@ export class ModalSession {
         const tailBTip =
             geometry.tailBTip;
 
+        /*
+         * These handles lie on the frame itself. That makes the derivative
+         * at every tail/frame join collinear with the frame edge.
+         */
+        const verticalTangent =
+            Math.max(1, verticalHalf * 0.45);
+
+        const horizontalTangent =
+            Math.max(1, horizontalHalf * 0.45);
+
         const paths: Record<ModalPlacement, string> = {
             left: [
                 `M ${left + radius} ${top}`,
                 `H ${right - radius}`,
                 `Q ${right} ${top} ${right} ${top + radius}`,
                 `V ${py - verticalHalf}`,
-                `C ${right + tailANeck} ${py - verticalHalf}`,
-                `${right + tail} ${py - verticalHalf * tailATip}`,
+                `C ${right} ${py - verticalHalf + verticalTangent}`,
+                `${right + tailANeckReach} ${py - verticalHalf * tailATip}`,
                 `${right + tail} ${py}`,
-                `C ${right + tail} ${py + verticalHalf * tailBTip}`,
-                `${right + tailBNeck} ${py + verticalHalf}`,
+                `C ${right + tailBNeckReach} ${py + verticalHalf * tailBTip}`,
+                `${right} ${py + verticalHalf - verticalTangent}`,
                 `${right} ${py + verticalHalf}`,
                 `V ${bottom - radius}`,
                 `Q ${right} ${bottom} ${right - radius} ${bottom}`,
@@ -1447,11 +1463,11 @@ export class ModalSession {
                 `H ${left + radius}`,
                 `Q ${left} ${bottom} ${left} ${bottom - radius}`,
                 `V ${py + verticalHalf}`,
-                `C ${left - tailANeck} ${py + verticalHalf}`,
-                `${left - tail} ${py + verticalHalf * tailATip}`,
+                `C ${left} ${py + verticalHalf - verticalTangent}`,
+                `${left - tailANeckReach} ${py + verticalHalf * tailATip}`,
                 `${left - tail} ${py}`,
-                `C ${left - tail} ${py - verticalHalf * tailBTip}`,
-                `${left - tailBNeck} ${py - verticalHalf}`,
+                `C ${left - tailBNeckReach} ${py - verticalHalf * tailBTip}`,
+                `${left} ${py - verticalHalf + verticalTangent}`,
                 `${left} ${py - verticalHalf}`,
                 `V ${top + radius}`,
                 `Q ${left} ${top} ${left + radius} ${top}`,
@@ -1465,11 +1481,11 @@ export class ModalSession {
                 `V ${bottom - radius}`,
                 `Q ${right} ${bottom} ${right - radius} ${bottom}`,
                 `H ${px + horizontalHalf}`,
-                `C ${px + horizontalHalf} ${bottom + tailANeck}`,
-                `${px + horizontalHalf * tailATip} ${bottom + tail}`,
+                `C ${px + horizontalHalf - horizontalTangent} ${bottom}`,
+                `${px + horizontalHalf * tailATip} ${bottom + tailANeckReach}`,
                 `${px} ${bottom + tail}`,
-                `C ${px - horizontalHalf * tailBTip} ${bottom + tail}`,
-                `${px - horizontalHalf} ${bottom + tailBNeck}`,
+                `C ${px - horizontalHalf * tailBTip} ${bottom + tailBNeckReach}`,
+                `${px - horizontalHalf + horizontalTangent} ${bottom}`,
                 `${px - horizontalHalf} ${bottom}`,
                 `H ${left + radius}`,
                 `Q ${left} ${bottom} ${left} ${bottom - radius}`,
@@ -1481,11 +1497,11 @@ export class ModalSession {
             bottom: [
                 `M ${left + radius} ${top}`,
                 `H ${px - horizontalHalf}`,
-                `C ${px - horizontalHalf} ${top - tailANeck}`,
-                `${px - horizontalHalf * tailATip} ${top - tail}`,
+                `C ${px - horizontalHalf + horizontalTangent} ${top}`,
+                `${px - horizontalHalf * tailATip} ${top - tailANeckReach}`,
                 `${px} ${top - tail}`,
-                `C ${px + horizontalHalf * tailBTip} ${top - tail}`,
-                `${px + horizontalHalf} ${top - tailBNeck}`,
+                `C ${px + horizontalHalf * tailBTip} ${top - tailBNeckReach}`,
+                `${px + horizontalHalf - horizontalTangent} ${top}`,
                 `${px + horizontalHalf} ${top}`,
                 `H ${right - radius}`,
                 `Q ${right} ${top} ${right} ${top + radius}`,

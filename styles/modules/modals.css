@@ -609,6 +609,34 @@
     box-shadow: var(--tooltip-shadow);
 }
 
+/*
+ * Plain tips keep their normal rectangular modal geometry, but the visible
+ * border lives on a dedicated layer so CRT can distort the border without
+ * applying a second whole-modal filter to the already-distorted text.
+ */
+.modal.did-you-know-tip:not(.modal-text-bubble) {
+    border-color: transparent;
+}
+
+.modal.did-you-know-tip:not(.modal-text-bubble)::before {
+    content: "";
+
+    position: absolute;
+    inset: -1px;
+
+    box-sizing: border-box;
+
+    border: 1px solid var(--tooltip-border-colour);
+    border-radius: inherit;
+
+    pointer-events: none;
+}
+
+#non-blocking-modal-stack
+.modal.non-blocking.did-you-know-tip:not(.modal-text-bubble) {
+    position: relative;
+}
+
 /* Positioned non-blocking callouts follow a live target in the viewport. */
 .modal.non-blocking.modal-positioned,
 #non-blocking-modal-stack .modal.non-blocking.modal-positioned {
@@ -637,14 +665,15 @@
         0        = neutral,
         positive = bend outward / convex.
 
-        "neck" affects how each edge leaves the main frame.
+        "neck" controls the inward/outward reach after the tangent frame join.
+        The join itself always remains tangent to the frame.
         "tip" affects how each edge approaches the nipple apex.
     */
-    --modal-text-bubble-tail-a-neck: 0.42;
-    --modal-text-bubble-tail-a-tip: 0.34;
+    --modal-text-bubble-tail-a-neck: -0.42;
+    --modal-text-bubble-tail-a-tip: 0.1;
 
-    --modal-text-bubble-tail-b-neck: 0.42;
-    --modal-text-bubble-tail-b-tip: 0.34;
+    --modal-text-bubble-tail-b-neck: 0.1;
+    --modal-text-bubble-tail-b-tip: 0.42;
     --modal-text-bubble-pointer-x: 50%;
     --modal-text-bubble-pointer-y: 50%;
 

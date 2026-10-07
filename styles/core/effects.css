@@ -195,7 +195,8 @@ body:not(.effect-disable-text-shadow) .text-shadow:not(svg):not(.clicker-counter
 }
 
 body:not(.effect-disable-text-shadow) svg.text-shadow,
-body:not(.effect-disable-text-shadow) .clicker-counter__face-shell.text-shadow {
+body:not(.effect-disable-text-shadow) .clicker-counter__face-shell.text-shadow,
+body:not(.effect-disable-text-shadow) .did-you-know-tip:not(.modal-text-bubble)::before {
   animation:
     effect-crt-svg-shadow
     var(--effect-crt-text-shadow-duration)
@@ -208,6 +209,11 @@ body:not(.effect-disable-text-shadow) .commit-identicon {
 
 body.effect-disable-text-shadow .text-shadow {
   text-shadow: none;
+  filter: none;
+  animation: none;
+}
+
+body.effect-disable-text-shadow .did-you-know-tip:not(.modal-text-bubble)::before {
   filter: none;
   animation: none;
 }
