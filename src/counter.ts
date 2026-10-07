@@ -180,14 +180,17 @@ function mkTable(
     for (let index = 0; index < length; index += 1) {
         const cell = document.createElement("td");
         const windowElement = document.createElement("div");
+        const faceShell = document.createElement("span");
         const face = document.createElement("span");
 
         cell.className = "clicker-counter__cell";
         windowElement.className = "clicker-counter__window";
+        faceShell.className = "clicker-counter__face-shell";
         face.className = "clicker-counter__face";
         face.textContent = "0";
 
-        windowElement.appendChild(face);
+        faceShell.appendChild(face);
+        windowElement.appendChild(faceShell);
         cell.appendChild(windowElement);
         row.appendChild(cell);
 

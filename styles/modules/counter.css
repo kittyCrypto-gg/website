@@ -141,6 +141,11 @@
             border-right: 0;
         }
 
+        & .clicker-counter__face-shell {
+            display: inline-block;
+            min-width: 1ch;
+        }
+
         &.is-spinning .clicker-counter__face {
             animation: counter-spin var(--counter-spin-duration) var(--counter-spin-easing);
         }

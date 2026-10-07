@@ -187,22 +187,23 @@ body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
     CRT Text Chromatic Aberration
 ========================================= */
 
-body:not(.effect-disable-text-shadow) .text-shadow {
+body:not(.effect-disable-text-shadow) .text-shadow:not(svg):not(.clicker-counter__face-shell) {
   animation:
-    effect-crt-text-shadow var(--effect-crt-text-shadow-duration) infinite;
+    effect-crt-text-shadow
+    var(--effect-crt-text-shadow-duration)
+    infinite;
 }
 
-body:not(.effect-disable-text-shadow) svg.text-shadow:is(path,
-  polygon,
-  polyline,
-  line,
-  circle,
-  ellipse,
-  rect,
-  use,
-  text) {
+body:not(.effect-disable-text-shadow) svg.text-shadow,
+body:not(.effect-disable-text-shadow) .clicker-counter__face-shell.text-shadow {
   animation:
-    effect-crt-svg-shadow var(--effect-crt-text-shadow-duration) infinite;
+    effect-crt-svg-shadow
+    var(--effect-crt-text-shadow-duration)
+    infinite;
+}
+
+body:not(.effect-disable-text-shadow) .commit-identicon {
+  overflow: visible;
 }
 
 body.effect-disable-text-shadow .text-shadow {
