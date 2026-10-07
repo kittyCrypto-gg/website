@@ -4,6 +4,13 @@ import type { MainThemeEntry } from "./uiFetch.ts";
 export type ThemeMap = Readonly<Record<string, MainThemeEntry>>;
 
 export const THEME_CHANGED_EVENT = "kc:theme-changed";
+export const THEME_MODE_CHANGED_EVENT = "kc:theme-mode-changed";
+
+export type ThemeMode = "dark" | "light";
+
+export type ThemeModeChangedDetail = Readonly<{
+    current: ThemeMode;
+}>;
 
 export type ThemeChangedDetail = Readonly<{
     previous: string;

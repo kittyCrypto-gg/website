@@ -17,6 +17,7 @@ import { installMenuToggle } from "./menues.tsx";
 import { initNtcs } from "./notices.tsx";
 import { initNoticeBoard } from "./noticeBoard.tsx";
 import { bindToggleVisuals, showToggleVisual } from "./toggleIcons.ts";
+import * as themeChanger from "./themeChanger.ts";
 
 // import { mkCurTheme } from "./cursors/cursorTheme.tsx";
 
@@ -744,6 +745,14 @@ async function initUi(): Promise<void> {
         const applyTheme = (theme: "dark" | "light", persist: boolean = false): void => {
             document.documentElement.classList.toggle("dark-mode", theme === "dark");
             document.documentElement.classList.toggle("light-mode", theme === "light");
+
+            // Keep theme details
+            document.dispatchEvent(
+                new CustomEvent<themeChanger.ThemeModeChangedDetail>(
+                    themeChanger.THEME_MODE_CHANGED_EVENT,
+                    { detail: { current: theme } }
+                )
+            );
 
             void showToggleVisual(
                 themeToggle,

@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import type { fxUIconf } from "./uiFetch.ts";
 import * as modals from "./modals.ts";
+import { THEME_MODE_CHANGED_EVENT } from "./themeChanger.ts";
 import { render2Mkup } from "./reactHelpers.tsx";
 import { installMenuToggle } from "./menues.tsx";
 
@@ -10,6 +11,7 @@ type Prefs = Readonly<{
     scanlinesEnabled: boolean;
     scanlineOpacity: number;
     scanlineSpeed: number;
+    textShadowIntensity: number;
 }>;
 
 type StoredPrefs = Readonly<Partial<Prefs>>;
@@ -41,6 +43,22 @@ const DEF_SCAN_SPD = 90;
 const SCAN_MS_MIN = 1;
 const SCAN_MS_MAX = 22000;
 
+/*
+ * Text-shadow intensity is expressed to the UI as 0..100%.
+ * 20% is the base/original strength.
+ * The upper range follows a non-linear curve so 100% is intentionally obnoxious.
+ */
+const TEXT_SHADOW_MIN = 0;
+const TEXT_SHADOW_MAX = 100;
+const TEXT_SHADOW_BASE_PERCENT = 20;
+const TEXT_SHADOW_CURVE_EXPONENT = 1.55;
+
+const TEXT_SHADOW_KEYFRAMES_STYLE_ID =
+    "effect-crt-text-shadow-keyframes";
+
+const TEXT_SHADOW_FRAME_STEP = 5;
+const TEXT_SHADOW_RANDOM_SEED = 0x435254;
+
 const SLIDER_MIN = 0;
 const SLIDER_MAX = 100;
 const SLIDER_STEP = 1;
@@ -49,6 +67,28 @@ let defPrefs: Prefs | null = null;
 let mod: modals.Modal | null = null;
 let syncOn = false;
 let uiCfg: fxUIconf | null = null;
+let textShadowObserver: MutationObserver | null = null;
+
+/**
+ * 
+ * @param {number} intensity 
+ * @returns {void}
+ */
+function applyTextShadowScale(intensity: number): void {
+    const multiplier =
+        document.documentElement.classList.contains("dark-mode")
+            ? 2.13
+            : 1;
+
+    const scale =
+        textShadowScale(intensity) *
+        multiplier;
+
+    document.documentElement.style.setProperty(
+        "--effect-crt-text-shadow-scale",
+        cssNum(scale)
+    );
+}
 
 /**
  * Clamp thing. Keeps slider rubbish in bounds and stops NaN being annoying.
@@ -93,6 +133,355 @@ function pct(value: number): string {
  */
 function cssNum(value: number): string {
     return String(Number(value.toFixed(3)));
+}
+
+/**
+ * Maps the 0..100 UI value onto the actual text-shadow multiplier.
+ *
+ * 20% is deliberately anchored at 1x as the base CRT strength.
+ * Above that, the curve ramps increasingly hard so 100% becomes properly
+ * obnoxious rather than merely "a bit more RGB".
+ *
+ * @param {number} intensity
+ * @returns {number}
+ */
+function textShadowScale(intensity: number): number {
+    const clampedIntensity = clamp(
+        intensity,
+        TEXT_SHADOW_MIN,
+        TEXT_SHADOW_MAX
+    );
+
+    if (clampedIntensity <= 0) {
+        return 0;
+    }
+
+    const normalised =
+        clampedIntensity /
+        TEXT_SHADOW_BASE_PERCENT;
+
+    return Math.pow(
+        normalised,
+        TEXT_SHADOW_CURVE_EXPONENT
+    );
+}
+
+
+/**
+ * Creates a deterministic pseudo-random generator.
+ * Same seed means the CRT jitter pattern is identical every page load.
+ *
+ * @param {number} initialSeed
+ * @returns {() => number}
+ */
+function createRandomGenerator(initialSeed: number): () => number {
+    let state = initialSeed >>> 0;
+
+    return (): number => {
+        state ^= state << 13;
+        state ^= state >>> 17;
+        state ^= state << 5;
+
+        return (state >>> 0) / 4294967296;
+    };
+}
+
+/**
+ * Rounds a number to one decimal place.
+ *
+ * @param {number} value
+ * @returns {number}
+ */
+function oneDecimal(value: number): number {
+    return Math.round(value * 10) / 10;
+}
+
+/**
+ * Builds the deterministic CRT text-shadow animation.
+ *
+ * The frame cadence stays at 5%, but the jitter values are generated rather
+ * than hand-written. Each multiplier is rounded to one decimal place.
+ *
+ * The generated frames use the stylesheet's base distance, blur and RGB alpha
+ * variables, multiplied by the live intensity scale written by apply().
+ *
+ * @returns {string}
+ */
+function buildTextShadowKeyframes(): string {
+    const random = createRandomGenerator(TEXT_SHADOW_RANDOM_SEED);
+    const frames: string[] = [];
+
+    for (
+        let percent = 0;
+        percent <= 100;
+        percent += TEXT_SHADOW_FRAME_STEP
+    ) {
+        const jitter = oneDecimal(random());
+        const jitterText = jitter.toFixed(1);
+
+        frames.push(`
+${String(percent)}% {
+  text-shadow:
+    calc(
+      var(--effect-crt-text-shadow-distance) *
+      var(--effect-crt-text-shadow-scale, 1) *
+      ${jitterText}
+    )
+    0
+    1px
+    rgb(
+      0 30 255 /
+      calc(
+        var(--effect-crt-text-shadow-blue-alpha) *
+        var(--effect-crt-text-shadow-scale, 1)
+      )
+    ),
+
+    calc(
+      var(--effect-crt-text-shadow-distance) *
+      var(--effect-crt-text-shadow-scale, 1) *
+      -${jitterText}
+    )
+    0
+    1px
+    rgb(
+      255 0 80 /
+      calc(
+        var(--effect-crt-text-shadow-red-alpha) *
+        var(--effect-crt-text-shadow-scale, 1)
+      )
+    ),
+
+    0
+    0
+    calc(
+      var(--effect-crt-text-shadow-blur) *
+      var(--effect-crt-text-shadow-scale, 1)
+    );
+}`);
+    }
+
+    return `
+@keyframes effect-crt-text-shadow {
+${frames.join("\n\n")}
+}
+`.trim();
+}
+
+/**
+ * Builds the deterministic CRT chromatic-aberration animation for SVGs.
+ *
+ * SVG geometry does not respond to `text-shadow`, so this mirrors the text
+ * effect using CSS `filter: drop-shadow()`.
+ *
+ * The frame cadence and pseudo-random jitter sequence intentionally match
+ * `buildTextShadowKeyframes()` so text and SVG graphics distort in sync.
+ *
+ * The generated frames use the same stylesheet distance and RGB alpha
+ * variables, multiplied by the live intensity scale written by apply().
+ *
+ * @returns {string}
+ */
+function buildSvgShadowKeyframes(): string {
+    const random = createRandomGenerator(TEXT_SHADOW_RANDOM_SEED);
+    const frames: string[] = [];
+
+    for (
+        let percent = 0;
+        percent <= 100;
+        percent += TEXT_SHADOW_FRAME_STEP
+    ) {
+        const jitter = oneDecimal(random());
+        const jitterText = jitter.toFixed(1);
+
+        frames.push(`
+${String(percent)}% {
+  filter:
+    drop-shadow(
+      calc(
+        var(--effect-crt-text-shadow-distance) *
+        var(--effect-crt-text-shadow-scale, 1) *
+        ${jitterText}
+      )
+      0
+      1px
+      rgb(
+        0 30 255 /
+        calc(
+          var(--effect-crt-text-shadow-blue-alpha) *
+          var(--effect-crt-text-shadow-scale, 1)
+        )
+      )
+    )
+
+    drop-shadow(
+      calc(
+        var(--effect-crt-text-shadow-distance) *
+        var(--effect-crt-text-shadow-scale, 1) *
+        -${jitterText}
+      )
+      0
+      1px
+      rgb(
+        255 0 80 /
+        calc(
+          var(--effect-crt-text-shadow-red-alpha) *
+          var(--effect-crt-text-shadow-scale, 1)
+        )
+      )
+    );
+}`);
+    }
+
+    return `
+@keyframes effect-crt-svg-shadow {
+${frames.join("\n\n")}
+}
+`.trim();
+}
+
+
+/**
+ * Elements whose contents are not ordinary rendered page text.
+ */
+const TEXT_SHADOW_SKIP_TAGS = new Set([
+    "SCRIPT",
+    "STYLE",
+    "NOSCRIPT",
+    "TEMPLATE"
+]);
+
+/**
+ * Resolves the element that should carry the CRT text-shadow animation
+ * for one text node.
+ *
+ * Animated emoticons use their wrapper so the CRT animation does not
+ * overwrite their own blink animation.
+ *
+ * @param {Node} node
+ * @returns {HTMLElement | null}
+ */
+function textShadowTarget(node: Node): HTMLElement | null {
+    if (node.nodeType !== Node.TEXT_NODE) return null;
+    if (!(node.nodeValue?.trim())) return null;
+
+    const parent = node.parentElement;
+    if (!parent) return null;
+
+    const counterFace = parent.closest(".clicker-counter__face");
+    const counterWindow = counterFace?.closest(".clicker-counter__window");
+
+    if (counterWindow instanceof HTMLElement) {
+        return counterWindow;
+    }
+
+    if (parent.closest("svg")) return null;
+    if (TEXT_SHADOW_SKIP_TAGS.has(parent.tagName)) return null;
+
+    const blink = parent.closest(".emoticon-blink");
+
+    return blink instanceof HTMLElement
+        ? blink
+        : parent;
+}
+
+/**
+ * Marks one text node for the CRT text-shadow effect.
+ *
+ * @param {Node} node
+ * @returns {void}
+ */
+function markTextShadowNode(node: Node): void {
+
+    if (node instanceof SVGSVGElement) {
+        node.classList.add("text-shadow");
+        return;
+    }
+
+    const target = textShadowTarget(node);
+    if (!target) return;
+
+    target.classList.add("text-shadow");
+}
+
+/**
+ * Marks all text below one DOM node.
+ *
+ * @param {Node} root
+ * @returns {void}
+ */
+function markTextShadowTargets(root: Node): void {
+    markTextShadowNode(root);
+
+    const walker = document.createTreeWalker(
+        root,
+        NodeFilter.SHOW_TEXT |
+        NodeFilter.SHOW_ELEMENT
+    );
+
+    for (
+        let node = walker.nextNode();
+        node;
+        node = walker.nextNode()
+    ) {
+        markTextShadowNode(node);
+    }
+}
+
+/**
+ * Handles one DOM mutation.
+ *
+ * @param {MutationRecord} mutation
+ * @returns {void}
+ */
+function handleTextShadowMutation(mutation: MutationRecord): void {
+    if (mutation.type === "characterData") {
+        markTextShadowNode(mutation.target);
+        return;
+    }
+
+    mutation.addedNodes.forEach(markTextShadowTargets);
+}
+
+/**
+ * Marks existing text and watches for text added later.
+ *
+ * @returns {void}
+ */
+function ensureTextShadowTargets(): void {
+    markTextShadowTargets(document.body);
+    if (textShadowObserver) return;
+
+    textShadowObserver = new MutationObserver((mutations) => {
+        mutations.forEach(handleTextShadowMutation);
+    });
+
+    textShadowObserver.observe(document.body, {
+        childList: true,
+        characterData: true,
+        subtree: true
+    });
+}
+
+/**
+ * Installs the generated CRT text-shadow keyframes once.
+ *
+ * @returns {void}
+ */
+function ensureTextShadowKeyframes(): void {
+    if (document.getElementById(TEXT_SHADOW_KEYFRAMES_STYLE_ID)) {
+        return;
+    }
+
+    const styleElement = document.createElement("style");
+
+    styleElement.id = TEXT_SHADOW_KEYFRAMES_STYLE_ID;
+    styleElement.textContent = [
+        buildTextShadowKeyframes(),
+        buildSvgShadowKeyframes()
+    ].join("\n\n");
+
+    document.head.appendChild(styleElement);
 }
 
 /**
@@ -196,7 +585,17 @@ function readCss(): Prefs {
             SCAN_OP_MIN,
             SCAN_OP_MAX
         ),
-        scanlineSpeed: DEF_SCAN_SPD
+        scanlineSpeed: DEF_SCAN_SPD,
+        textShadowIntensity: body.classList.contains("effect-disable-text-shadow")
+            ? 0
+            : clamp(
+                num(
+                    rootStyle.getPropertyValue("--effect-crt-text-shadow-intensity"),
+                    TEXT_SHADOW_BASE_PERCENT
+                ),
+                TEXT_SHADOW_MIN,
+                TEXT_SHADOW_MAX
+            )
     };
 }
 
@@ -234,7 +633,11 @@ function stored(): StoredPrefs | null {
             scanlineOpacity:
                 typeof record.scanlineOpacity === "number" ? record.scanlineOpacity : undefined,
             scanlineSpeed:
-                typeof record.scanlineSpeed === "number" ? record.scanlineSpeed : undefined
+                typeof record.scanlineSpeed === "number" ? record.scanlineSpeed : undefined,
+            textShadowIntensity:
+                typeof record.textShadowIntensity === "number"
+                    ? record.textShadowIntensity
+                    : undefined
         };
     } catch {
         return null;
@@ -266,13 +669,19 @@ function merge(base: Prefs, fromStore: StoredPrefs | null): Prefs {
         SCAN_SPD_MIN,
         SCAN_SPD_MAX
     );
+    const textShadowIntensity = clamp(
+        fromStore.textShadowIntensity ?? base.textShadowIntensity,
+        TEXT_SHADOW_MIN,
+        TEXT_SHADOW_MAX
+    );
 
     return {
         phosphorEnabled: phosphorOpacity > 0 && (fromStore.phosphorEnabled ?? base.phosphorEnabled),
         phosphorOpacity,
         scanlinesEnabled: scanlineOpacity > 0 && (fromStore.scanlinesEnabled ?? base.scanlinesEnabled),
         scanlineOpacity,
-        scanlineSpeed
+        scanlineSpeed,
+        textShadowIntensity
     };
 }
 
@@ -312,12 +721,24 @@ function live(): Prefs {
             )
         );
 
+    const textShadowIntensity = body.classList.contains("effect-disable-text-shadow")
+        ? 0
+        : clamp(
+            num(
+                rootStyle.getPropertyValue("--effect-crt-text-shadow-intensity"),
+                base.textShadowIntensity
+            ),
+            TEXT_SHADOW_MIN,
+            TEXT_SHADOW_MAX
+        );
+
     return {
         phosphorEnabled: phosphorOpacity > 0 && !body.classList.contains("effect-disable-phosphor"),
         scanlinesEnabled: scanlineOpacity > 0 && !body.classList.contains("effect-disable-scanlines"),
         phosphorOpacity,
         scanlineOpacity,
-        scanlineSpeed
+        scanlineSpeed,
+        textShadowIntensity
     };
 }
 
@@ -357,6 +778,18 @@ function apply(prefs: Prefs): void {
         ms(spdToMs(prefs.scanlineSpeed))
     );
 
+    const textShadowIntensity = clamp(
+        prefs.textShadowIntensity,
+        TEXT_SHADOW_MIN,
+        TEXT_SHADOW_MAX
+    );
+
+    document.documentElement.style.setProperty(
+        "--effect-crt-text-shadow-intensity",
+        cssNum(textShadowIntensity)
+    );
+    applyTextShadowScale(textShadowIntensity);
+
     document.body.classList.toggle(
         "effect-disable-phosphor",
         !prefs.phosphorEnabled || prefs.phosphorOpacity <= 0
@@ -366,6 +799,10 @@ function apply(prefs: Prefs): void {
         !prefs.scanlinesEnabled || prefs.scanlineOpacity <= 0
     );
     document.body.classList.toggle("effect-static-scanlines", prefs.scanlineSpeed <= 0);
+    document.body.classList.toggle(
+        "effect-disable-text-shadow",
+        textShadowIntensity <= 0
+    );
 }
 
 /**
@@ -427,6 +864,11 @@ function syncMod(modalEl: HTMLDivElement, prefs: Prefs): void {
     const phosphorPercent = opToPct(prefs.phosphorOpacity, PHOS_OP_MAX);
     const scanlinePercent = opToPct(prefs.scanlineOpacity, SCAN_OP_MAX);
     const scanlineSpeed = clamp(prefs.scanlineSpeed, SCAN_SPD_MIN, SCAN_SPD_MAX);
+    const textShadowIntensity = clamp(
+        prefs.textShadowIntensity,
+        TEXT_SHADOW_MIN,
+        TEXT_SHADOW_MAX
+    );
 
     syncChk(modalEl, "#effects-phosphor-enabled", !prefs.phosphorEnabled || phosphorPercent === 0);
     syncChk(modalEl, "#effects-scanlines-enabled", !prefs.scanlinesEnabled || scanlinePercent === 0);
@@ -434,10 +876,12 @@ function syncMod(modalEl: HTMLDivElement, prefs: Prefs): void {
     syncRng(modalEl, "#effects-phosphor-opacity", phosphorPercent);
     syncRng(modalEl, "#effects-scanline-opacity", scanlinePercent);
     syncRng(modalEl, "#effects-scanline-speed", scanlineSpeed);
+    syncRng(modalEl, "#effects-text-shadow-intensity", textShadowIntensity);
 
     syncOut(modalEl, "#effects-phosphor-opacity-value", phosphorPercent);
     syncOut(modalEl, "#effects-scanline-opacity-value", scanlinePercent);
     syncOut(modalEl, "#effects-scanline-speed-value", scanlineSpeed);
+    syncOut(modalEl, "#effects-text-shadow-intensity-value", textShadowIntensity);
 }
 
 /**
@@ -460,6 +904,11 @@ function Panel(props: Props): ReactElement {
     const phosphorPercent = opToPct(props.prefs.phosphorOpacity, PHOS_OP_MAX);
     const scanlinePercent = opToPct(props.prefs.scanlineOpacity, SCAN_OP_MAX);
     const scanlineSpeed = clamp(props.prefs.scanlineSpeed, SCAN_SPD_MIN, SCAN_SPD_MAX);
+    const textShadowIntensity = clamp(
+        props.prefs.textShadowIntensity,
+        TEXT_SHADOW_MIN,
+        TEXT_SHADOW_MAX
+    );
 
     return (
         <>
@@ -481,6 +930,35 @@ function Panel(props: Props): ReactElement {
             </div>
 
             <div className="effects-modal__grid">
+                <section className="effects-modal__section">
+                    <div className="effects-modal__section-heading">
+                        <h3>Text distortion</h3>
+                        <p>Controls the animated RGB separation applied to text and SVG graphics.</p>
+                    </div>
+
+                    <div className="effects-modal__control">
+                        <div className="effects-modal__control-meta">
+                            <label htmlFor="effects-text-shadow-intensity">{text.intensityLabel}</label>
+                            <output id="effects-text-shadow-intensity-value">
+                                <span>&nbsp;</span>{pct(textShadowIntensity)}
+                            </output>
+                        </div>
+
+                        <input
+                            id="effects-text-shadow-intensity"
+                            type="range"
+                            min={String(TEXT_SHADOW_MIN)}
+                            max={String(TEXT_SHADOW_MAX)}
+                            step={String(SLIDER_STEP)}
+                            defaultValue={String(Math.round(textShadowIntensity))}
+                        />
+
+                        <p className="effects-modal__hint">
+                            0% disables distortion. 20% is the base CRT strength. The upper range ramps aggressively, with 100% deliberately excessive.
+                        </p>
+                    </div>
+                </section>
+
                 <section className="effects-modal__section">
                     <div className="effects-modal__section-heading">
                         <h3>{text.phosphorTitle}</h3>
@@ -723,6 +1201,35 @@ const onScanSpd = (ev: Event, ctx: Ctx): void => {
 };
 
 /**
+ * Handles CRT text-distortion intensity.
+ *
+ * Controls the shared chromatic-aberration strength applied to rendered
+ * text and SVG graphics.
+ *
+ * @param {Event} ev
+ * @param {Ctx} ctx
+ * @returns {void}
+ */
+const onTextShadowIntensity = (ev: Event, ctx: Ctx): void => {
+    const target = ev.currentTarget;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    const intensity = clamp(
+        Number.parseFloat(target.value),
+        TEXT_SHADOW_MIN,
+        TEXT_SHADOW_MAX
+    );
+
+    const next: Prefs = {
+        ...live(),
+        textShadowIntensity: intensity
+    };
+
+    commit(next);
+    syncMod(ctx.modalEl, next);
+};
+
+/**
  * Reset button handler. Goes back to the css-ish defaults.
  * @param {Event} _ev
  * @param {Ctx} ctx
@@ -735,7 +1242,8 @@ const onReset = (_ev: Event, ctx: Ctx): void => {
         phosphorOpacity: base.phosphorOpacity,
         scanlinesEnabled: true,
         scanlineOpacity: base.scanlineOpacity,
-        scanlineSpeed: base.scanlineSpeed
+        scanlineSpeed: base.scanlineSpeed,
+        textShadowIntensity: base.textShadowIntensity
     };
 
     commit(next);
@@ -762,6 +1270,11 @@ function ensureMod(): modals.Modal {
             modals.onModalEvent("#effects-phosphor-opacity", "input", onPhosOp),
             modals.onModalEvent("#effects-scanline-opacity", "input", onScanOp),
             modals.onModalEvent("#effects-scanline-speed", "input", onScanSpd),
+            modals.onModalEvent(
+                "#effects-text-shadow-intensity",
+                "input",
+                onTextShadowIntensity
+            ),
             modals.onModalEvent("#effects-reset", "click", onReset)
         ]
     });
@@ -798,6 +1311,15 @@ function ensureSync(): void {
         syncOpen();
     };
 
+    const onThemeModeChange = (): void => {
+        applyTextShadowScale(live().textShadowIntensity);
+    };
+
+    document.addEventListener(
+        THEME_MODE_CHANGED_EVENT,
+        onThemeModeChange
+    );
+
     window.addEventListener("storage", onStore);
 }
 
@@ -810,6 +1332,9 @@ function ensureSync(): void {
  */
 export function initEffectsControls(nextUi: fxUIconf): void {
     uiCfg = nextUi;
+
+    ensureTextShadowTargets();
+    ensureTextShadowKeyframes();
 
     defs();
     apply(resolved());

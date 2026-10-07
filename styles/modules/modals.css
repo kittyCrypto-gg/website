@@ -81,6 +81,15 @@
     --temporary-notice-radius: 0.5rem;
     --temporary-notice-z-index: 9999;
     --temporary-notice-fade: 0.3s ease;
+
+    /* Scrollbars */
+
+    --modal-scrollbar-size: 0.75rem;
+    --modal-scrollbar-thumb:
+        color-mix(in srgb, var(--chatroom-text-colour) 42%, transparent);
+    --modal-scrollbar-thumb-hover:
+        color-mix(in srgb, var(--chatroom-text-colour) 62%, transparent);
+    --modal-scrollbar-track: transparent;
 }
 
 /* Modal overlay: full-screen backdrop for modals, with centring for modal content */
@@ -260,6 +269,36 @@
 
     max-height: var(--modal-max-height);
     overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color:
+        var(--modal-scrollbar-thumb) var(--modal-scrollbar-track);
+
+    &::-webkit-scrollbar {
+        width: var(--modal-scrollbar-size);
+        height: var(--modal-scrollbar-size);
+    }
+
+    &::-webkit-scrollbar-track {
+        background: var(--modal-scrollbar-track);
+        border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--modal-scrollbar-thumb);
+        border: 0.2rem solid transparent;
+        border-radius: 999px;
+        background-clip: content-box;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: var(--modal-scrollbar-thumb-hover);
+        background-clip: content-box;
+    }
+
+    &::-webkit-scrollbar-corner {
+        background: transparent;
+    }
 
     box-sizing: border-box;
     overflow-wrap: break-word;
