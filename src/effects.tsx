@@ -75,6 +75,7 @@ let mod: modals.Modal | null = null;
 let syncOn = false;
 let uiCfg: fxUIconf | null = null;
 let textShadowObserver: MutationObserver | null = null;
+let windowBorderThemeObserver: MutationObserver | null = null;
 let effectsTipShown = false;
 let effectsTipObs: IntersectionObserver | null = null;
 
@@ -349,6 +350,74 @@ ${frames.join("\n\n")}
 `.trim();
 }
 
+/**
+ * Builds the matching CRT animation for window border boxes.
+ *
+ * Unlike the SVG/image effect this animates box-shadow, so only the window's
+ * outer frame is distorted. Child content keeps its existing text/object CRT
+ * treatment and is not filtered again.
+ *
+ * @returns {string}
+ */
+function buildWindowBorderShadowKeyframes(): string {
+    const random = createRandomGenerator(TEXT_SHADOW_RANDOM_SEED);
+    const frames: string[] = [];
+
+    for (
+        let percent = 0;
+        percent <= 100;
+        percent += TEXT_SHADOW_FRAME_STEP
+    ) {
+        const jitter = oneDecimal(random());
+        const jitterText = jitter.toFixed(1);
+
+        frames.push(`
+${String(percent)}% {
+  box-shadow:
+    var(
+      --effect-crt-window-base-shadow,
+      0 0 0 0 transparent
+    ),
+
+    calc(
+      var(--effect-crt-text-shadow-distance) *
+      var(--effect-crt-text-shadow-scale, 1) *
+      ${jitterText}
+    )
+    0
+    1px
+    rgb(
+      0 30 255 /
+      calc(
+        var(--effect-crt-text-shadow-blue-alpha) *
+        var(--effect-crt-text-shadow-scale, 1)
+      )
+    ),
+
+    calc(
+      var(--effect-crt-text-shadow-distance) *
+      var(--effect-crt-text-shadow-scale, 1) *
+      -${jitterText}
+    )
+    0
+    1px
+    rgb(
+      255 0 80 /
+      calc(
+        var(--effect-crt-text-shadow-red-alpha) *
+        var(--effect-crt-text-shadow-scale, 1)
+      )
+    );
+}`);
+    }
+
+    return `
+@keyframes effect-crt-window-border-shadow {
+${frames.join("\n\n")}
+}
+`.trim();
+}
+
 
 /**
  * Elements whose contents are not ordinary rendered page text.
@@ -359,6 +428,104 @@ const TEXT_SHADOW_SKIP_TAGS = new Set([
     "NOSCRIPT",
     "TEMPLATE"
 ]);
+
+/**
+ * @param {Element} node
+ * @returns {boolean}
+ */
+function isWindowFrame(node: Element): boolean {
+    if (node.classList.contains("window-frame")) return true;
+
+    return (
+        node instanceof HTMLDivElement &&
+        node.classList.contains("window")
+    );
+}
+
+/**
+ * Captures the window's real theme shadow before the CRT animation takes
+ * ownership of box-shadow.
+ *
+ * @param {HTMLElement} frame
+ * @returns {void}
+ */
+function syncWindowBaseShadow(frame: HTMLElement): void {
+    const hadClass =
+        frame.classList.contains("crt-window-border");
+
+    frame.classList.remove("crt-window-border");
+
+    const computed =
+        globalThis.getComputedStyle(frame).boxShadow;
+
+    frame.style.setProperty(
+        "--effect-crt-window-base-shadow",
+        computed === "none"
+            ? "0 0 0 0 transparent"
+            : computed
+    );
+
+    if (hadClass) {
+        frame.classList.add("crt-window-border");
+    }
+}
+
+/**
+ * Marks a window border without applying the filter to its contents.
+ *
+ * @param {Element} node
+ * @returns {void}
+ */
+function markWindowBorder(node: Element): void {
+    if (!isWindowFrame(node)) return;
+    if (!(node instanceof HTMLElement)) return;
+    if (node.classList.contains("crt-window-border")) return;
+
+    syncWindowBaseShadow(node);
+    node.classList.add("crt-window-border");
+}
+
+/**
+ * Re-samples window shadows after a theme/root class change.
+ *
+ * @returns {void}
+ */
+function syncWindowBorderShadows(): void {
+    const frames = document.querySelectorAll<HTMLElement>(
+        ".crt-window-border"
+    );
+
+    frames.forEach(syncWindowBaseShadow);
+}
+
+/**
+ * Watches the theme-bearing root/body classes so animated window borders keep
+ * the correct base shadow after a live theme or light/dark-mode change.
+ *
+ * @returns {void}
+ */
+function ensureWindowBorderThemeObserver(): void {
+    if (windowBorderThemeObserver) return;
+
+    windowBorderThemeObserver =
+        new MutationObserver(syncWindowBorderShadows);
+
+    windowBorderThemeObserver.observe(
+        document.documentElement,
+        {
+            attributes: true,
+            attributeFilter: ["class"]
+        }
+    );
+
+    windowBorderThemeObserver.observe(
+        document.body,
+        {
+            attributes: true,
+            attributeFilter: ["class"]
+        }
+    );
+}
 
 /**
  * Resolves the element that should carry the CRT text-shadow animation
@@ -400,8 +567,14 @@ function textShadowTarget(node: Node): HTMLElement | null {
  * @returns {void}
  */
 function markTextShadowNode(node: Node): void {
+    if (node instanceof Element) {
+        markWindowBorder(node);
+    }
 
-    if (node instanceof SVGSVGElement) {
+    if (
+        node instanceof SVGSVGElement ||
+        node instanceof HTMLImageElement
+    ) {
         node.classList.add("text-shadow");
         return;
     }
@@ -458,6 +631,8 @@ function handleTextShadowMutation(mutation: MutationRecord): void {
  */
 function ensureTextShadowTargets(): void {
     markTextShadowTargets(document.body);
+    ensureWindowBorderThemeObserver();
+
     if (textShadowObserver) return;
 
     textShadowObserver = new MutationObserver((mutations) => {
@@ -486,7 +661,8 @@ function ensureTextShadowKeyframes(): void {
     styleElement.id = TEXT_SHADOW_KEYFRAMES_STYLE_ID;
     styleElement.textContent = [
         buildTextShadowKeyframes(),
-        buildSvgShadowKeyframes()
+        buildSvgShadowKeyframes(),
+        buildWindowBorderShadowKeyframes()
     ].join("\n\n");
 
     document.head.appendChild(styleElement);

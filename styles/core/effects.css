@@ -188,7 +188,7 @@ body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
     CRT Text Chromatic Aberration
 ========================================= */
 
-body:not(.effect-disable-text-shadow) .text-shadow:not(svg):not(.clicker-counter__face-shell) {
+body:not(.effect-disable-text-shadow) .text-shadow:not(svg):not(img):not(.clicker-counter__face-shell) {
   animation:
     effect-crt-text-shadow
     var(--effect-crt-text-shadow-duration)
@@ -196,6 +196,7 @@ body:not(.effect-disable-text-shadow) .text-shadow:not(svg):not(.clicker-counter
 }
 
 body:not(.effect-disable-text-shadow) svg.text-shadow,
+body:not(.effect-disable-text-shadow) img.text-shadow,
 body:not(.effect-disable-text-shadow) .clicker-counter__face-shell.text-shadow,
 body:not(.effect-disable-text-shadow) .did-you-know-tip:not(.modal-text-bubble)::before {
   animation:
@@ -207,6 +208,18 @@ body:not(.effect-disable-text-shadow) .did-you-know-tip:not(.modal-text-bubble):
 body:not(.effect-disable-text-shadow) .commit-identicon {
   overflow: visible;
 }
+
+body:not(.effect-disable-text-shadow) .crt-window-border {
+  animation:
+    effect-crt-window-border-shadow
+    var(--effect-crt-text-shadow-duration)
+    infinite;
+}
+
+body.effect-disable-text-shadow .crt-window-border {
+  animation: none;
+}
+
 
 body.effect-disable-text-shadow .text-shadow {
   text-shadow: none;
