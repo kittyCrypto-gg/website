@@ -617,7 +617,8 @@
 }
 
 /* Optional compact speech-bubble treatment for anchored hints. */
-.modal.modal-text-bubble {
+.modal.modal-text-bubble,
+#non-blocking-modal-stack .modal.non-blocking.modal-text-bubble {
     --modal-text-bubble-pointer-size: 0.8rem;
     --modal-text-bubble-pointer-x: 50%;
     --modal-text-bubble-pointer-y: 50%;
