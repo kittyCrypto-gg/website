@@ -1397,7 +1397,7 @@ function EffectsTipModal(): ReactElement {
 
             <div className="modal-content">
                 <p>
-                    Effects too distracting? Disable or soften them using the CRT effects button.
+                    Effects too distracting? Disable or soften them here.
                 </p>
 
                 <label className="kc-checkbox-row">
@@ -1457,6 +1457,10 @@ const effectsTipModal = modals.factory.create({
     id: EFFECTS_TIP_MODAL_ID,
     mode: "non-blocking",
     readerModeCompatible: false,
+    position: {
+        target: "#effects-toggle"
+    },
+    asTextBubble: true,
     content: EFFECTS_TIP_MODAL_HTML,
     closeOnOutsideClick: false,
     decorators: [

@@ -3,6 +3,11 @@ import * as helpers from "./helpers.ts";
 
 type ModalMode = "blocking" | "non-blocking";
 
+type ModalPosition = Readonly<{
+    target: string | Element;
+    gap?: number;
+}>;
+
 type DecInfo = Readonly<{
     id: string;
     mode: ModalMode;
@@ -45,6 +50,9 @@ type Spec = Readonly<{
 
     closeOnEscape?: boolean;
     closeOnOutsideClick?: boolean;
+
+    position?: ModalPosition;
+    asTextBubble?: boolean;
 
     decorators?: readonly Dec[];
 }>;
@@ -415,6 +423,9 @@ export class Modal {
     #esc: boolean;
     #out: boolean;
 
+    readonly #pos: ModalPosition | null;
+    readonly #txtBubble: boolean;
+
     #decs: Dec[];
 
     constructor(factory: ModalFactory, spec: Spec) {
@@ -433,6 +444,9 @@ export class Modal {
 
         this.#esc = spec.closeOnEscape ?? true;
         this.#out = spec.closeOnOutsideClick ?? (this.#mode === "blocking");
+
+        this.#pos = spec.position ?? null;
+        this.#txtBubble = spec.asTextBubble ?? false;
 
         this.#decs = Array.from(spec.decorators ?? []);
     }
@@ -546,6 +560,8 @@ export class Modal {
             overlayClassName: this.#oCls,
             closeOnEscape: this.#esc,
             closeOnOutsideClick: this.#out,
+            position: this.#pos,
+            asTextBubble: this.#txtBubble,
             decorators: this.#decs,
             html: this.renderHtml()
         });
@@ -592,6 +608,9 @@ type SessSpec = Readonly<{
     closeOnEscape: boolean;
     closeOnOutsideClick: boolean;
 
+    position: ModalPosition | null;
+    asTextBubble: boolean;
+
     decorators: readonly Dec[];
     html: string;
 }>;
@@ -616,6 +635,9 @@ export class ModalSession {
     readonly #esc: boolean;
     readonly #out: boolean;
 
+    readonly #pos: ModalPosition | null;
+    readonly #txtBubble: boolean;
+
     readonly #decs: readonly Dec[];
 
     readonly #mEl: HTMLDivElement;
@@ -630,6 +652,8 @@ export class ModalSession {
     #raf: number | null;
     #mCln: Array<() => void>;
     #wCln: Array<() => void>;
+    #pCln: Array<() => void>;
+    #pRaf: number | null;
     #wOn: boolean;
 
     constructor(spec: SessSpec) {
@@ -642,6 +666,10 @@ export class ModalSession {
 
         this.#esc = spec.closeOnEscape;
         this.#out = spec.closeOnOutsideClick;
+
+        this.#pos = spec.position;
+        this.#txtBubble = spec.asTextBubble;
+
         this.#decs = spec.decorators;
 
         this.#key = this.#fac._keyFor(this.#id);
@@ -650,6 +678,8 @@ export class ModalSession {
         this.#raf = null;
         this.#mCln = [];
         this.#wCln = [];
+        this.#pCln = [];
+        this.#pRaf = null;
         this.#wOn = false;
 
         this.#mEl = document.createElement("div");
@@ -658,6 +688,14 @@ export class ModalSession {
 
         if (this.#mode === "non-blocking" && !this.#win) {
             this.#mEl.classList.add("non-blocking");
+        }
+
+        if (this.#pos) {
+            this.#mEl.classList.add("modal-positioned");
+        }
+
+        if (this.#txtBubble) {
+            this.#mEl.classList.add("modal-text-bubble");
         }
 
         if (this.#win) {
@@ -774,7 +812,9 @@ export class ModalSession {
         zTop(this.#key);
         syncScrl();
         this.#mnt();
+        this.#bindPos();
         this.#qSty();
+        this.#qPos();
     }
 
     /**
@@ -787,6 +827,7 @@ export class ModalSession {
         this.#mEl.innerHTML = html;
         this.#reMnt();
         this.#qSty();
+        this.#qPos();
     }
 
     /**
@@ -809,6 +850,12 @@ export class ModalSession {
 
         this.#runM();
         this.#runW();
+        this.#runPos();
+
+        if (this.#pRaf !== null) {
+            globalThis.cancelAnimationFrame(this.#pRaf);
+            this.#pRaf = null;
+        }
 
         if (this.#raf !== null) {
             globalThis.cancelAnimationFrame(this.#raf);
@@ -903,6 +950,165 @@ export class ModalSession {
 
             this.#mCln.push(cln);
         }
+    }
+
+
+    /**
+     * Resolves the optional anchor target for a positioned modal.
+     *
+     * @returns {Element | null}
+     */
+    #posTarget(): Element | null {
+        if (!this.#pos) return null;
+
+        const target = this.#pos.target;
+
+        if (typeof target === "string") {
+            return document.querySelector(target);
+        }
+
+        return target.isConnected
+            ? target
+            : null;
+    }
+
+    /**
+     * Cancels listeners and observers used by target-following modals.
+     *
+     * @returns {void}
+     */
+    #runPos(): void {
+        for (const fn of this.#pCln) {
+            try {
+                fn();
+            } catch {
+                /* ignore */
+            }
+        }
+
+        this.#pCln = [];
+    }
+
+    /**
+     * Queues one viewport-position sync.
+     *
+     * @returns {void}
+     */
+    #qPos(): void {
+        if (!this.#pos) return;
+        if (!this.#mEl.isConnected) return;
+        if (this.#pRaf !== null) return;
+
+        this.#pRaf = globalThis.requestAnimationFrame(() => {
+            this.#pRaf = null;
+            this.#syncPos();
+        });
+    }
+
+    /**
+     * Keeps the bubble to the left of its target while placing the pointer
+     * near the bubble's lower-right corner. If viewport clamping moves the
+     * bubble, the pointer follows vertically so it still aims at the target.
+     *
+     * @returns {void}
+     */
+    #syncPos(): void {
+        const target = this.#posTarget();
+        if (!target) return;
+        if (!this.#mEl.isConnected) return;
+
+        const targetRect = target.getBoundingClientRect();
+        const modalRect = this.#mEl.getBoundingClientRect();
+
+        const gap = Math.max(0, this.#pos?.gap ?? 14);
+        const viewportPad = 12;
+        const pointerInset = 24;
+        const targetY =
+            targetRect.top +
+            targetRect.height / 2;
+
+        const desiredLeft =
+            targetRect.left -
+            modalRect.width -
+            gap;
+
+        const desiredTop =
+            targetY -
+            modalRect.height +
+            pointerInset;
+
+        const maxLeft =
+            globalThis.innerWidth -
+            modalRect.width -
+            viewportPad;
+
+        const maxTop =
+            globalThis.innerHeight -
+            modalRect.height -
+            viewportPad;
+
+        const left = Math.max(
+            viewportPad,
+            Math.min(desiredLeft, maxLeft)
+        );
+
+        const top = Math.max(
+            viewportPad,
+            Math.min(desiredTop, maxTop)
+        );
+
+        const pointerY = Math.max(
+            18,
+            Math.min(
+                targetY - top,
+                modalRect.height - 18
+            )
+        );
+
+        this.#mEl.style.left = `${Math.round(left)}px`;
+        this.#mEl.style.top = `${Math.round(top)}px`;
+        this.#mEl.style.right = "auto";
+        this.#mEl.style.bottom = "auto";
+        this.#mEl.style.setProperty(
+            "--modal-text-bubble-pointer-y",
+            `${Math.round(pointerY)}px`
+        );
+    }
+
+    /**
+     * Watches the anchor and viewport so a positioned modal follows its
+     * target through scrolling, resizing and layout changes.
+     *
+     * @returns {void}
+     */
+    #bindPos(): void {
+        this.#runPos();
+
+        const target = this.#posTarget();
+        if (!target) return;
+
+        const queue = (): void => this.#qPos();
+
+        globalThis.addEventListener("resize", queue);
+        globalThis.addEventListener("scroll", queue, true);
+
+        this.#pCln.push(() => {
+            globalThis.removeEventListener("resize", queue);
+            globalThis.removeEventListener("scroll", queue, true);
+        });
+
+        if (typeof ResizeObserver === "undefined") {
+            this.#qPos();
+            return;
+        }
+
+        const observer = new ResizeObserver(queue);
+
+        observer.observe(target);
+        observer.observe(this.#mEl);
+
+        this.#pCln.push(() => observer.disconnect());
+        this.#qPos();
     }
 
     /**

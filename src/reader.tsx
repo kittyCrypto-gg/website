@@ -238,7 +238,7 @@ function ReaderModeTipModal(): ReactElement {
 
             <div className="modal-content">
                 <p>
-                    Too many distractions? Try Reader Mode for a cleaner reading experience.
+                    Too many distractions? Try Reader Mode here.
                 </p>
 
                 <label className="kc-checkbox-row">
@@ -635,6 +635,10 @@ const readerModeTipModal: Modal = factory.create({
     id: READER_MODE_TIP_MODAL_ID,
     mode: "non-blocking",
     readerModeCompatible: false,
+    position: {
+        target: "#reader-toggle"
+    },
+    asTextBubble: true,
     content: READER_MODE_TIP_MODAL_HTML,
     closeOnOutsideClick: false,
     decorators: [

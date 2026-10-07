@@ -602,6 +602,48 @@
     }
 }
 
+
+/* Positioned non-blocking callouts follow a live target in the viewport. */
+.modal.non-blocking.modal-positioned,
+#non-blocking-modal-stack .modal.non-blocking.modal-positioned {
+    position: fixed;
+    right: auto;
+    margin: 0;
+}
+
+/* Optional speech-bubble treatment for anchored hints. */
+.modal.modal-text-bubble {
+    --modal-text-bubble-pointer-size: 0.9rem;
+    --modal-text-bubble-pointer-y: calc(100% - 1.5rem);
+
+    overflow: visible;
+
+    border: 1px solid var(--tooltip-border-colour);
+    box-shadow: var(--tooltip-shadow);
+}
+
+.modal.modal-text-bubble::after {
+    content: "";
+
+    position: absolute;
+    top: var(--modal-text-bubble-pointer-y);
+    right: calc(var(--modal-text-bubble-pointer-size) * -0.52);
+
+    width: var(--modal-text-bubble-pointer-size);
+    height: var(--modal-text-bubble-pointer-size);
+
+    background: var(--edit-modal-bg-colour, var(--tooltip-bg-colour));
+
+    border-top: 1px solid var(--tooltip-border-colour);
+    border-right: 1px solid var(--tooltip-border-colour);
+
+    transform:
+        translateY(-50%)
+        rotate(45deg);
+
+    pointer-events: none;
+}
+
 /* These are modal-specific helpers used by your KC modals */
 .kc-info-list {
     margin: 0.5rem 0 1rem;
