@@ -634,7 +634,7 @@
     position: fixed;
 
     min-width: 0;
-    width: fit-content;
+    width: max-content;
     max-width:
         min(
             22.5rem,
@@ -690,8 +690,9 @@
     position: relative;
     z-index: 1;
 
+    width: auto;
     min-width: 0;
-    max-width: 100%;
+    max-width: none;
     max-height:
         calc(
             100dvh -
@@ -720,7 +721,6 @@
     .kc-modal-actions,
     .modal-note
 ) {
-    max-width: 100%;
     min-width: 0;
 }
 

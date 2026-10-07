@@ -1477,6 +1477,16 @@ export class ModalSession {
             `0 0 ${width} ${height}`
         );
 
+        this.#bubbleSvg.setAttribute(
+            "width",
+            String(width)
+        );
+
+        this.#bubbleSvg.setAttribute(
+            "height",
+            String(height)
+        );
+
         this.#bubblePath.setAttribute(
             "d",
             this.#bubblePathD(
