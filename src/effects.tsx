@@ -56,6 +56,7 @@ const SCAN_MS_MAX = 22000;
  */
 const TEXT_SHADOW_MIN = 0;
 const TEXT_SHADOW_MAX = 100;
+const TEXT_SHADOW_DEFAULT_ENABLED = false;
 const TEXT_SHADOW_DEFAULT_PERCENT = 15;
 const TEXT_SHADOW_BASE_PERCENT = 20;
 const TEXT_SHADOW_CURVE_EXPONENT = 1.55;
@@ -797,7 +798,7 @@ function readCss(): Prefs {
             SCAN_OP_MAX
         ),
         scanlineSpeed: DEF_SCAN_SPD,
-        textShadowEnabled: !body.classList.contains("effect-disable-text-shadow"),
+        textShadowEnabled: TEXT_SHADOW_DEFAULT_ENABLED,
         textShadowIntensity: clamp(
             num(
                 rootStyle.getPropertyValue("--effect-crt-text-shadow-intensity"),
@@ -1723,11 +1724,11 @@ function initEffectsTip(button: HTMLButtonElement): void {
 export function initEffectsControls(nextUi: fxUIconf): void {
     uiCfg = nextUi;
 
-    ensureTextShadowTargets();
-    ensureTextShadowKeyframes();
-
     defs();
     apply(resolved());
+
+    ensureTextShadowTargets();
+    ensureTextShadowKeyframes();
 
     const effectsToggle = installMenuToggle({
         id: BTN_ID,
