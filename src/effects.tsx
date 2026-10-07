@@ -368,11 +368,10 @@ function textShadowTarget(node: Node): HTMLElement | null {
     const parent = node.parentElement;
     if (!parent) return null;
 
-    const counterFace = parent.closest(".clicker-counter__face");
-    const counterWindow = counterFace?.closest(".clicker-counter__window");
+    const counterShell = parent.closest(".clicker-counter__face-shell");
 
-    if (counterWindow instanceof HTMLElement) {
-        return counterWindow;
+    if (counterShell instanceof HTMLElement) {
+        return counterShell;
     }
 
     if (parent.closest("svg")) return null;
