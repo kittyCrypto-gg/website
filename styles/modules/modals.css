@@ -628,6 +628,13 @@
     --modal-text-bubble-tail-length: 13px;
     --modal-text-bubble-tail-half-width: 12px;
     --modal-text-bubble-stroke-width: 1px;
+
+    /*
+        0 = angular/sharp.
+        1 = maximally soft/rounded.
+    */
+    --modal-text-bubble-tip-roundness: 0.34;
+    --modal-text-bubble-neck-roundness: 0.42;
     --modal-text-bubble-pointer-x: 50%;
     --modal-text-bubble-pointer-y: 50%;
 
