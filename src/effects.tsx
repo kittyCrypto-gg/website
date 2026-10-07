@@ -449,24 +449,34 @@ function isWindowFrame(node: Element): boolean {
  * @param {HTMLElement} frame
  * @returns {void}
  */
-function syncWindowBaseShadow(frame: HTMLElement): void {
-    const hadClass =
-        frame.classList.contains("crt-window-border");
+function syncBoxBaseShadow(box: HTMLElement): void {
+    const hadWindowClass =
+        box.classList.contains("crt-window-border");
 
-    frame.classList.remove("crt-window-border");
+    const hadMenuClass =
+        box.classList.contains("crt-menu-button-border");
+
+    box.classList.remove(
+        "crt-window-border",
+        "crt-menu-button-border"
+    );
 
     const computed =
-        globalThis.getComputedStyle(frame).boxShadow;
+        globalThis.getComputedStyle(box).boxShadow;
 
-    frame.style.setProperty(
+    box.style.setProperty(
         "--effect-crt-window-base-shadow",
         computed === "none"
             ? "0 0 0 0 transparent"
             : computed
     );
 
-    if (hadClass) {
-        frame.classList.add("crt-window-border");
+    if (hadWindowClass) {
+        box.classList.add("crt-window-border");
+    }
+
+    if (hadMenuClass) {
+        box.classList.add("crt-menu-button-border");
     }
 }
 
@@ -481,8 +491,24 @@ function markWindowBorder(node: Element): void {
     if (!(node instanceof HTMLElement)) return;
     if (node.classList.contains("crt-window-border")) return;
 
-    syncWindowBaseShadow(node);
+    syncBoxBaseShadow(node);
     node.classList.add("crt-window-border");
+}
+
+/**
+ * Marks main-menu anchor buttons for border-box CRT distortion without
+ * filtering their already-distorted text or SVG icon contents.
+ *
+ * @param {Element} node
+ * @returns {void}
+ */
+function markMenuButtonBorder(node: Element): void {
+    if (!(node instanceof HTMLAnchorElement)) return;
+    if (!node.matches("#main-menu-links > a")) return;
+    if (node.classList.contains("crt-menu-button-border")) return;
+
+    syncBoxBaseShadow(node);
+    node.classList.add("crt-menu-button-border");
 }
 
 /**
@@ -492,10 +518,10 @@ function markWindowBorder(node: Element): void {
  */
 function syncWindowBorderShadows(): void {
     const frames = document.querySelectorAll<HTMLElement>(
-        ".crt-window-border"
+        ".crt-window-border, .crt-menu-button-border"
     );
 
-    frames.forEach(syncWindowBaseShadow);
+    frames.forEach(syncBoxBaseShadow);
 }
 
 /**
@@ -569,6 +595,7 @@ function textShadowTarget(node: Node): HTMLElement | null {
 function markTextShadowNode(node: Node): void {
     if (node instanceof Element) {
         markWindowBorder(node);
+        markMenuButtonBorder(node);
     }
 
     if (

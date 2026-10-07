@@ -209,14 +209,69 @@ body:not(.effect-disable-text-shadow) .commit-identicon {
   overflow: visible;
 }
 
-body:not(.effect-disable-text-shadow) .crt-window-border {
+body:not(.effect-disable-text-shadow) :is(
+  .crt-window-border,
+  .crt-menu-button-border
+) {
   animation:
     effect-crt-window-border-shadow
     var(--effect-crt-text-shadow-duration)
     infinite;
 }
 
-body.effect-disable-text-shadow .crt-window-border {
+body.effect-disable-text-shadow :is(
+  .crt-window-border,
+  .crt-menu-button-border
+) {
+  animation: none;
+}
+
+/*
+ * The top nav and footer already have real structural borders. Mirror only
+ * those border lines onto inert pseudo-elements so their RGB ghosts can use
+ * the object/drop-shadow animation without filtering any child content.
+ */
+#main-menu,
+#main-footer {
+  position: relative;
+}
+
+#main-menu::after,
+#main-footer::before {
+  content: "";
+
+  position: absolute;
+  right: 0;
+  left: 0;
+
+  pointer-events: none;
+}
+
+#main-menu::after {
+  bottom: 0;
+
+  height: var(--menu-border-width, var(--layout-nav-border-width, 2px));
+  background: var(--nav-border-colour);
+}
+
+#main-footer::before {
+  top: 0;
+
+  height: var(--layout-footer-border-width, 2px);
+  background: var(--footer-border-colour);
+}
+
+body:not(.effect-disable-text-shadow) #main-menu::after,
+body:not(.effect-disable-text-shadow) #main-footer::before {
+  animation:
+    effect-crt-svg-shadow
+    var(--effect-crt-text-shadow-duration)
+    infinite;
+}
+
+body.effect-disable-text-shadow #main-menu::after,
+body.effect-disable-text-shadow #main-footer::before {
+  filter: none;
   animation: none;
 }
 
