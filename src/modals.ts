@@ -15,6 +15,13 @@ type PositionCandidate = Readonly<{
     required: number;
 }>;
 
+type BubbleGeometry = Readonly<{
+    radius: number;
+    tailLength: number;
+    tailHalfWidth: number;
+    strokeWidth: number;
+}>;
+
 type DecInfo = Readonly<{
     id: string;
     mode: ModalMode;
@@ -661,6 +668,8 @@ export class ModalSession {
     #wCln: Array<() => void>;
     #pCln: Array<() => void>;
     #pRaf: number | null;
+    #bubbleSvg: SVGSVGElement | null;
+    #bubblePath: SVGPathElement | null;
     #wOn: boolean;
 
     constructor(spec: SessSpec) {
@@ -687,6 +696,8 @@ export class ModalSession {
         this.#wCln = [];
         this.#pCln = [];
         this.#pRaf = null;
+        this.#bubbleSvg = null;
+        this.#bubblePath = null;
         this.#wOn = false;
 
         this.#mEl = document.createElement("div");
@@ -825,13 +836,69 @@ export class ModalSession {
     }
 
     /**
+     * Renders ordinary modal content without a speech-bubble shell.
+     *
+     * @param {string} html
+     * @returns {void}
+     */
+    #renderPlainContent(html: string): void {
+        this.#mEl.innerHTML = html;
+        this.#bubbleSvg = null;
+        this.#bubblePath = null;
+    }
+
+    /**
+     * Renders text-bubble content over one SVG shape. The SVG path itself
+     * contains both the rounded body and its target-facing tail, so fill and
+     * stroke are continuous through the join.
+     *
+     * @param {string} html
+     * @returns {void}
+     */
+    #renderBubbleContent(html: string): void {
+        const svgNs = "http://www.w3.org/2000/svg";
+
+        const svg = document.createElementNS(svgNs, "svg");
+        const path = document.createElementNS(svgNs, "path");
+        const body = document.createElement("div");
+
+        svg.classList.add("modal-text-bubble__shape");
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
+
+        path.classList.add("modal-text-bubble__path");
+
+        body.className = "modal-text-bubble__body";
+        body.innerHTML = html;
+
+        svg.appendChild(path);
+        this.#mEl.replaceChildren(svg, body);
+
+        this.#bubbleSvg = svg;
+        this.#bubblePath = path;
+    }
+
+    /**
+     * @param {string} html
+     * @returns {void}
+     */
+    #renderContent(html: string): void {
+        if (!this.#txtBubble) {
+            this.#renderPlainContent(html);
+            return;
+        }
+
+        this.#renderBubbleContent(html);
+    }
+
+    /**
      * swaps the inner html and remounts decorator hooks.
      *
      * @param {string} html
      * @returns {void}
      */
     setHtml(html: string): void {
-        this.#mEl.innerHTML = html;
+        this.#renderContent(html);
         this.#reMnt();
         this.#qSty();
         this.#qPos();
@@ -1155,6 +1222,274 @@ export class ModalSession {
     }
 
     /**
+     * Reads a numeric CSS custom property from the live bubble.
+     *
+     * @param {string} name
+     * @param {number} fallback
+     * @returns {number}
+     */
+    #bubbleCssNumber(name: string, fallback: number): number {
+        const raw = globalThis
+            .getComputedStyle(this.#mEl)
+            .getPropertyValue(name);
+
+        const parsed = Number.parseFloat(raw);
+
+        return Number.isFinite(parsed)
+            ? parsed
+            : fallback;
+    }
+
+    /**
+     * Reads the rendered bubble geometry. Radius comes from the actual
+     * computed border radius so themes can keep controlling corner shape.
+     *
+     * @returns {BubbleGeometry}
+     */
+    #bubbleGeometry(): BubbleGeometry {
+        const style = globalThis.getComputedStyle(this.#mEl);
+        const radius = Number.parseFloat(style.borderTopLeftRadius);
+
+        return {
+            radius: Number.isFinite(radius) ? radius : 12,
+            tailLength: this.#bubbleCssNumber(
+                "--modal-text-bubble-tail-length",
+                13
+            ),
+            tailHalfWidth: this.#bubbleCssNumber(
+                "--modal-text-bubble-tail-half-width",
+                12
+            ),
+            strokeWidth: this.#bubbleCssNumber(
+                "--modal-text-bubble-stroke-width",
+                1
+            )
+        };
+    }
+
+    /**
+     * Builds one continuous path for the rounded bubble body and its tail.
+     * The tail uses cubic curves so it leaves the body tangentially rather
+     * than looking like a separate hard-edged triangle.
+     *
+     * @param {number} width
+     * @param {number} height
+     * @param {ModalPlacement} placement
+     * @param {number} pointerX
+     * @param {number} pointerY
+     * @returns {string}
+     */
+    #bubblePathD(
+        width: number,
+        height: number,
+        placement: ModalPlacement,
+        pointerX: number,
+        pointerY: number
+    ): string {
+        const geometry = this.#bubbleGeometry();
+        const inset = Math.max(0.5, geometry.strokeWidth / 2);
+
+        const left = inset;
+        const top = inset;
+        const right = Math.max(left, width - inset);
+        const bottom = Math.max(top, height - inset);
+
+        const radius = Math.max(
+            0,
+            Math.min(
+                geometry.radius,
+                (right - left) / 2,
+                (bottom - top) / 2
+            )
+        );
+
+        const maxVerticalHalf = Math.max(
+            4,
+            (bottom - top - radius * 2 - 12) / 2
+        );
+
+        const maxHorizontalHalf = Math.max(
+            4,
+            (right - left - radius * 2 - 12) / 2
+        );
+
+        const verticalHalf = Math.min(
+            geometry.tailHalfWidth,
+            maxVerticalHalf
+        );
+
+        const horizontalHalf = Math.min(
+            geometry.tailHalfWidth,
+            maxHorizontalHalf
+        );
+
+        const minPointerX =
+            left +
+            radius +
+            horizontalHalf +
+            6;
+
+        const maxPointerX = Math.max(
+            minPointerX,
+            right -
+            radius -
+            horizontalHalf -
+            6
+        );
+
+        const minPointerY =
+            top +
+            radius +
+            verticalHalf +
+            6;
+
+        const maxPointerY = Math.max(
+            minPointerY,
+            bottom -
+            radius -
+            verticalHalf -
+            6
+        );
+
+        const px = this.#clampPos(
+            pointerX,
+            minPointerX,
+            maxPointerX
+        );
+
+        const py = this.#clampPos(
+            pointerY,
+            minPointerY,
+            maxPointerY
+        );
+
+        const tail = geometry.tailLength;
+        const tailControl = tail * 0.42;
+
+        const paths: Record<ModalPlacement, string> = {
+            left: [
+                `M ${left + radius} ${top}`,
+                `H ${right - radius}`,
+                `Q ${right} ${top} ${right} ${top + radius}`,
+                `V ${py - verticalHalf}`,
+                `C ${right + tailControl} ${py - verticalHalf}`,
+                `${right + tail} ${py - verticalHalf * 0.34}`,
+                `${right + tail} ${py}`,
+                `C ${right + tail} ${py + verticalHalf * 0.34}`,
+                `${right + tailControl} ${py + verticalHalf}`,
+                `${right} ${py + verticalHalf}`,
+                `V ${bottom - radius}`,
+                `Q ${right} ${bottom} ${right - radius} ${bottom}`,
+                `H ${left + radius}`,
+                `Q ${left} ${bottom} ${left} ${bottom - radius}`,
+                `V ${top + radius}`,
+                `Q ${left} ${top} ${left + radius} ${top}`,
+                "Z"
+            ].join(" "),
+
+            right: [
+                `M ${left + radius} ${top}`,
+                `H ${right - radius}`,
+                `Q ${right} ${top} ${right} ${top + radius}`,
+                `V ${bottom - radius}`,
+                `Q ${right} ${bottom} ${right - radius} ${bottom}`,
+                `H ${left + radius}`,
+                `Q ${left} ${bottom} ${left} ${bottom - radius}`,
+                `V ${py + verticalHalf}`,
+                `C ${left - tailControl} ${py + verticalHalf}`,
+                `${left - tail} ${py + verticalHalf * 0.34}`,
+                `${left - tail} ${py}`,
+                `C ${left - tail} ${py - verticalHalf * 0.34}`,
+                `${left - tailControl} ${py - verticalHalf}`,
+                `${left} ${py - verticalHalf}`,
+                `V ${top + radius}`,
+                `Q ${left} ${top} ${left + radius} ${top}`,
+                "Z"
+            ].join(" "),
+
+            top: [
+                `M ${left + radius} ${top}`,
+                `H ${right - radius}`,
+                `Q ${right} ${top} ${right} ${top + radius}`,
+                `V ${bottom - radius}`,
+                `Q ${right} ${bottom} ${right - radius} ${bottom}`,
+                `H ${px + horizontalHalf}`,
+                `C ${px + horizontalHalf} ${bottom + tailControl}`,
+                `${px + horizontalHalf * 0.34} ${bottom + tail}`,
+                `${px} ${bottom + tail}`,
+                `C ${px - horizontalHalf * 0.34} ${bottom + tail}`,
+                `${px - horizontalHalf} ${bottom + tailControl}`,
+                `${px - horizontalHalf} ${bottom}`,
+                `H ${left + radius}`,
+                `Q ${left} ${bottom} ${left} ${bottom - radius}`,
+                `V ${top + radius}`,
+                `Q ${left} ${top} ${left + radius} ${top}`,
+                "Z"
+            ].join(" "),
+
+            bottom: [
+                `M ${left + radius} ${top}`,
+                `H ${px - horizontalHalf}`,
+                `C ${px - horizontalHalf} ${top - tailControl}`,
+                `${px - horizontalHalf * 0.34} ${top - tail}`,
+                `${px} ${top - tail}`,
+                `C ${px + horizontalHalf * 0.34} ${top - tail}`,
+                `${px + horizontalHalf} ${top - tailControl}`,
+                `${px + horizontalHalf} ${top}`,
+                `H ${right - radius}`,
+                `Q ${right} ${top} ${right} ${top + radius}`,
+                `V ${bottom - radius}`,
+                `Q ${right} ${bottom} ${right - radius} ${bottom}`,
+                `H ${left + radius}`,
+                `Q ${left} ${bottom} ${left} ${bottom - radius}`,
+                `V ${top + radius}`,
+                `Q ${left} ${top} ${left + radius} ${top}`,
+                "Z"
+            ].join(" ")
+        };
+
+        return paths[placement];
+    }
+
+    /**
+     * Syncs the SVG shell to the current rendered bubble rectangle.
+     *
+     * @param {ModalPlacement} placement
+     * @param {number} pointerX
+     * @param {number} pointerY
+     * @returns {void}
+     */
+    #syncBubbleShape(
+        placement: ModalPlacement,
+        pointerX: number,
+        pointerY: number
+    ): void {
+        if (!this.#txtBubble) return;
+        if (!this.#bubbleSvg) return;
+        if (!this.#bubblePath) return;
+
+        const rect = this.#mEl.getBoundingClientRect();
+        const width = Math.max(1, Math.round(rect.width));
+        const height = Math.max(1, Math.round(rect.height));
+
+        this.#bubbleSvg.setAttribute(
+            "viewBox",
+            `0 0 ${width} ${height}`
+        );
+
+        this.#bubblePath.setAttribute(
+            "d",
+            this.#bubblePathD(
+                width,
+                height,
+                placement,
+                pointerX,
+                pointerY
+            )
+        );
+    }
+
+    /**
      * Places an anchored modal on the best available side of its target,
      * clamps the modal to the viewport, then derives the speech-bubble tail
      * position from the target's real viewport coordinates.
@@ -1247,6 +1582,12 @@ export class ModalSession {
         this.#mEl.style.setProperty(
             "--modal-text-bubble-pointer-y",
             `${Math.round(pointerY)}px`
+        );
+
+        this.#syncBubbleShape(
+            placement,
+            pointerX,
+            pointerY
         );
     }
 
