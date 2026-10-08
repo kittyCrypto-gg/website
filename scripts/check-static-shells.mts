@@ -62,6 +62,14 @@ for (const path of routes) {
         }
         if (!html.includes('data-kc-chat-static="1"')) errors.push(path + ": chat cluster shell not marked as static");
     }
+    if (path === "reader.html" || path === "guestbook.html") {
+        if (!html.includes('data-kc-static-location="1"')) {
+            errors.push(path + ": location control must be generated at build time");
+        }
+        if (!html.includes('id="comment-location-dropdown-menu"')) {
+            errors.push(path + ": location menu mount missing");
+        }
+    }
     if (path === "about.html") {
         if (!html.includes('data-kc-socials-static="1"')) errors.push(path + ": About social cards not built");
         if (!html.includes('class="socials-segment__item"')) errors.push(path + ": About social list empty");
