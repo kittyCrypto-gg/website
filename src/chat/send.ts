@@ -37,82 +37,82 @@ export function createChatSender(options: {
 }) {
     const { nickEl, msgEl, getSessionToken, showChat, rmPending, syncCluster, saveNickname } = options;
 
-/**
- * Sends the current message to the server.
- * includes the optimistic pending row and all that jazz.
- * @returns {Promise<void>}
- */
-async function sendMsg(): Promise<void> {
-    const nick = nickEl.value.trim();
-    const msg = msgEl.value.trim();
+    /**
+     * Sends the current message to the server.
+     * includes the optimistic pending row and all that jazz.
+     * @returns {Promise<void>}
+     */
+    async function sendMsg(): Promise<void> {
+        const nick = nickEl.value.trim();
+        const msg = msgEl.value.trim();
 
-    if (!nick || !msg) {
-        alert("Please enter a nickname and a message.");
-        return;
-    }
+        if (!nick || !msg) {
+            alert("Please enter a nickname and a message.");
+            return;
+        }
 
-    if (!getSessionToken()) {
-        alert("Session token is missing. Please refresh the page.");
-        return;
-    }
+        if (!getSessionToken()) {
+            alert("Session token is missing. Please refresh the page.");
+            return;
+        }
 
-    saveNickname(nick);
+        saveNickname(nick);
 
-    console.log("📡 Fetching IP address...");
-    const userIp = await fetchUserIP();
+        console.log("📡 Fetching IP address...");
+        const userIp = await fetchUserIP();
 
-    if (!userIp) {
-        alert("❌ Unable to retrieve IP. Please try again.");
-        return;
-    }
+        if (!userIp) {
+            alert("❌ Unable to retrieve IP. Please try again.");
+            return;
+        }
 
-    const tempId = `pending-${Date.now()}`;
+        const tempId = `pending-${Date.now()}`;
 
-    const pendingMessage: MsgLocal = {
-        nick,
-        id: tempId,
-        msg,
-        timestamp: new Date().toISOString(),
-        msgId: "0",
-        pending: true
-    };
-
-    await showChat([pendingMessage], true);
-
-    const chatRequest = {
-        chatRequest: {
+        const pendingMessage: MsgLocal = {
             nick,
+            id: tempId,
             msg,
-            ip: userIp,
-            sessionToken: getSessionToken()
+            timestamp: new Date().toISOString(),
+            msgId: "0",
+            pending: true
+        };
+
+        await showChat([pendingMessage], true);
+
+        const chatRequest = {
+            chatRequest: {
+                nick,
+                msg,
+                ip: userIp,
+                sessionToken: getSessionToken()
+            }
+        };
+
+        console.log("📡 Sending chat message:", chatRequest);
+
+        try {
+            const response = await fetch(CHAT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(chatRequest)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+
+            console.log("✅ Message sent successfully.");
+            msgEl.value = "";
+        } catch (error) {
+            console.error("❌ Error sending message:", error);
+
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            alert(`Failed to send message: ${errorMessage}`);
+
+            rmPending(tempId);
+            syncCluster();
         }
-    };
-
-    console.log("📡 Sending chat message:", chatRequest);
-
-    try {
-        const response = await fetch(CHAT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(chatRequest)
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status} ${response.statusText}`);
-        }
-
-        console.log("✅ Message sent successfully.");
-        msgEl.value = "";
-    } catch (error) {
-        console.error("❌ Error sending message:", error);
-
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        alert(`Failed to send message: ${errorMessage}`);
-
-        rmPending(tempId);
-        syncCluster();
     }
-}
 
     return sendMsg;
 }
