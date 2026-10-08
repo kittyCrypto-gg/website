@@ -426,6 +426,17 @@
         pointer-events: none;
     }
 
+    /* A fixed-height canvas preserves the clock's footprint while only its
+       pixels change at 1 Hz. Font and colour follow the active site theme. */
+    .presence-panel__clock-canvas {
+        display: block;
+        inline-size: 100%;
+        block-size: 1.2em;
+        font: inherit;
+        letter-spacing: inherit;
+        color: inherit;
+    }
+
     .presence-panel__headline--clock {
         font-size: var(--presence-panel-clock-headline-font-size);
         letter-spacing: var(--presence-panel-clock-headline-letter-spacing);
