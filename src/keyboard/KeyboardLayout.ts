@@ -1,7 +1,7 @@
 import { KeyboardFoundation } from "./KeyboardFoundation.ts";
 
 /** Keyboard sizing, responsive key grids, viewport placement and scheduling. */
-export class KeyboardLayout extends KeyboardFoundation {
+export abstract class KeyboardLayout extends KeyboardFoundation {
     /**
      * Tiny number clamp.
      * @param {number} n
