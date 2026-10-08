@@ -207,15 +207,7 @@ export const onTextShadowIntensity = (ev: Event, ctx: Ctx): void => {
  */
 export const onReset = (_ev: Event, ctx: Ctx): void => {
     const base = defs();
-    const next: Prefs = {
-        phosphorEnabled: true,
-        phosphorOpacity: base.phosphorOpacity,
-        scanlinesEnabled: true,
-        scanlineOpacity: base.scanlineOpacity,
-        scanlineSpeed: base.scanlineSpeed,
-        textShadowEnabled: true,
-        textShadowIntensity: base.textShadowIntensity
-    };
+    const next: Prefs = { ...base };
 
     commit(next);
     syncMod(ctx.modalEl, next);
