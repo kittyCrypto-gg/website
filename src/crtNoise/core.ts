@@ -1,5 +1,5 @@
 import { EPS, profByStd, normGain, normBaseHz, defaultBaseFrequencyForStandard, displayStandardFromBaseFrequency, deriveTimingStandardFromBaseFrequency, calculateLineFrequencyHz } from "./config.ts";
-import type { RtState, Opts, HarmVoice, SideVoice, ShotVoice, SweepOpts, BurstOpts } from "./config.ts";
+import type { RtState, Opts, CrtNoiseState, VideoStandard, HarmVoice, SideVoice, ShotVoice, SweepOpts, BurstOpts } from "./config.ts";
 
 export abstract class CrtNoiseCore {
     protected readonly ctx: AudioContext;

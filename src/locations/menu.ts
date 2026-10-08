@@ -1,3 +1,4 @@
+import * as helpers from "../helpers.ts";
 import { needAst, mkLbl, englishName, searchKey, flagCode, isRow } from "./shared.ts";
 import type { FlagRes, LocationSortMode, LocationEntry, Row } from "./shared.ts";
 import { locApiBase } from "./base.ts";

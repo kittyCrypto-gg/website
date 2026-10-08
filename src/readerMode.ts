@@ -1,10 +1,10 @@
-import * as helpers from "../helpers.ts";
-import { showToggleVisual } from "../toggleIcons.ts";
-import { readerIsFullyLoaded } from "../reader.tsx";
-import { getParams } from "../reader.tsx";
-import { injectBookmarksIntoHTML } from "../reader.tsx";
-import { READER_TOGGLE_ICON_SPEC, waitForReaderToggle } from "./types.ts";
-import type { ReaderModeOptions } from "./types.ts";
+import * as helpers from "./helpers.ts";
+import { showToggleVisual } from "./toggleIcons.ts";
+import { readerIsFullyLoaded } from "./reader.tsx";
+import { getParams } from "./reader.tsx";
+import { injectBookmarksIntoHTML } from "./reader.tsx";
+import { READER_TOGGLE_ICON_SPEC, waitForReaderToggle } from "./readerMode/types.ts";
+import type { ReaderModeOptions } from "./readerMode/types.ts";
 import { ReaderToggleContent } from "./readerMode/content.ts";
 export type { ReaderModeOptions } from "./readerMode/types.ts";
 

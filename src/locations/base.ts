@@ -1,3 +1,4 @@
+import * as helpers from "../helpers.ts";
 import { DEF_REG_ORDER, DEF_REG_LABELS, normDat, mkLbl, englishName, flagCode, noSlash, isRow } from "./shared.ts";
 import type { Opts, Loc, FlagRes, Regions, LocationSortMode, LocationEntry, Row } from "./shared.ts";
 
