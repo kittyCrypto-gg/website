@@ -640,7 +640,7 @@ async function initReader(): Promise<void> {
  * @returns {void}
  */
 function bootReader(): void {
-    document.addEventListener("DOMContentLoaded", () => {
+    void helpers.waitForDomReady().then(() => {
         restoreLastRead();
         void initReader();
         activateImageNavigation(document);

@@ -4,23 +4,10 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
     <script src="./dist/themeLoad.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script type="module" src="./dist/main.js"></script>
-    <script type="module" src="./dist/comments.js"></script>
-    <script type="module" src="./dist/rss.js"></script>
-    <script type="module" src="./dist/visitLogger.js"></script>
-    <script type="module">
-        import { renderVisits } from "./dist/visits.js";
-
-        void renderVisits({
-            scope: "page",
-            metric: "uniqueVisitors",
-            target: "unique-visits-count"
-        });
-    </script>
 
     <title>Kitty's Guestbook</title>
-    <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
+    <link id="theme-stylesheet" rel="stylesheet" href="/dist/styles.css">
     <meta name="description" content="Leave a message in Kitty Crypto's guestbook." />
 </head>
 

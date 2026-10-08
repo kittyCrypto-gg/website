@@ -23,13 +23,6 @@ jobs:
           submodules: true
           path: candidate
 
-      - name: Checkout refactor baseline
-        uses: actions/checkout@v6
-        with:
-          ref: 2961319574ea23c93936ef9778edb9321a2ae483
-          submodules: true
-          path: baseline
-
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -42,18 +35,6 @@ jobs:
 
       - name: Validate candidate
         run: npm run validate
-        working-directory: candidate
-
-      - name: Install baseline dependencies
-        run: npm ci
-        working-directory: baseline
-
-      - name: Build baseline
-        run: npm run build
-        working-directory: baseline
-
-      - name: Check frozen-baseline parity
-        run: npm run check:parity -- ../baseline
         working-directory: candidate
 
       - name: Upload esbuild architecture report

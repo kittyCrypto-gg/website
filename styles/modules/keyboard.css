@@ -77,6 +77,8 @@
 }
 
 #keyboard-emu {
+    --kb-css-ready: 1;
+
     position: fixed;
     left: 0;
     top: 0;

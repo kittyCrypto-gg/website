@@ -1,5 +1,3 @@
-import * as esbuild from "esbuild-wasm";
-
 type CodeLanguage = "js" | "jsx" | "ts" | "tsx";
 
 const ESBUILD_WASM_URL = "https://cdn.jsdelivr.net/npm/esbuild-wasm@0.28.0/esbuild.wasm";
@@ -7,20 +5,29 @@ const JSDOC_LEGAL_MARKER = "@__KITTY_JSDOC__";
 const SOURCE_IMPORT_EXTENSION_RE = /((?:from\s*|import\s*|import\s*\(\s*)["'])([^"']+)\.(?:ts|tsx|jsx)(["'])/g;
 const JSDOC_RE = /\/\*\*[\s\S]*?\*\//g;
 
-let esbuildReady: Promise<void> | null = null;
+type EsbuildModule = typeof import("esbuild-wasm");
+
+let esbuildModule: Promise<EsbuildModule> | null = null;
+let esbuildReady: Promise<EsbuildModule> | null = null;
 
 /**
  * Initialises esbuild once for browser-side transforms.
  *
  * @returns {Promise<void>} Resolves when esbuild is ready.
  */
-function initEsbuild(): Promise<void> {
-    if (esbuildReady) {
-        return esbuildReady;
-    }
+function loadEsbuild(): Promise<EsbuildModule> {
+    esbuildModule ??= import("esbuild-wasm");
+    return esbuildModule;
+}
 
-    esbuildReady = esbuild.initialize({
-        wasmURL: ESBUILD_WASM_URL
+function initEsbuild(): Promise<EsbuildModule> {
+    if (esbuildReady) return esbuildReady;
+
+    esbuildReady = loadEsbuild().then(async (esbuild) => {
+        await esbuild.initialize({
+            wasmURL: ESBUILD_WASM_URL
+        });
+        return esbuild;
     });
 
     return esbuildReady;
@@ -94,7 +101,7 @@ export async function transpileCodeSource(
     source: string,
     sourceLanguage: CodeLanguage
 ): Promise<string> {
-    await initEsbuild();
+    const esbuild = await initEsbuild();
 
     const result = await esbuild.transform(protectJsDocs(source), {
         loader: getEsbuildLoader(sourceLanguage),

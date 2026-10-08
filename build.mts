@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import * as esbuild from "esbuild";
 import * as config from "./src/config.js";
 import { browserEntryPoints } from "./scripts/build-entries.mjs";
@@ -350,6 +350,10 @@ async function runBuild(entryPoints: BuildEntryPoints): Promise<void> {
         format: "esm",
         platform: "browser",
         target: "es2022",
+        define: {
+            "process.env.NODE_ENV": '"production"'
+        },
+        minify: true,
         entryNames: "[dir]/[name]",
         chunkNames: "chunks/[name]-[hash]",
         assetNames: "wasm/[name]",
@@ -379,6 +383,65 @@ async function runBuild(entryPoints: BuildEntryPoints): Promise<void> {
         analysis + "\n",
         "utf8"
     );
+}
+
+
+/**
+ * Expands local CSS imports in source order without rewriting the CSS syntax.
+ * This preserves the existing cascade while avoiding dozens of browser @import requests.
+ * @param {string} filePath
+ * @param {readonly string[]} stack
+ * @returns {Promise<string>}
+ */
+async function expandCssImports(
+    filePath: string,
+    stack: readonly string[] = []
+): Promise<string> {
+    if (stack.includes(filePath)) {
+        throw new Error("Circular CSS import: " + [...stack, filePath].join(" -> "));
+    }
+
+    const source = await readFile(filePath, "utf8");
+    const pattern = /@import\s+url\(["']([^"']+)["']\);\s*/g;
+    let cursor = 0;
+    let output = "";
+
+    for (const match of source.matchAll(pattern)) {
+        const index = match.index ?? 0;
+        const specifier = match[1] ?? "";
+        output += source.slice(cursor, index);
+
+        if (/^(?:https?:)?\/\//.test(specifier)) {
+            output += match[0];
+            cursor = index + match[0].length;
+            continue;
+        }
+
+        const importedPath = specifier.startsWith("/")
+            ? specifier.slice(1)
+            : join(dirname(filePath), specifier);
+
+        output += await expandCssImports(importedPath, [...stack, filePath]);
+        cursor = index + match[0].length;
+    }
+
+    return output + source.slice(cursor);
+}
+
+/**
+ * Bundles the shared stylesheet graph into one render-critical asset.
+ * Source CSS stays modular; the browser receives one request.
+ * @returns {Promise<void>}
+ */
+async function runCssBuild(): Promise<void> {
+    const css = await expandCssImports("styles/styles.css");
+    const result = await esbuild.transform(css, {
+        loader: "css",
+        minify: true,
+        target: "es2022"
+    });
+
+    await writeFile("dist/styles.css", result.code, "utf8");
 }
 
 /**
@@ -472,6 +535,9 @@ async function main(): Promise<void> {
 
     console.log(`[build] Building ${String(Object.keys(entryPoints).length)} intentional entry points with esbuild.`);
     await runBuild(entryPoints);
+
+    console.log("[build] Bundling shared CSS.");
+    await runCssBuild();
 
     await writeLocalManifest(currentManifest);
     console.log(`[build] Build complete: wrote ${localManifestPath}.`);

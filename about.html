@@ -5,75 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
     <script src="./dist/themeLoad.js"></script>
     <script type="module" src="./dist/main.js"></script>
-    <script type="module" src="./dist/tategaki.js"></script>
-    <script type="module" src="./dist/socials.js"></script>
-    <script type="module" src="./dist/visitLogger.js"></script>
-    <script type="module">
-        import { renderVisits } from "./dist/visits.js";
-
-        void renderVisits({
-            scope: "page",
-            metric: "visits",
-            target: "visits-count"
-        });
-
-        void renderVisits({
-            scope: "page",
-            metric: "uniqueVisitors",
-            target: "unique-visits-count"
-        });
-    </script>
-    <script type="module">
-        import { replaceTategaki, serialisNde } from "./dist/tategaki.js";
-
-        document.addEventListener("DOMContentLoaded", async () => {
-            const container = document.querySelector(".jp-about");
-
-            if (!(container instanceof HTMLElement)) {
-                console.warn("Missing .jp-about container for tategaki render");
-                return;
-            }
-
-            try {
-                const response = await fetch("./data/aboutme-jp.xml", {
-                    cache: "no-store"
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch ./data/aboutme-jp.xml (status ${response.status})`);
-                }
-
-                const xmlText = await response.text();
-                const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
-                const parseError = xmlDoc.querySelector("parsererror");
-
-                if (parseError) {
-                    throw new Error("Invalid XML in ./data/aboutme-jp.xml");
-                }
-
-                const tategakiNode = xmlDoc.querySelector("tategaki");
-
-                if (!(tategakiNode instanceof Element)) {
-                    throw new Error("Missing <tategaki> root in ./data/aboutme-jp.xml");
-                }
-
-                const tategakiXml = serialisNde(tategakiNode);
-
-                if (!tategakiXml) {
-                    throw new Error("Could not serialise <tategaki> node");
-                }
-
-                const rendered = replaceTategaki(tategakiXml);
-
-                container.innerHTML = rendered;
-                container.classList.add("jp-about--tategaki");
-            } catch (error) {
-                console.error("Failed to render aboutme-jp.xml", error);
-            }
-        });
-    </script>
     <title>Kitty Crypto's Page</title>
-    <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
+    <link id="theme-stylesheet" rel="stylesheet" href="/dist/styles.css">
 </head>
 
 <body>

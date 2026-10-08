@@ -116,8 +116,7 @@
   "headScripts": [],
   "headerInjections": [
     "<meta charset=\"UTF-8\">",
-    "<meta property=\"og:type\" content=\"website\">",
-    "<script src=\"https://cdn.jsdelivr.net/npm/marked/marked.min.js\"></script>"
+    "<meta property=\"og:type\" content=\"website\">"
   ],
   "windows": {
     "kittyIntro": {

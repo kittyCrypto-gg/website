@@ -1,8 +1,5 @@
 import * as config from "./config.ts";
 import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
-import * as Terminal from "./terminal.ts";
-import { keyboardEmu } from "./keyboard.ts";
-import * as loader from "./loader.ts";
 import { createMenu } from "./menu.tsx";
 import { createHeader } from "./header.ts";
 import { createFooter } from "./footer.ts";
@@ -22,6 +19,7 @@ import { applyHeadBits } from "./main/head.ts";
 import { loadCrtUi } from "./main/crtRoute.ts";
 import { loadReaderRuntime } from "./main/readerRoute.ts";
 import { fetchStatus } from "./main/status.ts";
+import { startProgressivePageBoot } from "./main/progressive.ts";
 
 // import { mkCurTheme } from "./cursors/cursorTheme.tsx";
 
@@ -69,13 +67,10 @@ const FLOAT_TOGGLE_ICON_SPEC = {
  * @returns {Promise<void>}
  */
 async function bootTerm(): Promise<void> {
-    const onMobile = await getIsMobile();
+    void fetchStatus(2000);
 
-    setMobileScale(onMobile);
-
-    const status = await fetchStatus(2000);
-
-    const terminal = await Terminal.setupTerminalModule()
+    const terminalPromise = import("./terminal.ts")
+        .then((mod) => mod.setupTerminalModule())
         .then((mod) => {
             document.getElementById("terminal-loading")?.style.setProperty("display", "none");
             return mod as TermMod;
@@ -85,6 +80,12 @@ async function bootTerm(): Promise<void> {
             throw err;
         });
 
+    const [onMobile, terminal] = await Promise.all([
+        getIsMobile(),
+        terminalPromise
+    ]);
+
+    setMobileScale(onMobile);
     await helpers.nextFrame();
 
     const xtermTextarea =
@@ -92,10 +93,13 @@ async function bootTerm(): Promise<void> {
         terminal.term.element?.querySelector<HTMLTextAreaElement>("textarea") ||
         null;
 
-    const Kb = keyboardEmu as KbCtor;
+    const keyboardModule = onMobile && xtermTextarea
+        ? await import("./keyboard.ts")
+        : null;
+    const Kb = keyboardModule?.keyboardEmu as KbCtor | undefined;
 
     const keyboard: KbInst | null =
-        onMobile && xtermTextarea
+        Kb && xtermTextarea
             ? await new Kb(onMobile).install(
                 { send: ({ seq }) => terminal.sendSeq(seq) },
                 xtermTextarea
@@ -387,6 +391,7 @@ const onReady = (): void => {
     void bootTerm();
     initBadgeCopy();
     void initUi();
+    startProgressivePageBoot();
 };
 
 document.addEventListener("DOMContentLoaded", onReady);

@@ -23,6 +23,8 @@ import {
     isResourcePth,
     pstsForCurPage
 } from "./rss/routing.ts";
+import { ensureRssRuntimeDependencies } from "./rss/dependencies.ts";
+import { waitForDomReady } from "./helpers/dom.ts";
 import { hglPstCode } from "./rss/codeBlocks.ts";
 import {
     AuthorFilter,
@@ -1321,7 +1323,10 @@ async function loadBlog(): Promise<void> {
     try {
         void initRssComments();
 
-        const rsp = await fetch(`${cfg.RSS_BACKEND_URL}`);
+        const [rsp] = await Promise.all([
+            fetch(`${cfg.RSS_BACKEND_URL}`),
+            ensureRssRuntimeDependencies()
+        ]);
         if (!rsp.ok) {
             throw new Error(`RSS fetch error: ${rsp.status} ${rsp.statusText}`);
         }
@@ -1361,7 +1366,7 @@ async function loadBlog(): Promise<void> {
     }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+void waitForDomReady().then(() => {
     aplyBlogLyt();
-    void loadBlog();
+    return loadBlog();
 });

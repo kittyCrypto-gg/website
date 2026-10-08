@@ -69,6 +69,7 @@ export class keyboardEmu {
 
     private __onFocusInBound: (e: FocusEvent) => void;
     private __onFocusOutBound: (e: FocusEvent) => void;
+    private __onEditablePointerDownBound: (e: PointerEvent) => void;
     private __onPointerDownCaptureBound: (e: PointerEvent) => void;
     private __onClickBound: (e: MouseEvent) => void;
     private __onBeforeInputCaptureBound: (e: Event) => void;
@@ -108,7 +109,7 @@ export class keyboardEmu {
         this.send = null;
 
         this.lastEditable = null;
-        this.toolbarVisible = true;
+        this.toolbarVisible = false;
         this.skipNextRefocus = false;
         this.suppressNextClick = false;
 
@@ -118,6 +119,7 @@ export class keyboardEmu {
 
         this.__onFocusInBound = this.__onFocusIn.bind(this);
         this.__onFocusOutBound = this.__onFocusOut.bind(this);
+        this.__onEditablePointerDownBound = this.__onEditablePointerDown.bind(this);
         this.__onPointerDownCaptureBound = this.__onPointerDownCapture.bind(this);
         this.__onClickBound = this.__onClick.bind(this);
         this.__onBeforeInputCaptureBound = this.__onBeforeInputCapture.bind(this);
@@ -228,10 +230,6 @@ export class keyboardEmu {
             existingCss.remove();
         }
 
-        const { link: cssLink, injected: cssInjected } = this.__ensCss();
-        this.cssLink = cssLink;
-        this.cssInjected = cssInjected;
-
         const bar = document.createElement("div");
         this.bar = bar;
 
@@ -240,9 +238,22 @@ export class keyboardEmu {
         bar.setAttribute("aria-label", "Terminal keys");
         bar.classList.add("kb-hidden");
 
+        // Keep the dynamically-mounted keyboard completely outside layout and
+        // paint until both its stylesheet and markup are ready. Without this,
+        // startup focus/CSS timing can flash the raw keyboard for a frame.
+        bar.style.display = "none";
         bar.style.setProperty("--toolbar-z", String(keyboardEmu.HIDDEN_Z));
+        document.body.appendChild(bar);
 
-        await this.__injHtml(bar);
+        const cssResult = this.__hasCss(bar) ? null : this.__ensCss();
+        this.cssLink = cssResult?.link ?? null;
+        this.cssInjected = cssResult?.injected ?? false;
+
+        const cssReady = cssResult ? this.__waitCss(cssResult.link) : Promise.resolve();
+        await Promise.all([
+            cssReady,
+            this.__injHtml(bar)
+        ]);
         this.__setLabels(bar);
 
         this.mods = { ctrl: false, alt: false, meta: false, shift: false, fn: false };
@@ -266,12 +277,18 @@ export class keyboardEmu {
         document.addEventListener("focusout", this.__onFocusOutBound, true);
 
         const initialActive = document.activeElement;
-        if ((this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(initialActive)) {
-            this.lastEditable = initialActive as HTMLElement;
-            this.__setVis(true);
-        } else {
-            this.__setVis(false);
-        }
+        const initialEditable =
+            (this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(initialActive);
+
+        if (initialEditable) this.lastEditable = initialActive as HTMLElement;
+
+        // CSS is now ready, so exposing the fixed hidden shell cannot affect
+        // document flow. Installation always finishes hidden: startup focus is
+        // allowed to settle without painting the keyboard. The first genuine
+        // focus or pointer interaction with an allowed editable reveals it.
+        bar.style.removeProperty("display");
+        this.__setVis(false);
+        document.addEventListener("pointerdown", this.__onEditablePointerDownBound, true);
 
         for (const b of bar.querySelectorAll("button")) b.tabIndex = -1;
 
@@ -351,6 +368,7 @@ export class keyboardEmu {
 
         document.removeEventListener("focusin", this.__onFocusInBound, true);
         document.removeEventListener("focusout", this.__onFocusOutBound, true);
+        document.removeEventListener("pointerdown", this.__onEditablePointerDownBound, true);
 
         bar.removeEventListener("pointerdown", this.__onPointerDownCaptureBound, true);
         bar.removeEventListener("click", this.__onClickBound);
@@ -444,6 +462,15 @@ export class keyboardEmu {
     }
 
     /**
+     * Detects keyboard styles that are already present in the page bundle.
+     * @param {HTMLElement} bar
+     * @returns {boolean}
+     */
+    __hasCss(bar: HTMLElement): boolean {
+        return getComputedStyle(bar).getPropertyValue("--kb-css-ready").trim() === "1";
+    }
+
+    /**
      * Makes sure the css link is there.
      * @returns {CssRes}
      */
@@ -464,6 +491,34 @@ export class keyboardEmu {
     }
 
     /**
+     * Waits until the keyboard stylesheet is actually usable before the
+     * toolbar is allowed to participate in paint.
+     * @param {HTMLLinkElement} link
+     * @returns {Promise<void>}
+     */
+    async __waitCss(link: HTMLLinkElement): Promise<void> {
+        if (link.sheet) return;
+
+        await new Promise<void>((resolve, reject) => {
+            const cleanup = (): void => {
+                link.removeEventListener("load", onLoad);
+                link.removeEventListener("error", onError);
+            };
+            const onLoad = (): void => {
+                cleanup();
+                resolve();
+            };
+            const onError = (): void => {
+                cleanup();
+                reject(new Error(`Failed to load ${this.cssUrl}`));
+            };
+
+            link.addEventListener("load", onLoad, { once: true });
+            link.addEventListener("error", onError, { once: true });
+        });
+    }
+
+    /**
      * Fetches and injects the keyboard html.
      * @param {HTMLDivElement} bar
      * @returns {Promise<void>}
@@ -475,7 +530,7 @@ export class keyboardEmu {
         const html = await res.text();
         bar.innerHTML = html;
 
-        document.body.appendChild(bar);
+        if (!bar.isConnected) document.body.appendChild(bar);
         await this.__waitEl(keyboardEmu.MARKER_ID);
     }
 
@@ -657,6 +712,20 @@ export class keyboardEmu {
      * @returns {void}
      */
     __onFocusIn(e: FocusEvent): void {
+        const t = e.target;
+        if (!(this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(t)) return;
+
+        this.lastEditable = t as HTMLElement;
+        this.__show();
+    }
+
+    /**
+     * Reveals the toolbar on a real pointer interaction with an allowed editable.
+     * This covers an editable that was already programmatically focused at startup.
+     * @param {PointerEvent} e
+     * @returns {void}
+     */
+    __onEditablePointerDown(e: PointerEvent): void {
         const t = e.target;
         if (!(this as unknown as { __isEditable: (el: unknown) => boolean }).__isEditable(t)) return;
 

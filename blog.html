@@ -4,27 +4,9 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
 	<script src="./dist/themeLoad.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-	<link rel="stylesheet"
-		href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css">
-	<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/powershell.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/nginx.min.js"></script>
 	<script type="module" src="./dist/main.js"></script>
-	<script type="module" src="./dist/rss.js"></script>
-	<script type="module" src="./dist/visitLogger.js"></script>
-	<script type="module">
-		import { renderVisits } from "./dist/visits.js";
-
-		void renderVisits({
-			scope: "page",
-			metric: "uniqueVisitors",
-			target: "unique-visits-count"
-		});
-	</script>
 	<title>Kitty's Blog</title>
-	<link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
-	<link rel="stylesheet" href="/styles/modules/calendar.css">
+	<link id="theme-stylesheet" rel="stylesheet" href="/dist/styles.css">
 </head>
 
 <body>

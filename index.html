@@ -3,17 +3,13 @@
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="./dist/themeLoad.js"></script>
     <script type="module" src="./dist/main.js"></script>
-    <script type="module" src="./dist/comments.js"></script>
-    <script type="module" src="./dist/github.js"></script>
-    <script type="module" src="./dist/rss.js"></script>
     <script type="module" src="/dist/presence.js"></script>
     <meta name="description"
         content="kittycrow.dev is the personal blog of Kitty, an engineer sharing stories, programming, and creative projects." />
     <title>Kitty's Page</title>
-    <link id="theme-stylesheet" rel="stylesheet" href="/styles/styles.css">
+    <link id="theme-stylesheet" rel="stylesheet" href="/dist/styles.css">
     <script type="application/ld+json" id="meta-info">
     {
         "@context": "https://schema.org",
@@ -24,23 +20,6 @@
         "description": "kittycrow.dev is the personal blog and online home of Kitty, sharing stories, ideas, and technical projects."
     }
     </script>
-    <script type="module" src="./dist/visitLogger.js"></script>
-    <script type="module">
-        import { renderVisits } from "./dist/visits.js";
-
-        void renderVisits({
-            scope: "overall",
-            metric: "visits",
-            target: "visits-count",
-        });
-
-        void renderVisits({
-            scope: "overall",
-            metric: "uniqueVisitors",
-            target: "unique-visits-count"
-        });
-    </script>
-    <link rel="stylesheet" href="https://webring.nekoweb.org/onionring.css">
 </head>
 
 <body>
@@ -154,8 +133,6 @@
 
             <div id="webrings-wrapper">
                 <div id="nekowebring">
-                    <script src="https://webring.nekoweb.org/onionring-variables.js"></script>
-                    <script src="https://webring.nekoweb.org/onionring-widget.js"></script>
                 </div>
             </div>
 

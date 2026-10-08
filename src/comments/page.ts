@@ -114,6 +114,4 @@ async function bootPageComments(): Promise<void> {
     initPagePost();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    void bootPageComments();
-});
+void helpers.waitForDomReady().then(bootPageComments);

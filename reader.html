@@ -7,26 +7,9 @@
 	<script type="module" src="./dist/main.js"></script>
 	<script type="module" src="./dist/reader.js"></script>
 	<script type="module" src="./dist/readAloud.js"></script>
-	<script type="module" src="./dist/comments.js"></script>
 	<script type="module" src="./dist/readerParams.js"></script>
-	<script type="module" src="./dist/visitLogger.js"></script>
-	<script type="module">
-		import { renderVisits } from "./dist/visits.js";
-
-		void renderVisits({
-			scope: "page",
-			metric: "visits",
-			target: "visits-count"
-		});
-
-		void renderVisits({
-			scope: "page",
-			metric: "uniqueVisitors",
-			target: "unique-visits-count"
-		});
-	</script>
 	<title>Kitty's Stories</title>
-	<link rel="stylesheet" href="/styles/styles.css" />
+	<link rel="stylesheet" href="/dist/styles.css" />
 </head>
 
 <body>
