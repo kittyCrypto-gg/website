@@ -1,6 +1,7 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderWindowsInHtml } from "./window-shells.ts";
+import { renderRssFilterShell, renderRssLoadingState } from "../src/rss/staticShell.tsx";
 import type { MainJson, MainMenuEntry } from "../src/uiFetch.ts";
 import { renderMenuShell, renderToggleShell } from "../src/sharedShell.tsx";
 
@@ -96,6 +97,24 @@ function preloadTerminal(html: string, terminalUrl: string): string {
     return html.replace(/<\/head>/i, link + "\n</head>");
 }
 
+/** Use RSS's real TSX components to finish the blog/resources skeleton at build time. */
+function renderRssShell(html: string, page: string): string {
+    if (page !== "blog.html" && page !== "resources.html") return html;
+
+    const body = /<div\s+class=["']blog-container["']\s*>\s*<\/div>/i;
+    if (!body.test(html)) throw new Error("RSS content mount missing in " + page);
+
+    const content = `<div class="blog-container" data-rss-built="1">${renderRssLoadingState()}</div>`;
+    let output = html.replace(body, content);
+    if (page === "resources.html") return output;
+
+    const calendar = /<div\s+id=["']kc-blog-cal-filter["'][^>]*>\s*<\/div>/i;
+    if (!calendar.test(output)) throw new Error("Blog calendar mount missing in " + page);
+
+    output = output.replace(calendar, renderRssFilterShell());
+    return output;
+}
+
 function addButtons(html: string, buttons: readonly string[]): string {
     return html.replace(/<\/body>/i, buttons.join("\n") + "\n</body>");
 }
@@ -157,6 +176,7 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
         ));
     }
 
+    html = renderRssShell(html, page);
     html = preloadTerminal(renderTerminalShell(html), terminalUrl);
     html = renderWindowsInHtml(html, data);
     html = addButtons(html, buttons);
