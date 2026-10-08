@@ -113,7 +113,8 @@ function renderWindow(html: string, windowConfig: windowDef): { html: string; la
         id,
         title,
         options.launcherSrc ?? "/images/file.svg",
-        options.closedLnchrDis ?? "inline-block"
+        options.closedLnchrDis ?? "inline-block",
+        options.initClosed ?? false
     );
     return { html: updatedHtml, launcher };
 }
