@@ -189,7 +189,18 @@ export async function fetchJson<T>(src: string, cacheMode: RequestCache = "defau
  */
 export async function fetchUiData(src = "../data/main.json"): Promise<MainJson> {
     if (!uiDataPromise) {
-        uiDataPromise = fetchJson<MainJson>(src);
+        const staticData = document.getElementById("kc-static-ui-data");
+        const embedded = staticData?.textContent?.trim() || "";
+
+        if (embedded) {
+            try {
+                uiDataPromise = Promise.resolve(JSON.parse(embedded) as MainJson);
+            } catch (error: unknown) {
+                console.warn("Invalid embedded UI data; falling back to fetch:", error);
+            }
+        }
+
+        uiDataPromise ??= fetchJson<MainJson>(src);
     }
 
     try {
