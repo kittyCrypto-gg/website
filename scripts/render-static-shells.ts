@@ -145,6 +145,25 @@ function renderChatShell(html: string, page: string): string {
     return output.replace(/<div\s+id=["']chatroom["']/i, '<div id="chatroom" class="clusterise" data-kc-chat-static="1"');
 }
 
+/** Build the custom location picker's permanent wrapper on form pages. */
+function renderLocationPickerShell(html: string, page: string): string {
+    if (page !== "reader.html" && page !== "guestbook.html") return html;
+
+    const select = /(<select\b[^>]*\bid=["']comment-location["'][^>]*)(>)/i;
+    if (!select.test(html)) throw new Error("Location field missing in " + page);
+
+    const withNative = html.replace(select, "$1 class=\"comment-location-native\"$2");
+    const flag = /(<span\b[^>]*\bid=["']comment-location-flag["'][^>]*>)/i;
+    if (!flag.test(withNative)) throw new Error("Location flag missing in " + page);
+
+    const picker = '<div class="comment-location-dropdown" data-kc-static-location="1">' +
+        '<button id="comment-location-dropdown-button" type="button" ' +
+        'class="comment-location-dropdown__button" aria-haspopup="listbox" ' +
+        'aria-controls="comment-location-dropdown-menu">Location (Optional)</button>' +
+        '<div id="comment-location-dropdown-menu" class="comment-location-dropdown__content"></div></div>';
+    return withNative.replace(flag, picker + "$1");
+}
+
 function escapeHtmlValue(value: string): string {
     return value.replace(/&/g, "&amp;").replace(/</g, "&lt;")
         .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -249,6 +268,7 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
     html = renderRssShell(html, page);
     html = renderReaderShell(html, page);
     html = renderChatShell(html, page);
+    html = renderLocationPickerShell(html, page);
     html = await renderAboutSocials(html, page);
     html = preloadTerminal(renderTerminalShell(html), terminalUrl);
     html = renderWindowsInHtml(html, data);
