@@ -38,6 +38,7 @@
         "react-dom": "^19.2.4",
         "@xterm/xterm": "5.5.0",
         "@xterm/addon-fit": "0.10.0",
-        "mobile-detect": "1.4.5"
+        "mobile-detect": "1.4.5",
+        "clusterize.js": "1.0.0"
     }
 }
