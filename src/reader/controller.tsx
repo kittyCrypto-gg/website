@@ -41,6 +41,7 @@ import {
     syncTopScrollMode
 } from "./controlDock.ts";
 import { activateImageNavigation } from "./imageNavigation.tsx";
+import { createReaderButtons } from "./buttonDefs.tsx";
 import { parseXml, pickFile, readFileText } from "./fileXml.ts";
 import {
     injectBookmarksIntoHTML,
@@ -98,19 +99,7 @@ window.lastKnownChapter = parseInt(localStorage.getItem(window.chapterCacheKey) 
 window.readerRoot = document.getElementById("reader");
 window.storyPickerRoot = document.getElementById("story-picker");
 
-window.buttons = {
-    toggleParagraphNumbers: { icon: icons.MakeToggleParagraphNumbersIcon(), action: "Toggle paragraph numbers" },
-    clearBookmark: { icon: icons.MakeClearBookmarkIcon(), action: "Clear bookmark for this chapter" },
-    prevChapter: { icon: icons.MakePrevChapterIcon(), action: "Previous chapter" },
-    jumpToChapter: { icon: icons.MakeJumpToChapterIcon(), action: "Jump to chapter" },
-    nextChapter: { icon: icons.MakePrevChapterIcon(180), action: "Next chapter" },
-    scrollDown: { icon: icons.MakePrevChapterIcon(270), action: "Scroll down" },
-    showInfo: { icon: icons.MakeShowInfoIcon(), action: "Show navigation info" },
-    decreaseFont: { icon: icons.MakeDecreaseFontIcon(), action: "Decrease font size" },
-    resetFont: { icon: icons.MakeResetFontIcon(), action: "Reset font size" },
-    increaseFont: { icon: icons.MakeIncreaseFontIcon(), action: "Increase font size" },
-    scrollUp: { icon: icons.MakePrevChapterIcon(90), action: "Scroll up" }
-};
+window.buttons = createReaderButtons();
 
 /**
  * @param {Document} doc
@@ -198,6 +187,18 @@ function injectNav(): void {
     const TOP_ID = "kc-reader-controls-top";
     const BOTTOM_ID = "kc-reader-controls-bottom";
 
+    const existingTop = document.getElementById(TOP_ID);
+    const existingBottom = document.getElementById(BOTTOM_ID);
+
+    // Build-time DOM is already structurally complete. Hydration only
+    // reveals those controls and binds events as story data arrives.
+    if (existingTop && existingBottom) {
+        existingTop.removeAttribute("hidden");
+        existingBottom.removeAttribute("hidden");
+        return;
+    }
+
+    // Backwards compatibility for HTML generated before static reader shells.
     removeExistingById(TOP_ID);
     removeExistingById(BOTTOM_ID);
 
@@ -209,24 +210,9 @@ function injectNav(): void {
     const navBottom = document.createElement("div");
     navBottom.id = BOTTOM_ID;
     navBottom.classList.add("reader-controls-bottom");
-    navBottom.appendChild(render2Frag(<ReaderCtrls />));
-
-    navBottom.querySelectorAll<HTMLInputElement>
-        (".chapter-input, .chapter-display").forEach((input) => {
-            input.id = input.id.replace("-top", "-bottom");
-        });
-
-    const scrollBtn = navBottom.querySelector(".btn-scroll-down") as HTMLButtonElement | null;
-    if (scrollBtn) {
-        setButtonIcon(scrollBtn, window.buttons.scrollUp.icon);
-        scrollBtn.title = window.buttons.scrollUp.action;
-        scrollBtn.setAttribute("aria-label", window.buttons.scrollUp.action);
-        scrollBtn.classList.remove("btn-scroll-down");
-        scrollBtn.classList.add("btn-scroll-up");
-    }
+    navBottom.appendChild(render2Frag(<ReaderCtrls bottom />));
 
     if (!window.readerRoot) return;
-
     window.readerRoot.insertAdjacentElement("beforebegin", navTop);
     window.readerRoot.insertAdjacentElement("afterend", navBottom);
 }
@@ -406,17 +392,19 @@ async function populatePicker(root: Document = document): Promise<void> {
             return item;
         };
 
-        const dropdown = root.createElement("div");
+        const existing = picker.querySelector(".story-dropdown[data-kc-story-static]");
+        const dropdown = existing instanceof HTMLDivElement ? existing : root.createElement("div");
         dropdown.className = "story-dropdown";
 
-        const button = root.createElement("button");
+        const button = dropdown.querySelector<HTMLButtonElement>("#reader-story-selector") ?? root.createElement("button");
         button.id = "reader-story-selector";
         button.type = "button";
         button.className = "story-dropdown__button";
         button.textContent = window.storyName || "Pick a story...";
         button.setAttribute("aria-haspopup", "true");
 
-        const sizer = root.createElement("div");
+        const sizer = dropdown.querySelector<HTMLDivElement>(".story-dropdown__sizer") ?? root.createElement("div");
+        sizer.replaceChildren();
         sizer.className = "story-dropdown__sizer";
         sizer.setAttribute("aria-hidden", "true");
 
@@ -426,7 +414,8 @@ async function populatePicker(root: Document = document): Promise<void> {
             .map((storyName) => makeSizerItem(storyName))
             .forEach((item) => sizer.appendChild(item));
 
-        const menu = root.createElement("div");
+        const menu = dropdown.querySelector<HTMLDivElement>(".story-dropdown__content") ?? root.createElement("div");
+        menu.replaceChildren();
         menu.className = "story-dropdown__content";
 
         menu.appendChild(makePickerHint());
@@ -435,8 +424,10 @@ async function populatePicker(root: Document = document): Promise<void> {
             .map(makeStoryItem)
             .forEach((item) => menu.appendChild(item));
 
-        dropdown.append(button, sizer, menu);
-        picker.replaceChildren(dropdown);
+        if (!(existing instanceof HTMLDivElement)) picker.replaceChildren(dropdown);
+        if (button.parentElement !== dropdown) dropdown.appendChild(button);
+        if (sizer.parentElement !== dropdown) dropdown.appendChild(sizer);
+        if (menu.parentElement !== dropdown) dropdown.appendChild(menu);
     } catch (err) {
         console.warn("No stories found or failed to load stories.json", err);
     }
