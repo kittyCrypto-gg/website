@@ -395,4 +395,10 @@ const onReady = (): void => {
     startProgressivePageBoot();
 };
 
-document.addEventListener("DOMContentLoaded", onReady);
+// Defer only while the HTML is still being parsed. ES modules typically run
+// at interactive readyState, before DOMContentLoaded itself fires.
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", onReady, { once: true });
+} else {
+    onReady();
+}
