@@ -25,12 +25,30 @@ async function readIcon(path: string | null, size: number, cssClass: string): Pr
     if (start < 0) throw new Error("No SVG root in " + path);
 
     const text = raw.slice(start).replace(/<svg\b([^>]*)>/i, (_whole, attributes: string) => {
+        const originalWidth = Number.parseFloat(attributes.match(/\bwidth=["']([\d.]+)(?:px)?["']/i)?.[1] ?? "");
+        const originalHeight = Number.parseFloat(attributes.match(/\bheight=["']([\d.]+)(?:px)?["']/i)?.[1] ?? "");
+        const missingViewBox = !/\bviewBox\s*=/i.test(attributes);
+        if (missingViewBox && (!Number.isFinite(originalWidth) || !Number.isFinite(originalHeight))) {
+            throw new Error("SVG has no viewBox or intrinsic dimensions: " + path);
+        }
+
+        const viewBox = missingViewBox ? ` viewBox="0 0 ${originalWidth} ${originalHeight}"` : "";
         const clean = attributes
             .replace(/\s(?:width|height|class|version|enable-background)=(?:"[^"]*"|'[^']*')/gi, "");
-        return `<svg${clean} width="${size}px" height="${size}px" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet" class="${cssClass}" style="width:${size}px;height:${size}px;display:block;flex:0 0 auto;max-width:none;max-height:none">`;
+        return `<svg${clean}${viewBox} width="${size}px" height="${size}px" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet" class="${cssClass}" style="width:${size}px;height:${size}px;display:block;flex:0 0 auto;max-width:none;max-height:none">`;
     });
 
-    return text;
+    // Inline SVG fragment identifiers must not collide with those of other
+    // icons. The browser renderer already namespaces these during hydration.
+    const prefix = `kc-built-${size}-${cssClass.replace(/[^a-z0-9_-]+/gi, "-")}-${path.replace(/[^a-z0-9_-]+/gi, "-")}`;
+    const ids = new Set(Array.from(text.matchAll(/\bid=(["'])([^"']+)\1/g), (match) => match[2]));
+    const withIds = text.replace(/\bid=(["'])([^"']+)\1/g,
+        (_match, quote: string, id: string) => `id=${quote}${prefix}-${id}${quote}`);
+    const withPaints = withIds.replace(/url\(#([^)]+)\)/g,
+        (_match, id: string) => ids.has(id) ? `url(#${prefix}-${id})` : `url(#${id})`);
+    return withPaints.replace(/\b(xlink:href|href)=(["'])#([^"']+)\2/g,
+        (_match, name: string, quote: string, id: string) =>
+            `${name}=${quote}#${ids.has(id) ? `${prefix}-${id}` : id}${quote}`);
 }
 
 function fillEmptyElement(html: string, tag: string, id: string, markup: string): string {
