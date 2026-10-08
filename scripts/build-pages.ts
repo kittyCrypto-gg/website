@@ -1,8 +1,11 @@
+import { rm } from "node:fs/promises";
 import { renderStaticShells } from "./render-static-shells.ts";
-import { build, load } from "../vendor/pages/src/index.ts";
 
-const loaded = await load("pages.config.ts");
-const result = await build(loaded);
+// All browser-served pages are flat root files, not clean-route directories.
+// Templates remain in templates/ and are never overwritten by the build.
 await renderStaticShells();
 
-console.log(`[pages] ${String(result.pages.length)} pages built in ${result.out}`);
+// Remove obsolete output from the previous directory-based page generator.
+await rm("site", { recursive: true, force: true });
+
+console.log("[pages] Built root HTML: index.html, about.html, blog.html, chat.html, crtTest.html, guestbook.html, reader.html, resources.html");
