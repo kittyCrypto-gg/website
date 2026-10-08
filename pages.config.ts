@@ -1,7 +1,7 @@
 import { definePages } from "./vendor/pages/src/index.ts";
 
 const cleanPage = (name: string) => ({
-    from: `${name}.html`,
+    from: `templates/${name}.html`,
     route: `/${name}/`,
     legacy: [`${name}.html`],
     baseHref: "/"
@@ -12,7 +12,7 @@ export default definePages({
     out: "site",
     copySource: false,
     pages: [
-        { from: "index.html", route: "/" },
+        { from: "templates/index.html", route: "/" },
         cleanPage("about"),
         cleanPage("blog"),
         cleanPage("chat"),
