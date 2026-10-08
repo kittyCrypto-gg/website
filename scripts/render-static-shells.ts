@@ -5,9 +5,9 @@ import type { MainJson, MainMenuEntry } from "../src/uiFetch.ts";
 import { renderMenuShell, renderToggleShell } from "../src/sharedShell.tsx";
 
 const pages = [
-    "index.html", "about/index.html", "blog/index.html", "chat/index.html",
-    "guestbook/index.html", "reader/index.html", "resources/index.html",
-    "crtTest/index.html"
+    "index.html", "about.html", "blog.html", "chat.html",
+    "guestbook.html", "reader.html", "resources.html",
+    "crtTest.html"
 ] as const;
 
 function iconOf(entry: MainMenuEntry): string | null {
@@ -20,7 +20,7 @@ async function readIcon(path: string | null, size: number, cssClass: string): Pr
         throw new Error("Unsupported local SVG path: " + path);
     }
 
-    const raw = await readFile(join("site", path.slice(1)), "utf8");
+    const raw = await readFile(path.slice(1), "utf8");
     const start = raw.search(/<svg\b/i);
     if (start < 0) throw new Error("No SVG root in " + path);
 
@@ -58,11 +58,14 @@ function addButtons(html: string, buttons: readonly string[]): string {
 }
 
 async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record<string, string>>): Promise<void> {
-    const path = join("site", page);
+    const path = join("templates", page);
     let html = await readFile(path, "utf8");
 
     // The CRT test page deliberately contains no shared navigation or terminal.
-    if (!/<nav\b[^>]*\bid=["']main-menu["']/i.test(html)) return;
+    if (!/<nav\b[^>]*\bid=["']main-menu["']/i.test(html)) {
+        await writeFile(page, html, "utf8");
+        return;
+    }
 
     html = fillEmptyElement(html, "nav", "main-menu", renderMenuShell(data, iconMap));
     html = markNavigation(html);
@@ -99,7 +102,7 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
         ));
     }
 
-    if (page === "reader/index.html") {
+    if (page === "reader.html") {
         buttons.push(renderToggleShell(
             "reader-toggle", data.readerModeToggle.title || "Reader Mode", data.readerModeToggle.enable,
             "theme-toggle-button", "140px", toggleIcons.reader, data.readerModeToggle.enableIconPath ?? null
@@ -115,7 +118,7 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
     html = addButtons(html, buttons);
     html = addInlineData(html, data);
 
-    await writeFile(path, html, "utf8");
+    await writeFile(page, html, "utf8");
 }
 
 export async function renderStaticShells(): Promise<void> {
@@ -128,5 +131,5 @@ export async function renderStaticShells(): Promise<void> {
     }
 
     for (const page of pages) await buildShell(page, data, iconMap);
-    console.log("[pages] Generated shared HTML shells for seven site pages.");
+    console.log("[pages] Generated eight flat HTML pages into repository root from templates/.");
 }
