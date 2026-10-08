@@ -95,6 +95,12 @@ The frontend renders the outcome.
 
 ---
 
+## Contributors
+
+- [@BuddyWinte](https://github.com/BuddyWinte) — terminal exit control, contributed via PR #9.
+
+---
+
 ## License
 
 MIT License (Applies to all code in this repository)
