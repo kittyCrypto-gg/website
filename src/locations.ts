@@ -320,27 +320,38 @@ export class locApi {
         const parent = this.selEl.parentElement;
         if (!parent) return;
 
-        this.pickerEl?.remove();
+        const staticPicker = parent.querySelector<HTMLDivElement>(
+            '.comment-location-dropdown[data-kc-static-location="1"]'
+        );
+        if (this.pickerEl && this.pickerEl !== staticPicker) this.pickerEl.remove();
+
         this.selEl.classList.add("comment-location-native");
 
-        const picker = document.createElement("div");
+        const picker = staticPicker ?? document.createElement("div");
         picker.className = "comment-location-dropdown";
 
-        const button = document.createElement("button");
+        const button = picker.querySelector<HTMLButtonElement>(
+            "#" + this.selEl.id + "-dropdown-button"
+        ) ?? document.createElement("button");
         button.id = `${this.selEl.id}-dropdown-button`;
         button.type = "button";
         button.className = "comment-location-dropdown__button";
         button.setAttribute("aria-haspopup", "listbox");
         button.setAttribute("aria-controls", `${this.selEl.id}-dropdown-menu`);
 
-        const menu = document.createElement("div");
+        const menu = picker.querySelector<HTMLDivElement>(
+            "#" + this.selEl.id + "-dropdown-menu"
+        ) ?? document.createElement("div");
         menu.id = `${this.selEl.id}-dropdown-menu`;
         menu.className = "comment-location-dropdown__content";
 
-        picker.append(button, menu);
+        if (button.parentElement !== picker) picker.appendChild(button);
+        if (menu.parentElement !== picker) picker.appendChild(menu);
 
-        if (this.flagEl.parentElement === parent) parent.insertBefore(picker, this.flagEl);
-        else parent.appendChild(picker);
+        if (!staticPicker && this.flagEl.parentElement === parent) {
+            parent.insertBefore(picker, this.flagEl);
+        }
+        if (!staticPicker && this.flagEl.parentElement !== parent) parent.appendChild(picker);
 
         this.pickerEl = picker;
         this.pickerBtn = button;
