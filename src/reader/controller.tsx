@@ -26,7 +26,7 @@ async function initReader(): Promise<void> {
     const chapters = await discoverChs();
     window.lastKnownChapter = chapters.length > 0 ? Math.max(...chapters) : 0;
 
-    if (!params.get("chapter")) {
+    if (!window.params.get("chapter")) {
         const bkm = parseInt(
             getRCookie(
                 `bookmark_${encodeURIComponent(window.storyPath as unknown as string)}`
@@ -179,6 +179,8 @@ export function forceBookmark(bookmarkId: string): void {
 }
 
 if (/\/reader(?:\.html)?(?:\/|$)/.test(window.location.pathname)) bootReader();
+
+export { getChapters } from "./storyData.ts";
 
 export const readerModeFocus = "#reader";
 
