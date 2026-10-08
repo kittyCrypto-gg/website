@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <script src="./dist/themeLoad.js"></script>
+    <script type="module" src="./dist/main.js"></script>
+    <title>Kitty Crypto's Page</title>
+    <link id="theme-stylesheet" rel="stylesheet" href="/dist/styles.css">
+</head>
+
+<body>
+    <div class="frame">
+        <div class="frame-content">
+            <aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
+                <div id="terminal-wrapper">
+                    <div id="terminal-loading">Loading terminal...</div>
+                    <div id="terminal"></div>
+                </div>
+            </aside>
+            <nav id="main-menu"></nav>
+            <div class="kitty-intro" id ="kitty-about">
+                <header id="main-header" class="comments-header">About Me</header>
+                <div class="profile-row">
+                    <div class="pfp">
+                        <img src="images/kitty.jpg" alt="Kitty Crypto" />
+                    </div>
+                </div>
+
+                <div class="about-text">
+                    <p>I’m Katherine, but nobody calls me that. If you’re here, it’s Kitty.</p>
+                    <p>I was born in South America in 1988. In the 2010s I drifted into the Scottish mist and, somehow,
+                        stayed.</p>
+                    <p>I found my person, built a home, and became a mum. My daughter already knows two facts about me.
+                        I
+                        debug
+                        TypeScript for fun, and I cry at Studio Ghibli films without shame.</p>
+                    <p>I started in physics, chasing clean answers in messy skies, then settled into engineering, where
+                        circuits
+                        feel honest even when life isn’t. Now I build things, break them, and build them again.</p>
+                    <p>This site is my workshop and my scrapbook. It’s where TypeScript meets fanfic, where chatrooms
+                        get
+                        cryptographically spicy, and where “what if she…” turns into a thousand lines of recursive
+                        yearning.
+                    </p>
+                    <p>Yes, I like yuri. Yes, anime catgirls do things to my brain. No, I’m not sanding it down for
+                        LinkedIn.</p>
+                    <p>To everynyan who wanders through. Thanks for stopping by. May you leave with a spark in your
+                        code, a
+                        blush
+                        you won’t explain, and the nerve to press “merge” on the version of yourself you’ve been
+                        postponing.
+                    </p>
+                </div>
+
+                <div class="jp-about" lang="ja">
+                    <p>本名はキャサリン。でも、そう呼ぶ人はいません。</p>
+                    <p>ここではみんな、私のことを「キティ」と呼びます。</p>
+
+                    <p>一九九一年、南米に生まれました。</p>
+                    <p>二千十年代、スコットランドの霧へ漂い込みました。</p>
+                    <p>そして気づけば、なぜかそのまま住み着いていました。</p>
+
+                    <p>そこで伴侶に出会い、家庭を築き、母になりました。</p>
+                    <p>娘はもう知っています。ママはTSのバグが好きなこと。</p>
+                    <p>それから、ジブリ映画では遠慮なく泣いてしまうことも。</p>
+
+                    <p>最初は物理学でした。空の答えを追いかけていました。</p>
+                    <p>きれいな式に救いを求めて、息を整えていた時期です。</p>
+
+                    <p>でも最後は工学に落ち着きました。回路は正直だから。</p>
+                    <p>気まぐれな心よりも、ずっと筋が通っている気がして。</p>
+
+                    <p>いまの私は、作っては壊し、また作る人です。</p>
+                    <p>このサイトは作業場であり、スクラップブックでもあります。</p>
+
+                    <p>TSと二次創作が出会い、チャットは暗号で少し刺激的に。</p>
+                    <p>「もし彼女が｡｡｡」が、千行の再帰的な想いへ変わる場所。</p>
+
+                    <p>はい、百合が好きです。正直に言います。</p>
+                    <p>はい、猫耳少女は理性に刺さります。困るほどに。</p>
+                    <p>いいえ、リンクトイン向けに丸くする気はありません。</p>
+
+                    <p>訪れてくれたみニャさん、ありがとう。本当に。</p>
+                    <p>ここを出るとき、コードに火花が残りますように。</p>
+                    <p>説明できないときめきと、「マージ」する勇気も残りますように。</p>
+                </div>
+            </div>
+            <div class="socials-segment">
+                <div class="segment-header">Find me around the webz</div>
+                <div class="socials-segment__grid"></div>
+            </div>
+            <div class="site-stats kc-88by31">
+                <div class="segment-header">Stats</div>
+
+                <div class="site-stats__grid">
+                    <div class="site-stats__item">
+                        <span class="stats-segment">Visits</span>
+                        <div class="site-stats__counter" id="visits-count"></div>
+                    </div>
+
+                    <div class="site-stats__item">
+                        <span class="stats-segment">Unique Visitors</span>
+                        <div class="site-stats__counter" id="unique-visits-count"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <footer id="main-footer"></footer>
+    </div>
+</body>
+
+</html>
