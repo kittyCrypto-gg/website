@@ -1,7 +1,7 @@
 import * as helpers from "../helpers.ts";
 import { adjScrHgt } from "./layout.ts";
 import { aplyBlogLyt } from "./postRender.tsx";
-import { mkFiltBtn, mkFiltClearBtn, renderTglIco, rvlFiltSum, syncFiltSum } from "./filterSummary.ts";
+import { renderTglIco, rvlFiltSum, syncFiltSum } from "./filterSummary.ts";
 import { colPillRects, flyPills } from "./pillFlight.ts";
 import { clrAllSumFilt, hdlSumPillClick } from "./filterActions.ts";
 import { rssState } from "./runtimeState.ts";
@@ -263,6 +263,8 @@ export function ensFiltShell(cal: HTMLDivElement): HTMLDivElement {
 
     wireFilt(shell);
 
+    const inner = shell.querySelector(".rss-filters__body-inner");
+    if (!(inner instanceof HTMLDivElement)) throw new Error("RSS filter body missing");
     return inner;
 }
 
