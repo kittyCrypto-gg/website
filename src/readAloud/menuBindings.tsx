@@ -1,4 +1,5 @@
 import type { ReadAloudModule } from "./controller.tsx";
+import type { RegionResolveResult } from "./types.ts";
 import type { MenuElements } from "./menuDom.ts";
 import * as helpers from "../helpers.ts";
 import { RegionProbe } from "./views.tsx";
