@@ -109,8 +109,27 @@ function bootComments(): void {
 }
 
 function bootGithub(): void {
-    if (!has("#github-commits-frontend, #github-commits-backend")) return;
-    void import("../github.tsx");
+    const root = document.getElementById("commits-outer-shell");
+    if (!(root instanceof HTMLElement)) return;
+
+    const loadTracker = (): void => {
+        void import("../github.tsx").catch((error: unknown) => {
+            console.error("GitHub tracker failed to load:", error);
+        });
+    };
+
+    if (!("IntersectionObserver" in window)) {
+        loadTracker();
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        loadTracker();
+    }, { threshold: 0 });
+
+    observer.observe(root);
 }
 
 function bootRss(): void {
