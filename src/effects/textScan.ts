@@ -26,11 +26,10 @@ export function createTextScan(mark: (node: Node) => void): {
             // calculation can run over budget, but will not trigger another
             // unbounded scan in the same task.
             while (visited < 80 && performance.now() - start < 2) {
-                if (!walker) {
-                    const root = roots.shift();
-                    if (!root) break;
-                    if (!root.isConnected) continue;
-
+                const root = walker ? null : (roots.shift() ?? null);
+                if (!walker && !root) break;
+                if (root && !root.isConnected) continue;
+                if (root) {
                     mark(root);
                     visited += 1;
                     walker = document.createTreeWalker(
@@ -39,7 +38,7 @@ export function createTextScan(mark: (node: Node) => void): {
                     );
                 }
 
-                const node = walker.nextNode();
+                const node = walker?.nextNode();
                 if (!node) {
                     walker = null;
                     continue;
