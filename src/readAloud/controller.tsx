@@ -361,12 +361,7 @@ export class ReadAloudModule {
    */
   async reloadReadAloud(): Promise<void> {
     return ra_reloadReadAloud(this);
-  }}
-
-const RAM = new ReadAloudModule();
-
-export const showMenu = RAM.getMenuHndlr();
-export const reload = RAM.getReloadHndlr()
+  }
 }
 
 const RAM = new ReadAloudModule();
