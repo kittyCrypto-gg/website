@@ -3,7 +3,23 @@ import { DESKTOP_PRESETS, SHIFT_MAP } from "./constants.ts";
 import type { CssRes, Mods, SendCb } from "./types.ts";
 
 /** Shared keyboard lifecycle state, resource loading, and markup helpers. */
-export class KeyboardFoundation {
+export abstract class KeyboardFoundation {
+
+    // Derived keyboard modules implement these behaviour contracts. The base
+    // constructor binds their eventual implementations through virtual dispatch.
+    abstract __onFocusIn(e: FocusEvent): void;
+    abstract __onFocusOut(e: FocusEvent): void;
+    abstract __onEditablePointerDown(e: PointerEvent): void;
+    abstract __onPointerDownCapture(e: PointerEvent): void;
+    abstract __onClick(e: MouseEvent): void;
+    abstract __onBeforeInputCapture(e: Event): void;
+    abstract __onKeyDownCapture(e: KeyboardEvent): void;
+    abstract __schedule(): void;
+    abstract __refocusEditable(): void;
+    abstract __onTouchMove(e: TouchEvent): void;
+    abstract __onDocClickCapture(e: MouseEvent): void;
+    abstract __onTransitionEnd(e: TransitionEvent): void;
+    abstract __clearMods(): void;
 
     static MARKER_ID = "keyboard-emu-html-loaded";
     static CSS_LINK_ID = "keyboard-emu-css";
