@@ -83,11 +83,15 @@
     }
 }
 
-/* This block-size exists before scripts execute, preventing the terminal from
-   pushing the menu and page contents down when xterm attaches its renderer. */
+/* The terminal and exit control occupy their final rows before JavaScript
+   runs. The exit row is hidden visually, not removed from layout, so entering
+   the terminal cannot grow the window or clip the button. */
 #terminal-wrapper {
     position: relative;
-    block-size: var(--terminal-reserved-height);
+    display: flex;
+    flex-direction: column;
+    block-size: auto;
+    min-block-size: 0;
 }
 
 #terminal-loading {
@@ -101,11 +105,30 @@
 
 #terminal-scroll {
     inline-size: 100%;
-    block-size: 100%;
+    block-size: var(--terminal-reserved-height);
+    flex: 0 0 var(--terminal-reserved-height);
+    min-block-size: 0;
+    box-sizing: border-box;
+}
+
+#terminal-exit-control {
+    flex: 0 0 auto;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+#terminal-exit-control.is-visible {
+    visibility: visible;
+    pointer-events: auto;
 }
 
 #shell-wrapper:is(.floating, .maximised) #terminal-wrapper {
     block-size: 100%;
+}
+
+#shell-wrapper:is(.floating, .maximised) #terminal-scroll {
+    block-size: auto;
+    flex: 1 1 auto;
 }
 
 /* Terminal Icon, terminal-specific visuals only */
