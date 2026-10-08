@@ -25,7 +25,7 @@ function EffectsTipModal(): ReactElement {
 
             <div className="modal-content">
                 <p>
-                    Effects too distracting? Disable or soften them here.
+                    Try the CRT effects! They can make the page slower, so they're off by default.
                 </p>
 
                 <label className="kc-checkbox-row">
