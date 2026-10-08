@@ -1,5 +1,6 @@
 import * as helpers from "../helpers.ts";
-import { renderCalendarView, renderTglIco } from "./view.tsx";
+import { renderTglIco } from "./view.tsx";
+import { updateCalendarDom } from "./domPatch.ts";
 import { CalendarViewModel } from "./CalendarViewModel.ts";
 import type { CalSct } from "./types.ts";
 
@@ -112,8 +113,7 @@ export class CalendarPresentation extends CalendarViewModel {
      * @returns {void}
      */
     protected rnd(): void {
-        const frag = renderCalendarView(this.mkVw());
-        this.host.replaceChildren(frag);
+        updateCalendarDom(this.host, this.mkVw());
         this.primeHeights();
     }
 
