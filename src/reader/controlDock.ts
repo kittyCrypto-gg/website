@@ -9,6 +9,7 @@ let markerAbove = false;
 let bottomSeen = false;
 let scrollHandler: (() => void) | null = null;
 let resizeHandler: (() => void) | null = null;
+let scrollFrame: number | null = null;
 
 function isVisible(element: Element | null): boolean {
     if (!(element instanceof HTMLElement)) return false;
@@ -41,6 +42,9 @@ export function syncControlDock(
     bottomSeen = isVisible(bottomControls);
 
     const floating = markerAbove && !bottomSeen;
+    // Intersection observers already track the crossing; avoid redundant writes.
+    if (controls.classList.contains("reader-controls-top--floating") === floating) return;
+
     controls.classList.toggle("reader-controls-top--floating", floating);
     spacer.style.display = floating ? "block" : "none";
     spacer.style.height = floating
@@ -60,6 +64,9 @@ export function setTopScrollMode(
     if (!button) return;
 
     const up = mode === "up";
+    // The SVG and button only need rebuilding when the direction flips.
+    if (button.classList.contains(up ? "btn-scroll-up" : "btn-scroll-down")) return;
+
     const icon = up
         ? window.buttons.scrollUp.icon
         : window.buttons.scrollDown.icon;
@@ -99,6 +106,11 @@ export function syncTopScrollMode(
 }
 
 function disconnectExisting(): void {
+    if (scrollFrame !== null) {
+        cancelAnimationFrame(scrollFrame);
+        scrollFrame = null;
+    }
+
     window.__kcReaderCtrlObserver?.disconnect();
     window.__kcReaderCtrlObserver = null;
 
@@ -175,10 +187,15 @@ export function detachReaderControls(): void {
     }
 
     scrollHandler = (): void => {
-        syncTopScrollMode(document);
-        syncControlDock(document);
+        if (scrollFrame !== null) return;
+        scrollFrame = requestAnimationFrame(() => {
+            scrollFrame = null;
+            syncTopScrollMode(document);
+        });
     };
 
+    // Geometry/docking is only recomputed on resize and intersection changes,
+    // rather than on every individual scroll event.
     resizeHandler = (): void => {
         syncTopScrollMode(document);
         syncControlDock(document);
