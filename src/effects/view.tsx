@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { render2Mkup } from "../reactHelpers.tsx";
 import type { fxUIconf } from "../uiFetch.ts";
 import type { Prefs } from "./config.ts";
 import { PHOS_OP_MAX, SCAN_OP_MAX, SCAN_SPD_MIN, SCAN_SPD_MAX, SLIDER_MIN, SLIDER_MAX, SLIDER_STEP, TEXT_SHADOW_MIN, TEXT_SHADOW_MAX } from "./config.ts";
@@ -181,3 +182,8 @@ export function Panel(props: Props): ReactElement {
 }
 
 
+
+/** Keep React's component rendering path in the TSX view module. */
+export function renderEffectsPanel(prefs: Prefs, ui: fxUIconf): string {
+    return render2Mkup(<Panel prefs={prefs} ui={ui} />);
+}
