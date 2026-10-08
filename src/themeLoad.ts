@@ -90,3 +90,29 @@
 
     observer.observe(document.head, { childList: true });
 })();
+
+/**
+ * Honour previously saved CRT choices before the initial paint.
+ * Without an opt-in class, the stylesheet keeps all effects disabled.
+ */
+((): void => {
+    const raw = localStorage.getItem("kcEffectsPrefs");
+    if (!raw) return;
+
+    try {
+        const parsed: unknown = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
+        const prefs = parsed as Record<string, unknown>;
+        const root = document.documentElement;
+
+        const isEnabled = (toggle: string, strength: string): boolean =>
+            prefs[toggle] === true &&
+            (typeof prefs[strength] !== "number" || prefs[strength] > 0);
+
+        root.classList.toggle("effect-crt-phosphor-on", isEnabled("phosphorEnabled", "phosphorOpacity"));
+        root.classList.toggle("effect-crt-scanlines-on", isEnabled("scanlinesEnabled", "scanlineOpacity"));
+        root.classList.toggle("effect-crt-text-shadow-on", isEnabled("textShadowEnabled", "textShadowIntensity"));
+    } catch {
+        // Malformed saved settings are ignored until normal initialisation.
+    }
+})();
