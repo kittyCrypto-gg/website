@@ -27,12 +27,16 @@ export function resolveLauncher(
         };
     }
 
-    const launcher = document.createElement("img");
+    const prebuilt = document.getElementById(`window-api-launcher-${windowId}`);
+    const launcher = prebuilt instanceof HTMLImageElement
+        ? prebuilt
+        : document.createElement("img");
+
     launcher.src = options.launcherSrc ?? "/images/file.svg";
     launcher.alt = `${options.title ?? windowId} icon`;
     launcher.title = `Double-click to open ${options.title ?? windowId}`;
     launcher.draggable = false;
-    document.body.appendChild(launcher);
+    if (launcher.parentElement !== document.body) document.body.appendChild(launcher);
 
     return {
         launcher,
