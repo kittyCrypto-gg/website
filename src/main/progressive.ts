@@ -108,6 +108,30 @@ function bootComments(): void {
     void import("../comments.ts");
 }
 
+function bootPresence(): void {
+    const root = document.getElementById("presence-window-wrapper");
+    if (!(root instanceof HTMLElement)) return;
+
+    const load = (): void => {
+        void import("../presence.tsx").catch((error: unknown) => {
+            console.error("Presence module failed to load:", error);
+        });
+    };
+
+    if (!("IntersectionObserver" in window)) {
+        load();
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        load();
+    }, { threshold: 0 });
+
+    observer.observe(root);
+}
+
 function bootGithub(): void {
     const root = document.getElementById("commits-outer-shell");
     if (!(root instanceof HTMLElement)) return;
@@ -175,6 +199,7 @@ async function bootAboutTategaki(): Promise<void> {
 }
 
 function bootProgressiveFeatures(): void {
+    bootPresence();
     bootVisitLogger();
     void bootVisitCounters();
     bootComments();
