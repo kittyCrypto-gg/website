@@ -3,7 +3,7 @@ import { THEME_MODE_CHANGED_EVENT } from "./themeChanger.ts";
 import { installMenuToggle } from "./menues.tsx";
 import { STORAGE_KEY } from "./effects/config.ts";
 import { apply, defs, live, resolved } from "./effects/preferences.ts";
-import { applyTextShadowScale, ensureTextShadowKeyframes, ensureTextShadowTargets } from "./effects/textDistortion.ts";
+import { applyTextShadowScale } from "./effects/textDistortion.ts";
 import { openMod, refreshEffectsModal, setEffectsUiConfig, syncOpen } from "./effects/modal.ts";
 import { initEffectsTip } from "./effects/helpTip.tsx";
 
@@ -57,9 +57,6 @@ export function initEffectsControls(nextUi: fxUIconf): void {
 
     defs();
     apply(resolved());
-
-    ensureTextShadowTargets();
-    ensureTextShadowKeyframes();
 
     const effectsToggle = installMenuToggle({
         id: BTN_ID,
