@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <script src="./dist/themeLoad.js"></script>
+    <script type="module" src="./dist/main.js"></script>
+    <script type="module" src="./dist/chat.js"></script>
+    <script type="module" src="./dist/message.js"></script>
+    <title>Kitty Crypto Chat</title>
+    <link id="theme-stylesheet" rel="stylesheet" href="/dist/styles.css">
+</head>
+
+<body>
+    <div class="frame frame-chat">
+        <div class="frame-content">
+            <aside id="shell-wrapper" role="presentation" aria-hidden="true" style="width: auto;">
+                <div id="terminal-wrapper">
+                    <div id="terminal-loading">Loading terminal...</div>
+                    <div id="terminal"></div>
+                </div>
+            </aside>
+            <nav id="main-menu"></nav>
+            <header id="main-header">Kitty Crypto Chat</header>
+            <main id="main-content">
+                <div id="chat-window">
+                    <div id="chatroom"></div>
+                    <div class="chat-inputs">
+                        <div class="chat-inputs">
+                            <input type="text" id="nickname" placeholder="Enter your nickname">
+                            <button id="send-button">Send</button>
+                            <textarea id="message" placeholder="Type your message here" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <footer id="main-footer"></footer>
+    </div>
+</body>
+
+</html>
