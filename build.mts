@@ -452,7 +452,8 @@ async function expandCssImports(
  * @returns {Promise<void>}
  */
 async function runCssBuild(): Promise<void> {
-    const css = await expandCssImports("styles/styles.css");
+    const xtermCss = await readFile("node_modules/@xterm/xterm/css/xterm.css", "utf8");
+    const css = xtermCss + "\n" + await expandCssImports("styles/styles.css");
     const result = await esbuild.transform(css, {
         loader: "css",
         minify: true,
