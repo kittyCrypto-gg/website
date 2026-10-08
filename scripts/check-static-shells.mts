@@ -2,9 +2,9 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const routes = [
-    "index.html", "about/index.html", "blog/index.html",
-    "chat/index.html", "guestbook/index.html", "reader/index.html",
-    "resources/index.html"
+    "index.html", "about.html", "blog.html",
+    "chat.html", "guestbook.html", "reader.html",
+    "resources.html"
 ] as const;
 
 const errors: string[] = [];
@@ -12,7 +12,7 @@ const matches = (html: string, re: RegExp): string[] =>
     Array.from(html.matchAll(re), (match) => match[1] ?? "");
 
 for (const path of routes) {
-    const html = await readFile(resolve("site", path), "utf8");
+    const html = await readFile(resolve(path), "utf8");
     const frameIds = matches(html, /\bdata-kc-static-window="([^"]+)"/g);
     const launcherIds = matches(html, /\bdata-kc-static-window-launcher="([^"]+)"/g);
 
