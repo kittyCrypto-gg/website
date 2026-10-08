@@ -387,6 +387,24 @@ async function runBuild(entryPoints: BuildEntryPoints): Promise<void> {
 
 
 /**
+ * Compiles the GitHub tracker Web Worker as its own module entry.
+ * Workers cannot access the DOM, and stay entirely off the main thread.
+ */
+async function runCommitWorkerBuild(): Promise<void> {
+    await esbuild.build({
+        entryPoints: ["src/github/commitWorker.ts"],
+        outfile: "dist/workers/github.js",
+        bundle: true,
+        format: "esm",
+        platform: "browser",
+        target: "es2022",
+        minify: true,
+        define: { "process.env.NODE_ENV": '"production"' },
+        logLevel: "info"
+    });
+}
+
+/**
  * Expands local CSS imports in source order without rewriting the CSS syntax.
  * This preserves the existing cascade while avoiding dozens of browser @import requests.
  * @param {string} filePath
@@ -535,6 +553,9 @@ async function main(): Promise<void> {
 
     console.log(`[build] Building ${String(Object.keys(entryPoints).length)} intentional entry points with esbuild.`);
     await runBuild(entryPoints);
+
+    console.log("[build] Bundling GitHub repository worker.");
+    await runCommitWorkerBuild();
 
     console.log("[build] Bundling shared CSS.");
     await runCssBuild();
