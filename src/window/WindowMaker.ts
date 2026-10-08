@@ -92,14 +92,17 @@ export class WindowMaker extends WindowEvents {
 
         this.restoreFrame();
 
-        if (this.frameEl && this.contentRootEl) {
+        const builtFrame = this.frameEl?.dataset.kcStaticWindow === this.windowId;
+        // A pre-rendered frame belongs to the HTML document. Teardown must
+        // detach listeners and clear runtime state without destroying its nodes.
+        if (!builtFrame && this.frameEl && this.contentRootEl) {
             while (this.contentRootEl.firstChild) {
                 this.frameEl.appendChild(this.contentRootEl.firstChild);
             }
         }
 
-        this.headerEl?.remove();
-        this.bodyEl?.remove();
+        if (!builtFrame) this.headerEl?.remove();
+        if (!builtFrame) this.bodyEl?.remove();
         this.dockedPlaceholderEl?.remove();
 
         const frame = this.frameEl;
@@ -112,6 +115,13 @@ export class WindowMaker extends WindowEvents {
             frame.removeAttribute("data-window-minimised");
             frame.removeAttribute("data-window-closed");
             frame.classList.remove("window-frame", "floating", "maximised", "minimised", "closed");
+        }
+
+        if (builtFrame && frame) {
+            frame.classList.add("window-frame");
+            frame.classList.toggle("closed", this.options.initClosed ?? false);
+            frame.classList.toggle("minimised", this.options.initMini ?? false);
+            frame.classList.toggle("floating", this.options.initFloat ?? this.options.initFloatPos !== undefined);
         }
 
         if (frame) clearMinimisedFrameLayout(frame);
@@ -129,12 +139,22 @@ export class WindowMaker extends WindowEvents {
             restoreFrameStyle(frame, this.frameStyle);
         }
 
-        restoreLauncher(
-            this.launcherEl,
-            this.ownsLauncher,
-            this.launcherOriginalParent,
-            this.launcherOriginalNextSibling
-        );
+        const builtLauncher = this.launcherEl?.dataset.kcStaticWindowLauncher === this.windowId;
+        if (builtLauncher && this.launcherEl) {
+            this.launcherEl.classList.remove("is-dragging");
+            this.launcherEl.setAttribute(
+                "data-window-launcher-visible",
+                String(this.options.initClosed ?? false)
+            );
+        }
+        if (!builtLauncher) {
+            restoreLauncher(
+                this.launcherEl,
+                this.ownsLauncher,
+                this.launcherOriginalParent,
+                this.launcherOriginalNextSibling
+            );
+        }
 
         this.frameEl = null;
         this.headerEl = null;
