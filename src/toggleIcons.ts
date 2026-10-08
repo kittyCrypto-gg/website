@@ -178,6 +178,18 @@ export async function showToggleVisual(
     const nextToken = (renderTokenByButton.get(button) ?? 0) + 1;
     renderTokenByButton.set(button, nextToken);
 
+    const hasMatchingStaticSvg =
+        button.dataset.kcStaticToggle === "1" &&
+        button.dataset.kcBuiltIconPath === visual.iconPath &&
+        button.querySelector("svg") !== null;
+
+    button.dataset.kcStaticToggle = "0";
+    if (hasMatchingStaticSvg && visual.title) {
+        button.title = visual.title;
+        button.setAttribute("aria-label", visual.title);
+    }
+    if (hasMatchingStaticSvg) return;
+
     renderEmoji(button, visual.emoji, visual.title);
 
     if (!visual.iconPath) {

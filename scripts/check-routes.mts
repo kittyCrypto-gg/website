@@ -1,17 +1,11 @@
 import { access, readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const root = resolve("site");
+const root = resolve(".");
 const origin = "https://kittycrow.dev";
-
 const pages = [
-    "about",
-    "blog",
-    "chat",
-    "crtTest",
-    "guestbook",
-    "reader",
-    "resources"
+    "index", "about", "blog", "chat", "crtTest",
+    "guestbook", "reader", "resources"
 ] as const;
 
 const requiredAssets = [
@@ -22,12 +16,10 @@ const requiredAssets = [
     "ui/keyboard.html",
     "favicon.ico",
     "manifest.json",
-    "robots.txt",
-    ".nojekyll"
+    "robots.txt"
 ] as const;
 
 const failures: string[] = [];
-
 const exists = async (path: string): Promise<boolean> => {
     try {
         await access(resolve(root, path));
@@ -41,40 +33,23 @@ const requirePath = async (path: string): Promise<void> => {
     if (!(await exists(path))) failures.push(`Missing generated path: ${path}`);
 };
 
-await requirePath("index.html");
-for (const asset of requiredAssets) await requirePath(asset);
-
 for (const page of pages) {
-    const canonical = `${page}/index.html`;
-    const legacy = `${page}.html`;
-    await requirePath(canonical);
-    await requirePath(legacy);
-
-    if (!(await exists(canonical)) || !(await exists(legacy))) continue;
-
-    const canonicalHtml = await readFile(resolve(root, canonical), "utf8");
-    if (!/<base\s+href=["']\/["']>/i.test(canonicalHtml)) {
-        failures.push(`${canonical} does not set <base href="/">`);
-    }
-
-    const legacyHtml = await readFile(resolve(root, legacy), "utf8");
-    const target = `/${page}/`;
-    if (!legacyHtml.includes(`rel="canonical" href="${target}"`)) {
-        failures.push(`${legacy} does not declare ${target} as canonical`);
-    }
-    if (!legacyHtml.includes(`location.replace("${target}"`)) {
-        failures.push(`${legacy} does not preserve query/hash while redirecting to ${target}`);
-    }
+    const path = `${page}.html`;
+    await requirePath(path);
 }
 
-const localReferences = new Set<string>();
-for (const route of ["/", ...pages.map((page) => `/${page}/`)]) {
-    const file = route === "/" ? "index.html" : `${route.slice(1)}index.html`;
-    if (!(await exists(file))) continue;
+for (const asset of requiredAssets) await requirePath(asset);
 
-    const html = await readFile(resolve(root, file), "utf8");
+if (await exists("site")) failures.push("The obsolete site/ output directory still exists");
+
+const localReferences = new Set<string>();
+for (const page of pages) {
+    const path = `${page}.html`;
+    if (!(await exists(path))) continue;
+
+    const html = await readFile(resolve(root, path), "utf8");
     const baseMatch = html.match(/<base\s+href=["']([^"']+)["']/i);
-    const base = new URL(baseMatch?.[1] ?? route, `${origin}${route}`);
+    const base = new URL(baseMatch?.[1] ?? "/", origin + "/");
     const attributes = html.matchAll(/\b(?:href|src)=["']([^"']+)["']/gi);
 
     for (const match of attributes) {
@@ -85,7 +60,7 @@ for (const route of ["/", ...pages.map((page) => `/${page}/`)]) {
         try {
             url = new URL(value, base);
         } catch {
-            failures.push(`${file} contains an invalid local reference: ${value}`);
+            failures.push(`${path} contains an invalid local reference: ${value}`);
             continue;
         }
 
@@ -95,26 +70,33 @@ for (const route of ["/", ...pages.map((page) => `/${page}/`)]) {
     }
 }
 
-for (const pathname of localReferences) {
+async function resolvesLocally(pathname: string): Promise<boolean> {
     const relative = decodeURIComponent(pathname).replace(/^\/+/, "");
-    const candidate = resolve(root, relative || "index.html");
+    const clean = relative.replace(/\/+$/, "");
+    const candidates = [relative || "index.html", clean + ".html"];
 
-    try {
-        const info = await stat(candidate);
-        if (info.isDirectory()) await access(resolve(candidate, "index.html"));
-    } catch {
-        failures.push(`Generated HTML references a missing local path: ${pathname}`);
+    for (const candidatePath of candidates) {
+        const candidate = resolve(root, candidatePath);
+        try {
+            const info = await stat(candidate);
+            if (info.isFile()) return true;
+        } catch {
+            // Check the next representation, including clean routes backed by .html.
+        }
     }
+
+    return false;
 }
 
-for (const leaked of ["src", "vendor", "node_modules", "package.json", "build.mts"]) {
-    if (await exists(leaked)) failures.push(`Build output leaked project source: ${leaked}`);
+for (const pathname of localReferences) {
+    if (await resolvesLocally(pathname)) continue;
+    failures.push(`Generated HTML references a missing local path: ${pathname}`);
 }
 
 if (failures.length > 0) {
-    for (const failure of failures) console.error(`[routes] ${failure}`);
+    for (const failure of failures) console.error("[routes] " + failure);
     process.exitCode = 1;
 } else {
-    console.log(`[routes] ${String(pages.length + 1)} canonical pages and ${String(pages.length)} legacy redirects passed.`);
-    console.log(`[routes] ${String(localReferences.size)} same-origin HTML references resolve inside site/.`);
+    console.log(`[routes] ${pages.length} generated root HTML pages found, with no site/ output.`);
+    console.log(`[routes] ${localReferences.size} same-origin HTML references resolve to files or .html clean-route targets.`);
 }

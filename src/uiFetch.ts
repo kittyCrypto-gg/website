@@ -183,14 +183,25 @@ export async function fetchJson<T>(src: string, cacheMode: RequestCache = "defau
     return (await response.json()) as T;
 }
 
+/** Read the static UI config emitted by the page builder, if available. */
+function readEmbeddedUiData(): Promise<MainJson> | null {
+    const raw = document.getElementById("kc-static-ui-data")?.textContent?.trim();
+    if (!raw) return null;
+
+    try {
+        return Promise.resolve(JSON.parse(raw) as MainJson);
+    } catch (error: unknown) {
+        console.warn("Invalid embedded UI configuration:", error);
+        return null;
+    }
+}
+
 /**
  * @param {string} [src="../data/main.json"] Path to the UI JSON file.
  * @returns {Promise<MainJson>} Shared UI data.
  */
 export async function fetchUiData(src = "../data/main.json"): Promise<MainJson> {
-    if (!uiDataPromise) {
-        uiDataPromise = fetchJson<MainJson>(src);
-    }
+    uiDataPromise ??= readEmbeddedUiData() ?? fetchJson<MainJson>(src);
 
     try {
         return await uiDataPromise;

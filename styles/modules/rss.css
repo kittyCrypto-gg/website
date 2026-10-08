@@ -398,6 +398,14 @@
     }
 }
 
+/* The build emits a stable feed mount before its remote posts arrive. */
+.blog-container[data-rss-built="1"] > .rss-loading {
+    display: grid;
+    place-items: center;
+    min-block-size: clamp(12rem, 30vh, 20rem);
+    color: var(--body-text-colour);
+}
+
 .rss-scroll-2 {
     display: flex;
     flex-direction: column;

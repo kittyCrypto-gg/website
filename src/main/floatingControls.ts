@@ -7,6 +7,8 @@ const FLOAT_BTN_SELS = [
 ] as const;
 
 let resizeObserver: ResizeObserver | null = null;
+const observedButtons = new Set<HTMLButtonElement>();
+const floatButtonQuery = FLOAT_BTN_SELS.join(", ");
 let mutationObserver: MutationObserver | null = null;
 let installed = false;
 let queued = false;
@@ -47,6 +49,11 @@ function getHeight(el: HTMLElement): number {
     return el.offsetHeight;
 }
 
+function setStyleIfChanged(button: HTMLButtonElement, property: string, value: string): void {
+    if (button.style.getPropertyValue(property) === value) return;
+    button.style.setProperty(property, value);
+}
+
 function stackFloatBtns(): void {
     const buttons = getFloatBtns();
     if (buttons.length === 0) return;
@@ -84,24 +91,28 @@ function stackFloatBtns(): void {
 
         if (previous) nextBottom += previous.height + gapPx;
 
-        item.button.style.right = sharedRight;
-        item.button.style.bottom = String(nextBottom) + "px";
-        item.button.style.zIndex = sharedZ;
+        setStyleIfChanged(item.button, "right", sharedRight);
+        setStyleIfChanged(item.button, "bottom", String(nextBottom) + "px");
+        setStyleIfChanged(item.button, "z-index", sharedZ);
     }
 }
 
 function watchFloatBtns(): void {
-    resizeObserver?.disconnect();
-
     if (typeof ResizeObserver === "undefined") return;
 
-    const buttons = getFloatBtns();
-    if (buttons.length === 0) return;
+    resizeObserver ??= new ResizeObserver(queueFloatBtns);
+    const current = new Set(getFloatBtns());
 
-    resizeObserver = new ResizeObserver(queueFloatBtns);
+    for (const button of observedButtons) {
+        if (current.has(button)) continue;
+        resizeObserver.unobserve(button);
+        observedButtons.delete(button);
+    }
 
-    for (const button of buttons) {
+    for (const button of current) {
+        if (observedButtons.has(button)) continue;
         resizeObserver.observe(button);
+        observedButtons.add(button);
     }
 }
 
@@ -114,6 +125,17 @@ function queueFloatBtns(): void {
         stackFloatBtns();
         watchFloatBtns();
     });
+}
+
+function containsFloatButton(node: Node): boolean {
+    return node instanceof Element
+        && (node.matches(floatButtonQuery)
+            || node.querySelector(floatButtonQuery) !== null);
+}
+
+function isFloatButtonMutation(record: MutationRecord): boolean {
+    if (record.type === "attributes") return containsFloatButton(record.target);
+    return [...record.addedNodes, ...record.removedNodes].some(containsFloatButton);
 }
 
 function observeBody(): void {
@@ -133,7 +155,9 @@ function installObservers(): void {
     installed = true;
 
     window.addEventListener("resize", queueFloatBtns);
-    mutationObserver = new MutationObserver(queueFloatBtns);
+    mutationObserver = new MutationObserver((records) => {
+        if (records.some(isFloatButtonMutation)) queueFloatBtns();
+    });
     observeBody();
 }
 

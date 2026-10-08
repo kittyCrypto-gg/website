@@ -108,9 +108,52 @@ function bootComments(): void {
     void import("../comments.ts");
 }
 
+function bootPresence(): void {
+    const root = document.getElementById("presence-window-wrapper");
+    if (!(root instanceof HTMLElement)) return;
+
+    const load = (): void => {
+        void import("../presence.tsx").catch((error: unknown) => {
+            console.error("Presence module failed to load:", error);
+        });
+    };
+
+    if (!("IntersectionObserver" in window)) {
+        load();
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        load();
+    }, { threshold: 0 });
+
+    observer.observe(root);
+}
+
 function bootGithub(): void {
-    if (!has("#github-commits-frontend, #github-commits-backend")) return;
-    void import("../github.tsx");
+    const root = document.getElementById("commits-outer-shell");
+    if (!(root instanceof HTMLElement)) return;
+
+    const loadTracker = (): void => {
+        void import("../github.tsx").catch((error: unknown) => {
+            console.error("GitHub tracker failed to load:", error);
+        });
+    };
+
+    if (!("IntersectionObserver" in window)) {
+        loadTracker();
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        loadTracker();
+    }, { threshold: 0 });
+
+    observer.observe(root);
 }
 
 function bootRss(): void {
@@ -119,7 +162,10 @@ function bootRss(): void {
 }
 
 function bootSocials(): void {
-    if (!has(".socials-segment__grid")) return;
+    const grid = document.querySelector<HTMLElement>(".socials-segment__grid");
+    if (!grid) return;
+    // About's static social list is already complete in the built HTML.
+    if (grid.dataset.kcSocialsStatic === "1") return;
     void import("../socials.ts");
 }
 
@@ -156,6 +202,7 @@ async function bootAboutTategaki(): Promise<void> {
 }
 
 function bootProgressiveFeatures(): void {
+    bootPresence();
     bootVisitLogger();
     void bootVisitCounters();
     bootComments();

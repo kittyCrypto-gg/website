@@ -170,11 +170,10 @@ async function setBtnIcon(
  * @returns {MenuToggleHandle}
  */
 export function installMenuToggle(spec: MenuToggleSpec): MenuToggleHandle {
-    const button = recreateSingleton(
-        spec.id,
-        () => document.createElement("button"),
-        document
-    );
+    const prebuilt = document.getElementById(spec.id);
+    const button = prebuilt instanceof HTMLButtonElement
+        ? prebuilt
+        : recreateSingleton(spec.id, () => document.createElement("button"), document);
 
     if (!(button instanceof HTMLButtonElement)) {
         throw new Error(`Failed to create menu toggle button: ${spec.id}`);
@@ -193,6 +192,13 @@ export function installMenuToggle(spec: MenuToggleSpec): MenuToggleHandle {
     const setConfig = (next: MenuToggleCfg): void => {
         button.title = next.title;
         button.setAttribute("aria-label", next.title);
+        const builtIconMatches =
+            button.dataset.kcStaticToggle === "1" &&
+            button.dataset.kcBuiltIconPath === next.iconPath &&
+            button.querySelector("svg") !== null;
+
+        button.dataset.kcStaticToggle = "0";
+        if (builtIconMatches) return;
         void setBtnIcon(button, next, iconSpec);
     };
 

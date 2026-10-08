@@ -1,4 +1,4 @@
-import { render2Frag } from "../reactHelpers.tsx";
+import { render2Frag, render2Mkup } from "../reactHelpers.tsx";
 import * as icons from "../icons.tsx";
 import { moLbl } from "./model.ts";
 import type {
@@ -317,7 +317,7 @@ function RootActions({
  * @param {Readonly<{ vw: CalVw }>} props
  * @returns {JSX.Element}
  */
-function Root({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
+function Root({ vw, prebuilt = false }: Readonly<{ vw: CalVw; prebuilt?: boolean }>): JSX.Element {
     const yrCnt = vw.sel.yrs.size;
     const moCnt = vw.sel.mos.size;
     const dyCnt = vw.sel.dys.size;
@@ -348,6 +348,7 @@ function Root({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
             className="cal"
             aria-label="Calendar filters"
             data-open={vw.rootOpen ? "1" : "0"}
+            data-kc-calendar-static={prebuilt ? "1" : undefined}
         >
             <header
                 className="cal__hdr kc-click-header"
@@ -416,4 +417,27 @@ function Root({ vw }: Readonly<{ vw: CalVw }>): JSX.Element {
 
 export function renderCalendarView(vw: CalVw): DocumentFragment {
     return render2Frag(<Root vw={vw} />);
+}
+
+/**
+ * Blog's data-independent calendar frame is generated into the root HTML.
+ * Years, months, day cells and selected pills are populated once the feed loads.
+ * Both build-time markup and runtime updates use the same Root component.
+ */
+export function renderStaticCalendarShell(): string {
+    const empty = new Set<number>();
+    return render2Mkup(
+        <Root prebuilt vw={{
+            ttl: "Browse by date",
+            rootOpen: false,
+            hasSel: false,
+            yrs: [],
+            mos: [],
+            sel: { yrs: empty, mos: empty, dys: empty },
+            open: { yrs: true, mos: true, dys: false },
+            canMos: false,
+            canDys: false,
+            dyVw: null
+        }} />
+    );
 }

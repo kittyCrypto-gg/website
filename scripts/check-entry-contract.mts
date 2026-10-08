@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { browserEntryNames, browserEntryPoints } from "./build-entries.mjs";
 
-const htmlFiles = (await readdir("."))
+const htmlFiles = (await readdir("templates"))
     .filter((path) => path.endsWith(".html"))
     .sort((left, right) => left.localeCompare(right));
 
@@ -9,7 +9,7 @@ const referenced = new Set<string>();
 const pattern = /(?:\.\.\/|\.\/|\/)dist\/([A-Za-z0-9_/-]+)\.js/g;
 
 for (const path of htmlFiles) {
-    const html = await readFile(path, "utf8");
+    const html = await readFile("templates/" + path, "utf8");
 
     for (const match of html.matchAll(pattern)) {
         if (!match[1]) continue;

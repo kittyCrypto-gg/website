@@ -24,22 +24,20 @@ import {
     num,
     spdToMs
 } from "./math.ts";
-import { applyTextShadowScale } from "./textDistortion.ts";
+import { applyTextShadowScale, ensureTextShadowKeyframes, ensureTextShadowTargets, disableTextShadowTargets } from "./textDistortion.ts";
 
 let defPrefs: Prefs | null = null;
 
 function readCss(): Prefs {
     const rootStyle = window.getComputedStyle(document.documentElement);
-    const body = document.body;
-
     return {
-        phosphorEnabled: !body.classList.contains("effect-disable-phosphor"),
+        phosphorEnabled: false,
         phosphorOpacity: clamp(
             num(rootStyle.getPropertyValue("--effect-crt-phosphor-opacity"), 0.048),
             PHOS_OP_MIN,
             PHOS_OP_MAX
         ),
-        scanlinesEnabled: !body.classList.contains("effect-disable-scanlines"),
+        scanlinesEnabled: false,
         scanlineOpacity: clamp(
             num(rootStyle.getPropertyValue("--effect-crt-scanline-opacity"), 0.09),
             SCAN_OP_MIN,
@@ -257,19 +255,26 @@ export function apply(prefs: Prefs): void {
     );
     applyTextShadowScale(textShadowIntensity);
 
-    document.body.classList.toggle(
-        "effect-disable-phosphor",
-        !prefs.phosphorEnabled || prefs.phosphorOpacity <= 0
-    );
-    document.body.classList.toggle(
-        "effect-disable-scanlines",
-        !prefs.scanlinesEnabled || prefs.scanlineOpacity <= 0
-    );
+    const phosphorOn = prefs.phosphorEnabled && prefs.phosphorOpacity > 0;
+    const scanlinesOn = prefs.scanlinesEnabled && prefs.scanlineOpacity > 0;
+    const textShadowOn = prefs.textShadowEnabled && textShadowIntensity > 0;
+
+    document.documentElement.classList.toggle("effect-crt-phosphor-on", phosphorOn);
+    document.documentElement.classList.toggle("effect-crt-scanlines-on", scanlinesOn);
+    document.documentElement.classList.toggle("effect-crt-text-shadow-on", textShadowOn);
+
+    document.body.classList.toggle("effect-disable-phosphor", !phosphorOn);
+    document.body.classList.toggle("effect-disable-scanlines", !scanlinesOn);
     document.body.classList.toggle("effect-static-scanlines", prefs.scanlineSpeed <= 0);
-    document.body.classList.toggle(
-        "effect-disable-text-shadow",
-        !prefs.textShadowEnabled || textShadowIntensity <= 0
-    );
+    document.body.classList.toggle("effect-disable-text-shadow", !textShadowOn);
+
+    // Discovery is idle-time work and only runs for explicitly enabled text distortion.
+    if (textShadowOn) {
+        ensureTextShadowKeyframes();
+        ensureTextShadowTargets();
+    } else {
+        disableTextShadowTargets();
+    }
 }
 
 /**

@@ -9,6 +9,8 @@
     --term-icon-border-width: 1px;
     --term-icon-hover-shadow: 0 0 3px;
 
+    --terminal-reserved-height: clamp(16rem, 26vw, 24rem);
+
     --terminal-radius: 8px;
     --terminal-border-width: 1px;
     --terminal-border-colour: rgba(0, 0, 0, 0.3);
@@ -79,6 +81,54 @@
     .composition-view {
         background: var(--term-bg);
     }
+}
+
+/* The terminal and exit control occupy their final rows before JavaScript
+   runs. The exit row is hidden visually, not removed from layout, so entering
+   the terminal cannot grow the window or clip the button. */
+#terminal-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    block-size: auto;
+    min-block-size: 0;
+}
+
+#terminal-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+
+#terminal-scroll {
+    inline-size: 100%;
+    block-size: var(--terminal-reserved-height);
+    flex: 0 0 var(--terminal-reserved-height);
+    min-block-size: 0;
+    box-sizing: border-box;
+}
+
+#terminal-exit-control {
+    flex: 0 0 auto;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+#terminal-exit-control.is-visible {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+#shell-wrapper:is(.floating, .maximised) #terminal-wrapper {
+    block-size: 100%;
+}
+
+#shell-wrapper:is(.floating, .maximised) #terminal-scroll {
+    block-size: auto;
+    flex: 1 1 auto;
 }
 
 /* Terminal Icon, terminal-specific visuals only */

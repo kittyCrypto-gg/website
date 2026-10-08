@@ -110,6 +110,23 @@
     }
 }
 
+
+/* Match WindowMaker's final default layout from the first HTML paint.
+   Browser hydration still applies saved floating/minimised state afterwards. */
+.window-frame[data-kc-static-window] {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    padding: 0;
+}
+
+.window-frame[data-kc-static-window].closed {
+    display: none;
+}
+
+
 .window-header {
     height: var(--window-header-height);
 

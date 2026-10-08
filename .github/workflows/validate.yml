@@ -6,7 +6,7 @@ on:
       - main
       - "refactor/**"
   pull_request:
-    branches: [main]
+    branches: [main, "feat/buildtime-static-shells"]
   workflow_dispatch:
 
 permissions:

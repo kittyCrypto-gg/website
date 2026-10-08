@@ -1,4 +1,5 @@
 import * as helpers from "./helpers";
+import Clusterize from "clusterize.js";
 
 type Row = string;
 
@@ -7,13 +8,6 @@ type Inst = Readonly<{
     destroy: (clean?: boolean) => void;
 }>;
 
-type Ctor = new (options: Record<string, unknown>) => Inst;
-
-declare global {
-    interface Window {
-        Clusterize?: Ctor;
-    }
-}
 
 export type ClusteriserTarget = Element | string;
 
@@ -57,12 +51,9 @@ export class Clusteriser {
     async init(): Promise<this> {
         if (this.#on) return this;
 
-        await this.#loadJs();
-
-        const Clusterize = window.Clusterize;
-        if (!Clusterize) {
-            throw new Error("Clusterize.js loaded but window.Clusterize is unavailable");
-        }
+        // This module is only imported when the GitHub commits section enters
+        // the viewport. Clusterize is bundled into that same lazy ESM graph.
+        await this.#prepDom();
 
         this.#inst = new Clusterize({
             scrollId: this.#scrollId,
@@ -158,38 +149,4 @@ export class Clusteriser {
         this.#el.classList.add("clusterise");
     }
 
-    /**
-     * Loads the external clusterize script once.
-     * Also makes sure the dom shell exists first.
-     * @returns {Promise<void>}
-     */
-    async #loadJs(): Promise<void> {
-        await this.#prepDom();
-        if (window.Clusterize) return;
-
-        await new Promise<void>((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/npm/clusterize.js/clusterize.min.js";
-
-            /**
-             * Script loaded ok.
-             * @returns {void}
-             */
-            const onLoad = (): void => {
-                resolve();
-            };
-
-            /**
-             * Script load failed, rip.
-             * @returns {void}
-             */
-            const onErr = (): void => {
-                reject(new Error("Failed to load Clusterize.js"));
-            };
-
-            script.onload = onLoad;
-            script.onerror = onErr;
-            document.head.appendChild(script);
-        });
-    }
 }

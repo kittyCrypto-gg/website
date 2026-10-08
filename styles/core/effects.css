@@ -83,7 +83,7 @@ body * {
     CRT Phosphor Mask
 ========================================= */
 
-body:not(.effect-disable-phosphor)::before {
+html.effect-crt-phosphor-on body:not(.effect-disable-phosphor)::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -118,7 +118,7 @@ body:not(.effect-disable-phosphor)::before {
     CRT Scanlines
 ========================================= */
 
-body:not(.effect-disable-scanlines)::after {
+html.effect-crt-scanlines-on body:not(.effect-disable-scanlines)::after {
   content: "";
   position: fixed;
 
@@ -163,7 +163,7 @@ body:not(.effect-disable-scanlines)::after {
   will-change: transform;
 }
 
-body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
+html.effect-crt-scanlines-on body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
   animation: none;
 }
 
@@ -188,28 +188,28 @@ body.effect-static-scanlines:not(.effect-disable-scanlines)::after {
     CRT Text Chromatic Aberration
 ========================================= */
 
-body:not(.effect-disable-text-shadow) .text-shadow:not(svg):not(img):not(.clicker-counter__face-shell) {
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) .text-shadow:not(svg):not(img):not(.clicker-counter__face-shell) {
   animation:
     effect-crt-text-shadow
     var(--effect-crt-text-shadow-duration)
     infinite;
 }
 
-body:not(.effect-disable-text-shadow) svg.text-shadow,
-body:not(.effect-disable-text-shadow) img.text-shadow,
-body:not(.effect-disable-text-shadow) .clicker-counter__face-shell.text-shadow,
-body:not(.effect-disable-text-shadow) .did-you-know-tip:not(.modal-text-bubble)::before {
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) svg.text-shadow,
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) img.text-shadow,
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) .clicker-counter__face-shell.text-shadow,
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) .did-you-know-tip:not(.modal-text-bubble)::before {
   animation:
     effect-crt-svg-shadow
     var(--effect-crt-text-shadow-duration)
     infinite;
 }
 
-body:not(.effect-disable-text-shadow) .commit-identicon {
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) .commit-identicon {
   overflow: visible;
 }
 
-body:not(.effect-disable-text-shadow) :is(
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) :is(
   .crt-window-border,
   .crt-menu-button-border
 ) {
@@ -261,8 +261,8 @@ body.effect-disable-text-shadow :is(
   background: var(--footer-border-colour);
 }
 
-body:not(.effect-disable-text-shadow) #main-menu::after,
-body:not(.effect-disable-text-shadow) #main-footer::before {
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) #main-menu::after,
+html.effect-crt-text-shadow-on body:not(.effect-disable-text-shadow) #main-footer::before {
   animation:
     effect-crt-svg-shadow
     var(--effect-crt-text-shadow-duration)

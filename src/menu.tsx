@@ -334,6 +334,28 @@ function themeShell(map: ThemeMap, root: Document): HTMLElement | null {
 }
 
 /**
+ * Activates the theme picker already emitted by the build.
+ * No DOM replacements: existing links, SVGs and layout stay intact.
+ */
+function hydrateStaticMenu(data: MainJson, root: Document): void {
+    const themes = data.themes ?? {};
+    const active = initThemes(themes, root);
+    const shell = root.getElementById("main-menu-theme-shell");
+    if (!(shell instanceof HTMLElement)) return;
+
+    const radios = shell.querySelectorAll<HTMLInputElement>('input[name="site-theme"]');
+    for (const radio of radios) {
+        radio.checked = radio.value === active;
+        radio.addEventListener("change", () => {
+            if (!radio.checked) return;
+            setTheme(themes, radio.value, true, root);
+        });
+    }
+
+    wireThemes(shell);
+}
+
+/**
  * Builds the main menu links from ui data.
  * Clears old copies first so the menu does not duplicate itself like a menace.
  * @param {MainJson} data UI json blob.
@@ -343,6 +365,11 @@ function themeShell(map: ThemeMap, root: Document): HTMLElement | null {
 export async function createMenu(data: MainJson, root: Document = document): Promise<void> {
     const menu = root.getElementById("main-menu");
     if (!menu) throw new Error("Element #main-menu not found!");
+
+    if (menu.getAttribute("data-kc-static-shell") === "1") {
+        hydrateStaticMenu(data, root);
+        return;
+    }
 
     const links = root.createElement("div");
     links.id = "main-menu-links";

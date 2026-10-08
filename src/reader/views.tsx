@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { render2Frag } from "../reactHelpers.tsx";
 import * as icons from "../icons.tsx";
 import type { ReaderButtonDef } from "./types.ts";
+import { createReaderButtons } from "./buttonDefs.tsx";
 
 /**
  * @param {ReaderButtonDef}
@@ -146,16 +147,17 @@ export function ReaderModeTipModal(): ReactElement {
 /**
  * @returns {ReactElement}
  */
-export function ReaderCtrls(): ReactElement {
+export function ReaderCtrls({ bottom = false }: Readonly<{ bottom?: boolean }> = {}): ReactElement {
+    const buttons = typeof window === "undefined" ? createReaderButtons() : (window.buttons ?? createReaderButtons());
     return (
         <>
             <div className="chapter-navigation">
-                <button className="btn-toggle-paragraph-numbers">{window.buttons.toggleParagraphNumbers.icon}</button>
-                <button className="btn-clear-bookmark">{window.buttons.clearBookmark.icon}</button>
-                <button className="btn-prev">{window.buttons.prevChapter.icon}</button>
+                <button className="btn-toggle-paragraph-numbers">{buttons.toggleParagraphNumbers.icon}</button>
+                <button className="btn-clear-bookmark">{buttons.clearBookmark.icon}</button>
+                <button className="btn-prev">{buttons.prevChapter.icon}</button>
                 <input
                     className="chapter-display"
-                    id="reader-chapter-display-top"
+                    id={bottom ? "reader-chapter-display-bottom" : "reader-chapter-display-top"}
                     type="text"
                     value="1"
                     readOnly
@@ -169,26 +171,26 @@ export function ReaderCtrls(): ReactElement {
                 />
                 <input
                     className="chapter-input"
-                    id="reader-chapter-input-top"
+                    id={bottom ? "reader-chapter-input-bottom" : "reader-chapter-input-top"}
                     type="number"
                     min="0"
                     style={{ width: "2ch", textAlign: "center" }}
                 />
-                <button className="btn-jump">{window.buttons.jumpToChapter.icon}</button>
+                <button className="btn-jump">{buttons.jumpToChapter.icon}</button>
                 <button
                     className="chapter-end"
                     disabled
                     style={{ width: "2ch", textAlign: "center", fontWeight: "bold" }}
                 />
-                <button className="btn-next">{window.buttons.nextChapter.icon}</button>
-                <button className="btn-scroll-down">{window.buttons.scrollDown.icon}</button>
-                <button className="btn-info">{window.buttons.showInfo.icon}</button>
+                <button className="btn-next">{buttons.nextChapter.icon}</button>
+                <button className={bottom ? "btn-scroll-up" : "btn-scroll-down"} title={bottom ? buttons.scrollUp.action : buttons.scrollDown.action} aria-label={bottom ? buttons.scrollUp.action : buttons.scrollDown.action}>{bottom ? buttons.scrollUp.icon : buttons.scrollDown.icon}</button>
+                <button className="btn-info">{buttons.showInfo.icon}</button>
             </div>
 
             <div className="font-controls">
-                <button className="font-decrease">{window.buttons.decreaseFont.icon}</button>
-                <button className="font-reset">{window.buttons.resetFont.icon}</button>
-                <button className="font-increase">{window.buttons.increaseFont.icon}</button>
+                <button className="font-decrease">{buttons.decreaseFont.icon}</button>
+                <button className="font-reset">{buttons.resetFont.icon}</button>
+                <button className="font-increase">{buttons.increaseFont.icon}</button>
             </div>
         </>
     );

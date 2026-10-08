@@ -8,13 +8,14 @@
         "./keyboard": "./src/keyboard.ts"
     },
     "scripts": {
-        "clean": "node -e \"import('node:fs').then(({ rmSync }) => { rmSync('dist', { recursive: true, force: true }); rmSync('site', { recursive: true, force: true }); })\"",
+        "clean": "node -e \"import('node:fs').then(({ rmSync }) => { for (const page of ['index','about','blog','chat','crtTest','guestbook','reader','resources']) rmSync(page + '.html', { force: true }); rmSync('dist', { recursive: true, force: true }); rmSync('site', { recursive: true, force: true }); })\"",
         "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
         "build:assets": "tsx build.mts",
         "build:pages": "bun scripts/build-pages.ts",
         "build": "npm run build:assets && npm run build:pages",
         "check:routes": "tsx scripts/check-routes.mts",
-        "validate": "npm run typecheck && npm run check:nesting && npm run check:architecture && npm run check:entries && npm run build && npm run check:routes",
+        "check:static-shells": "tsx scripts/check-static-shells.mts",
+        "validate": "npm run typecheck && npm run check:nesting && npm run check:architecture && npm run check:entries && npm run build && npm run check:static-shells && npm run check:routes",
         "check:nesting": "tsx scripts/check-conditional-nesting.mts",
         "check:architecture": "tsx scripts/check-architecture.mts",
         "check:entries": "tsx scripts/check-entry-contract.mts",
@@ -34,6 +35,10 @@
         "dotenv": "^17.3.1",
         "esbuild-wasm": "^0.28.0",
         "react": "^19.2.4",
-        "react-dom": "^19.2.4"
+        "react-dom": "^19.2.4",
+        "@xterm/xterm": "5.5.0",
+        "@xterm/addon-fit": "0.10.0",
+        "mobile-detect": "1.4.5",
+        "clusterize.js": "1.0.0"
     }
 }

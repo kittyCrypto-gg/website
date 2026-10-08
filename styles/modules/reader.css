@@ -1,3 +1,10 @@
+/* Prebuilt navigation exists on every Reader route but is shown only after
+   a story is selected. Override theme rules that set display explicitly. */
+.reader-controls-top[hidden],
+.reader-controls-bottom[hidden] {
+    display: none !important;
+}
+
 /* =========================================
     Module: Reader
 ========================================= */
