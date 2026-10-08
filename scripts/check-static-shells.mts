@@ -20,6 +20,17 @@ for (const path of routes) {
     if (!html.includes('id="main-menu-links"')) errors.push(path + ": navigation links missing");
     if (!html.includes('id="main-menu-themes"')) errors.push(path + ": theme picker missing");
     if (!html.includes('id="kc-static-ui-data"')) errors.push(path + ": embedded UI configuration missing");
+    const effectsButton = html.match(/<button\\b[^>]*id="effects-toggle"[^>]*>[\\s\\S]*?<\\/button>/i)?.[0] ?? "";
+    if (!effectsButton.includes('viewBox="0 0 48 48"')) {
+        errors.push(path + ": iMac G3 SVG must keep its original 48x48 coordinate system");
+    }
+    if (!effectsButton.includes("url(#kc-built-32-")) {
+        errors.push(path + ": iMac G3 SVG gradient references are not namespaced");
+    }
+    for (const svg of html.matchAll(/<svg\\b([^>]*)>/gi)) {
+        if (/\\bviewBox=/.test(svg[1] ?? "")) continue;
+        errors.push(path + ": inline SVG without a viewBox");
+    }
     if (!/<footer\b[^>]*\bid="main-footer"[^>]*>\s*[^\s<]/i.test(html)) {
         errors.push(path + ": empty generated footer");
     }
