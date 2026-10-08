@@ -63,9 +63,14 @@ npm install
 npm run build
 ```
 
-The build first compiles the TypeScript application into `dist/`, then uses the
-pinned `vendor/pages` template to assemble clean routes and legacy `.html`
-redirects in `site/`. Configure the static host's publish directory as `site`.
+The build first compiles the TypeScript application into `dist/`, then expands
+`templates/*.html` with the shared navigation, controls, footer and configured
+window frames. The complete generated pages (`index.html`, `about.html`, etc.)
+are written directly into the **repository root** alongside `dist/`.
+
+The templates remain untouched. Root HTML files are ignored by Git and rebuilt
+on each `npm run build`. There is no `site/` directory or per-page output folder.
+Clean URLs such as `/about` require your HTTP server to resolve them to `about.html`.
 
 ---
 
