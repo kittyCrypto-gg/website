@@ -548,14 +548,13 @@ function hasVisiblePresenceMount(state: PresenceRuntimeState): boolean {
 }
 
 /**
- * Repaints only canvas pixels. It does not update text nodes or recreate
- * the presence card. Canvas resolution changes only when its size changes.
+ * Repaints only canvas pixels, without changing the canvas attributes,
+ * its intrinsic dimensions, or the surrounding presence card.
  */
 function paintPresenceClocks(state: PresenceRuntimeState): void {
     if (document.hidden) return;
 
     const text = formatLocalDateTime(new Date());
-    const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
 
     for (const mount of state.visibleMounts) {
         const canvas = mount.querySelector<HTMLCanvasElement>(".presence-panel__clock-canvas");
@@ -565,16 +564,14 @@ function paintPresenceClocks(state: PresenceRuntimeState): void {
         const height = canvas.clientHeight;
         if (width <= 0 || height <= 0) continue;
 
-        const widthPx = Math.max(1, Math.round(width * pixelRatio));
-        const heightPx = Math.max(1, Math.round(height * pixelRatio));
-        if (canvas.width !== widthPx) canvas.width = widthPx;
-        if (canvas.height !== heightPx) canvas.height = heightPx;
-
         const context = canvas.getContext("2d");
         if (!context) continue;
 
+        // The canvas backing dimensions stay fixed at the markup's 640x48.
+        // Updating canvas.width to match its CSS width changed its intrinsic
+        // size, causing a shrink-to-fit/flex feedback loop each second.
         const style = getComputedStyle(canvas);
-        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        context.setTransform(canvas.width / width, 0, 0, canvas.height / height, 0, 0);
         context.clearRect(0, 0, width, height);
         context.font = style.font;
         context.fillStyle = style.color;
