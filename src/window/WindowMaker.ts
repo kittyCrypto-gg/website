@@ -176,9 +176,17 @@ export class WindowMaker {
         this.frameEl = element;
         this.ogParent = element.parentElement;
         this.ogNxtSibling = element.nextSibling;
+
+        // Measure the original content layout without the pre-rendered frame
+        // class. Restore it synchronously before attaching window behaviour.
+        const staticFrame = element.dataset.kcStaticWindow === this.windowId;
+        if (staticFrame) element.classList.remove("window-frame");
+
         this.frameStyle = captureFrameStyle(element);
         this.framePadding = captureFramePadding(element);
         this.contentLayout = captureContentLayout(element);
+
+        if (staticFrame) element.classList.add("window-frame");
 
         const launcherResolution = resolveLauncher(this.options, this.windowId);
         this.launcherEl = launcherResolution.launcher;
@@ -576,6 +584,13 @@ export class WindowMaker {
             throw new Error("Cannot build window without a content element");
         }
 
+        // Static pages already contain the complete frame. Hydrate those
+        // exact nodes rather than moving the content and rebuilding controls.
+        if (this.frameEl.dataset.kcStaticWindow === this.windowId) {
+            this.hydrateStaticFrame();
+            return;
+        }
+
         this.originalContentNodes = Array.from(this.frameEl.childNodes);
 
         const header = document.createElement("div");
@@ -645,6 +660,35 @@ export class WindowMaker {
                 this.contentLayout
             );
         }
+    }
+
+    /**
+     * Attaches the controller to a window structure emitted by the page build.
+     * Performs no replacements or content relocation.
+     */
+    private hydrateStaticFrame(): void {
+        const frame = this.frameEl;
+        if (!frame) return;
+
+        const header = frame.querySelector(":scope > .window-header");
+        const body = frame.querySelector(":scope > .window-body");
+        const contentRoot = body?.querySelector(":scope > [data-window-content-root='true']");
+        const title = header?.querySelector(".window-title");
+        if (!(header instanceof HTMLDivElement)) throw new Error("Static window header missing");
+        if (!(body instanceof HTMLDivElement)) throw new Error("Static window body missing");
+        if (!(contentRoot instanceof HTMLDivElement)) throw new Error("Static window content missing");
+        if (!(title instanceof HTMLSpanElement)) throw new Error("Static window title missing");
+
+        this.headerEl = header;
+        this.bodyEl = body;
+        this.contentRootEl = contentRoot;
+        this.titleEl = title;
+        this.closeButtonEl = header.querySelector<HTMLButtonElement>('[data-window-role="close"]');
+        this.minimiseButtonEl = header.querySelector<HTMLButtonElement>('[data-window-role="minimise"]');
+        this.floatButtonEl = header.querySelector<HTMLButtonElement>('[data-window-role="float"]');
+        this.originalContentNodes = Array.from(contentRoot.childNodes);
+
+        if (this.contentLayout) applyContentRootLayout(contentRoot, this.contentLayout);
     }
 
     /**
