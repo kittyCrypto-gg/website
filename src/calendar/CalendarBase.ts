@@ -193,6 +193,9 @@ export abstract class CalendarBase {
         }
 
         this.host.classList.remove("cal-mnt");
+        // The build owns this frame. Destroy only detaches the controller;
+        // a future CalCtrl can hydrate the same structural DOM.
+        if (this.host.querySelector(':scope > .cal[data-kc-calendar-static="1"]')) return;
         this.host.replaceChildren();
     }
 
