@@ -8,7 +8,7 @@
         "./keyboard": "./src/keyboard.ts"
     },
     "scripts": {
-        "clean": "node -e \"import('node:fs').then(({ rmSync }) => { rmSync('dist', { recursive: true, force: true }); rmSync('site', { recursive: true, force: true }); })\"",
+        "clean": "node -e \"import('node:fs').then(({ rmSync }) => { for (const page of ['index','about','blog','chat','crtTest','guestbook','reader','resources']) rmSync(page + '.html', { force: true }); rmSync('dist', { recursive: true, force: true }); rmSync('site', { recursive: true, force: true }); })\"",
         "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
         "build:assets": "tsx build.mts",
         "build:pages": "bun scripts/build-pages.ts",
