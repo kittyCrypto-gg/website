@@ -79,13 +79,13 @@ export function renderStaticWindowHead(id: string, title: string, options: Windo
 }
 
 /** Launchers are also part of the static document and hydrate in place. */
-export function renderStaticLauncher(id: string, title: string, src: string, closedDisplay: string): string {
+export function renderStaticLauncher(id: string, title: string, src: string, closedDisplay: string, initiallyClosed = false): string {
     return render2Mkup(
         <img
             id={`window-api-launcher-${id}`}
             data-kc-static-window-launcher={id}
             className="window-launcher"
-            data-window-launcher-visible="false"
+            data-window-launcher-visible={String(initiallyClosed)}
             src={src}
             alt={`${title} icon`}
             title={`Double-click to open ${title}`}
