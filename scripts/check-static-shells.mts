@@ -47,6 +47,32 @@ for (const path of routes) {
         errors.push(path + ": resources must not receive blog-only filters");
     }
 
+    if (path === "reader.html") {
+        for (const id of ["kc-reader-controls-top", "kc-reader-controls-bottom",
+            "reader-story-selector", "read-aloud-voice", "read-aloud-toggle-playpause"]) {
+            if (!html.includes('id="' + id + '"')) errors.push(path + ": missing static reader control " + id);
+        }
+        if (matches(html, /data-kc-reader-static="1"/g).length !== 2) {
+            errors.push(path + ": reader must have exactly two static navigation bars");
+        }
+    }
+    if (path === "chat.html") {
+        for (const id of ["chatroom-scroll-area", "chatroom-content-area", "nickname", "send-button", "message"]) {
+            if (!html.includes('id="' + id + '"')) errors.push(path + ": missing static chat element " + id);
+        }
+        if (!html.includes('data-kc-chat-static="1"')) errors.push(path + ": chat cluster shell not marked as static");
+    }
+    if (path === "about.html") {
+        if (!html.includes('data-kc-socials-static="1"')) errors.push(path + ": About social cards not built");
+        if (!html.includes('class="socials-segment__item"')) errors.push(path + ": About social list empty");
+    }
+    if (path === "guestbook.html") {
+        for (const id of ["comments", "comments-box", "comment-nick",
+            "comment-location", "new-comment", "post-comment-button"]) {
+            if (!html.includes('id="' + id + '"')) errors.push(path + ": missing static Guestbook control " + id);
+        }
+    }
+
     if (frameIds.length === 0) errors.push(path + ": no pre-rendered window frames");
     if (frameIds.length !== new Set(frameIds).size) {
         errors.push(path + ": duplicate pre-rendered window ids");
