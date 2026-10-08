@@ -8,8 +8,8 @@ export abstract class SessionBase {
     protected readonly fac: ModalFactorySessionHost;
     protected readonly key: string;
 
-    protected readonly id: string;
-    protected readonly mode: ModalMode;
+    protected readonly sessionId: string;
+    protected readonly sessionMode: ModalMode;
 
     protected readonly rmOk: boolean;
     protected readonly win: boolean;
@@ -49,8 +49,8 @@ export abstract class SessionBase {
 
     constructor(spec: SessionSpec) {
         this.fac = spec.factory;
-        this.id = spec.id;
-        this.mode = spec.mode;
+        this.sessionId = spec.id;
+        this.sessionMode = spec.mode;
 
         this.rmOk = spec.readerModeCompatible;
         this.win = spec.windowed;
@@ -63,7 +63,7 @@ export abstract class SessionBase {
 
         this.decs = spec.decorators;
 
-        this.key = this.fac._keyFor(this.id);
+        this.key = this.fac._keyFor(this.sessionId);
         this.wh = null;
         this.sty = null;
         this.raf = null;
@@ -77,10 +77,10 @@ export abstract class SessionBase {
         this.wOn = false;
 
         this.mEl = document.createElement("div");
-        this.mEl.id = this.id;
+        this.mEl.id = this.sessionId;
         this.mEl.className = [MOD_CLS, spec.modalClassName].filter(Boolean).join(" ");
 
-        if (this.mode === "non-blocking" && !this.win) {
+        if (this.sessionMode === "non-blocking" && !this.win) {
             this.mEl.classList.add("non-blocking");
         }
 
@@ -94,7 +94,7 @@ export abstract class SessionBase {
 
         if (this.win) {
             this.fEl = document.createElement("div");
-            this.fEl.id = `${this.id}${WIN_FRAME_SFX}`;
+            this.fEl.id = `${this.sessionId}${WIN_FRAME_SFX}`;
             this.fEl.dataset.modalWindowFrame = "true";
             this.fEl.appendChild(this.mEl);
             this.sEl = this.fEl;
@@ -108,12 +108,12 @@ export abstract class SessionBase {
             this.lnEl = null;
         }
 
-        this.oEl = this.mode === "blocking"
+        this.oEl = this.sessionMode === "blocking"
             ? document.createElement("div")
             : null;
 
         if (this.oEl) {
-            this.oEl.id = `modal-overlay-${this.id}`;
+            this.oEl.id = `modal-overlay-${this.sessionId}`;
             this.oEl.className = [OVR_CLS, spec.overlayClassName].filter(Boolean).join(" ");
             this.oEl.appendChild(this.sEl);
         }
@@ -134,7 +134,7 @@ export abstract class SessionBase {
      * @returns {string}
      */
     get id(): string {
-        return this.id;
+        return this.sessionId;
     }
 
 
@@ -144,7 +144,7 @@ export abstract class SessionBase {
      * @returns {ModalMode}
      */
     get mode(): ModalMode {
-        return this.mode;
+        return this.sessionMode;
     }
 
 
