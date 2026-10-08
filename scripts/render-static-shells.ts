@@ -2,6 +2,7 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderWindowsInHtml } from "./window-shells.ts";
 import { renderRssFilterShell, renderRssLoadingState } from "../src/rss/staticShell.tsx";
+import { renderStaticCalendarShell } from "../src/calendar/view.tsx";
 import { renderReaderNavigation, renderStoryPicker } from "../src/reader/staticShell.tsx";
 import { renderReadAloudMenu } from "../src/readAloud/staticMenu.tsx";
 import type { MainJson, MainMenuEntry } from "../src/uiFetch.ts";
@@ -114,7 +115,14 @@ function renderRssShell(html: string, page: string): string {
     if (!calendar.test(output)) throw new Error("Blog calendar mount missing in " + page);
 
     output = output.replace(calendar, renderRssFilterShell());
-    return output;
+
+    // The filter itself is static, including the calendar's header, toggle
+    // and year/month/day section frames. Only actual date choices need RSS.
+    const calendarSlot = /(<div\s+id=["']kc-blog-cal-filter["'][^>]*>)(\s*)(<\/div>)/i;
+    if (!calendarSlot.test(output)) throw new Error("Static calendar mount missing in blog.html");
+    return output.replace(calendarSlot, (_all, open: string, _spaces: string, close: string) =>
+        open + renderStaticCalendarShell() + close
+    );
 }
 
 
