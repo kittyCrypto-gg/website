@@ -40,7 +40,7 @@ export function syncOpen(): void {
  * @returns {string}
  */
 function rndrMod(): string {
-    return render2Mkup(<Panel prefs={live()} ui={ui()} />);
+    return render2Mkup(Panel({ prefs: live(), ui: ui() }));
 }
 
 
