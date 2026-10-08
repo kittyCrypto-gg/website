@@ -1,6 +1,8 @@
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
 import * as helpers from "./helpers.ts";
 import { THEME_CHANGED_EVENT } from "./themeChanger.ts";
-import { checkMobile, ensureXtermLoaded } from "./terminal/dependencies.ts";
+import { checkMobile } from "./terminal/dependencies.ts";
 import { attachExitControl } from "./terminal/exitControl.ts";
 import {
     attachSafeResizeFitting,
@@ -37,17 +39,6 @@ export const TERMINAL_READY_EVENT = "kc:terminal-ready";
  * @returns {Promise<TerminalModule>} Terminal module API.
  */
 export async function setupTerminalModule(): Promise<TerminalModule> {
-    await ensureXtermLoaded();
-
-    const TerminalCtor = window.Terminal;
-    if (!TerminalCtor) throw new Error("xterm.js failed to load (window.Terminal missing)");
-
-    const FitAddonNamespace = window.FitAddon;
-    const FitAddonCtor = FitAddonNamespace?.FitAddon;
-    if (!FitAddonCtor) {
-        throw new Error("xterm fit addon failed to load (window.FitAddon.FitAddon missing)");
-    }
-
     const terminalWrapper = helpers.getEl("terminal-wrapper");
     const shellWrapper = firstExistingEl(["shell-wrapper", "banner-wrapper"]);
 
@@ -63,26 +54,26 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     let lastWsNoticeAt = 0;
     let lastWsNoticeKey: string | null = null;
 
-    terminalWrapper.innerHTML = "";
-
-    const scrollArea = document.createElement("div");
+    // The build emits these stable containers, preserving their dimensions
+    // from first paint. Keep a fallback for pages built by an older revision.
+    const scrollArea = terminalWrapper.querySelector<HTMLElement>("#terminal-scroll")
+        ?? document.createElement("div");
     scrollArea.id = "terminal-scroll";
-
-    const termDiv = document.createElement("div");
+    const termDiv = scrollArea.querySelector<HTMLElement>("#term")
+        ?? document.createElement("div");
     termDiv.id = "term";
+    if (termDiv.parentElement !== scrollArea) scrollArea.appendChild(termDiv);
+    if (scrollArea.parentElement !== terminalWrapper) terminalWrapper.appendChild(scrollArea);
 
-    scrollArea.appendChild(termDiv);
-    terminalWrapper.appendChild(scrollArea);
+    const isMobile = checkMobile();
 
-    const isMobile = await checkMobile();
-
-    const term = new TerminalCtor({
+    const term = new Terminal({
         cursorBlink: true,
         convertEol: true,
         fontSize: isMobile ? 12 : 14
     });
 
-    const fitAddon = new FitAddonCtor();
+    const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
 
     const followState: FollowState = { value: true };
@@ -251,7 +242,8 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         }
     };
 
-    await connectWs();
+    // Connection and session-token lookup are independent of visual readiness.
+    // Initiate later, after the terminal is constructed and all handlers exist.
 
     /**
      * Re-runs the decorative terminal output after a site-theme change only while
@@ -318,6 +310,8 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             console.error("Failed to emit terminal ready event:", error);
         }
     })();
+
+    void connectWs();
 
     return {
         term,
