@@ -65,7 +65,7 @@ export async function populatePicker(root: Document = document): Promise<void> {
         };
 
         const existing = picker.querySelector(".story-dropdown[data-kc-story-static]");
-        const dropdown = existing instanceof HTMLDivElement ? existing : createStoryPickerShell();
+        const dropdown = existing instanceof HTMLDivElement ? existing : createStoryPickerShell(root);
         dropdown.className = "story-dropdown";
 
         const button = dropdown.querySelector<HTMLButtonElement>("#reader-story-selector") ?? root.createElement("button");
