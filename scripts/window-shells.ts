@@ -1,5 +1,5 @@
 import type { MainJson, windowDef } from "../src/uiFetch.ts";
-import { renderStaticLauncher, renderStaticWindowHead } from "../src/window/staticFrame.tsx";
+import { renderStaticLauncher, renderStaticWindowHead, renderStaticWindowBody } from "../src/window/staticFrame.tsx";
 
 type Tag = Readonly<{ name: string; start: number; end: number; raw: string; closing: boolean; singleton: boolean }>;
 type Range = Readonly<{ opening: Tag; closing: Tag }>;
@@ -105,9 +105,8 @@ function renderWindow(html: string, windowConfig: windowDef): { html: string; la
     const title = options.title ?? "Window";
     const frameOpen = appendStaticClass(range.opening.raw, id, options);
     const header = renderStaticWindowHead(id, title, options);
-    const bodyOpen = `<div id="${id}-body" class="window-body"><div class="window-content-root" data-window-content-root="true">`;
     const inner = html.slice(range.opening.end, range.closing.start);
-    const windowMarkup = frameOpen + header + bodyOpen + inner + "</div></div>" + range.closing.raw;
+    const windowMarkup = frameOpen + header + renderStaticWindowBody(id, inner) + range.closing.raw;
     const updatedHtml = html.slice(0, range.opening.start) + windowMarkup + html.slice(range.closing.end);
 
     const launcher = renderStaticLauncher(
