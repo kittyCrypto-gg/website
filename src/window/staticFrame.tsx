@@ -78,9 +78,11 @@ export function renderStaticWindowHead(id: string, title: string, options: Windo
     return render2Mkup(<WindowFrameHead id={id} title={title} options={options} />);
 }
 
-/** Launchers are also part of the static document and hydrate in place. */
-export function renderStaticLauncher(id: string, title: string, src: string, closedDisplay: string, initiallyClosed = false): string {
-    return render2Mkup(
+/** Launcher structure is shared by the static builder and dynamic fallback. */
+function WindowLauncher({ id, title, src, closedDisplay, initiallyClosed }: {
+    id: string; title: string; src: string; closedDisplay: string; initiallyClosed: boolean;
+}) {
+    return (
         <img
             id={`window-api-launcher-${id}`}
             data-kc-static-window-launcher={id}
@@ -95,4 +97,26 @@ export function renderStaticLauncher(id: string, title: string, src: string, clo
             style={{ width: "48px", height: "48px", objectFit: "contain", ["--window-launcher-display" as string]: closedDisplay }}
         />
     );
+}
+
+/** Launchers in compiled pages have their complete element on first paint. */
+export function renderStaticLauncher(
+    id: string, title: string, src: string, closedDisplay: string, initiallyClosed = false
+): string {
+    return render2Mkup(
+        <WindowLauncher id={id} title={title} src={src}
+            closedDisplay={closedDisplay} initiallyClosed={initiallyClosed} />
+    );
+}
+
+/** Dynamically created windows use the same markup, without a separate DOM factory. */
+export function createRuntimeLauncher(
+    id: string, title: string, src: string, closedDisplay: string, initiallyClosed = false
+): HTMLImageElement {
+    const image = render2Frag(
+        <WindowLauncher id={id} title={title} src={src}
+            closedDisplay={closedDisplay} initiallyClosed={initiallyClosed} />
+    ).firstElementChild;
+    if (!(image instanceof HTMLImageElement)) throw new Error("Failed to create window launcher");
+    return image;
 }
