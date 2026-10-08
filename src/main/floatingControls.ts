@@ -127,6 +127,17 @@ function queueFloatBtns(): void {
     });
 }
 
+function containsFloatButton(node: Node): boolean {
+    return node instanceof Element
+        && (node.matches(floatButtonQuery)
+            || node.querySelector(floatButtonQuery) !== null);
+}
+
+function isFloatButtonMutation(record: MutationRecord): boolean {
+    if (record.type === "attributes") return containsFloatButton(record.target);
+    return [...record.addedNodes, ...record.removedNodes].some(containsFloatButton);
+}
+
 function observeBody(): void {
     const body = document.body;
     if (!body) return;
@@ -145,21 +156,7 @@ function installObservers(): void {
 
     window.addEventListener("resize", queueFloatBtns);
     mutationObserver = new MutationObserver((records) => {
-        const relevant = records.some((record) => {
-            if (record.type === "attributes") {
-                const target = record.target;
-                if (!(target instanceof Element)) return false;
-                return target.matches(floatButtonQuery)
-                    || target.querySelector(floatButtonQuery) !== null;
-            }
-
-            return [...record.addedNodes, ...record.removedNodes].some((node) => {
-                if (!(node instanceof Element)) return false;
-                return node.matches(floatButtonQuery)
-                    || node.querySelector(floatButtonQuery) !== null;
-            });
-        });
-        if (relevant) queueFloatBtns();
+        if (records.some(isFloatButtonMutation)) queueFloatBtns();
     });
     observeBody();
 }
