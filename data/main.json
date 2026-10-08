@@ -283,7 +283,7 @@
         "id": "webrings-wrapper",
         "title": "Web Rings",
         "mountTarget": "body",
-        "launcherSrc": "/images/webrings.svg"
+        "launcherSrc": "/images/file.svg"
       }
     }
   },
