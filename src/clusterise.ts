@@ -1,4 +1,5 @@
 import * as helpers from "./helpers";
+import Clusterize from "clusterize.js";
 
 type Row = string;
 
@@ -7,35 +8,6 @@ type Inst = Readonly<{
     destroy: (clean?: boolean) => void;
 }>;
 
-type Ctor = new (options: Record<string, unknown>) => Inst;
-
-declare global {
-    interface Window {
-        Clusterize?: Ctor;
-    }
-}
-
-const CLUSTERIZE_JS_URL = "https://cdn.jsdelivr.net/npm/clusterize.js/clusterize.min.js";
-let clusterizeScriptPromise: Promise<void> | null = null;
-
-/** Share one async network/script evaluation between both commit panels. */
-function ensureClusterizeScript(): Promise<void> {
-    if (window.Clusterize) return Promise.resolve();
-
-    clusterizeScriptPromise ??= new Promise<void>((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = CLUSTERIZE_JS_URL;
-        script.async = true;
-        script.addEventListener("load", () => resolve(), { once: true });
-        script.addEventListener("error", () => reject(new Error("Failed to load Clusterize.js")), { once: true });
-        document.head.appendChild(script);
-    }).catch((error: unknown) => {
-        clusterizeScriptPromise = null;
-        throw error;
-    });
-
-    return clusterizeScriptPromise;
-}
 
 export type ClusteriserTarget = Element | string;
 
@@ -79,12 +51,9 @@ export class Clusteriser {
     async init(): Promise<this> {
         if (this.#on) return this;
 
-        await this.#loadJs();
-
-        const Clusterize = window.Clusterize;
-        if (!Clusterize) {
-            throw new Error("Clusterize.js loaded but window.Clusterize is unavailable");
-        }
+        // This module is only imported when the GitHub commits section enters
+        // the viewport. Clusterize is bundled into that same lazy ESM graph.
+        await this.#prepDom();
 
         this.#inst = new Clusterize({
             scrollId: this.#scrollId,
@@ -180,13 +149,4 @@ export class Clusteriser {
         this.#el.classList.add("clusterise");
     }
 
-    /**
-     * Loads the external clusterize script once.
-     * Also makes sure the dom shell exists first.
-     * @returns {Promise<void>}
-     */
-    async #loadJs(): Promise<void> {
-        await this.#prepDom();
-        await ensureClusterizeScript();
-    }
 }
