@@ -1,0 +1,6 @@
+# Cloudflare Pages deploys the flat HTML generated in the repository root.
+# Do not deploy dist/: it contains scripts/styles but no page HTML.
+# Do not create a site/ directory: build-pages.ts writes root *.html files.
+name = "kittycrow-dev"
+compatibility_date = "2026-10-08"
+pages_build_output_dir = "."
