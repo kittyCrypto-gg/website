@@ -79,13 +79,13 @@ export function renderStaticWindowHead(id: string, title: string, options: Windo
 }
 
 /** Launcher structure is shared by the static builder and dynamic fallback. */
-function WindowLauncher({ id, title, src, closedDisplay, initiallyClosed }: {
-    id: string; title: string; src: string; closedDisplay: string; initiallyClosed: boolean;
+function WindowLauncher({ id, title, src, closedDisplay, initiallyClosed, prebuilt }: {
+    id: string; title: string; src: string; closedDisplay: string; initiallyClosed: boolean; prebuilt: boolean;
 }) {
     return (
         <img
             id={`window-api-launcher-${id}`}
-            data-kc-static-window-launcher={id}
+            data-kc-static-window-launcher={prebuilt ? id : undefined}
             className="window-launcher"
             data-window-launcher-visible={String(initiallyClosed)}
             src={src}
@@ -105,7 +105,7 @@ export function renderStaticLauncher(
 ): string {
     return render2Mkup(
         <WindowLauncher id={id} title={title} src={src}
-            closedDisplay={closedDisplay} initiallyClosed={initiallyClosed} />
+            closedDisplay={closedDisplay} initiallyClosed={initiallyClosed} prebuilt />
     );
 }
 
@@ -115,7 +115,7 @@ export function createRuntimeLauncher(
 ): HTMLImageElement {
     const image = render2Frag(
         <WindowLauncher id={id} title={title} src={src}
-            closedDisplay={closedDisplay} initiallyClosed={initiallyClosed} />
+            closedDisplay={closedDisplay} initiallyClosed={initiallyClosed} prebuilt={false} />
     ).firstElementChild;
     if (!(image instanceof HTMLImageElement)) throw new Error("Failed to create window launcher");
     return image;
