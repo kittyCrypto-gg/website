@@ -43,6 +43,17 @@ for (const path of routes) {
     if (path === "blog.html" && matches(html, /id="kc-blog-cal-filter"/g).length !== 1) {
         errors.push(path + ": calendar mount should occur exactly once");
     }
+    if (path === "blog.html") {
+        if (!html.includes('data-kc-calendar-static="1"')) {
+            errors.push(path + ": calendar frame must be built into HTML");
+        }
+        if (matches(html, /class="cal__sct" data-cal-sct-root=/g).length !== 3) {
+            errors.push(path + ": expected all three pre-rendered calendar section frames");
+        }
+        if (matches(html, /class="cal__rootTgl /g).length !== 1) {
+            errors.push(path + ": expected one pre-rendered calendar root toggle");
+        }
+    }
     if (path === "resources.html" && html.includes('data-kc-static-rss-shell="1"')) {
         errors.push(path + ": resources must not receive blog-only filters");
     }
