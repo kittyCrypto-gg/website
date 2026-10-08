@@ -9,7 +9,7 @@ async function ensureMobileDetect(): Promise<void> {
     if (typeof current !== "undefined") return;
 
     const sources = [
-        "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js",
+        // "https://kittycrow.dev/external?src=https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js",
         "https://cdn.jsdelivr.net/npm/mobile-detect@1.4.5/mobile-detect.js"
     ];
 
