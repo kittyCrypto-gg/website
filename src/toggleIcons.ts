@@ -184,13 +184,11 @@ export async function showToggleVisual(
         button.querySelector("svg") !== null;
 
     button.dataset.kcStaticToggle = "0";
-    if (hasMatchingStaticSvg) {
-        if (visual.title) {
-            button.title = visual.title;
-            button.setAttribute("aria-label", visual.title);
-        }
-        return;
+    if (hasMatchingStaticSvg && visual.title) {
+        button.title = visual.title;
+        button.setAttribute("aria-label", visual.title);
     }
+    if (hasMatchingStaticSvg) return;
 
     renderEmoji(button, visual.emoji, visual.title);
 
