@@ -3,7 +3,7 @@ import type { ModKey, Mods } from "./types.ts";
 import { KeyboardFocus } from "./KeyboardFocus.ts";
 
 /** Modifiers, key sequences, Fn behaviour and send actions. */
-export class KeyboardModifiers extends KeyboardFocus {
+export abstract class KeyboardModifiers extends KeyboardFocus {
     /**
      * Builds the terminal sequence for a key and modifier state.
      */
