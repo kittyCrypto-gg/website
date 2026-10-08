@@ -1,4 +1,4 @@
-import { hashString } from "../helpers/hash.ts";
+import { hashString } from "../helpers.ts";
 import type {
     CommitRecord,
     CommitWorkerRequest,
