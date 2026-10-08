@@ -349,7 +349,12 @@ class ReadAloudModule {
 
     if (menu.style.display === "flex") return;
 
-    menu.innerHTML = this.#MENU_HTML;
+    // A built page already contains the complete read-aloud form.
+    // Keep its nodes on first activation; later reopens retain the existing
+    // reset behaviour of constructing a fresh form.
+    if (menu.dataset.kcReadAloudHydrated === "1") menu.innerHTML = this.#MENU_HTML;
+    if (!menu.querySelector("#read-aloud-voice")) menu.innerHTML = this.#MENU_HTML;
+    menu.dataset.kcReadAloudHydrated = "1";
     menu.style.display = "flex";
 
     migrateSpeechResource();
