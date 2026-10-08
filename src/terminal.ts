@@ -923,6 +923,39 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             const textarea = await waitForTerminalTextarea(term);
             await helpers.nextFrame();
 
+            const exit = document.createElement("button");
+            exit.textContent = "Exit terminal";
+            exit.type = "button";
+            exit.style.display = "none";
+            exit.tabIndex = -1;
+
+            const showExit = (): void => {
+                if (!exit.isConnected) terminalWrapper.appendChild(exit);
+                exit.style.display = "block";
+                exit.tabIndex = 0;
+            };
+
+            textarea.addEventListener("focus", showExit);
+
+            textarea.addEventListener("keydown", (e) => {
+                if (e.key !== "Tab") return;
+
+                e.preventDefault();
+
+                showExit();
+                exit.focus();
+            });
+
+            exit.addEventListener("click", () => {
+                exit.blur();
+                exit.remove();
+            });
+
+            exit.addEventListener("blur", () => {
+                exit.style.display = "none";
+                exit.tabIndex = -1;
+            });
+
             ready = true;
 
             events.dispatchEvent(new CustomEvent<TerminalReadyDetail>(TERMINAL_READY_EVENT, {

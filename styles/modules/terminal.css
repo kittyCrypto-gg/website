@@ -135,6 +135,37 @@
     overflow: hidden;
 }
 
+#terminal-wrapper > button {
+    width: 100%;
+    box-sizing: border-box;
+
+    appearance: none;
+    -webkit-appearance: none;
+
+    color: var(--menu-button-text-colour);
+    background: var(--menu-button-bg-colour);
+
+    padding: var(--menu-button-padding-block) var(--menu-button-padding-inline);
+    border: 0;
+    border-radius: var(--menu-button-radius);
+
+    font: inherit;
+    font-size: var(--menu-button-font-size);
+    font-weight: var(--menu-button-font-weight);
+
+    text-align: center;
+    cursor: pointer;
+
+    transition:
+        background var(--menu-button-bg-transition),
+        transform var(--menu-button-transform-transition);
+
+    &:hover,
+    &:focus-visible {
+        background: var(--menu-button-hover-bg-colour);
+    }
+}
+
 :is(#terminal-scroll, #terminal-wrapper, #terminal-content) {
     padding: var(--terminal-pad);
 }
