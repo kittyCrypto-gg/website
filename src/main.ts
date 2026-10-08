@@ -1,5 +1,6 @@
 import * as config from "./config.ts";
-import { removeExistingById, recreateSingleton } from "./domSingletons.ts";
+import { removeExistingById } from "./domSingletons.ts";
+import { obtainSiteToggle } from "./main/staticToggle.ts";
 import { createMenu } from "./menu.tsx";
 import { createHeader } from "./header.ts";
 import { createFooter } from "./footer.ts";
@@ -169,9 +170,9 @@ async function initUi(): Promise<void> {
             await windowAPI.instantiateWindows(data.windows);
         }
 
-        const themeToggle = recreateSingleton("theme-toggle", () => document.createElement("button"), document);
+        const themeToggle = obtainSiteToggle("theme-toggle");
         themeToggle.classList.add("theme-toggle-button");
-        document.body.appendChild(themeToggle);
+        if (themeToggle.parentElement !== document.body) document.body.appendChild(themeToggle);
 
         bindToggleVisuals(themeToggle, {
             light: {
@@ -313,7 +314,7 @@ async function initUi(): Promise<void> {
             showReadAloudMenu
         } = await loadReaderRuntime();
 
-        const readerToggle = recreateSingleton("reader-toggle", () => document.createElement("button"), document);
+        const readerToggle = obtainSiteToggle("reader-toggle");
         readerToggle.classList.add("theme-toggle-button");
         readerToggle.style.bottom = "140px";
 
@@ -331,7 +332,7 @@ async function initUi(): Promise<void> {
         });
 
         void showToggleVisual(readerToggle, "enable", FLOAT_TOGGLE_ICON_SPEC);
-        document.body.appendChild(readerToggle);
+        if (readerToggle.parentElement !== document.body) document.body.appendChild(readerToggle);
         initReaderModeTip(readerToggle);
 
         await setupReaderToggle({
@@ -350,7 +351,7 @@ async function initUi(): Promise<void> {
             ]
         });
 
-        const readAloudToggle = recreateSingleton("read-aloud-toggle", () => document.createElement("button"), document);
+        const readAloudToggle = obtainSiteToggle("read-aloud-toggle");
         readAloudToggle.classList.add("theme-toggle-button");
         readAloudToggle.style.bottom = "200px";
 
@@ -368,7 +369,7 @@ async function initUi(): Promise<void> {
         });
 
         void showToggleVisual(readAloudToggle, "enable", FLOAT_TOGGLE_ICON_SPEC);
-        document.body.appendChild(readAloudToggle);
+        if (readAloudToggle.parentElement !== document.body) document.body.appendChild(readAloudToggle);
 
         readAloudToggle.addEventListener("click", showReadAloudMenu);
 
