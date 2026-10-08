@@ -125,13 +125,13 @@ function renderReaderShell(html: string, page: string): string {
     let output = fillEmptyElement(html, "div", "story-picker", renderStoryPicker());
     output = fillEmptyElement(output, "div", "read-aloud-menu", renderReadAloudMenu());
 
-    const article = /(<article\\b[^>]*\\bid=["']reader["'][^>]*>)/i;
+    const article = /(<article\b[^>]*\bid=["']reader["'][^>]*>)/i;
     if (!article.test(output)) throw new Error("Reader article missing");
 
-    output = output.replace(article, top + "\\n" + "$1");
-    const end = /<\\/article>/i;
+    output = output.replace(article, top + "\n" + "$1");
+    const end = /<\/article>/i;
     if (!end.test(output)) throw new Error("Reader article closing tag missing");
-    return output.replace(end, "</article>\\n" + bottom);
+    return output.replace(end, "</article>\n" + bottom);
 }
 
 /** Chat messages arrive from the backend, but Clusterize's containers do not. */
@@ -141,7 +141,7 @@ function renderChatShell(html: string, page: string): string {
     const skeleton = '<div id="chatroom-scroll-area" class="clusterise-scroll">' +
         '<div id="chatroom-content-area" class="clusterise-content"></div></div>';
     const output = fillEmptyElement(html, "div", "chatroom", skeleton);
-    return output.replace(/<div\\s+id=["']chatroom["']/i, '<div id="chatroom" class="clusterise" data-kc-chat-static="1"');
+    return output.replace(/<div\s+id=["']chatroom["']/i, '<div id="chatroom" class="clusterise" data-kc-chat-static="1"');
 }
 
 function escapeHtmlValue(value: string): string {
@@ -163,9 +163,9 @@ async function renderAboutSocials(html: string, page: string): Promise<string> {
         if (entries.length % 2 === 1 && index === entries.length - 1) {
             cards.push('<div class="socials-segment__spacer" aria-hidden="true"></div>');
         }
-        const label = name.replace(/[-_]+/g, " ").replace(/\\s+/g, " ").trim()
-            .replace(/\\b\\w/g, (letter: string) => letter.toUpperCase());
-        const path = info.icon.replace(/^\\.\\.\\//, "/");
+        const label = name.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim()
+            .replace(/\b\w/g, (letter: string) => letter.toUpperCase());
+        const path = info.icon.replace(/^\.\.\//, "/");
         const svg = await readIcon(path, 32, "socials-segment__svg");
         const icon = svg ?? '<img src="' + escapeHtmlValue(info.icon) +
             '" alt="' + escapeHtmlValue(label) + ' icon" width="32" height="32" loading="lazy">';
@@ -178,7 +178,7 @@ async function renderAboutSocials(html: string, page: string): Promise<string> {
             escapeHtmlValue(info.url) + '</span></div></a>');
     }
 
-    const placeholder = /<div\\s+class=["']socials-segment__grid["']\\s*>\\s*<\\/div>/i;
+    const placeholder = /<div\s+class=["']socials-segment__grid["']\s*>\s*<\/div>/i;
     if (!placeholder.test(html)) throw new Error("About social grid placeholder missing");
     return html.replace(placeholder, '<div class="socials-segment__grid" data-kc-socials-static="1">' +
         cards.join("") + '</div>');
