@@ -82,7 +82,9 @@ function renderTerminalShell(html: string): string {
     const emptyTerminal = /<div\s+id=["']terminal["']\s*>\s*<\/div>/i;
     if (!emptyTerminal.test(html)) throw new Error("Missing empty terminal source element");
 
-    const shell = '<div id="terminal-scroll"><div id="term"></div></div>';
+    const shell = '<div id="terminal-scroll"><div id="term"></div></div>' +
+        '<button id="terminal-exit-control" type="button" tabindex="-1" '+
+        'aria-hidden="true">Exit terminal</button>';
     return html.replace(emptyTerminal, shell);
 }
 
