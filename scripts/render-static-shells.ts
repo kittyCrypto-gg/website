@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderWindowsInHtml } from "./window-shells.ts";
 import type { MainJson, MainMenuEntry } from "../src/uiFetch.ts";
@@ -82,11 +82,25 @@ function renderTerminalShell(html: string): string {
     return html.replace(emptyTerminal, shell);
 }
 
+/** Discover the hashed, lazy esbuild terminal chunk for early network loading. */
+async function terminalModulePath(): Promise<string> {
+    const files = await readdir("dist/chunks");
+    const chunk = files.find((name) => /^terminal-[a-z0-9]+\.js$/i.test(name));
+    if (!chunk) throw new Error("Missing locally bundled terminal chunk");
+    return "/dist/chunks/" + chunk;
+}
+
+function preloadTerminal(html: string, terminalUrl: string): string {
+    if (!html.includes('id="terminal-wrapper"')) return html;
+    const link = `<link rel="modulepreload" href="${terminalUrl}">`;
+    return html.replace(/<\/head>/i, link + "\n</head>");
+}
+
 function addButtons(html: string, buttons: readonly string[]): string {
     return html.replace(/<\/body>/i, buttons.join("\n") + "\n</body>");
 }
 
-async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record<string, string>>): Promise<void> {
+async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record<string, string>>, terminalUrl: string): Promise<void> {
     const path = join("templates", page);
     let html = await readFile(path, "utf8");
 
@@ -143,7 +157,7 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
         ));
     }
 
-    html = renderTerminalShell(html);
+    html = preloadTerminal(renderTerminalShell(html), terminalUrl);
     html = renderWindowsInHtml(html, data);
     html = addButtons(html, buttons);
     html = addInlineData(html, data);
@@ -160,6 +174,7 @@ export async function renderStaticShells(): Promise<void> {
         iconMap[path] = await readIcon(path, 16, "reader-ui-icon menu-button-icon") ?? "";
     }
 
-    for (const page of pages) await buildShell(page, data, iconMap);
+    const terminalUrl = await terminalModulePath();
+    for (const page of pages) await buildShell(page, data, iconMap, terminalUrl);
     console.log("[pages] Generated eight flat HTML pages into repository root from templates/.");
 }
