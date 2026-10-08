@@ -20,3 +20,12 @@ export function renderStoryPicker(): string {
         '<div class="story-dropdown__content"><div class="story-dropdown__hint" aria-hidden="true">Pick a story...</div></div>' +
         '</div>';
 }
+
+/** Legacy HTML fallback uses the identical story-picker markup as the build. */
+export function createStoryPickerShell(): HTMLDivElement {
+    const template = document.createElement("template");
+    template.innerHTML = renderStoryPicker();
+    const dropdown = template.content.firstElementChild;
+    if (!(dropdown instanceof HTMLDivElement)) throw new Error("Story-picker shell missing");
+    return dropdown;
+}
