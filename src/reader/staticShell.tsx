@@ -1,7 +1,5 @@
 import { render2Mkup } from "../reactHelpers.tsx";
 import { ReaderCtrls } from "./views.tsx";
-import { RaMenu } from "../readAloud/views.tsx";
-import { READ_ALOUD_BUTTONS, READ_ALOUD_VOICES, READ_ALOUD_REGIONS } from "../readAloud/config.ts";
 
 /** Permanent reader navigation markup; chapter values and actions hydrate later. */
 export function renderReaderNavigation(): Readonly<{ top: string; bottom: string }> {
@@ -11,13 +9,6 @@ export function renderReaderNavigation(): Readonly<{ top: string; bottom: string
         bottom: '<div id="kc-reader-controls-bottom" class="reader-controls-bottom" hidden data-kc-reader-static="1">' +
             render2Mkup(<ReaderCtrls bottom />) + '</div>'
     };
-}
-
-/** Prebuilt read-aloud menu starts hidden, as in the original template. */
-export function renderReadAloudMenu(): string {
-    return render2Mkup(
-        <RaMenu buttons={READ_ALOUD_BUTTONS} voices={READ_ALOUD_VOICES} regions={READ_ALOUD_REGIONS} />
-    );
 }
 
 /** Story inventory is fetched dynamically; only its fixed layout ships in HTML. */
