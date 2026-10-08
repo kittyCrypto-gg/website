@@ -2,7 +2,8 @@ import type { fxUIconf } from "../uiFetch.ts";
 import * as modals from "../modals.ts";
 import { live } from "./preferences.ts";
 import { renderEffectsPanel } from "./view.tsx";
-import { syncMod, onTextShadowTgl, onPhosTgl, onScanTgl, onPhosOp, onScanOp, onScanSpd, onTextShadowIntensity, onReset } from "./controls.ts";
+import { syncMod } from "./controlSync.ts";
+import { onTextShadowTgl, onPhosTgl, onScanTgl, onPhosOp, onScanOp, onScanSpd, onTextShadowIntensity, onReset } from "./controls.ts";
 
 const MOD_ID = "screen-effects";
 let mod: modals.Modal | null = null;
