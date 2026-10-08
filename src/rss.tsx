@@ -149,7 +149,9 @@ async function loadBlog(): Promise<void> {
     if (!rs) return;
 
     const { box, cal } = rs;
-    box.innerHTML = "";
+    // Preserve the build-rendered loading state until the feed can replace it.
+    // Older HTML still gets the original empty-container fallback.
+    if (box.dataset.rssBuilt !== "1") box.replaceChildren();
 
     try {
         void initRssComments();
