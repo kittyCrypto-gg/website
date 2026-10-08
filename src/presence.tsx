@@ -330,7 +330,11 @@ function PresenceLocalTimeHero(): JSX.Element {
             <div className="presence-panel__hero-copy">
                 <div className="presence-panel__hero-label">Kitty&apos;s local time</div>
                 <div className="presence-panel__headline presence-panel__headline--clock">
-                    <time dateTime={localClock.isoDateTime}>{localClock.currentDateTime}</time>
+                    <canvas className="presence-panel__clock-canvas"
+                        role="img" aria-label="Live local clock"
+                        width={640} height={48}>
+                        {localClock.currentDateTime}
+                    </canvas>
                 </div>
                 <p className="presence-panel__subline">{localClock.utcOffset}</p>
             </div>
@@ -544,6 +548,44 @@ function hasVisiblePresenceMount(state: PresenceRuntimeState): boolean {
 }
 
 /**
+ * Repaints only canvas pixels. It does not update text nodes or recreate
+ * the presence card. Canvas resolution changes only when its size changes.
+ */
+function paintPresenceClocks(state: PresenceRuntimeState): void {
+    if (document.hidden) return;
+
+    const text = formatLocalDateTime(new Date());
+    const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+
+    for (const mount of state.visibleMounts) {
+        const canvas = mount.querySelector<HTMLCanvasElement>(".presence-panel__clock-canvas");
+        if (!canvas) continue;
+
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (width <= 0 || height <= 0) continue;
+
+        const widthPx = Math.max(1, Math.round(width * pixelRatio));
+        const heightPx = Math.max(1, Math.round(height * pixelRatio));
+        if (canvas.width !== widthPx) canvas.width = widthPx;
+        if (canvas.height !== heightPx) canvas.height = heightPx;
+
+        const context = canvas.getContext("2d");
+        if (!context) continue;
+
+        const style = getComputedStyle(canvas);
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        context.clearRect(0, 0, width, height);
+        context.font = style.font;
+        context.fillStyle = style.color;
+        context.textBaseline = "middle";
+        context.textAlign = "left";
+        context.letterSpacing = style.letterSpacing;
+        context.fillText(text, 0, height / 2, width);
+    }
+}
+
+/**
  * Keeps the local clock ticking while we have visible mounts and a snapshot to show.
  *
  * @param {readonly HTMLElement[]} mounts - Presence content mount points.
@@ -555,12 +597,11 @@ function synchronisePresenceClock(mounts: readonly HTMLElement[], state: Presenc
 
     if (!hasVisiblePresenceMount(state)) return;
     if (!state.latestSnapshot) return;
+    if (document.hidden) return;
 
+    paintPresenceClocks(state);
     window.presenceClockTimer = window.setInterval(() => {
-        const latestSnapshot = state.latestSnapshot;
-        if (!latestSnapshot) return;
-
-        renderIntoPresenceMounts(mounts, <PresenceCard {...latestSnapshot} />);
+        paintPresenceClocks(state);
     }, 1000);
 }
 
@@ -579,8 +620,17 @@ async function refreshPresence(mounts: readonly HTMLElement[], state: PresenceRu
 
     try {
         const snapshot = await fetchPresence();
+        const previous = state.latestSnapshot;
         state.latestSnapshot = snapshot;
-        renderIntoPresenceMounts(mounts, <PresenceCard {...snapshot} />);
+
+        // Backend heartbeat timestamps do not change what the card shows.
+        const changed = previous === null
+            || previous.status !== snapshot.status
+            || previous.isAfk !== snapshot.isAfk
+            || previous.activity !== snapshot.activity
+            || previous.lastActivityAt !== snapshot.lastActivityAt;
+
+        if (changed) renderIntoPresenceMounts(mounts, <PresenceCard {...snapshot} />);
         state.hasLoadedOnce = true;
         state.lastRenderedAt = Date.now();
     } catch (error) {
@@ -699,6 +749,10 @@ function observePresenceVisibility(
         mounts,
         <PresenceLoadingCard message="Contacting the live presence endpoint." />
     );
+
+    document.addEventListener("visibilitychange", () => {
+        synchronisePresenceClock(mounts, runtimeState);
+    });
 
     observePresenceVisibility(mounts, refreshIntervalMs, runtimeState);
 })();
