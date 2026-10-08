@@ -1,6 +1,7 @@
 import * as config from "../config.ts";
 import * as helpers from "../helpers.ts";
 import type { StoriesIndex } from "./types.ts";
+import { createStoryPickerShell } from "./staticShell.tsx";
 
 /**
  * @param {Document} root
@@ -64,7 +65,7 @@ export async function populatePicker(root: Document = document): Promise<void> {
         };
 
         const existing = picker.querySelector(".story-dropdown[data-kc-story-static]");
-        const dropdown = existing instanceof HTMLDivElement ? existing : root.createElement("div");
+        const dropdown = existing instanceof HTMLDivElement ? existing : createStoryPickerShell();
         dropdown.className = "story-dropdown";
 
         const button = dropdown.querySelector<HTMLButtonElement>("#reader-story-selector") ?? root.createElement("button");
