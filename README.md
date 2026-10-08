@@ -1,110 +1,25 @@
-# kittycrow.dev - Frontend - ${V8.1}
+# kittycrow.dev - Frontend - ${V8.2}
 
-The public-facing frontend of https://kittycrow.dev 🐾
+Frontend for https://kittycrow.dev.
 
----
+## Build
 
-## Overview
+    git submodule update --init --recursive
+    npm install
+    npm run build
 
-This is the frontend for `kittycrow.dev`.
+The build bundles TypeScript/TSX with esbuild into `dist/`, then generates the root HTML pages from `templates/` using Bun. Templates are not overwritten. There is no `site/` output directory.
 
-It is built with **TypeScript**, **TSX**, **React**, **HTML**, and **CSS**, and compiled with **esbuild** into browser-ready **ES modules**. The codebase stays modular and close to the DOM, while using TSX where it makes UI generation cleaner and easier to maintain.
+## Validate
 
-There are no logins, no passwords, and no Web2 fluff.  
-Users interact using **session tokens**, and the frontend reflects what the backend validates.
+    npm run validate
 
-This repo is also a personal playground for creative and technical experiments.
-
----
-
-## Features
-
-- TypeScript-first codebase with a lightweight runtime footprint
-- TSX-based UI generation in selected modules
-- React-powered rendering helpers for cleaner markup construction
-- esbuild bundling with browser-native ESM output
-- Code splitting for modular frontend delivery
-- Modern browser support without polyfills
-- Fully responsive design with light/dark theme toggle
-- Chat UI with real-time updates via Server-Sent Events (SSE)
-- Cryptographic avatar generation and visual identity components
-- Inline message editing modal secured through session ownership rules
-- Dynamic chapter reader and story selector
-- Reader mode and accessibility-friendly UI patterns
-- Read Aloud support for reader content
-- Terminal module powered by xterm.js and loaded at runtime
-
----
-
-## Security philosophy
-
-- If your token is valid, you’re accepted.
-- No password inputs, no account forms, no personal data prompts.
-
-The logic lives server-side, where authority flows from token possession and code execution.
-
----
-
-### Prerequisites
-
-- Node.js
-- npm
-
-### Install
-
-```bash
-git submodule update --init --recursive
-npm install
-```
-
-### Build
-
-```bash
-npm run build
-```
-
-The build first compiles the TypeScript application into `dist/`, then expands
-`templates/*.html` with the shared navigation, controls, footer and configured
-window frames. The complete generated pages (`index.html`, `about.html`, etc.)
-are written directly into the **repository root** alongside `dist/`.
-
-The templates remain untouched. Root HTML files are ignored by Git and rebuilt
-on each `npm run build`. There is no `site/` directory or per-page output folder.
-Clean URLs such as `/about` require your HTTP server to resolve them to `about.html`.
-
----
+Runs the type, nesting, architecture and entry checks, builds the site, then checks the generated pages and routes.
 
 ## Backend
 
-The backend repository is here:
-
-- https://github.com/kittyCrypto-gg/server
-
-The frontend expects the backend to run at:
-
-- https://srv.kittycrow.dev
-
-(If you run a local backend or a different environment, adjust the configuration accordingly in ./src/config.ts)
-
----
-
-## Philosophy
-
-This frontend doesn’t protect the user, it shows the truth.
-
-If you hold a valid token, the UI treats you as legitimate.  
-If not, it doesn’t argue, it just doesn’t render all actions.
-
-Code is law.  
-The frontend renders the outcome.
-
----
-
-## Contributors
-
-- [@BuddyWinte](https://github.com/BuddyWinte) — terminal exit control, contributed via PR #9.
-
----
+- [Server](https://github.com/kittyCrypto-gg/server)
+- Endpoints: [`src/config.ts`](src/config.ts)
 
 ## License
 
