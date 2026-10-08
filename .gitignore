@@ -19,3 +19,7 @@ host.ts
 *.log
 .build/
 .baseline/
+
+# Built HTML pages are generated from templates/ by npm run build.
+# Ignore root-only pages, without hiding tracked source templates.
+/*.html
