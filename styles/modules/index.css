@@ -110,7 +110,10 @@
 }
 
 .intro-status-row__status {
-    flex: 0 0 auto;
+    /* A stable basis prevents dynamic descendants (including canvas) from
+       renegotiating the two-column layout on every clock repaint. */
+    flex: 0 0 clamp(18rem, 30%, 28rem);
+    width: clamp(18rem, 30%, 28rem);
     min-width: 0;
     min-inline-size: 0;
     align-self: stretch;
@@ -118,7 +121,7 @@
 }
 
 #presence-window-wrapper.kc-88by31 {
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
 
@@ -136,7 +139,7 @@
 #presence-window-wrapper.window-frame {
     display: flex;
     flex-direction: column;
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
     height: auto;
