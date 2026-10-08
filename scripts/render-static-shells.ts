@@ -2,7 +2,8 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderWindowsInHtml } from "./window-shells.ts";
 import { renderRssFilterShell, renderRssLoadingState } from "../src/rss/staticShell.tsx";
-import { renderReaderNavigation, renderReadAloudMenu, renderStoryPicker } from "../src/reader/staticShell.tsx";
+import { renderReaderNavigation, renderStoryPicker } from "../src/reader/staticShell.tsx";
+import { renderReadAloudMenu } from "../src/readAloud/staticMenu.tsx";
 import type { MainJson, MainMenuEntry } from "../src/uiFetch.ts";
 import { renderMenuShell, renderToggleShell } from "../src/sharedShell.tsx";
 
