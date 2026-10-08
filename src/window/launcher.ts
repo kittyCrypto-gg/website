@@ -144,6 +144,19 @@ export function showLauncher(
     applyLauncherPosition(launcher, x, y);
 }
 
+/** Keep the server-rendered launcher node when its runtime controller is disposed. */
+export function resetStaticLauncher(launcher: HTMLElement, initiallyClosed: boolean): void {
+    launcher.classList.remove("is-dragging");
+    launcher.style.removeProperty("--window-launcher-left");
+    launcher.style.removeProperty("--window-launcher-top");
+    launcher.style.removeProperty("left");
+    launcher.style.removeProperty("top");
+    const visible = String(initiallyClosed);
+    if (launcher.getAttribute("data-window-launcher-visible") !== visible) {
+        launcher.setAttribute("data-window-launcher-visible", visible);
+    }
+}
+
 export function hideLauncher(launcher: HTMLElement): void {
     launcher.classList.add("window-launcher");
     launcher.setAttribute("data-window-launcher-visible", "false");
