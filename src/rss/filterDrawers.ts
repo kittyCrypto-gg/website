@@ -5,6 +5,7 @@ import { mkFiltBtn, mkFiltClearBtn, renderTglIco, rvlFiltSum, syncFiltSum } from
 import { colPillRects, flyPills } from "./pillFlight.ts";
 import { clrAllSumFilt, hdlSumPillClick } from "./filterActions.ts";
 import { rssState } from "./runtimeState.ts";
+import { createRssFilterShell } from "./staticShell.tsx";
 import type { AthMenuRs, FiltRs } from "./types.ts";
 
 const RSS_FILT_CHILD_PILL_SEL = [
@@ -249,51 +250,16 @@ export function ensFiltShell(cal: HTMLDivElement): HTMLDivElement {
     const parent = cal.parentElement;
     if (!parent) return cal;
 
-    const shell = document.createElement("div");
-    const hdr = document.createElement("div");
-    const ttl = document.createElement("h3");
-    const summary = document.createElement("div");
-    const actions = document.createElement("div");
-    const body = document.createElement("div");
-    const inner = document.createElement("div");
-    const clearBtn = mkFiltClearBtn();
-    const btn = mkFiltBtn();
-
-    shell.id = "kc-blog-filters";
-    shell.className = "rss-filters";
-    shell.dataset.rssFiltersOpen = "0";
-
-    hdr.className = "rss-filters__hdr kc-click-header";
-    hdr.dataset.rssFiltersHeader = "1";
-    hdr.setAttribute("role", "button");
-    hdr.setAttribute("tabindex", "0");
-    hdr.setAttribute("aria-expanded", "false");
-    hdr.setAttribute("title", "Expand filters");
-
-    ttl.className = "rss-filters__ttl";
-    ttl.textContent = "Filters: ";
-
-    summary.className = "rss-filters__summary kc-click-header__control";
-    summary.dataset.rssFiltersSummary = "1";
-    summary.hidden = true;
-    summary.setAttribute("aria-hidden", "true");
-    summary.setAttribute("aria-label", "Selected filters");
-
-    actions.className = "rss-filters__hdrActions kc-click-header__actions";
-    actions.append(clearBtn, btn);
-
-    body.id = "kc-blog-filters-body";
-    body.className = "rss-filters__body";
-    body.setAttribute("aria-hidden", "true");
-
-    inner.className = "rss-filters__body-inner";
-
-    hdr.append(ttl, summary, actions);
-    body.appendChild(inner);
-
+    // Use the same TSX structure as the static page builder, rather than
+    // maintaining a second DOM-construction implementation.
+    const shell = createRssFilterShell();
     parent.insertBefore(shell, cal);
-    inner.appendChild(cal);
-    shell.append(hdr, body);
+
+    const calPlaceholder = shell.querySelector("#kc-blog-cal-filter");
+    if (!(calPlaceholder instanceof HTMLDivElement)) {
+        throw new Error("RSS calendar placeholder missing");
+    }
+    calPlaceholder.replaceWith(cal);
 
     wireFilt(shell);
 
