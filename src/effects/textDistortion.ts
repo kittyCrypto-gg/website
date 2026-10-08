@@ -1,3 +1,4 @@
+import { createTextScan } from "./textScan.ts";
 import {
     TEXT_SHADOW_FRAME_STEP,
     TEXT_SHADOW_KEYFRAMES_STYLE_ID,
@@ -456,29 +457,8 @@ function markTextShadowNode(node: Node): void {
     target.classList.add("text-shadow");
 }
 
-/**
- * Marks all text below one DOM node.
- *
- * @param {Node} root
- * @returns {void}
- */
-function markTextShadowTargets(root: Node): void {
-    markTextShadowNode(root);
-
-    const walker = document.createTreeWalker(
-        root,
-        NodeFilter.SHOW_TEXT |
-        NodeFilter.SHOW_ELEMENT
-    );
-
-    for (
-        let node = walker.nextNode();
-        node;
-        node = walker.nextNode()
-    ) {
-        markTextShadowNode(node);
-    }
-}
+// The visual distortion is unchanged; only discovery is deferred.
+const textScan = createTextScan(markTextShadowNode);
 
 /**
  * Handles one DOM mutation.
@@ -492,7 +472,7 @@ function handleTextShadowMutation(mutation: MutationRecord): void {
         return;
     }
 
-    mutation.addedNodes.forEach(markTextShadowTargets);
+    mutation.addedNodes.forEach(textScan.enqueue);
 }
 
 /**
@@ -501,20 +481,30 @@ function handleTextShadowMutation(mutation: MutationRecord): void {
  * @returns {void}
  */
 export function ensureTextShadowTargets(): void {
-    markTextShadowTargets(document.body);
-    ensureWindowBorderThemeObserver();
-
     if (textShadowObserver) return;
 
+    ensureWindowBorderThemeObserver();
     textShadowObserver = new MutationObserver((mutations) => {
         mutations.forEach(handleTextShadowMutation);
     });
 
+    // Observe before queuing the scan so dynamically inserted nodes are caught.
     textShadowObserver.observe(document.body, {
         childList: true,
         characterData: true,
         subtree: true
     });
+    textScan.enqueue(document.body);
+}
+
+/** Stops background discovery when text distortion is disabled. */
+export function disableTextShadowTargets(): void {
+    if (!textShadowObserver) return;
+    textShadowObserver.disconnect();
+    textShadowObserver = null;
+    windowBorderThemeObserver?.disconnect();
+    windowBorderThemeObserver = null;
+    textScan.clear();
 }
 
 /**
