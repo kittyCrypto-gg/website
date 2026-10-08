@@ -55,7 +55,7 @@ export function createTextScan(mark: (node: Node) => void): {
         if ("requestIdleCallback" in window) {
             window.requestIdleCallback(work, { timeout: 200 });
         } else {
-            window.setTimeout(work, 16);
+            globalThis.setTimeout(work, 16);
         }
     };
 
