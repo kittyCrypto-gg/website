@@ -1,3 +1,5 @@
+import type { ITerminalAddon } from "@xterm/xterm";
+
 export type MobileDetectInstance = Readonly<{
     mobile: () => unknown;
 }>;
@@ -16,7 +18,7 @@ export type XtermTerminal = Readonly<{
     cols: number;
     rows: number;
 
-    loadAddon: (addon: unknown) => void;
+    loadAddon: (addon: ITerminalAddon) => void;
     open: (parent: HTMLElement) => void;
 
     write: (data: string, callback?: () => void) => void;
