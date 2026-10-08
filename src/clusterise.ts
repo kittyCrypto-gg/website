@@ -15,6 +15,28 @@ declare global {
     }
 }
 
+const CLUSTERIZE_JS_URL = "https://cdn.jsdelivr.net/npm/clusterize.js/clusterize.min.js";
+let clusterizeScriptPromise: Promise<void> | null = null;
+
+/** Share one async network/script evaluation between both commit panels. */
+function ensureClusterizeScript(): Promise<void> {
+    if (window.Clusterize) return Promise.resolve();
+
+    clusterizeScriptPromise ??= new Promise<void>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = CLUSTERIZE_JS_URL;
+        script.async = true;
+        script.addEventListener("load", () => resolve(), { once: true });
+        script.addEventListener("error", () => reject(new Error("Failed to load Clusterize.js")), { once: true });
+        document.head.appendChild(script);
+    }).catch((error: unknown) => {
+        clusterizeScriptPromise = null;
+        throw error;
+    });
+
+    return clusterizeScriptPromise;
+}
+
 export type ClusteriserTarget = Element | string;
 
 export type ClusteriserOptions = Readonly<{
@@ -165,31 +187,6 @@ export class Clusteriser {
      */
     async #loadJs(): Promise<void> {
         await this.#prepDom();
-        if (window.Clusterize) return;
-
-        await new Promise<void>((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = "https://cdn.jsdelivr.net/npm/clusterize.js/clusterize.min.js";
-
-            /**
-             * Script loaded ok.
-             * @returns {void}
-             */
-            const onLoad = (): void => {
-                resolve();
-            };
-
-            /**
-             * Script load failed, rip.
-             * @returns {void}
-             */
-            const onErr = (): void => {
-                reject(new Error("Failed to load Clusterize.js"));
-            };
-
-            script.onload = onLoad;
-            script.onerror = onErr;
-            document.head.appendChild(script);
-        });
+        await ensureClusterizeScript();
     }
 }
