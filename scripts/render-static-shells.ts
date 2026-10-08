@@ -71,6 +71,17 @@ function addInlineData(html: string, data: MainJson): string {
     return html.replace(/<\/body>/i, payload + "\n</body>");
 }
 
+/** Build the terminal's final containers rather than creating them on each visit. */
+function renderTerminalShell(html: string): string {
+    if (!html.includes('id="terminal-wrapper"')) return html;
+
+    const emptyTerminal = /<div\s+id=["']terminal["']\s*>\s*<\/div>/i;
+    if (!emptyTerminal.test(html)) throw new Error("Missing empty terminal source element");
+
+    const shell = '<div id="terminal-scroll"><div id="term"></div></div>';
+    return html.replace(emptyTerminal, shell);
+}
+
 function addButtons(html: string, buttons: readonly string[]): string {
     return html.replace(/<\/body>/i, buttons.join("\n") + "\n</body>");
 }
@@ -132,6 +143,7 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
         ));
     }
 
+    html = renderTerminalShell(html);
     html = renderWindowsInHtml(html, data);
     html = addButtons(html, buttons);
     html = addInlineData(html, data);
