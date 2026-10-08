@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { renderWindowsInHtml } from "./window-shells.ts";
 import type { MainJson, MainMenuEntry } from "../src/uiFetch.ts";
 import { renderMenuShell, renderToggleShell } from "../src/sharedShell.tsx";
 
@@ -110,6 +111,7 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
         ));
     }
 
+    html = renderWindowsInHtml(html, data);
     html = addButtons(html, buttons);
     html = addInlineData(html, data);
 
