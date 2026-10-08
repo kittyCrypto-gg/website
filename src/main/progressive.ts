@@ -162,7 +162,10 @@ function bootRss(): void {
 }
 
 function bootSocials(): void {
-    if (!has(".socials-segment__grid")) return;
+    const grid = document.querySelector<HTMLElement>(".socials-segment__grid");
+    if (!grid) return;
+    // About's static social list is already complete in the built HTML.
+    if (grid.dataset.kcSocialsStatic === "1") return;
     void import("../socials.ts");
 }
 
