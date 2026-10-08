@@ -43,8 +43,8 @@ export abstract class SessionWindow extends SessionPosition {
         const host = this.host();
 
         return {
-            id: `${WIN_STATE_ID_PREF}${this.id}`,
-            title: winTitle(this.id),
+            id: `${WIN_STATE_ID_PREF}${this.sessionId}`,
+            title: winTitle(this.sessionId),
             launcher: this.lnEl,
             closedLnchrDis: "none",
             showCloseBttn: true,
@@ -73,7 +73,7 @@ export abstract class SessionWindow extends SessionPosition {
             this.wh = winApi.mountWindow(this.fEl, this.mkWinOpts());
             this.qSty();
         } catch (err: unknown) {
-            console.warn("Modal window mounting failed:", this.id, err);
+            console.warn("Modal window mounting failed:", this.sessionId, err);
             this.rmSty();
             return;
         }
@@ -118,7 +118,7 @@ export abstract class SessionWindow extends SessionPosition {
         if (!this.mEl.isConnected) return;
 
         const sz = this.calcMx();
-        const ms = `#${helpers.escapeCssIdentifier(this.id)}`;
+        const ms = `#${helpers.escapeCssIdentifier(this.sessionId)}`;
         const fs = this.fEl ? `#${helpers.escapeCssIdentifier(this.fEl.id)}` : "";
         const bs = fs ? `${fs} .window-body` : "";
         const rs = fs ? `${fs} [data-window-content-root='true']` : "";
@@ -172,7 +172,7 @@ ${rs} {
 
         if (!this.sty) {
             this.sty = document.createElement("style");
-            this.sty.setAttribute("data-modal-window-style-for", this.id);
+            this.sty.setAttribute("data-modal-window-style-for", this.sessionId);
             document.head.appendChild(this.sty);
         }
 
