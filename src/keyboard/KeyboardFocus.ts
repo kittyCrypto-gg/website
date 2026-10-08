@@ -3,7 +3,7 @@ import { KeyboardFoundation } from "./KeyboardFoundation.ts";
 import { KeyboardLayout } from "./KeyboardLayout.ts";
 
 /** Editable focus tracking and toolbar visibility transitions. */
-export class KeyboardFocus extends KeyboardLayout {
+export abstract class KeyboardFocus extends KeyboardLayout {
     /**
      * Says whether an element counts as editable for this tool.
      * @param {unknown} el
