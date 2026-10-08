@@ -2,6 +2,7 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderWindowsInHtml } from "./window-shells.ts";
 import { renderRssFilterShell, renderRssLoadingState } from "../src/rss/staticShell.tsx";
+import { renderReaderNavigation, renderReadAloudMenu, renderStoryPicker } from "../src/reader/staticShell.tsx";
 import type { MainJson, MainMenuEntry } from "../src/uiFetch.ts";
 import { renderMenuShell, renderToggleShell } from "../src/sharedShell.tsx";
 
@@ -115,6 +116,74 @@ function renderRssShell(html: string, page: string): string {
     return output;
 }
 
+
+/** Reader controls, story picker and speech menu ship ready to hydrate. */
+function renderReaderShell(html: string, page: string): string {
+    if (page !== "reader.html") return html;
+
+    const { top, bottom } = renderReaderNavigation();
+    let output = fillEmptyElement(html, "div", "story-picker", renderStoryPicker());
+    output = fillEmptyElement(output, "div", "read-aloud-menu", renderReadAloudMenu());
+
+    const article = /(<article\\b[^>]*\\bid=["']reader["'][^>]*>)/i;
+    if (!article.test(output)) throw new Error("Reader article missing");
+
+    output = output.replace(article, top + "\\n" + "$1");
+    const end = /<\\/article>/i;
+    if (!end.test(output)) throw new Error("Reader article closing tag missing");
+    return output.replace(end, "</article>\\n" + bottom);
+}
+
+/** Chat messages arrive from the backend, but Clusterize's containers do not. */
+function renderChatShell(html: string, page: string): string {
+    if (page !== "chat.html") return html;
+
+    const skeleton = '<div id="chatroom-scroll-area" class="clusterise-scroll">' +
+        '<div id="chatroom-content-area" class="clusterise-content"></div></div>';
+    const output = fillEmptyElement(html, "div", "chatroom", skeleton);
+    return output.replace(/<div\\s+id=["']chatroom["']/i, '<div id="chatroom" class="clusterise" data-kc-chat-static="1"');
+}
+
+function escapeHtmlValue(value: string): string {
+    return value.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+/** About's social list is stored in the repo, not fetched from an API. */
+async function renderAboutSocials(html: string, page: string): Promise<string> {
+    if (page !== "about.html") return html;
+
+    const payload = JSON.parse(await readFile("data/socials.json", "utf8")) as
+        Readonly<{ social: Record<string, { url: string; icon: string }> }>;
+    const entries = Object.entries(payload.social);
+    const cards: string[] = [];
+
+    for (const [index, item] of entries.entries()) {
+        const [name, info] = item;
+        if (entries.length % 2 === 1 && index === entries.length - 1) {
+            cards.push('<div class="socials-segment__spacer" aria-hidden="true"></div>');
+        }
+        const label = name.replace(/[-_]+/g, " ").replace(/\\s+/g, " ").trim()
+            .replace(/\\b\\w/g, (letter: string) => letter.toUpperCase());
+        const path = info.icon.replace(/^\\.\\.\\//, "/");
+        const svg = await readIcon(path, 32, "socials-segment__svg");
+        const icon = svg ?? '<img src="' + escapeHtmlValue(info.icon) +
+            '" alt="' + escapeHtmlValue(label) + ' icon" width="32" height="32" loading="lazy">';
+        cards.push('<a class="socials-segment__item" href="' + escapeHtmlValue(info.url) +
+            '" target="_blank" rel="noopener noreferrer" aria-label="' +
+            escapeHtmlValue(label + ": " + info.url) +
+            '"><span class="socials-segment__icon" aria-hidden="true">' + icon +
+            '</span><div class="socials-segment__body"><span class="socials-segment__title">' +
+            escapeHtmlValue(label) + '</span><span class="socials-segment__url">' +
+            escapeHtmlValue(info.url) + '</span></div></a>');
+    }
+
+    const placeholder = /<div\\s+class=["']socials-segment__grid["']\\s*>\\s*<\\/div>/i;
+    if (!placeholder.test(html)) throw new Error("About social grid placeholder missing");
+    return html.replace(placeholder, '<div class="socials-segment__grid" data-kc-socials-static="1">' +
+        cards.join("") + '</div>');
+}
+
 function addButtons(html: string, buttons: readonly string[]): string {
     return html.replace(/<\/body>/i, buttons.join("\n") + "\n</body>");
 }
@@ -177,6 +246,9 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
     }
 
     html = renderRssShell(html, page);
+    html = renderReaderShell(html, page);
+    html = renderChatShell(html, page);
+    html = await renderAboutSocials(html, page);
     html = preloadTerminal(renderTerminalShell(html), terminalUrl);
     html = renderWindowsInHtml(html, data);
     html = addButtons(html, buttons);
