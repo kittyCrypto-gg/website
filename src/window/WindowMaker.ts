@@ -2,7 +2,7 @@ import type { WindowApiOptions, WindowHandle } from "./types.ts";
 import { WindowEvents } from "./WindowEvents.ts";
 import { captureContentLayout, captureFramePadding, captureFrameStyle, restoreFrameStyle } from "./styleSnapshot.ts";
 import { clearMinimisedBodyLayout, clearMinimisedFrameLayout, clearMountedContentLayout, clearMountedFrameLayout } from "./layout.ts";
-import { resolveLauncher, extractExternalLauncher, restoreLauncher } from "./launcher.ts";
+import { resolveLauncher, extractExternalLauncher, restoreLauncher, resetStaticLauncher } from "./launcher.ts";
 
 /** Window feature: WindowMaker responsibility. */
 export class WindowMaker extends WindowEvents {
@@ -141,11 +141,7 @@ export class WindowMaker extends WindowEvents {
 
         const builtLauncher = this.launcherEl?.dataset.kcStaticWindowLauncher === this.windowId;
         if (builtLauncher && this.launcherEl) {
-            this.launcherEl.classList.remove("is-dragging");
-            this.launcherEl.setAttribute(
-                "data-window-launcher-visible",
-                String(this.options.initClosed ?? false)
-            );
+            resetStaticLauncher(this.launcherEl, this.options.initClosed ?? false);
         }
         if (!builtLauncher) {
             restoreLauncher(
@@ -155,6 +151,8 @@ export class WindowMaker extends WindowEvents {
                 this.launcherOriginalNextSibling
             );
         }
+
+        if (builtFrame && this.floatButtonEl) this.floatButtonEl.hidden = false;
 
         this.frameEl = null;
         this.headerEl = null;
