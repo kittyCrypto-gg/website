@@ -116,8 +116,8 @@ export abstract class SessionContent extends SessionBase {
         if (clr) this.runM();
 
         const ctx: DecCtx = {
-            id: this.id,
-            mode: this.mode,
+            id: this.sessionId,
+            mode: this.sessionMode,
             readerModeCompatible: this.rmOk,
             windowed: this.win,
             modalEl: this.mEl,
