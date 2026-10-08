@@ -1,4 +1,5 @@
 import { clampLauncherPosition } from "./geometry.ts";
+import { createRuntimeLauncher } from "./staticFrame.tsx";
 import type { WindowApiOptions } from "./types.ts";
 
 export type LauncherResolution = Readonly<{
@@ -28,14 +29,20 @@ export function resolveLauncher(
     }
 
     const prebuilt = document.getElementById(`window-api-launcher-${windowId}`);
+    const title = options.title ?? windowId;
+    const src = options.launcherSrc ?? "/images/file.svg";
     const launcher = prebuilt instanceof HTMLImageElement
         ? prebuilt
-        : document.createElement("img");
+        : createRuntimeLauncher(
+            windowId, title, src, options.closedLnchrDis ?? "inline-block",
+            options.initClosed ?? false
+        );
 
-    launcher.src = options.launcherSrc ?? "/images/file.svg";
-    launcher.alt = `${options.title ?? windowId} icon`;
-    launcher.title = `Double-click to open ${options.title ?? windowId}`;
-    launcher.draggable = false;
+    // No duplicate DOM attributes or re-requested image when hydrating HTML.
+    if (launcher.getAttribute("src") !== src) launcher.src = src;
+    if (launcher.alt !== `${title} icon`) launcher.alt = `${title} icon`;
+    if (launcher.title !== `Double-click to open ${title}`) launcher.title = `Double-click to open ${title}`;
+    if (launcher.draggable) launcher.draggable = false;
     if (launcher.parentElement !== document.body) document.body.appendChild(launcher);
 
     return {
