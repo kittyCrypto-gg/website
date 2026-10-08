@@ -161,7 +161,10 @@ function renderLocationPickerShell(html: string, page: string): string {
         'class="comment-location-dropdown__button" aria-haspopup="listbox" ' +
         'aria-controls="comment-location-dropdown-menu">Location (Optional)</button>' +
         '<div id="comment-location-dropdown-menu" class="comment-location-dropdown__content"></div></div>';
-    return withNative.replace(flag, picker + "$1");
+    const fallback = '<noscript><style>#comment-location.comment-location-native{position:static!important;' +
+        'inline-size:auto!important;block-size:auto!important;opacity:1!important;}' +
+        '.comment-location-dropdown[data-kc-static-location]{display:none!important}</style></noscript>';
+    return withNative.replace(flag, picker + fallback + "$1");
 }
 
 function escapeHtmlValue(value: string): string {
