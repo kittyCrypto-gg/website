@@ -1,5 +1,6 @@
 import type { MainJson, windowDef } from "../src/uiFetch.ts";
 import { renderStaticLauncher, renderStaticWindowHead, renderStaticWindowBody } from "../src/window/staticFrame.tsx";
+import { sanitiseWindowId } from "../src/window/state.ts";
 
 type Tag = Readonly<{ name: string; start: number; end: number; raw: string; closing: boolean; singleton: boolean }>;
 type Range = Readonly<{ opening: Tag; closing: Tag }>;
@@ -77,19 +78,24 @@ function findRange(tags: readonly Tag[], selector: string): Range | null {
 
 function appendStaticClass(raw: string, id: string, options: windowDef["options"]): string {
     const old = attribute(raw, "class") ?? "";
+    const initiallyFloating = options.initFloat ?? options.initFloatPos !== undefined;
     const classes = [
         ...old.split(/\s+/).filter(Boolean),
         "window-frame",
         ...(options.initClosed ? ["closed"] : []),
         ...(options.initMini ? ["minimised"] : []),
-        ...(options.initFloat || options.initFloatPos ? ["floating"] : [])
+        ...(initiallyFloating ? ["floating"] : [])
     ];
     const unique = [...new Set(classes)].join(" ");
     const patched = /\sclass\s*=\s*(?:"[^"]*"|'[^']*')/i.test(raw)
         ? raw.replace(/\sclass\s*=\s*(?:"[^"]*"|'[^']*')/i, ` class="${unique}"`)
         : raw.replace(/>$/, ` class="${unique}">`);
 
-    return patched.replace(/>$/, ` data-kc-static-window="${id}">`);
+    return patched.replace(/>$/, ` data-kc-static-window="${id}"` +
+        ` data-window-floating="${initiallyFloating}"` +
+        ` data-window-maximised="false"` +
+        ` data-window-minimised="${options.initMini ?? false}"` +
+        ` data-window-closed="${options.initClosed ?? false}">`);
 }
 
 function renderWindow(html: string, windowConfig: windowDef): { html: string; launcher: string } | null {
@@ -99,7 +105,7 @@ function renderWindow(html: string, windowConfig: windowDef): { html: string; la
     if (!range) return null;
     if (attribute(range.opening.raw, "data-kc-static-window")) return null;
 
-    const id = options.id?.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+    const id = sanitiseWindowId(options.id ?? "");
     if (!id) throw new Error("Static window requires a stable id: " + selector);
 
     const title = options.title ?? "Window";
