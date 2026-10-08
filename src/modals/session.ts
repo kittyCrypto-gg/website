@@ -27,8 +27,8 @@ export class ModalSession extends SessionWindow {
 
         openByKey.set(this.key, {
             key: this.key,
-            id: this.id,
-            mode: this.mode,
+            id: this.sessionId,
+            mode: this.sessionMode,
             readerModeCompatible: this.rmOk,
             closeOnEscape: this.esc,
             close: () => this.close(),
@@ -94,7 +94,7 @@ export class ModalSession extends SessionWindow {
         zRm(this.key);
         syncScrl();
 
-        this.fac._unregisterSession(this.id);
+        this.fac._unregisterSession(this.sessionId);
     }
 
 }
