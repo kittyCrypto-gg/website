@@ -9,6 +9,8 @@
     --term-icon-border-width: 1px;
     --term-icon-hover-shadow: 0 0 3px;
 
+    --terminal-reserved-height: clamp(16rem, 26vw, 24rem);
+
     --terminal-radius: 8px;
     --terminal-border-width: 1px;
     --terminal-border-colour: rgba(0, 0, 0, 0.3);
@@ -79,6 +81,31 @@
     .composition-view {
         background: var(--term-bg);
     }
+}
+
+/* This block-size exists before scripts execute, preventing the terminal from
+   pushing the menu and page contents down when xterm attaches its renderer. */
+#terminal-wrapper {
+    position: relative;
+    block-size: var(--terminal-reserved-height);
+}
+
+#terminal-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+
+#terminal-scroll {
+    inline-size: 100%;
+    block-size: 100%;
+}
+
+#shell-wrapper:is(.floating, .maximised) #terminal-wrapper {
+    block-size: 100%;
 }
 
 /* Terminal Icon, terminal-specific visuals only */
