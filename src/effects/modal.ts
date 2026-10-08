@@ -1,8 +1,7 @@
 import type { fxUIconf } from "../uiFetch.ts";
 import * as modals from "../modals.ts";
-import { render2Mkup } from "../reactHelpers.tsx";
 import { live } from "./preferences.ts";
-import { Panel } from "./view.tsx";
+import { renderEffectsPanel } from "./view.tsx";
 import { syncMod, onTextShadowTgl, onPhosTgl, onScanTgl, onPhosOp, onScanOp, onScanSpd, onTextShadowIntensity, onReset } from "./controls.ts";
 
 const MOD_ID = "screen-effects";
@@ -40,7 +39,7 @@ export function syncOpen(): void {
  * @returns {string}
  */
 function rndrMod(): string {
-    return render2Mkup(Panel({ prefs: live(), ui: ui() }));
+    return renderEffectsPanel(live(), ui());
 }
 
 
