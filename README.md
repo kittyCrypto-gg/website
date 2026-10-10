@@ -1,4 +1,4 @@
-# kittycrow.dev - Frontend - ${V8.2}
+# kittycrow.dev - Frontend - ${V7.0102}
 
 Frontend for https://kittycrow.dev.
 
