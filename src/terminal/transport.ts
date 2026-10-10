@@ -1,10 +1,49 @@
-import { clearTerminalSessionState } from "./sessionState.ts";
+import { checkMobile } from "./dependencies.ts";
+import { clearTerminalSessionState, hasTerminalInteracted } from "./sessionState.ts";
 import { getOrCreateSessionToken } from "./token.ts";
 import type {
     ScrollTrackingController,
     WebSocketTransportOptions,
     XtermTerminal
 } from "./types.ts";
+
+const BBS_COMMAND = "ssh bbs.kittycrow.dev";
+const BBS_DESKTOP_COMMENT = " #I have a bbs too, just press return!";
+const bbsSuggestionTimers = new WeakMap<WebSocket, number>();
+
+function clearBbsSuggestionTimer(ws: WebSocket): void {
+    const timer = bbsSuggestionTimers.get(ws);
+    if (timer === undefined) return;
+
+    window.clearTimeout(timer);
+    bbsSuggestionTimers.delete(ws);
+}
+
+function deferBbsSuggestion(ws: WebSocket): void {
+    clearBbsSuggestionTimer(ws);
+
+    const timer = window.setTimeout(() => {
+        bbsSuggestionTimers.delete(ws);
+        if (ws.readyState !== WebSocket.OPEN) return;
+        if (hasTerminalInteracted()) return;
+
+        // Do not suggest the BBS on mobile; leave only nekofetch.
+        if (checkMobile()) return;
+
+        ws.send(BBS_COMMAND + BBS_DESKTOP_COMMENT);
+    }, 500);
+    bbsSuggestionTimers.set(ws, timer);
+}
+
+export function printTerminalHeader(ws: WebSocket, clearFirst = false): void {
+    if (ws.readyState !== WebSocket.OPEN) return;
+    if (hasTerminalInteracted()) return;
+
+    clearBbsSuggestionTimer(ws);
+    // Clear an untouched suggestion before a theme refresh.
+    ws.send((clearFirst ? "\x15clear\r" : "") + "nekofetch\r");
+    deferBbsSuggestion(ws);
+}
 
 export async function attachWebSocketTransport(
     term: XtermTerminal,
@@ -24,25 +63,12 @@ export async function attachWebSocketTransport(
     const connectRef = typeof opts.connectRef === "function"
         ? opts.connectRef
         : null;
-    const onConnectivityIssue =
-        typeof opts.onConnectivityIssue === "function"
-            ? opts.onConnectivityIssue
-            : null;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
 
     let openTimer: number | null = null;
-    const openTimeoutMs = 3500;
-    let connectivityIssueEmitted = false;
-
-    const emitConnectivityIssue = (trigger: string): void => {
-        if (!onConnectivityIssue) return;
-        if (connectivityIssueEmitted) return;
-
-        connectivityIssueEmitted = true;
-        onConnectivityIssue(trigger);
-    };
+    const openTimeoutMs = 12_000;
 
     const clearOpenTimer = (): void => {
         if (openTimer === null) return;
@@ -61,9 +87,8 @@ export async function attachWebSocketTransport(
 
         if (terminalState) return;
 
-        term.writeln("\r\n[connection timeout]");
-        scrollCtl.forceFollowAndScroll();
-        emitConnectivityIssue("ws-open-timeout");
+        // Let the close handler initiate a backoff retry.
+        ws.close();
     }, openTimeoutMs);
 
     ws.addEventListener("open", () => {
@@ -75,11 +100,13 @@ export async function attachWebSocketTransport(
 
         window.setTimeout(() => {
             if (ws.readyState !== WebSocket.OPEN) return;
-            ws.send("nekofetch\r");
+            printTerminalHeader(ws);
         }, 50);
     });
 
     ws.addEventListener("message", (event: MessageEvent) => {
+        // Wait for the nekofetch output to settle before filling the prompt.
+        if (bbsSuggestionTimers.has(ws)) deferBbsSuggestion(ws);
         if (typeof event.data === "string") {
             term.write(event.data);
             scrollCtl.maybeScroll();
@@ -102,6 +129,7 @@ export async function attachWebSocketTransport(
 
     ws.addEventListener("close", (event: CloseEvent) => {
         clearOpenTimer();
+        clearBbsSuggestionTimer(ws);
 
         const sessionEnded = event.code === 4001;
 
@@ -113,25 +141,21 @@ export async function attachWebSocketTransport(
             scrollCtl.forceFollowAndScroll();
         }
 
-        if (sessionEnded && connectRef) {
-            window.setTimeout(connectRef, 0);
+        if (sessionEnded) {
+            connectRef?.(ws);
+            return;
         }
 
-        if (sessionEnded) return;
-
-        const normalClosure = event.code === 1000;
-        term.writeln("\r\n[disconnected]");
-        scrollCtl.forceFollowAndScroll();
-
-        if (normalClosure) return;
-        emitConnectivityIssue("ws-close-" + String(event.code));
+        // A WebSocket is only an attachment to the token-backed PTY.
+        // Transport loss should not leave the terminal permanently disconnected.
+        connectRef?.(ws);
     });
 
     ws.addEventListener("error", () => {
         clearOpenTimer();
-        term.writeln("\r\n[connection error]");
-        scrollCtl.forceFollowAndScroll();
-        emitConnectivityIssue("ws-error");
+        clearBbsSuggestionTimer(ws);
+        // The corresponding close event handles retry; avoid transient error
+        // notices appearing inside a recoverable terminal session.
     });
 
     return ws;

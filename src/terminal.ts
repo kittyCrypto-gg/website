@@ -18,7 +18,7 @@ import {
 } from "./terminal/sessionState.ts";
 import {
     attachWebSocketTransport,
-    wsUnreachableNoticeText
+    printTerminalHeader
 } from "./terminal/transport.ts";
 import type {
     FollowState,
@@ -51,8 +51,13 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const events = new EventTarget();
     let ready = false;
 
-    let lastWsNoticeAt = 0;
-    let lastWsNoticeKey: string | null = null;
+    const reconnectDelaysMs = [250, 500, 1_000, 2_000, 5_000, 10_000] as const;
+    let reconnectTimer: number | null = null;
+    let reconnectAttempt = 0;
+    let connectGeneration = 0;
+    let disposed = false;
+    let hiddenAt: number | null = document.visibilityState === "hidden" ? Date.now() : null;
+    let lastHealAt = 0;
 
     // The build emits these stable containers, preserving their dimensions
     // from first paint. Keep a fallback for pages built by an older revision.
@@ -112,25 +117,6 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     scrollCtl = attachScrollTracking(term, followState);
 
-    /**
-     * @param {string} trigger - What triggered the notice.
-     * @returns {void} Nothing.
-     */
-    const notifyWsUnreachable = (trigger: string): void => {
-        const nowMs = Date.now();
-        const throttleMs = 4000;
-        const key = trigger;
-
-        const tooSoon = nowMs - lastWsNoticeAt < throttleMs;
-        if (tooSoon && lastWsNoticeKey === key) return;
-
-        lastWsNoticeAt = nowMs;
-        lastWsNoticeKey = key;
-
-        term.writeln(`\r\n${wsUnreachableNoticeText(trigger)}`);
-        scrollCtl?.forceFollowAndScroll();
-    };
-
     let pendingResize: string | null = null;
     let lastCols = 0;
     let lastRows = 0;
@@ -189,58 +175,118 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         sendPendingWebUiTheme();
     };
 
-    /**
-     * @returns {Promise<void>} Resolves once a connection attempt finishes.
-     */
-    const connectWs = async (): Promise<void> => {
-        if (reconnecting) return;
-        if (!scrollCtl) return;
+    // Match the admin dashboard's recoverable transport, with a longer final
+    // delay to stay below the public gateway's 10-connections/minute limit.
+    const scheduleReconnect = (): void => {
+        if (disposed || reconnectTimer !== null || !navigator.onLine) return;
 
+        const delay = reconnectDelaysMs[Math.min(reconnectAttempt, reconnectDelaysMs.length - 1)] ?? 10_000;
+        reconnectAttempt += 1;
+        reconnectTimer = window.setTimeout(() => {
+            reconnectTimer = null;
+            void connectWs();
+        }, delay);
+    };
+
+    const connectWs = async (): Promise<void> => {
+        if (disposed || reconnecting || !navigator.onLine) return;
+        if (!scrollCtl) return;
+        if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) return;
+
+        const generation = connectGeneration;
         reconnecting = true;
 
         try {
             const next = await attachWebSocketTransport(term, scrollCtl, {
                 onOpen: (socket: WebSocket) => {
-                    sendPendingWebUiTheme(socket);
-
-                    if (pendingResize) {
-                        socket.send(pendingResize);
-                        pendingResize = null;
+                    if (disposed || generation !== connectGeneration) {
+                        socket.close();
                         return;
                     }
 
-                    sendResize(term.cols, term.rows);
-                },
-                connectRef: () => {
-                    void connectWs();
-                },
-                onConnectivityIssue: (trigger: string) => {
-                    notifyWsUnreachable(trigger);
-                }
-            });
+                    reconnectAttempt = 0;
+                    if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                    sendPendingWebUiTheme(socket);
 
-            ws = next;
-
-            ws.addEventListener("open", () => {
-                if (!ws) return;
-
-                if (pendingResize) {
-                    ws.send(pendingResize);
+                    // Send current dimensions on every attachment, including
+                    // a newly spawned PTY using the existing session token.
+                    const cols = term.cols;
+                    const rows = term.rows;
+                    if (Number.isFinite(cols) && Number.isFinite(rows) && cols > 0 && rows > 0) {
+                        socket.send(JSON.stringify({ type: "resize", cols, rows }));
+                        lastCols = cols;
+                        lastRows = rows;
+                        pendingResize = null;
+                        return;
+                    }
+                    if (!pendingResize) return;
+                    socket.send(pendingResize);
                     pendingResize = null;
-                    return;
+                },
+                connectRef: (closedSocket: WebSocket) => {
+                    if (disposed || ws !== closedSocket) return;
+                    ws = null;
+                    scheduleReconnect();
                 }
-
-                sendResize(term.cols, term.rows);
             });
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "unknown error";
-            term.writeln(`\r\n[connection failed: ${msg}]`);
-            scrollCtl.forceFollowAndScroll();
-            notifyWsUnreachable("ws-setup-failed");
+
+            if (disposed || generation !== connectGeneration) {
+                next.close();
+                return;
+            }
+            ws = next;
+        } catch (error: unknown) {
+            if (disposed || generation !== connectGeneration) return;
+            console.warn("Terminal connection failed; retrying:", error);
+            scheduleReconnect();
         } finally {
             reconnecting = false;
+            // A visibility/network refresh may supersede an in-flight token lookup.
+            // Start its replacement once the stale attempt has finished.
+            if (!disposed && generation !== connectGeneration) void connectWs();
         }
     };
+
+    // Recover from mobile Safari suspending a page, and from network changes.
+    const healConnection = (): void => {
+        if (disposed || !navigator.onLine) return;
+
+        const now = Date.now();
+        if (now - lastHealAt < 1_000) return;
+        lastHealAt = now;
+
+        connectGeneration += 1;
+        if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+        reconnectAttempt = 0;
+
+        const stale = ws;
+        ws = null;
+        if (stale?.readyState === WebSocket.OPEN || stale?.readyState === WebSocket.CONNECTING) {
+            stale.close(1000, "refresh transport after resume");
+        }
+        void connectWs();
+    };
+
+    const onVisibilityChange = (): void => {
+        if (document.visibilityState === "hidden") {
+            hiddenAt = Date.now();
+            return;
+        }
+
+        const hiddenFor = hiddenAt === null ? 0 : Date.now() - hiddenAt;
+        hiddenAt = null;
+        if (hiddenFor >= 5_000) healConnection();
+    };
+
+    const onPageShow = (event: PageTransitionEvent): void => {
+        if (event.persisted || ws?.readyState === WebSocket.CLOSED) healConnection();
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("online", healConnection);
 
     // Connection and session-token lookup are independent of visual readiness.
     // Initiate later, after the terminal is constructed and all handlers exist.
@@ -254,7 +300,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         if (hasTerminalInteracted()) return;
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-        ws.send("clear\rnekofetch\r");
+        printTerminalHeader(ws, true);
         scrollCtl?.forceFollowAndScroll();
     };
 
@@ -325,6 +371,13 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         events,
         isReady: (): boolean => ready,
         dispose: (): void => {
+            disposed = true;
+            connectGeneration += 1;
+            if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+            document.removeEventListener("visibilitychange", onVisibilityChange);
+            window.removeEventListener("pageshow", onPageShow);
+            window.removeEventListener("online", healConnection);
             document.removeEventListener(THEME_CHANGED_EVENT, refreshUntouchedTerminal);
             detachResizeHandlers();
             detachResizeObserver();

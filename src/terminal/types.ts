@@ -60,7 +60,7 @@ export type SessionTokenResult = Readonly<{
 
 export type WebSocketTransportOptions = Readonly<{
     onOpen?: (socket: WebSocket) => void;
-    connectRef?: () => void;
+    connectRef?: (socket: WebSocket) => void;
     onConnectivityIssue?: (trigger: string) => void;
 }>;
 
