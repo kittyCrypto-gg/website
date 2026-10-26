@@ -92,7 +92,8 @@ html.effect-crt-phosphor-on body:not(.effect-disable-phosphor)::before {
   opacity: var(--effect-crt-phosphor-opacity);
 
   /* Phosphor pattern */
-  background-image: url("/images/trinitron.svg");
+  /* Native SVG remains visible until the optional texture has decoded. */
+  background-image: var(--effect-crt-phosphor-image, url("/images/trinitron.svg"));
   background-repeat: repeat;
   background-position: 0 0;
   background-size:

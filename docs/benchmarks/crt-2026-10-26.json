@@ -1,0 +1,1525 @@
+{
+  "date": "2026-10-26",
+  "baselineCommit": "a74755628f19ce9e1d41d66191d3c1640f84a568",
+  "timedCandidateCommit": "024708f0d662b95881b8d0f20c1efcb9faeaa360",
+  "validatedCandidateCommit": "708792afe91f7f77de9907b90a483320af034b8f",
+  "note": "Timings use device scale 1. The subsequent high-DPI fallback guard leaves this warmed rendering path unchanged. Final downloaded branch passed the visual, lifecycle and build checks.",
+  "environment": {
+    "browser": "153.0.8010.0",
+    "platform": "linux",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "logicalCpus": 9,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "headless": true,
+    "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver-5.0.0)",
+    "gpuFeatures": {
+      "2d_canvas": "enabled",
+      "direct_rendering_display_compositor": "disabled_off_ok",
+      "gpu_compositing": "enabled",
+      "multiple_raster_threads": "enabled_on",
+      "opengl": "enabled_on",
+      "rasterization": "enabled",
+      "raw_draw": "disabled_off_ok",
+      "skia_graphite": "disabled_off",
+      "trees_in_viz": "disabled_off",
+      "video_decode": "disabled_software",
+      "video_encode": "disabled_software",
+      "vulkan": "disabled_off",
+      "webgl": "enabled",
+      "webgpu": "unavailable_software",
+      "webgpu_on_vk_via_gl_interop": "disabled_off",
+      "webnn": "disabled_off"
+    },
+    "graphicsBackend": "SwiftShader software rendering; no physical GPU available"
+  },
+  "repetitions": 3,
+  "summaries": [
+    {
+      "profile": "phosphor",
+      "phase": "idle",
+      "baseline": {
+        "durationMs": {
+          "median": 2504.15,
+          "min": 2503.474,
+          "max": 2504.981,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 60.001589446078036,
+          "min": 60.001589446078036,
+          "max": 60.004800384030716,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 16.800000000000182,
+          "min": 16.799999999999272,
+          "max": 16.800000000000182,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        }
+      },
+      "candidate": {
+        "durationMs": {
+          "median": 2504.804,
+          "min": 2504.138,
+          "max": 2508.336,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 60.00158944607806,
+          "min": 57.61742032901533,
+          "max": 60.003973773097556,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 16.800000000000182,
+          "min": 16.700000000000728,
+          "max": 16.800000000000182,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 0,
+          "min": 0,
+          "max": 6,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        }
+      }
+    },
+    {
+      "profile": "phosphor",
+      "phase": "down",
+      "baseline": {
+        "durationMs": {
+          "median": 2090.999,
+          "min": 2090.417,
+          "max": 2092.377,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 55.96969408496008,
+          "min": 54.9614146972558,
+          "max": 58.345317238315275,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 57.12639815659355,
+          "min": 56.193152054859766,
+          "max": 59.04761904761902,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 22.57,
+          "min": 20.368,
+          "max": 23.187,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 16.799999999999272,
+          "min": 16.799999999999272,
+          "max": 16.800000000000182,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 7,
+          "min": 3,
+          "max": 9,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 12.969,
+          "min": 10.148,
+          "max": 14.043,
+          "validTrials": 3
+        }
+      },
+      "candidate": {
+        "durationMs": {
+          "median": 2083.762,
+          "min": 2078.877,
+          "max": 2086.222,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 56.62834815108443,
+          "min": 55.12356786574008,
+          "max": 56.761414937006855,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 57.60092161474586,
+          "min": 56.163594470046064,
+          "max": 57.60368663594468,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 26.486,
+          "min": 23.778,
+          "max": 26.812,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 16.799999999999272,
+          "min": 16.799999999999272,
+          "max": 16.80000000000109,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 6,
+          "min": 6,
+          "max": 9,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 15.192,
+          "min": 10.681,
+          "max": 19.332,
+          "validTrials": 3
+        }
+      }
+    },
+    {
+      "profile": "phosphor",
+      "phase": "up",
+      "baseline": {
+        "durationMs": {
+          "median": 2072.215,
+          "min": 2067.166,
+          "max": 2076.672,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 58.74784270216963,
+          "min": 58.0504903815175,
+          "max": 58.874199829650884,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 60.000960015360214,
+          "min": 58.55027581534887,
+          "max": 60.00193554630799,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 20.118,
+          "min": 19.662,
+          "max": 21.581,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 16.700000000000728,
+          "min": 16.700000000000728,
+          "max": 16.799999999999272,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 1,
+          "min": 1,
+          "max": 3,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        }
+      },
+      "candidate": {
+        "durationMs": {
+          "median": 2070.614,
+          "min": 2069.034,
+          "max": 2123.147,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 57.46187145779355,
+          "min": 56.98792725249612,
+          "max": 59.44803227013186,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 59.52662162800589,
+          "min": 58.083717357910935,
+          "max": 60.000960015360214,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 21.87,
+          "min": 19.599,
+          "max": 24.307,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 16.799999999999272,
+          "min": 16.700000000000728,
+          "max": 16.799999999999272,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 2,
+          "min": 1,
+          "max": 4,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "validTrials": 3
+        }
+      }
+    },
+    {
+      "profile": "all",
+      "phase": "idle",
+      "baseline": {
+        "durationMs": {
+          "median": 2510.381,
+          "min": 2505.556,
+          "max": 2514.961,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 1.9917295422487662,
+          "min": 0.7952409599989821,
+          "max": 1.9955650562190588,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 1.8605966561356897,
+          "min": 1.621728568046109,
+          "max": 30.046271257737597,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 751.694,
+          "min": 43.174,
+          "max": 1011.176,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 749.848,
+          "min": 33.28199999999924,
+          "max": 999.9040000000005,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 145,
+          "min": 3,
+          "max": 146,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 8.436,
+          "min": 2.287,
+          "max": 8.696,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 5.935,
+          "min": 4.918,
+          "max": 7.12,
+          "validTrials": 3
+        }
+      },
+      "candidate": {
+        "durationMs": {
+          "median": 2506.18,
+          "min": 2505.366,
+          "max": 2755.592,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 1.088695278546316,
+          "min": 0.3991432788662415,
+          "max": 1.995068191430783,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 2.28037923675186,
+          "min": 2.034194814837416,
+          "max": 2.526563658666303,
+          "validTrials": 2
+        },
+        "compositorP95Ms": {
+          "median": 577.013,
+          "min": 0,
+          "max": 783.953,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 583.29,
+          "min": 0,
+          "max": 783.1999999999989,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 146,
+          "min": 8,
+          "max": 162,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 9.142,
+          "min": 2.698,
+          "max": 10.952,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 6.875,
+          "min": 5.01,
+          "max": 13.502,
+          "validTrials": 3
+        }
+      }
+    },
+    {
+      "profile": "all",
+      "phase": "down",
+      "baseline": {
+        "durationMs": {
+          "median": 5195.593,
+          "min": 4949.578,
+          "max": 13571.333,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 4.8117702830071565,
+          "min": 0.8105320236413033,
+          "max": 4.848898229303589,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 2.1020045479734764,
+          "min": 0.7344246884203258,
+          "max": 2.2148840206185567,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 730.124,
+          "min": 476.588,
+          "max": 2616.809,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 1433.2999999999993,
+          "min": 1233.300000000001,
+          "max": 3066.5,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 287,
+          "min": 214,
+          "max": 300,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 25.114,
+          "min": 19.97,
+          "max": 31.481,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 129.383,
+          "min": 86.166,
+          "max": 165.904,
+          "validTrials": 3
+        }
+      },
+      "candidate": {
+        "durationMs": {
+          "median": 5875.777,
+          "min": 4588.582,
+          "max": 6136.166,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 3.09639602318451,
+          "min": 2.042283088687675,
+          "max": 4.794509502064036,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 1.5958192090034844,
+          "min": 1.2706300913441855,
+          "max": 1.8182552830417393,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 820.03,
+          "min": 515.708,
+          "max": 1336.601,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 1533.3999999999996,
+          "min": 1366.6000000000004,
+          "max": 1833.300000000001,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 344,
+          "min": 266,
+          "max": 358,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 20.671,
+          "min": 16.776,
+          "max": 27.043,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 112.457,
+          "min": 106.631,
+          "max": 133.846,
+          "validTrials": 3
+        }
+      }
+    },
+    {
+      "profile": "all",
+      "phase": "up",
+      "baseline": {
+        "durationMs": {
+          "median": 3162.302,
+          "min": 3140.236,
+          "max": 4773.431,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 5.413605856375126,
+          "min": 1.885436282623547,
+          "max": 6.324506641048198,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 2.23413762287757,
+          "min": 1.2371644191513054,
+          "max": 2.8421650982125937,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 511.227,
+          "min": 478.188,
+          "max": 902.022,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 1450,
+          "min": 849.8999999999996,
+          "max": 1800,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 178,
+          "min": 177,
+          "max": 276,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 21.084,
+          "min": 17.972,
+          "max": 26.692,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 58.195,
+          "min": 39.026,
+          "max": 66.623,
+          "validTrials": 3
+        }
+      },
+      "candidate": {
+        "durationMs": {
+          "median": 3454.003,
+          "min": 3292.049,
+          "max": 3693.297,
+          "validTrials": 3
+        },
+        "compositorDrawFps": {
+          "median": 6.079902073043944,
+          "min": 5.771481530195936,
+          "max": 6.227498086398143,
+          "validTrials": 3
+        },
+        "rafFps": {
+          "median": 1.8834925332974572,
+          "min": 1.8368284096127354,
+          "max": 2.3078032597721045,
+          "validTrials": 3
+        },
+        "compositorP95Ms": {
+          "median": 400.565,
+          "min": 370.029,
+          "max": 567.729,
+          "validTrials": 3
+        },
+        "rafP95Ms": {
+          "median": 1416.7000000000007,
+          "min": 1116.6000000000022,
+          "max": 2050,
+          "validTrials": 3
+        },
+        "droppedFrames": {
+          "median": 196,
+          "min": 187,
+          "max": 212,
+          "validTrials": 3
+        },
+        "paintMs": {
+          "median": 17.211,
+          "min": 12.245,
+          "max": 25.801,
+          "validTrials": 3
+        },
+        "rasterMs": {
+          "median": 25.641,
+          "min": 21.729,
+          "max": 50.047,
+          "validTrials": 3
+        }
+      }
+    }
+  ],
+  "trials": [
+    {
+      "version": "baseline",
+      "profile": "phosphor",
+      "repetition": 0,
+      "textTargets": 0,
+      "textureActive": false,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2504.981,
+          "compositorDrawFps": 0,
+          "rafFps": 60.004800384030716,
+          "compositorP95Ms": 0,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 0,
+          "paintMs": 0,
+          "rasterMs": 0
+        },
+        "down": {
+          "durationMs": 2090.999,
+          "compositorDrawFps": 58.345317238315275,
+          "rafFps": 59.04761904761902,
+          "compositorP95Ms": 22.57,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 3,
+          "paintMs": 0,
+          "rasterMs": 10.148
+        },
+        "up": {
+          "durationMs": 2072.215,
+          "compositorDrawFps": 58.874199829650884,
+          "rafFps": 60.00193554630799,
+          "compositorP95Ms": 19.662,
+          "rafP95Ms": 16.700000000000728,
+          "droppedFrames": 1,
+          "paintMs": 0,
+          "rasterMs": 0
+        }
+      }
+    },
+    {
+      "version": "candidate",
+      "profile": "phosphor",
+      "repetition": 0,
+      "textTargets": 0,
+      "textureActive": true,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2504.138,
+          "compositorDrawFps": 0,
+          "rafFps": 60.00158944607806,
+          "compositorP95Ms": 0,
+          "rafP95Ms": 16.700000000000728,
+          "droppedFrames": 0,
+          "paintMs": 0,
+          "rasterMs": 0
+        },
+        "down": {
+          "durationMs": 2086.222,
+          "compositorDrawFps": 55.12356786574008,
+          "rafFps": 56.163594470046064,
+          "compositorP95Ms": 26.486,
+          "rafP95Ms": 16.80000000000109,
+          "droppedFrames": 9,
+          "paintMs": 0,
+          "rasterMs": 10.681
+        },
+        "up": {
+          "durationMs": 2070.614,
+          "compositorDrawFps": 56.98792725249612,
+          "rafFps": 58.083717357910935,
+          "compositorP95Ms": 24.307,
+          "rafP95Ms": 16.700000000000728,
+          "droppedFrames": 4,
+          "paintMs": 0,
+          "rasterMs": 0
+        }
+      }
+    },
+    {
+      "version": "baseline",
+      "profile": "all",
+      "repetition": 0,
+      "textTargets": 95,
+      "textureActive": false,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2514.961,
+          "compositorDrawFps": 0.7952409599989821,
+          "rafFps": 30.046271257737597,
+          "compositorP95Ms": 43.174,
+          "rafP95Ms": 33.28199999999924,
+          "droppedFrames": 3,
+          "paintMs": 2.287,
+          "rasterMs": 4.918
+        },
+        "down": {
+          "durationMs": 13571.333,
+          "compositorDrawFps": 0.8105320236413033,
+          "rafFps": 0.7344246884203258,
+          "compositorP95Ms": 2616.809,
+          "rafP95Ms": 3066.5,
+          "droppedFrames": 214,
+          "paintMs": 25.114,
+          "rasterMs": 86.166
+        },
+        "up": {
+          "durationMs": 4773.431,
+          "compositorDrawFps": 1.885436282623547,
+          "rafFps": 1.2371644191513054,
+          "compositorP95Ms": 902.022,
+          "rafP95Ms": 1800,
+          "droppedFrames": 276,
+          "paintMs": 17.972,
+          "rasterMs": 58.195
+        }
+      }
+    },
+    {
+      "version": "candidate",
+      "profile": "all",
+      "repetition": 0,
+      "textTargets": 95,
+      "textureActive": true,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2506.18,
+          "compositorDrawFps": 1.995068191430783,
+          "rafFps": 2.526563658666303,
+          "compositorP95Ms": 783.953,
+          "rafP95Ms": 783.1999999999989,
+          "droppedFrames": 146,
+          "paintMs": 10.952,
+          "rasterMs": 5.01
+        },
+        "down": {
+          "durationMs": 4588.582,
+          "compositorDrawFps": 4.794509502064036,
+          "rafFps": 1.8182552830417393,
+          "compositorP95Ms": 515.708,
+          "rafP95Ms": 1833.300000000001,
+          "droppedFrames": 266,
+          "paintMs": 27.043,
+          "rasterMs": 112.457
+        },
+        "up": {
+          "durationMs": 3693.297,
+          "compositorDrawFps": 6.227498086398143,
+          "rafFps": 1.8834925332974572,
+          "compositorP95Ms": 567.729,
+          "rafP95Ms": 1416.7000000000007,
+          "droppedFrames": 212,
+          "paintMs": 17.211,
+          "rasterMs": 50.047
+        }
+      }
+    },
+    {
+      "version": "candidate",
+      "profile": "phosphor",
+      "repetition": 1,
+      "textTargets": 0,
+      "textureActive": true,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2508.336,
+          "compositorDrawFps": 0,
+          "rafFps": 60.003973773097556,
+          "compositorP95Ms": 0,
+          "rafP95Ms": 16.800000000000182,
+          "droppedFrames": 0,
+          "paintMs": 0,
+          "rasterMs": 0
+        },
+        "down": {
+          "durationMs": 2078.877,
+          "compositorDrawFps": 56.761414937006855,
+          "rafFps": 57.60092161474586,
+          "compositorP95Ms": 23.778,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 6,
+          "paintMs": 0,
+          "rasterMs": 19.332
+        },
+        "up": {
+          "durationMs": 2069.034,
+          "compositorDrawFps": 59.44803227013186,
+          "rafFps": 60.000960015360214,
+          "compositorP95Ms": 19.599,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 1,
+          "paintMs": 0,
+          "rasterMs": 0
+        }
+      }
+    },
+    {
+      "version": "baseline",
+      "profile": "phosphor",
+      "repetition": 1,
+      "textTargets": 0,
+      "textureActive": false,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2504.15,
+          "compositorDrawFps": 0,
+          "rafFps": 60.001589446078036,
+          "compositorP95Ms": 0,
+          "rafP95Ms": 16.800000000000182,
+          "droppedFrames": 0,
+          "paintMs": 0,
+          "rasterMs": 0
+        },
+        "down": {
+          "durationMs": 2092.377,
+          "compositorDrawFps": 54.9614146972558,
+          "rafFps": 56.193152054859766,
+          "compositorP95Ms": 23.187,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 9,
+          "paintMs": 0,
+          "rasterMs": 14.043
+        },
+        "up": {
+          "durationMs": 2067.166,
+          "compositorDrawFps": 58.0504903815175,
+          "rafFps": 58.55027581534887,
+          "compositorP95Ms": 21.581,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 3,
+          "paintMs": 0,
+          "rasterMs": 0
+        }
+      }
+    },
+    {
+      "version": "candidate",
+      "profile": "all",
+      "repetition": 1,
+      "textTargets": 95,
+      "textureActive": true,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2505.366,
+          "compositorDrawFps": 0.3991432788662415,
+          "rafFps": null,
+          "compositorP95Ms": 0,
+          "rafP95Ms": 0,
+          "droppedFrames": 8,
+          "paintMs": 2.698,
+          "rasterMs": 6.875
+        },
+        "down": {
+          "durationMs": 6136.166,
+          "compositorDrawFps": 3.09639602318451,
+          "rafFps": 1.5958192090034844,
+          "compositorP95Ms": 820.03,
+          "rafP95Ms": 1366.6000000000004,
+          "droppedFrames": 358,
+          "paintMs": 16.776,
+          "rasterMs": 106.631
+        },
+        "up": {
+          "durationMs": 3454.003,
+          "compositorDrawFps": 6.079902073043944,
+          "rafFps": 2.3078032597721045,
+          "compositorP95Ms": 400.565,
+          "rafP95Ms": 1116.6000000000022,
+          "droppedFrames": 196,
+          "paintMs": 25.801,
+          "rasterMs": 21.729
+        }
+      }
+    },
+    {
+      "version": "baseline",
+      "profile": "all",
+      "repetition": 1,
+      "textTargets": 95,
+      "textureActive": false,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2505.556,
+          "compositorDrawFps": 1.9955650562190588,
+          "rafFps": 1.8605966561356897,
+          "compositorP95Ms": 751.694,
+          "rafP95Ms": 749.848,
+          "droppedFrames": 145,
+          "paintMs": 8.436,
+          "rasterMs": 7.12
+        },
+        "down": {
+          "durationMs": 5195.593,
+          "compositorDrawFps": 4.8117702830071565,
+          "rafFps": 2.1020045479734764,
+          "compositorP95Ms": 476.588,
+          "rafP95Ms": 1433.2999999999993,
+          "droppedFrames": 300,
+          "paintMs": 31.481,
+          "rasterMs": 165.904
+        },
+        "up": {
+          "durationMs": 3140.236,
+          "compositorDrawFps": 5.413605856375126,
+          "rafFps": 2.23413762287757,
+          "compositorP95Ms": 511.227,
+          "rafP95Ms": 1450,
+          "droppedFrames": 178,
+          "paintMs": 26.692,
+          "rasterMs": 39.026
+        }
+      }
+    },
+    {
+      "version": "baseline",
+      "profile": "phosphor",
+      "repetition": 2,
+      "textTargets": 0,
+      "textureActive": false,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2503.474,
+          "compositorDrawFps": 0,
+          "rafFps": 60.001589446078036,
+          "compositorP95Ms": 0,
+          "rafP95Ms": 16.800000000000182,
+          "droppedFrames": 0,
+          "paintMs": 0,
+          "rasterMs": 0
+        },
+        "down": {
+          "durationMs": 2090.417,
+          "compositorDrawFps": 55.96969408496008,
+          "rafFps": 57.12639815659355,
+          "compositorP95Ms": 20.368,
+          "rafP95Ms": 16.800000000000182,
+          "droppedFrames": 7,
+          "paintMs": 0,
+          "rasterMs": 12.969
+        },
+        "up": {
+          "durationMs": 2076.672,
+          "compositorDrawFps": 58.74784270216963,
+          "rafFps": 60.000960015360214,
+          "compositorP95Ms": 20.118,
+          "rafP95Ms": 16.700000000000728,
+          "droppedFrames": 1,
+          "paintMs": 0,
+          "rasterMs": 0
+        }
+      }
+    },
+    {
+      "version": "candidate",
+      "profile": "phosphor",
+      "repetition": 2,
+      "textTargets": 0,
+      "textureActive": true,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2504.804,
+          "compositorDrawFps": 0,
+          "rafFps": 57.61742032901533,
+          "compositorP95Ms": 0,
+          "rafP95Ms": 16.800000000000182,
+          "droppedFrames": 6,
+          "paintMs": 0,
+          "rasterMs": 0
+        },
+        "down": {
+          "durationMs": 2083.762,
+          "compositorDrawFps": 56.62834815108443,
+          "rafFps": 57.60368663594468,
+          "compositorP95Ms": 26.812,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 6,
+          "paintMs": 0,
+          "rasterMs": 15.192
+        },
+        "up": {
+          "durationMs": 2123.147,
+          "compositorDrawFps": 57.46187145779355,
+          "rafFps": 59.52662162800589,
+          "compositorP95Ms": 21.87,
+          "rafP95Ms": 16.799999999999272,
+          "droppedFrames": 2,
+          "paintMs": 0,
+          "rasterMs": 0
+        }
+      }
+    },
+    {
+      "version": "baseline",
+      "profile": "all",
+      "repetition": 2,
+      "textTargets": 95,
+      "textureActive": false,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2510.381,
+          "compositorDrawFps": 1.9917295422487662,
+          "rafFps": 1.621728568046109,
+          "compositorP95Ms": 1011.176,
+          "rafP95Ms": 999.9040000000005,
+          "droppedFrames": 146,
+          "paintMs": 8.696,
+          "rasterMs": 5.935
+        },
+        "down": {
+          "durationMs": 4949.578,
+          "compositorDrawFps": 4.848898229303589,
+          "rafFps": 2.2148840206185567,
+          "compositorP95Ms": 730.124,
+          "rafP95Ms": 1233.300000000001,
+          "droppedFrames": 287,
+          "paintMs": 19.97,
+          "rasterMs": 129.383
+        },
+        "up": {
+          "durationMs": 3162.302,
+          "compositorDrawFps": 6.324506641048198,
+          "rafFps": 2.8421650982125937,
+          "compositorP95Ms": 478.188,
+          "rafP95Ms": 849.8999999999996,
+          "droppedFrames": 177,
+          "paintMs": 21.084,
+          "rasterMs": 66.623
+        }
+      }
+    },
+    {
+      "version": "candidate",
+      "profile": "all",
+      "repetition": 2,
+      "textTargets": 95,
+      "textureActive": true,
+      "offsets": {
+        "idle": 0,
+        "down": 1800,
+        "up": 0
+      },
+      "phases": {
+        "idle": {
+          "durationMs": 2755.592,
+          "compositorDrawFps": 1.088695278546316,
+          "rafFps": 2.034194814837416,
+          "compositorP95Ms": 577.013,
+          "rafP95Ms": 583.29,
+          "droppedFrames": 162,
+          "paintMs": 9.142,
+          "rasterMs": 13.502
+        },
+        "down": {
+          "durationMs": 5875.777,
+          "compositorDrawFps": 2.042283088687675,
+          "rafFps": 1.2706300913441855,
+          "compositorP95Ms": 1336.601,
+          "rafP95Ms": 1533.3999999999996,
+          "droppedFrames": 344,
+          "paintMs": 20.671,
+          "rasterMs": 133.846
+        },
+        "up": {
+          "durationMs": 3292.049,
+          "compositorDrawFps": 5.771481530195936,
+          "rafFps": 1.8368284096127354,
+          "compositorP95Ms": 370.029,
+          "rafP95Ms": 2050,
+          "droppedFrames": 187,
+          "paintMs": 12.245,
+          "rasterMs": 25.641
+        }
+      }
+    }
+  ],
+  "visualComparisons": [
+    {
+      "scale": 1,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 1,
+      "differentPixels": 4,
+      "meanChannelDifference": 2.777777777777778e-06
+    },
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 1,
+      "differentPixels": 3639,
+      "meanChannelDifference": 0.0013157407407407408
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 3,
+      "differentPixels": 10984,
+      "meanChannelDifference": 0.0051444444444444445
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 2,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    }
+  ],
+  "nativeBaselineControl": [
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    }
+  ],
+  "lifecycleChecks": [
+    "Downloaded branch prepares and activates the raster texture",
+    "Texture cache remains bounded to four live object URLs",
+    "Disabling phosphor clears the cached texture",
+    "Re-enabling phosphor restores a decoded cached texture",
+    "Fractional physical tile dimensions retain the SVG",
+    "Device-scale change invalidates the texture and selects fractional-scale SVG fallback",
+    "Returning to an integral device scale restores the cached texture",
+    "Canvas failure preserves the original SVG effect",
+    "Late image preparation cannot reactivate a disabled effect",
+    "Full application boot initialises its controls and the cached phosphor layer"
+  ],
+  "sha256": {
+    "src/effects/phosphorTexture.ts": "c3d5a10ab956d8691b235a2e58a3584a191a6dc2e761ff1faf8d2eeee43bbd25",
+    "src/effects/preferences.ts": "4a42ddccd0c60fc8047a102a4103aa14cc5c25feab0eccfb0d125b60dc93a3de",
+    "styles/core/effects.css": "12631d661b38a1f9f484564bcdbe5a73f4b6d72c0f3810bfc0cdf0deacf4f23c",
+    "scripts/benchmark-effects.mts": "21436fa5300f2deaf522b3ded7d063983df5af7e78ac7a4f6ee7e5b3655d4932"
+  },
+  "nativeBaselineControlMatrix": [
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 1,
+      "differentPixels": 2,
+      "meanChannelDifference": 1.388888888888889e-06
+    },
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 1,
+      "differentPixels": 2,
+      "meanChannelDifference": 1.388888888888889e-06
+    },
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": false,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.048,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 0,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    },
+    {
+      "scale": 1.25,
+      "dark": true,
+      "opacity": 0.12,
+      "scroll": 1200,
+      "maxChannelDifference": 0,
+      "differentPixels": 0,
+      "meanChannelDifference": 0
+    }
+  ]
+}
