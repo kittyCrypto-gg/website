@@ -63,7 +63,8 @@ async function serve(root: string): Promise<{ origin: string; server: Server }> 
                 // effects from live backend updates, tips and network retries.
                 const prefs = JSON.parse(url.searchParams.get("prefs") ?? JSON.stringify(base)) as Prefs;
                 const boot = `<script type="module">import{apply}from'/__crt-runtime.js';window.__crtApply=apply;document.documentElement.classList.add('${url.searchParams.get("dark") === "1" ? "dark" : "light"}-mode');document.getElementById('shell-wrapper')?.remove();apply(${JSON.stringify(prefs)});window.__crtReady=true;</script>`;
-                bytes = Buffer.from(bytes.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<link\b[^>]*rel="modulepreload"[^>]*>/gi, "").replace("</body>", boot + "</body>"));
+                const freeze = url.searchParams.get("freeze") === "1" ? "<style>*,*::before,*::after{animation-play-state:paused!important}</style>" : "";
+                bytes = Buffer.from(bytes.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<link\b[^>]*rel="modulepreload"[^>]*>/gi, "").replace("</head>", freeze + "</head>").replace("</body>", boot + "</body>"));
             }
             res.setHeader("Content-Type", ({ ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".json": "application/json", ".jpg": "image/jpeg", ".png": "image/png" } as Record<string, string>)[extname(file)] ?? "application/octet-stream");
             res.end(bytes);
@@ -91,14 +92,14 @@ async function stop(host: BrowserServer): Promise<void> {
     ]).finally(() => clearTimeout(timer));
 }
 
-async function load(browser: Browser, origin: string, prefs: Prefs, scale = 1, dark = false): Promise<Page> {
+async function load(browser: Browser, origin: string, prefs: Prefs, scale = 1, dark = false, freeze = false): Promise<Page> {
     const context = await browser.newContext({ viewport, deviceScaleFactor: scale });
     await context.route("**/*", (route) => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
     const page = await context.newPage();
-    await page.goto(`${origin}/about.html?prefs=${encodeURIComponent(JSON.stringify(prefs))}&dark=${dark ? 1 : 0}`);
+    await page.goto(`${origin}/about.html?prefs=${encodeURIComponent(JSON.stringify(prefs))}&dark=${dark ? 1 : 0}&freeze=${freeze ? 1 : 0}`);
     await page.waitForFunction(() => window.__crtReady);
     if (prefs.textShadowEnabled) await page.waitForFunction(() => window.__crtScanPending === false, undefined, { timeout: 60000 });
-    if (origin === servers.candidate.origin && prefs.phosphorEnabled && scale !== 1.25) {
+    if (origin === servers.candidate.origin && prefs.phosphorEnabled && scale === 1 && candidate !== baseline) {
         await page.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue("--effect-crt-phosphor-image").includes("blob:"));
     }
     await page.waitForTimeout(1500);
@@ -181,9 +182,15 @@ async function visualCheck(): Promise<void> {
         for (const scale of [1, 1.25, 2]) for (const dark of [false, true]) for (const opacity of [.048, .12]) {
             const screenshots: Record<string, Buffer[]> = { baseline: [], candidate: [] };
             for (const version of Object.keys(servers) as (keyof typeof servers)[]) {
-                const page = await load(browser, servers[version].origin, { ...base, phosphorOpacity: opacity }, scale, dark);
+                const page = await load(browser, servers[version].origin, { ...base, phosphorOpacity: opacity }, scale, dark, true);
                 for (const scroll of [0, 1200]) {
-                    await page.evaluate((y) => { scrollTo(0, y); for (const animation of document.getAnimations()) { animation.pause(); animation.currentTime = 400; } }, scroll);
+                    await page.evaluate(async (y) => {
+                        scrollTo(0, y);
+                        const animations = document.getAnimations();
+                        for (const animation of animations) { animation.pause(); animation.currentTime = 400; }
+                        await Promise.all(animations.map((animation) => animation.ready));
+                        await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+                    }, scroll);
                     await page.waitForTimeout(150);
                     const image = await page.screenshot(); screenshots[version]!.push(image);
                     await writeFile(resolve(output, `visual-${version}-${scale}-${dark}-${opacity}-${scroll}.png`), image);

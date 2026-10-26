@@ -35,6 +35,9 @@ function sourceImage(): Promise<HTMLImageElement> {
 }
 
 function tileSize(): Tile | null {
+    // Canvas and CSS SVG sampling differed in the high-DPI pixel comparison.
+    // Retain the native SVG outside the verified 1x device scale.
+    if (devicePixelRatio !== 1) return null;
     const style = getComputedStyle(document.body, "::before");
     const parts = style.backgroundSize.split(/\s+/);
     if (parts.length !== 2 || !parts.every((part) => /^\d+(?:\.\d+)?px$/.test(part))) return null;
