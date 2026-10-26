@@ -24,6 +24,8 @@ const profiles: Record<string, Prefs> = {
     phosphor: { ...base, scanlinesEnabled: false, textShadowEnabled: false },
     all: base
 };
+const selectedProfiles = (process.env.CRT_BENCH_PROFILES ?? "off,phosphor,all").split(",");
+if (!selectedProfiles.every((profile) => profile in profiles)) throw new Error("Unknown CRT_BENCH_PROFILES entry");
 const extraArgs: string[] = JSON.parse(process.env.CRT_CHROMIUM_ARGS ?? "[]") as string[];
 const executablePath = process.env.CRT_CHROMIUM_EXECUTABLE;
 const browserOptions = { headless: process.env.CRT_HEADFUL !== "1", executablePath, args: extraArgs };
@@ -177,16 +179,19 @@ async function visualCheck(): Promise<void> {
     const checks: unknown[] = [];
     try {
         for (const scale of [1, 1.25, 2]) for (const dark of [false, true]) for (const opacity of [.048, .12]) {
-            const pages = await Promise.all((Object.keys(servers) as (keyof typeof servers)[]).map(async (version) => ({ version, page: await load(browser, servers[version].origin, { ...base, phosphorOpacity: opacity }, scale, dark) })));
-            for (const scroll of [0, 1200]) {
-                const images: Buffer[] = [];
-                for (const { version, page } of pages) {
+            const screenshots: Record<string, Buffer[]> = { baseline: [], candidate: [] };
+            for (const version of Object.keys(servers) as (keyof typeof servers)[]) {
+                const page = await load(browser, servers[version].origin, { ...base, phosphorOpacity: opacity }, scale, dark);
+                for (const scroll of [0, 1200]) {
                     await page.evaluate((y) => { scrollTo(0, y); for (const animation of document.getAnimations()) { animation.pause(); animation.currentTime = 400; } }, scroll);
                     await page.waitForTimeout(150);
-                    const image = await page.screenshot(); images.push(image);
+                    const image = await page.screenshot(); screenshots[version]!.push(image);
                     await writeFile(resolve(output, `visual-${version}-${scale}-${dark}-${opacity}-${scroll}.png`), image);
                 }
-                const a = PNG.sync.read(images[0]!); const b = PNG.sync.read(images[1]!);
+                await page.context().close();
+            }
+            for (const [index, scroll] of [0, 1200].entries()) {
+                const a = PNG.sync.read(screenshots.baseline![index]!); const b = PNG.sync.read(screenshots.candidate![index]!);
                 let maxChannelDifference = 0; let differentPixels = 0; let totalDifference = 0;
                 for (let i = 0; i < a.data.length; i += 4) {
                     const difference = [0, 1, 2].map((channel) => Math.abs(a.data[i + channel]! - b.data[i + channel]!));
@@ -196,7 +201,6 @@ async function visualCheck(): Promise<void> {
                 }
                 checks.push({ scale, dark, opacity, scroll, maxChannelDifference, differentPixels, meanChannelDifference: totalDifference / (a.width * a.height * 3) });
             }
-            for (const { page } of pages) await page.context().close();
         }
         await writeFile(resolve(output, "visuals.json"), JSON.stringify(checks, null, 2));
         console.log("Visual comparison:", JSON.stringify(checks));
@@ -204,7 +208,7 @@ async function visualCheck(): Promise<void> {
 }
 try {
     if (process.env.CRT_BENCH_VISUAL_ONLY !== "1") {
-        for (let repetition = 0; repetition < repeats; repetition += 1) for (const profile of Object.keys(profiles)) {
+        for (let repetition = 0; repetition < repeats; repetition += 1) for (const profile of selectedProfiles) {
             const order = repetition % 2 === 0 ? ["baseline", "candidate"] as const : ["candidate", "baseline"] as const;
             for (const version of order) await measure(version, profile, repetition);
         }

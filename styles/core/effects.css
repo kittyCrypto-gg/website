@@ -109,8 +109,9 @@ html.effect-crt-phosphor-on body:not(.effect-disable-phosphor)::before {
 
   transform: translate3d(0, 0, 0);
 
-  /* The transform already gives the fixed overlay its own compositor layer.
-     The filter is static, so do not reserve an animated-filter surface. */
+  will-change:
+    opacity,
+    filter;
 }
 
 

@@ -2,7 +2,7 @@
 
 This branch prepares a small raster copy of the repeating Trinitron SVG after the page has drawn. The SVG stays visible during preparation. The cached image is decoded before activation; up to four sizes are retained and old object URLs are revoked. Disabling phosphor or changing the device pixel ratio invalidates the active image. Fractional physical pattern pitches use the original SVG to avoid changing its sampling.
 
-The native CSS filters, backdrop filter, multiply blend, opacity, scanline animation and text jitter remain in their original order. The static filter no longer requests an animated-filter surface with `will-change`. The fixed overlay still has its original transform.
+The native CSS filters, backdrop filter, multiply blend, opacity, scanline animation and text jitter remain in their original order. The original `will-change` hint and fixed-layer transform are retained. Removing the filter hint was tested and rejected because the all-effects profile regressed.
 
 This does **not** cache filtered DOM tiles. Browsers do not expose their DOM framebuffer or CSS tile-cache invalidation to this code. Native content-layer promotion and containment were investigated, but rejected after they changed screenshots or failed to improve performance. A cached lattice cannot eliminate backdrop processing during scrolling.
 
@@ -33,6 +33,7 @@ Optional environment variables:
 
 | Variable | Purpose |
 | --- | --- |
+| `CRT_BENCH_PROFILES` | Comma-separated profiles, default `off,phosphor,all` |
 | `CRT_BENCH_REPEATS` | Repetitions, default 3 |
 | `CRT_HEADFUL=1` | Run with a visible browser on a machine with a display |
 | `CRT_CHROMIUM_EXECUTABLE` | Select a Chromium executable |
