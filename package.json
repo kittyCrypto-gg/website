@@ -19,14 +19,18 @@
         "check:nesting": "tsx scripts/check-conditional-nesting.mts",
         "check:architecture": "tsx scripts/check-architecture.mts",
         "check:entries": "tsx scripts/check-entry-contract.mts",
-        "check:parity": "tsx scripts/check-refactor-parity.mts"
+        "check:parity": "tsx scripts/check-refactor-parity.mts",
+        "benchmark:effects": "node scripts/benchmark-effects.mts"
     },
     "devDependencies": {
         "@types/node": "^25.2.3",
+        "@types/pngjs": "6.0.5",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "bun": "1.4.0",
         "esbuild": "^0.27.4",
+        "playwright": "1.62.1",
+        "pngjs": "7.0.0",
         "ts-node": "^10.9.2",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3"

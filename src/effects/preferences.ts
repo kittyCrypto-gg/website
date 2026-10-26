@@ -25,6 +25,7 @@ import {
     spdToMs
 } from "./math.ts";
 import { applyTextShadowScale, ensureTextShadowKeyframes, ensureTextShadowTargets, disableTextShadowTargets } from "./textDistortion.ts";
+import { updatePhosphorTexture } from "./phosphorTexture.ts";
 
 let defPrefs: Prefs | null = null;
 
@@ -260,6 +261,7 @@ export function apply(prefs: Prefs): void {
     const textShadowOn = prefs.textShadowEnabled && textShadowIntensity > 0;
 
     document.documentElement.classList.toggle("effect-crt-phosphor-on", phosphorOn);
+    updatePhosphorTexture(phosphorOn);
     document.documentElement.classList.toggle("effect-crt-scanlines-on", scanlinesOn);
     document.documentElement.classList.toggle("effect-crt-text-shadow-on", textShadowOn);
 
