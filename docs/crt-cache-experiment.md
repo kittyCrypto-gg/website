@@ -1,5 +1,7 @@
 # CRT texture cache experiment
 
+[Measured results and limitations](benchmarks/crt-2026-10-26.md).
+
 This branch prepares a small raster copy of the repeating Trinitron SVG after the page has drawn. The SVG stays visible during preparation. The cached image is decoded before activation; up to four sizes are retained and old object URLs are revoked. Disabling phosphor or changing the device pixel ratio invalidates the active image. Only device scale 1 is enabled: the higher-DPI canvas prototype changed the pattern, so scaled displays and fractional physical pattern pitches retain the original SVG.
 
 The native CSS filters, backdrop filter, multiply blend, opacity, scanline animation and text jitter remain in their original order. The original `will-change` hint and fixed-layer transform are retained. Removing the filter hint was tested and rejected because the all-effects profile regressed.
