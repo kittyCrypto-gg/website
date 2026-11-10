@@ -47,6 +47,17 @@ interface BrowserApi {
 
 const origin = "https://mikuos-smoke.invalid";
 const assetRoot = resolve("dist/mikuos");
+const bootWasm = await readFile(join(assetRoot, "boot.wasm"));
+assert.ok(bootWasm.length < 16 * 1024,
+    "The preloaded C boot WASM must remain much smaller than the operating system");
+assert.equal(bootWasm.subarray(0, 4).toString("hex"), "0061736d",
+    "The boot screen must be genuine WebAssembly, not a CSS mock");
+const bootstrap = await readFile(join(assetRoot, "bootloader.js"), "utf8");
+assert.ok(bootstrap.includes("MikuBoot"), "Missing upstream mikuOS boot bridge");
+const homepage = await readFile(resolve("index.html"), "utf8");
+assert.ok(!homepage.includes("terminal-loading") && !homepage.includes("Loading terminal..."),
+    "The website must no longer render a separate hardcoded loading notice");
+console.log("[mikuOS boot] Precompiled C/WASM splash and upstream bridge verified.");
 const config = JSON.parse(await readFile(join(assetRoot, "website-config.json"), "utf8")) as {
     kernel: string;
     initialCommand: string;
