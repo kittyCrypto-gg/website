@@ -6,6 +6,7 @@ import { runInNewContext } from "node:vm";
 import { applyGuestStartup } from "../src/terminal/guestStartup.js";
 
 interface GuestSession {
+    key(data: string): void;
     os: {
         run(command: string, heredocBodies?: readonly string[], recordHistory?: boolean): Promise<number>;
         prompt(): string;
@@ -286,6 +287,14 @@ try {
                 .includes("echo website-mikuos-smoke"),
                 "Autocomplete should suggest commands from ephemeral guest history");
             console.log("[mikuOS autocomplete] In-memory suggestions work without a home directory.");
+            const beforeTab = output.length;
+            handle.session.key("neko");
+            handle.session.key("\t");
+            const completed = output.slice(beforeTab).join("");
+            assert.ok(completed.includes("nekofetch"),
+                "Real thsh Tab completion must resolve nekofetch from PATH");
+            handle.session.key("\x03");
+            console.log("[mikuOS autocomplete] Interactive Tab resolves nekofetch.");
         } else {
             console.log("[mikuOS autocomplete] Disabled by the supplied guest /opt/prefs.");
         }
