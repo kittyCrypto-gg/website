@@ -70,7 +70,6 @@ async function bootTerm(): Promise<void> {
     const terminalPromise = import("./terminal.ts")
         .then((mod) => mod.setupTerminalModule())
         .then((mod) => {
-            document.getElementById("terminal-loading")?.style.setProperty("display", "none");
             return mod as TermMod;
         })
         .catch((err: unknown) => {
