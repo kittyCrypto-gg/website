@@ -94,9 +94,11 @@ using a browser-local first-launch flag, not a guest-home marker.
 It is executed directly through the guest kernel, not typed into the
 interactive line editor; long commands therefore cannot corrupt the
 mobile terminal output. When the guest root has
-no `nekofetch`, the build omits the command. Executables in the
-custom `/opt/kittyterm/bin` directory are also recognised. Set
-`initialCommand` to `""` to disable the greeting.
+no `nekofetch`, the build omits the command. With the custom
+`kittyterm` image, the build requires `/etc/bash.bashrc` to add
+`/opt/kittyterm/bin` to `PATH` and define `alias neofetch='nekofetch'`.
+It starts the command by its bare name, `nekofetch`, not by an absolute
+path. Set `initialCommand` to `""` to disable the greeting.
 
 The website build generates `dist/mikuos/website-config.json` and
 the complete runtime under `dist/mikuos/`. `pages.config.ts`
