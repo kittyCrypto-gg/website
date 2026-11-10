@@ -4,5 +4,10 @@
   "kernel": "teto",
   "persistence": true,
   "initialCommand": "",
-  "packages": []
+  "packages": [
+    {
+      "kind": "upstream",
+      "name": "nano"
+    }
+  ]
 }
