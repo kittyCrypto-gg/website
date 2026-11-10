@@ -39,7 +39,7 @@ Edit `config/mikuos.json`:
   "username": "guest",
   "kernel": "teto",
   "persistence": true,
-  "initialCommand": "",
+  "initialCommand": "nekofetch",
   "packages": [
     { "kind": "upstream", "name": "nano" }
   ]
@@ -63,7 +63,11 @@ not by itself make an incompatible native Linux shell executable.
 backend is the default. `persistence` selects the same browser OPFS-backed
 overlay used by standalone mikuOS. `initialCommand`, if set, is sent once
 to an untouched terminal session, not rerun whenever the visitor switches
-the website theme.
+the website theme. With the default `initialCommand: "nekofetch"`, the
+build only enables that greeting when the custom guest root contains
+`nekofetch` in a standard executable directory. The upstream fallback
+therefore boots without an error. Set `initialCommand` to `""` to disable
+the automatic greeting.
 
 The website build generates `dist/mikuos/website-config.json`, a complete
 upstream browser runtime under `dist/mikuos/`, and a **customised immutable
