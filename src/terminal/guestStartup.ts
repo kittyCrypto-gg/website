@@ -7,6 +7,7 @@ interface GuestShell {
         uid: number;
         env(name: string): string | Map<string, string> | undefined;
         setenv(name: string, value: string): void;
+        cd(path: string): void;
         read(path: string): string;
         stat(path: string): { kind: string };
     };
@@ -82,23 +83,35 @@ function applyAsciiLogo(shell: GuestShell, theme: GuestTheme, bashrc: string): v
     if (colour) shell.s.setenv("NEKOFETCH_TEXT", colour[1]!);
 }
 
-export function applyGuestStartup(shell: GuestShell, theme: GuestTheme): void {
-    if (shell.s.uid !== 1001) return;
+/**
+ * The kernel initially uses the account's HOME as its current directory,
+ * even if that directory does not exist in the supplied filesystem.
+ * A homeless guest must start from an existing directory instead.
+ */
+function correctMissingHome(shell: GuestShell): boolean {
+    const home = shell.s.env("HOME");
+    const path = typeof home === "string" ? home : "";
+    try {
+        if (path && shell.s.stat(path).kind === "dir") return false;
+    } catch {
+        // No home directory is expected for the unprivileged website guest.
+    }
+
+    shell.sh.prefs.history = false;
+    shell.s.cd("/");
+    return true;
+}
+
+export function applyGuestStartup(shell: GuestShell, theme: GuestTheme): boolean {
+    if (shell.s.uid !== 1001) return false;
+    const corrected = correctMissingHome(shell);
     const bashrc = optionalRead(shell, "/etc/bash.bashrc");
-    if (!bashrc) return;
+    if (!bashrc) return corrected;
 
     addConfiguredPath(shell, bashrc);
     addConfiguredAliases(shell, bashrc);
     applyAsciiLogo(shell, theme, bashrc);
-
-    // With no home directory, the guest must not save shell history.
-    const home = shell.s.env("HOME");
-    const path = typeof home === "string" ? home : "";
-    try {
-        if (path) shell.s.stat(path);
-    } catch {
-        shell.sh.prefs.history = false;
-    }
+    return corrected;
 }
 
 export function applyGuestTheme(shell: GuestShell, theme: GuestTheme): void {
