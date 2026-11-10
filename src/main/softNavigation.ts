@@ -23,6 +23,19 @@ function destination(anchor: HTMLAnchorElement, event: MouseEvent): URL | null {
     return url;
 }
 
+/** Preserve the docking placeholder while the managed terminal is floating. */
+function terminalDock(root: HTMLElement): Comment | null {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+    let node: Node | null = walker.nextNode();
+    while (node) {
+        if (node instanceof Comment && node.data.includes("window-api:terminal:dock")) {
+            return node;
+        }
+        node = walker.nextNode();
+    }
+    return null;
+}
+
 export function installSoftNavigation(onRoute: () => void): void {
     let navigating = false;
 
@@ -36,7 +49,7 @@ export function installSoftNavigation(onRoute: () => void): void {
                 await response.text(), "text/html");
             const current = document.querySelector<HTMLElement>(".frame-content");
             const next = incomingDocument.querySelector<HTMLElement>(".frame-content");
-            const liveShell = current?.querySelector<HTMLElement>("#shell-wrapper");
+            const liveShell = document.querySelector<HTMLElement>("#shell-wrapper");
             const liveMenu = current?.querySelector<HTMLElement>("#main-menu");
             if (!current || !next || !liveShell || !liveMenu) {
                 throw new Error("Destination lacks the shared website shell");
@@ -45,7 +58,13 @@ export function installSoftNavigation(onRoute: () => void): void {
             const shellSlot = replacement.querySelector("#shell-wrapper");
             const menuSlot = replacement.querySelector("#main-menu");
             if (!shellSlot || !menuSlot) throw new Error("Missing destination terminal slot");
-            shellSlot.replaceWith(liveShell);
+            if (current.contains(liveShell)) {
+                shellSlot.replaceWith(liveShell);
+            } else {
+                const placeholder = terminalDock(current);
+                if (!placeholder) throw new Error("Floating terminal has no docking placeholder");
+                shellSlot.replaceWith(placeholder);
+            }
             menuSlot.replaceWith(liveMenu);
             current.className = replacement.className;
             current.replaceChildren(...Array.from(replacement.childNodes));
