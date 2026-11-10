@@ -202,7 +202,8 @@ async function loadBlog(): Promise<void> {
 
 registerRssFilterRepaint(repaintFiltersAndBlog);
 
-void waitForDomReady().then(() => {
+export async function mountRss(): Promise<void> {
+    await waitForDomReady();
     aplyBlogLyt();
-    return loadBlog();
-});
+    await loadBlog();
+}
