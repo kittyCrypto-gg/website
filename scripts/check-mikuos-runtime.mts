@@ -125,6 +125,10 @@ try {
     assert.match(passwd, new RegExp("^" + config.system.accounts.web.name + ":x:1000:1000:", "m"));
 
     const exitCode = await handle.session.os.run("echo website-mikuos-smoke");
+    if (exitCode !== 0) {
+        console.error("[mikuOS smoke] echo returned " + String(exitCode));
+        console.error("[mikuOS smoke] terminal output: " + output.join("").slice(-3000));
+    }
     assert.equal(exitCode, 0);
     assert.ok(output.join("").includes("website-mikuos-smoke"), "The shell must produce terminal output");
 
