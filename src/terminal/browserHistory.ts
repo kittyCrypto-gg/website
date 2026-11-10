@@ -10,11 +10,14 @@ export interface HistoryStore {
 }
 
 interface HistoryGuest {
-    s: { uid: number };
-    sh: {
+    restoreHistory(entries: readonly string[]): void;
+    os: {
+        s: { uid: number };
+        sh: {
         hist: string[];
         saveHistory(): void;
-        prefs: { historySize: number; history: boolean };
+            prefs: { historySize: number; history: boolean };
+        };
     };
 }
 
@@ -31,9 +34,9 @@ export function attachBrowserHistory(
     account: string,
     store: HistoryStore | null
 ): void {
-    if (!store || guest.s.uid !== 1001 || !guest.sh.prefs.history) return;
+    if (!store || guest.os.s.uid !== 1001 || !guest.os.sh.prefs.history) return;
     const key = historyKey(account);
-    const capacity = Math.max(0, Math.min(1000, guest.sh.prefs.historySize));
+    const capacity = Math.max(0, Math.min(1000, guest.os.sh.prefs.historySize));
 
     try {
         const raw = store.getItem(key);
@@ -41,15 +44,15 @@ export function attachBrowserHistory(
         if (Array.isArray(parsed)) {
             const entries = parsed.filter((entry): entry is string =>
                 typeof entry === "string" && entry.length <= 8192);
-            guest.sh.hist.splice(0, guest.sh.hist.length, ...entries.slice(-capacity));
+            guest.restoreHistory(entries.slice(-capacity));
         }
     } catch {
         // Storage is optional; the in-memory shell still works.
     }
 
-    guest.sh.saveHistory = (): void => {
+    guest.os.sh.saveHistory = (): void => {
         try {
-            store.setItem(key, JSON.stringify(guest.sh.hist.slice(-capacity)));
+            store.setItem(key, JSON.stringify(guest.os.sh.hist.slice(-capacity)));
         } catch {
             // Storage blocked or full: continue with in-memory history.
         }
