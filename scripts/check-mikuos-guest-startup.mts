@@ -59,9 +59,10 @@ const shell = {
     },
     sh: {
         ensureUserState(): void {},
+        saveHistory(): void { throw new Error("Homeless shell must not write history"); },
         prompt(): string { return "kittyterm@mikuos:/$ "; },
         aliases,
-        prefs: { history: true }
+        prefs: { history: true, autocomplete: true }
     }
 };
 
@@ -70,7 +71,10 @@ assert.equal(env.get("PATH"), "/opt/kittyterm/bin:/opt/kittyterm/node/bin:/bin:/
 assert.equal(aliases.get("neofetch"), "nekofetch");
 assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku.txt");
 assert.equal(env.get("NEKOFETCH_TEXT"), "00D7D7");
-assert.equal(shell.sh.prefs.history, false, "Homeless guest must not save history");
+assert.equal(shell.sh.prefs.history, true, "Autocomplete requires in-memory shell history");
+assert.equal(shell.sh.prefs.autocomplete, true, "Do not disable the upstream autocomplete setting");
+shell.sh.saveHistory(); // A homeless guest must not touch the filesystem.
+assert.equal(filesystem.has("/home/kittyterm/.thsh_history"), false);
 assert.ok(!filesystem.has("/home/kittyterm"));
 assert.equal(workingDirectory, "/", "Shell must start in a readable directory");
 
@@ -102,9 +106,10 @@ const inaccessible = {
     },
     sh: {
         ensureUserState(): void {},
+        saveHistory(): void { throw new Error("Homeless shell must not write history"); },
         prompt(): string { return "kittyterm@mikuos:/$ "; },
         aliases: new Map<string, string>(),
-        prefs: { history: true }
+        prefs: { history: true, autocomplete: true }
     }
 };
 env.set("PATH", "/bin:/usr/bin");
@@ -118,4 +123,7 @@ assert.equal(inaccessible.sh.aliases.get("neofetch"), "nekofetch");
 assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku-dark.txt");
 assert.equal(env.get("NEKOFETCH_TEXT"), "00D7D7");
 assert.ok(inaccessible.sh.prompt().includes("\x1b[38;5;34m"));
+assert.equal(inaccessible.sh.prefs.history, true);
+assert.equal(inaccessible.sh.prefs.autocomplete, true);
+inaccessible.sh.saveHistory();
 console.log("[mikuOS guest startup] Bash colours, aliases and homeless UID verified.");
