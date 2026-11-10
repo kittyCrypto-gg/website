@@ -399,7 +399,16 @@ export async function buildMikuOS(): Promise<void> {
     }
     if (!Array.isArray(config.packages)) throw new Error("mikuOS packages must be an array");
 
-    console.log("[mikuOS] Building pinned upstream submodule...");
+    const expected = execFileSync("git", ["rev-parse", "HEAD:vendor/mikuOS"],
+        { encoding: "utf8" }).trim();
+    const actual = execFileSync("git", ["rev-parse", "HEAD"],
+        { cwd: upstream, encoding: "utf8" }).trim();
+    if (actual !== expected) {
+        throw new Error("The checked-out mikuOS submodule is stale. Website pins " +
+            expected.slice(0, 8) + " but vendor/mikuOS contains " + actual.slice(0, 8) +
+            ". Run: git submodule update --init --recursive");
+    }
+    console.log("[mikuOS] Building pinned upstream submodule " + actual.slice(0, 8) + "...");
     execFileSync("npm", ["ci"], { cwd: upstream, stdio: "inherit" });
     execFileSync("npm", ["run", "build"], { cwd: upstream, stdio: "inherit" });
 
