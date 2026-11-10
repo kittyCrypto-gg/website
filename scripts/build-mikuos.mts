@@ -217,39 +217,39 @@ function renameGroupMembership(content: string, from: string, to: string, shadow
     }).join("\n");
 }
 
-async function resolveGuestAccount(config: WebsiteMikuOSConfig): Promise<GuestAccount> {
-    const passwdPath = join(stage, "etc/passwd");
+export async function resolveGuestAccount(username: string, rootDir: string = stage): Promise<GuestAccount> {
+    const passwdPath = join(rootDir, "etc/passwd");
     const passwd = await readFile(passwdPath, "utf8");
     let rows = passwd.split("\n");
-    let chosen = rows.find(row => row.startsWith(config.username + ":"));
+    let chosen = rows.find(row => row.startsWith(username + ":"));
 
     if (!chosen) {
         const fallback = rows.findIndex(row => row.startsWith("guest:"));
         if (fallback < 0) {
-            throw new Error("The custom userland has no account called " + config.username +
+            throw new Error("The custom userland has no account called " + username +
                 " and no default guest account to rename");
         }
 
-        rows[fallback] = config.username + rows[fallback]!.slice("guest".length);
+        rows[fallback] = username + rows[fallback]!.slice("guest".length);
         await writeFile(passwdPath, rows.join("\n"));
-        const shadow = join(stage, "etc/shadow");
+        const shadow = join(rootDir, "etc/shadow");
         const currentShadow = await readFile(shadow, "utf8");
         if (!currentShadow.split("\n").some(row => row.startsWith("guest:"))) {
             throw new Error("Cannot rename guest: missing /etc/shadow record");
         }
-        await writeFile(shadow, currentShadow.replace(/^guest:/m, config.username + ":"));
+        await writeFile(shadow, currentShadow.replace(/^guest:/m, username + ":"));
 
         for (const [file, shadowGroups] of [["group", false], ["gshadow", true]] as const) {
-            const path = join(stage, "etc", file);
+            const path = join(rootDir, "etc", file);
             const members = await readFile(path, "utf8");
-            await writeFile(path, renameGroupMembership(members, "guest", config.username, shadowGroups));
+            await writeFile(path, renameGroupMembership(members, "guest", username, shadowGroups));
         }
         chosen = rows[fallback];
-        console.log("[mikuOS] Renamed the upstream guest account to " + config.username + ".");
+        console.log("[mikuOS] Renamed the upstream guest account to " + username + ".");
     }
 
     const columns = chosen.split(":");
-    if (columns.length < 7) throw new Error("Invalid /etc/passwd record for " + config.username);
+    if (columns.length < 7) throw new Error("Invalid /etc/passwd record for " + username);
     const uid = Number(columns[2]);
     const gid = Number(columns[3]);
     if (!Number.isSafeInteger(uid) || uid < 1 || !Number.isSafeInteger(gid) || gid < 1) {
@@ -258,15 +258,15 @@ async function resolveGuestAccount(config: WebsiteMikuOSConfig): Promise<GuestAc
 
     const home = guestPath(columns[5]!);
     const shell = guestPath(columns[6]!);
-    const memberships = (await readFile(join(stage, "etc/group"), "utf8"))
+    const memberships = (await readFile(join(rootDir, "etc/group"), "utf8"))
         .split("\n")
         .map(row => row.split(":"))
-        .filter(fields => (fields[3] ?? "").split(",").includes(config.username))
+        .filter(fields => (fields[3] ?? "").split(",").includes(username))
         .map(fields => Number(fields[2]))
         .filter(value => Number.isSafeInteger(value) && value >= 0);
     const groups = [...new Set([gid, ...memberships])];
 
-    return { name: config.username, uid, gid, home, shell, groups };
+    return { name: username, uid, gid, home, shell, groups };
 }
 
 async function packRoot(config: WebsiteMikuOSConfig): Promise<GuestAccount> {
@@ -279,7 +279,7 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<GuestAccount> {
 
     // Existing web accounts and ownership inside a supplied image are
     // authoritative. The default guest can still be renamed via config.
-    const guest = await resolveGuestAccount(config);
+    const guest = await resolveGuestAccount(config.username);
     await synchroniseRootMetadata(stage, guest);
 
     await writeFile(join(stage, "etc/hostname"), config.hostname + "\n");
