@@ -6,6 +6,7 @@ import { attachExitControl } from "./terminal/exitControl.ts";
 import { runInitialCommand } from "./terminal/initialCommand.ts";
 import { applyGuestStartup, applyGuestTheme } from "./terminal/guestStartup.ts";
 import { launchWithGuestStorage } from "./terminal/guestStorage.ts";
+import { bufferedGuestTerminal } from "./terminal/bootOutput.ts";
 import {
     attachSafeResizeFitting,
     attachScrollTracking,
@@ -72,7 +73,7 @@ interface MikuOSHandle {
 
 interface MikuOSApi {
     launchThistle(options: {
-        terminal: Terminal;
+        terminal: ReturnType<typeof bufferedGuestTerminal>["terminal"];
         config: object;
         rootBase: string;
         tetoBase: string;
@@ -219,8 +220,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     if (disposed) throw new Error("Terminal was disposed before mikuOS booted");
 
     fitNow();
+    const bootOutput = bufferedGuestTerminal(term);
     runtime = await launchWithGuestStorage(() => api.launchThistle({
-        terminal: term,
+        terminal: bootOutput.terminal,
         config: config.system,
         rootBase: "/dist/mikuos/root/",
         tetoBase: "/dist/mikuos/teto/",
@@ -235,10 +237,11 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     const guestTheme = document.documentElement.classList.contains("dark-mode")
         ? "dark" : "light";
-    const movedFromMissingHome = applyGuestStartup(runtime.session.os, guestTheme);
-    // launchThistle has already drawn its first prompt by this point.
-    // Replace that single line with the corrected working directory.
-    if (movedFromMissingHome) term.write("\r\x1b[2K" + runtime.session.os.prompt());
+    const previousPrompt = runtime.session.os.prompt();
+    applyGuestStartup(runtime.session.os, guestTheme);
+    // The banner is released only after /etc/bash.bashrc has supplied the
+    // correct colours, PATH, aliases and working directory.
+    bootOutput.release(previousPrompt, runtime.session.os.prompt());
     let firstBootStore: Storage | null = null;
     try {
         firstBootStore = window.localStorage;
