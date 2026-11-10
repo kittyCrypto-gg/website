@@ -19,7 +19,6 @@ import { ensureFloatBtns } from "./main/floatingControls.ts";
 import { applyHeadBits } from "./main/head.ts";
 import { loadCrtUi } from "./main/crtRoute.ts";
 import { loadReaderRuntime } from "./main/readerRoute.ts";
-import { fetchStatus } from "./main/status.ts";
 import { startProgressivePageBoot } from "./main/progressive.ts";
 
 // import { mkCurTheme } from "./cursors/cursorTheme.tsx";
@@ -68,8 +67,6 @@ const FLOAT_TOGGLE_ICON_SPEC = {
  * @returns {Promise<void>}
  */
 async function bootTerm(): Promise<void> {
-    void fetchStatus(2000);
-
     const terminalPromise = import("./terminal.ts")
         .then((mod) => mod.setupTerminalModule())
         .then((mod) => {
@@ -120,7 +117,6 @@ async function bootTerm(): Promise<void> {
         nextTheme = null;
     }
 
-    void status;
 }
 
 /**
