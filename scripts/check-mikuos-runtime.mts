@@ -6,8 +6,10 @@ import { runInNewContext } from "node:vm";
 interface GuestSession {
     os: {
         run(command: string): Promise<number>;
+        flush(): Promise<void>;
         s: {
             read(path: string): string;
+            mkfile(path: string, value: string, mode?: number): void;
             stat(path: string): { kind: string; mode: number; uid: number; gid: number };
         };
     };
@@ -15,6 +17,7 @@ interface GuestSession {
 
 interface GuestHandle {
     kernel: string;
+    persistent: boolean;
     session: GuestSession;
     dispose(): void;
 }
@@ -80,6 +83,70 @@ async function localFetch(input: string | URL): Promise<Response> {
     }
 }
 
+interface MemoryFile {
+    kind: "file";
+    data: Uint8Array;
+}
+interface MemoryDirectory {
+    kind: "directory";
+    entries: Map<string, MemoryFile | MemoryDirectory>;
+}
+type MemoryNode = MemoryFile | MemoryDirectory;
+
+class MemoryFolder {
+    constructor(private readonly node: MemoryDirectory) {}
+
+    private get(name: string, kind: MemoryNode["kind"], create = false): MemoryNode {
+        let entry = this.node.entries.get(name);
+        if (!entry && create) {
+            entry = kind === "directory"
+                ? { kind, entries: new Map() }
+                : { kind, data: new Uint8Array() };
+            this.node.entries.set(name, entry);
+        }
+        if (!entry) throw Object.assign(new Error("not found"), { name: "NotFoundError" });
+        if (entry.kind !== kind) {
+            throw Object.assign(new Error("type mismatch"), { name: "TypeMismatchError" });
+        }
+        return entry;
+    }
+
+    async getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<MemoryFolder> {
+        return new MemoryFolder(this.get(name, "directory", options?.create) as MemoryDirectory);
+    }
+
+    async getFileHandle(name: string, options?: { create?: boolean }): Promise<{
+        getFile(): Promise<Blob>;
+        createWritable(): Promise<{
+            write(bytes: Uint8Array | string): Promise<void>;
+            close(): Promise<void>;
+        }>;
+    }> {
+        const file = this.get(name, "file", options?.create) as MemoryFile;
+        return {
+            async getFile(): Promise<Blob> { return new Blob([Uint8Array.from(file.data)]); },
+            async createWritable() {
+                let pending = new Uint8Array();
+                return {
+                    async write(bytes: Uint8Array | string): Promise<void> {
+                        pending = typeof bytes === "string"
+                            ? new TextEncoder().encode(bytes)
+                            : Uint8Array.from(bytes);
+                    },
+                    async close(): Promise<void> { file.data = pending; }
+                };
+            }
+        };
+    }
+
+    async removeEntry(name: string): Promise<void> {
+        if (!this.node.entries.delete(name)) {
+            throw Object.assign(new Error("not found"), { name: "NotFoundError" });
+        }
+    }
+}
+
+const persistentStorage = new MemoryFolder({ kind: "directory", entries: new Map() });
 const output: string[] = [];
 const terminal = {
     rows: 24,
@@ -96,7 +163,8 @@ const context: Record<string, unknown> = {
     AbortController, AbortSignal, Headers, Request,
     Uint8Array, ArrayBuffer, console, setTimeout, clearTimeout, queueMicrotask,
     WebAssembly: (globalThis as unknown as { WebAssembly: unknown }).WebAssembly,
-    performance, fetch: localFetch, navigator: {},
+    performance, fetch: localFetch,
+    navigator: { storage: { getDirectory: async () => persistentStorage } },
     location: { href: origin + "/" },
     document: {
         baseURI: origin + "/",
@@ -117,7 +185,7 @@ const handle = await runtime!.launchThistle({
     kernel: config.kernel,
     rootBase: origin + "/dist/mikuos/root/",
     tetoBase: origin + "/dist/mikuos/teto/",
-    persistence: false
+    persistence: true
 });
 
 try {
@@ -141,8 +209,31 @@ try {
     assert.equal(exitCode, 0);
     assert.ok(output.join("").includes("website-mikuos-smoke"), "The shell must produce terminal output");
 
+    assert.equal(handle.persistent, true, "OPFS support must activate the overlay");
+    const overlayFile = account.home + "/.website-overlay-regression";
+    handle.session.os.s.mkfile(overlayFile, "survives a browser reload", 0o600);
+    await handle.session.os.flush();
     console.log("[mikuOS smoke] " + handle.kernel + " kernel booted from the packed filesystem.");
     console.log("[mikuOS smoke] Hostname, guest identity, filesystem and shell execution verified.");
 } finally {
     handle.dispose();
+}
+
+// Simulate a new browser document with the same origin and OPFS storage.
+const reopened = await runtime!.launchThistle({
+    terminal,
+    config: config.system,
+    kernel: config.kernel,
+    rootBase: origin + "/dist/mikuos/root/",
+    tetoBase: origin + "/dist/mikuos/teto/",
+    persistence: true
+});
+try {
+    assert.equal(reopened.session.os.s.read(account.home + "/.website-overlay-regression"),
+        "survives a browser reload");
+    assert.ok(reopened.session.os.s.read("/etc/passwd").includes(account.name),
+        "The static base must remain present underneath the overlay");
+    console.log("[mikuOS overlay] Writable guest files survived a simulated page reload.");
+} finally {
+    reopened.dispose();
 }
