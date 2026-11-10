@@ -50,6 +50,10 @@ interface GuestAccount {
     groups: number[];
 }
 
+interface PackedGuest extends GuestAccount {
+    nekofetch: boolean;
+}
+
 const upstream = resolve("vendor/mikuOS");
 const destination = resolve("dist/mikuos");
 const stage = resolve(".build/mikuos-root");
@@ -269,7 +273,7 @@ export async function resolveGuestAccount(username: string, rootDir: string = st
     return { name: username, uid, gid, home, shell, groups };
 }
 
-async function packRoot(config: WebsiteMikuOSConfig): Promise<GuestAccount> {
+async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     await rm(stage, { recursive: true, force: true });
     await mkdir(dirname(stage), { recursive: true });
     await cp(await rootSource(), stage, {
@@ -335,7 +339,10 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<GuestAccount> {
         };
     };
     await new module.WebRootPackage(stage, join(destination, "root"), manifest.image).build();
-    return guest;
+    const nekofetch = metadata.ent.some(entry =>
+        ["/bin/nekofetch", "/usr/bin/nekofetch", "/usr/local/bin/nekofetch"].includes(entry.p) &&
+        (entry.k === "f" || entry.k === "l"));
+    return { ...guest, nekofetch };
 }
 
 export async function buildMikuOS(): Promise<void> {
@@ -376,9 +383,16 @@ export async function buildMikuOS(): Promise<void> {
     const system = await import(pathToFileURL(join(upstream, "build/main/config.js")).href) as {
         mergeConfig(value: unknown): unknown;
     };
+    // Retain the old website's automatic nekofetch greeting when the
+    // custom image provides it, without breaking the upstream fallback.
+    const initialCommand = config.initialCommand === "nekofetch" && !guest.nekofetch
+        ? "" : config.initialCommand;
+    if (config.initialCommand === "nekofetch" && !guest.nekofetch) {
+        console.log("[mikuOS] No nekofetch in the guest root; skipping the optional startup greeting.");
+    }
     await writeFile(join(destination, "website-config.json"),
         JSON.stringify({ system: system.mergeConfig(merged), kernel: config.kernel,
-            persistence: config.persistence, initialCommand: config.initialCommand }, null, 2) + "\n");
+            persistence: config.persistence, initialCommand }, null, 2) + "\n");
 
     console.log("[mikuOS] Prepared complete standalone browser runtime and customised guest root.");
 }
