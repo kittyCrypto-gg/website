@@ -45,6 +45,16 @@ interface EmbeddedConfig {
     startup?: { bashrc: string; logoScript: string } | null;
 }
 
+interface MikuBootDisplay {
+    report(phase: number, done?: number, total?: number): void;
+    finish(): void;
+    fail(error: unknown): void;
+    dispose(): void;
+}
+interface MikuBootApi {
+    create(term: Terminal, base: URL): Promise<MikuBootDisplay>;
+}
+
 interface MikuOSSession {
     key(data: string): void;
     os: {
@@ -81,11 +91,34 @@ interface MikuOSApi {
         tetoBase: string;
         persistence: boolean;
         kernel: "teto" | "thistle" | "auto";
+        boot?: MikuBootDisplay;
     }): Promise<MikuOSHandle>;
 }
 
 interface MikuOSGlobal {
     Thistle?: MikuOSApi;
+    MikuBoot?: MikuBootApi;
+}
+
+// Bootloader comes directly from the pinned mikuOS install. Its C/WASM
+// display starts before the large main browser runtime is fetched.
+let bootPromise: Promise<MikuBootApi> | null = null;
+async function loadBootloader(): Promise<MikuBootApi> {
+    const ready = (window as unknown as MikuOSGlobal).MikuBoot;
+    if (ready) return ready;
+    if (bootPromise) return bootPromise;
+    bootPromise = new Promise<MikuBootApi>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "/dist/mikuos/bootloader.js";
+        script.onload = () => {
+            const api = (window as unknown as MikuOSGlobal).MikuBoot;
+            if (api) resolve(api);
+            else reject(new Error("mikuOS bootloader did not initialise"));
+        };
+        script.onerror = () => reject(new Error("Unable to load mikuOS bootloader"));
+        document.head.appendChild(script);
+    });
+    return bootPromise;
 }
 
 let bundlePromise: Promise<MikuOSApi> | null = null;
@@ -218,19 +251,36 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     scheduleFit();
 
-    const [api, config] = await Promise.all([loadMikuOS(), loadConfig()]);
-    if (disposed) throw new Error("Terminal was disposed before mikuOS booted");
-
     fitNow();
+    // The mikuOS-owned C programme is first on the screen, before thistle.js.
+    const bootApi = await loadBootloader();
+    const boot = await bootApi.create(term, new URL("/dist/mikuos/", document.baseURI));
+    let api: MikuOSApi;
+    let config: EmbeddedConfig;
+    try {
+        [api, config] = await Promise.all([loadMikuOS(), loadConfig()]);
+        boot.report(1);
+        if (disposed) throw new Error("Terminal was disposed before mikuOS booted");
+    } catch (error) {
+        boot.fail(error);
+        throw error;
+    }
+
     const bootOutput = bufferedGuestTerminal(term);
-    runtime = await launchWithGuestStorage(() => api.launchThistle({
-        terminal: bootOutput.terminal,
-        config: config.system,
-        rootBase: "/dist/mikuos/root/",
-        tetoBase: "/dist/mikuos/teto/",
-        persistence: config.persistence,
-        kernel: config.kernel
-    }));
+    try {
+        runtime = await launchWithGuestStorage(() => api.launchThistle({
+            terminal: bootOutput.terminal,
+            boot,
+            config: config.system,
+            rootBase: "/dist/mikuos/root/",
+            tetoBase: "/dist/mikuos/teto/",
+            persistence: config.persistence,
+            kernel: config.kernel
+        }));
+    } catch (error) {
+        boot.fail(error);
+        throw error;
+    }
 
     if (disposed) {
         runtime.dispose();
