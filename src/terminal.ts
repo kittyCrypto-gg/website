@@ -11,10 +11,6 @@ import {
     raf2,
     waitForTerminalTextarea
 } from "./terminal/layout.ts";
-import {
-    hasTerminalInteracted,
-    markTerminalInteracted
-} from "./terminal/sessionState.ts";
 import type {
     FollowState,
     ScrollTrackingController,
@@ -151,6 +147,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     let disposed = false;
     let ready = false;
     let fitScheduled = false;
+    let userInteracted = false;
 
     const fitNow = (): void => {
         if (disposed || !term.element) return;
@@ -171,7 +168,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     const detachResizeHandlers = attachSafeResizeFitting(scheduleFit);
     const detachResizeObserver = attachTerminalResizeObserver(shellWrapper, scheduleFit);
-    const interaction = term.onData(() => markTerminalInteracted());
+    const interaction = term.onData(() => { userInteracted = true; });
 
     if (typeof term.onRender === "function") {
         term.onRender(() => scrollCtl.maybeScroll());
@@ -197,7 +194,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         throw new Error("Terminal was disposed while mikuOS was booting");
     }
 
-    if (config.initialCommand.trim() && !hasTerminalInteracted()) {
+    if (config.initialCommand.trim() && !userInteracted) {
         runtime.session.key(config.initialCommand + "\r");
     }
 
@@ -216,7 +213,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         term,
         fitAddon,
         sendSeq: (seq: string): void => {
-            markTerminalInteracted();
+            userInteracted = true;
             runtime?.session.key(seq);
         },
         setWebUiTheme: (_theme: WebUiTheme): void => {
