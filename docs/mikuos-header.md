@@ -98,11 +98,9 @@ no `nekofetch`, the build omits the command. With the custom
 `kittyterm` image, the build requires `/etc/bash.bashrc` to add
 `/opt/kittyterm/bin` to `PATH` and define `alias neofetch='nekofetch'`.
 It starts the command by its bare name, `nekofetch`, not by an absolute
-path. The browser package retains `/opt/kittyterm/bin/fetch_version` but
-removes its execute bits **only in the staged browser image**. This skips a
-known Teto/Thistle crash when nekofetch invokes the helper through
-`fork()`/`execl()`. The source `mikuOS/.thistle.base` is never modified.
-Version text can still be read from `/opt/kittyterm/data/version`.
+path. The dedicated `kitty-crow/nekofetch:mikuOS` build disables the legacy
+version-fetch subprocess at compile time. The website does not modify
+executable permissions in the supplied guest userland.
 Set `initialCommand` to `""` to disable the greeting.
 
 The website build generates `dist/mikuos/website-config.json` and
