@@ -49,8 +49,8 @@ interface BrowserApi {
 const origin = "https://mikuos-smoke.invalid";
 const assetRoot = resolve("dist/mikuos");
 const bootWasm = await readFile(join(assetRoot, "boot.wasm"));
-assert.ok(bootWasm.length < 16 * 1024,
-    "The preloaded C boot WASM must remain much smaller than the operating system");
+assert.ok(bootWasm.length < 32 * 1024,
+    "The original full-colour Unicode artwork must fit in a lightweight preloaded WASM");
 assert.equal(bootWasm.subarray(0, 4).toString("hex"), "0061736d",
     "The boot screen must be genuine WebAssembly, not a CSS mock");
 const bootstrap = await readFile(join(assetRoot, "bootloader.js"), "utf8");
