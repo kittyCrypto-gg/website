@@ -46,10 +46,18 @@ Edit `config/mikuos.json`:
 }
 ```
 
-`hostname` and `username` are baked into the guest image and into the
-mikuOS `SystemConfig` **before first boot**. The configured web account
-keeps its upstream `/home/guest` filesystem location and UID/GID 1000.
-No change is made to the upstream repository itself.
+`hostname` and `username` are applied **before first boot**.
+If the customised image already has an `/etc/passwd` entry matching
+`username`, the build respects that account's existing UID, GID,
+home directory and declared login shell. Its supplementary groups are
+read from `/etc/group`. For example, a user with UID 1001 in your
+prepared `.thistle.base` remains UID 1001 in the browser. If no matching
+account exists, the build renames the upstream `guest` account (UID 1000)
+instead. No change is made to the upstream repository itself.
+
+mikuOS currently uses its own interactive Thistle shell in the browser.
+A different shell path in `/etc/passwd`, including `/bin/bash`, does
+not by itself make an incompatible native Linux shell executable.
 
 `kernel` can be `teto`, `thistle` or `auto`. The Teto WebAssembly
 backend is the default. `persistence` selects the same browser OPFS-backed
@@ -90,9 +98,11 @@ The build enumerates the real directory and regenerates the
 `.thistle-meta.json` entry table before packing it. Added binaries,
 scripts, directories and symlinks are therefore included, even if the
 uploaded metadata has not yet been updated. Deleted files are excluded.
-Existing metadata supplies guest UID/GID where available; new files
-default to root ownership. If you need custom guest ownership, include
-the corresponding UID/GID entries in the metadata file.
+Existing metadata supplies guest UID/GID and mode (including setuid bits)
+where available. New files beneath the selected user’s home inherit that
+account’s UID/GID; other new entries default to root ownership. Include
+`.thistle-meta.json` if the original image uses special modes or specific
+ownership, as Git does not preserve these details.
 
 Until `mikuOS/.thistle.base/` is uploaded, the website build uses the
 upstream `vendor/mikuOS/.thistle.base` as a fallback. Once the local
@@ -100,7 +110,8 @@ directory exists, it takes precedence, and errors during packaging
 fail the build rather than silently falling back.
 
 The website-owned image should be a **complete root filesystem**, not
-only a set of additions. If you only need to add a few extra guest
+only a set of additions. Do not include credentials, private keys, shell
+history, personal files or other secrets in a public repository. If you only need to add a few extra guest
 programmes, use the `packages` array below instead.
 
 ## Guest packages
