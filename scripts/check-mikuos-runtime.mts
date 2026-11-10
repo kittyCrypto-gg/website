@@ -50,7 +50,7 @@ const config = JSON.parse(await readFile(join(assetRoot, "website-config.json"),
     kernel: string;
     initialCommand: string;
     startup?: { bashrc: string; logoScript: string } | null;
-    system: { hostName: string; accounts: {
+    system: { hostName: string; accounts: { web: {
         name: string; home: string; cred: { uid: number; gid: number }
     } } };
 };
