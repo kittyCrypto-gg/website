@@ -221,7 +221,27 @@ try {
         "Do not show the upstream kernel development banner on the website");
 
     assert.equal(handle.kernel, config.kernel === "auto" ? handle.kernel : config.kernel);
-    const correctedHome = applyGuestStartup(handle.session.os, "light");
+    const correctedHome = applyGuestStartup(handle.session.os, "light", config.startup);
+    if (account.cred.uid === 1001 && config.startup?.bashrc.includes("/opt/kittyterm/bin")) {
+        const fullPrompt = handle.session.os.prompt();
+        const readablePrompt = fullPrompt.replace(/\x1b\[[0-9;]*m/g, "")
+            .replace(/\x1b\][^\x07]*\x07/g, "");
+        assert.ok(readablePrompt.includes("kitty@" + config.system.hostName),
+            "The actual custom base must display the final KittyTerm PS1");
+        assert.ok(fullPrompt.includes("\x1b[38;5;34m"),
+            "The actual custom prompt must retain the green username colour");
+        const guestPath = handle.session.os.s.env("PATH");
+        assert.ok(typeof guestPath === "string" &&
+            guestPath.startsWith("/opt/kittyterm/bin:/opt/kittyterm/node/bin:"),
+            "Custom /etc/bash.bashrc must add executable directories before first command");
+        assert.equal(handle.session.os.sh.aliases.get("neofetch"), "nekofetch");
+        const logo = handle.session.os.s.env("ASCII_LOGO");
+        assert.ok(typeof logo === "string" && logo.includes("/miku"),
+            "The sourced asciilogo.sh must set ASCII_LOGO");
+        assert.equal(handle.session.os.s.stat(String(logo)).kind, "file",
+            "Nekofetch logo must exist in the guest filesystem");
+        console.log("[mikuOS custom Bash] PS1, PATH, alias and ASCII_LOGO verified.");
+    }
     if (account.cred.uid === 1001 && !guestHome) {
         assert.equal(correctedHome, true, "Homeless UID-1001 shell must correct its working directory");
         const prompt = handle.session.os.prompt().replace(/\x1b\[[0-9;]*m/g, "");
@@ -239,6 +259,16 @@ try {
     }
     assert.equal(exitCode, 0);
     assert.ok(output.join("").includes("website-mikuos-smoke"), "The shell must produce terminal output");
+    if (account.cred.uid === 1001 &&
+        rootManifest.entries.some(entry => entry.p === "/opt/kittyterm/bin/nekofetch")) {
+        const before = output.length;
+        const status = await handle.session.os.run("nekofetch", [], false);
+        const greeting = output.slice(before).join("");
+        assert.equal(status, 0, "Custom nekofetch must run by name via PATH");
+        assert.ok(!greeting.includes("No logo file specified"),
+            "The custom ASCII_LOGO must be present before nekofetch starts");
+        console.log("[mikuOS custom Bash] Nekofetch runs through PATH with its logo.");
+    }
 
     // These two simple commands previously printed their result and then
     // produced "Maximum call stack size exceeded" in the website terminal.
