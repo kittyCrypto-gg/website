@@ -15,12 +15,13 @@
         "build": "npm run build:assets && npm run build:pages",
         "check:routes": "tsx scripts/check-routes.mts",
         "check:static-shells": "tsx scripts/check-static-shells.mts",
-        "validate": "npm run typecheck && npm run check:nesting && npm run check:architecture && npm run check:entries && npm run build && npm run check:mikuos && npm run check:static-shells && npm run check:routes",
+        "validate": "npm run typecheck && npm run check:nesting && npm run check:architecture && npm run check:entries && npm run check:mikuos-root && npm run build && npm run check:mikuos && npm run check:static-shells && npm run check:routes",
         "check:nesting": "tsx scripts/check-conditional-nesting.mts",
         "check:architecture": "tsx scripts/check-architecture.mts",
         "check:entries": "tsx scripts/check-entry-contract.mts",
         "check:parity": "tsx scripts/check-refactor-parity.mts",
-        "check:mikuos": "tsx scripts/check-mikuos-runtime.mts"
+        "check:mikuos": "tsx scripts/check-mikuos-runtime.mts",
+        "check:mikuos-root": "tsx scripts/check-mikuos-root.mts"
     },
     "devDependencies": {
         "@types/node": "^25.2.3",
