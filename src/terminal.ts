@@ -45,10 +45,12 @@ interface EmbeddedConfig {
 interface MikuOSSession {
     key(data: string): void;
     os: {
+        prompt(): string;
         s: {
             uid: number;
             env(name: string): string | Map<string, string> | undefined;
             setenv(name: string, value: string): void;
+            cd(path: string): void;
             read(path: string): string;
             stat(path: string): { kind: string };
         };
@@ -230,7 +232,10 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
 
     const guestTheme = document.documentElement.classList.contains("dark-mode")
         ? "dark" : "light";
-    applyGuestStartup(runtime.session.os, guestTheme);
+    const movedFromMissingHome = applyGuestStartup(runtime.session.os, guestTheme);
+    // launchThistle has already drawn its first prompt by this point.
+    // Replace that single line with the corrected working directory.
+    if (movedFromMissingHome) term.write("\r\x1b[2K" + runtime.session.os.prompt());
     let firstBootStore: Storage | null = null;
     try {
         firstBootStore = window.localStorage;
