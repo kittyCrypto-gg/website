@@ -190,16 +190,15 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     // Never scroll synchronously from xterm's renderer callback: doing so
     // can recursively schedule another render on some browser versions.
     let scrollScheduled = false;
-    if (typeof term.onRender === "function") {
-        term.onRender(() => {
-            if (scrollScheduled || disposed) return;
-            scrollScheduled = true;
-            window.requestAnimationFrame(() => {
-                scrollScheduled = false;
-                if (!disposed) scrollCtl.maybeScroll();
-            });
+    const onRendered = (): void => {
+        if (scrollScheduled || disposed) return;
+        scrollScheduled = true;
+        window.requestAnimationFrame(() => {
+            scrollScheduled = false;
+            if (!disposed) scrollCtl.maybeScroll();
         });
-    }
+    };
+    if (typeof term.onRender === "function") term.onRender(onRendered);
 
     scheduleFit();
 
