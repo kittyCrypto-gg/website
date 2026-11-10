@@ -3,7 +3,7 @@
   "username": "guest",
   "kernel": "teto",
   "persistence": true,
-  "initialCommand": "",
+  "initialCommand": "nekofetch",
   "packages": [
     {
       "kind": "upstream",
