@@ -67,8 +67,12 @@ This is **not** arbitrary Bash execution. The initial terminal output is
 buffered until these settings have been applied, so the original uncoloured
 prompt is never rendered.
 The `WEB_UI_THEME`, `ASCII_LOGO` and `NEKOFETCH_TEXT` environment
-values follow the current light/dark website theme. The homeless guest
-does not save interactive shell history.
+values follow the current light/dark website theme. A literal
+`export ASCII_LOGO=/opt/kittyterm/data/miku.txt` in `/etc/bash.bashrc` is
+also honoured, while a sourced `asciilogo.sh` can override the logo for
+the current theme. The homeless guest keeps history in memory to support
+mikuOS autocomplete, but never creates a home or writes a history file.
+Tab-based command and path completion remains handled by mikuOS.
 
 `kernel` can be `teto`, `thistle` or `auto`. Teto WebAssembly is
 the default. The website suppresses the diagnostic Teto development
