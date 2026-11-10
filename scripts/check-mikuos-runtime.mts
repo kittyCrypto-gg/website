@@ -210,6 +210,19 @@ try {
     assert.equal(exitCode, 0);
     assert.ok(output.join("").includes("website-mikuos-smoke"), "The shell must produce terminal output");
 
+    // These two simple commands previously printed their result and then
+    // produced "Maximum call stack size exceeded" in the website terminal.
+    for (const command of ["whoami", "ls"]) {
+        const before = output.length;
+        const status = await handle.session.os.run(command);
+        const text = output.slice(before).join("");
+        console.log("[mikuOS commands] " + command + ": exit " + String(status) +
+            ", output " + JSON.stringify(text.slice(-300)));
+        assert.equal(status, 0, "Guest command failed: " + command);
+        assert.ok(!text.includes("Maximum call stack size exceeded"),
+            "Guest stack overflow after " + command);
+    }
+
     assert.equal(handle.persistent, true, "OPFS support must activate the overlay");
     const overlayFile = "/tmp/.website-overlay-regression";
     handle.session.os.s.mkfile(overlayFile, "survives a browser reload", 0o600);
