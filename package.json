@@ -15,7 +15,7 @@
         "build": "npm run build:assets && npm run build:pages",
         "check:routes": "tsx scripts/check-routes.mts",
         "check:static-shells": "tsx scripts/check-static-shells.mts",
-        "validate": "npm run typecheck && npm run check:nesting && npm run check:architecture && npm run check:entries && npm run check:mikuos-root && npm run check:mikuos-account && npm run check:mikuos-first-boot && npm run check:mikuos-guest-startup && npm run build && npm run check:mikuos && npm run check:static-shells && npm run check:routes",
+        "validate": "npm run typecheck && npm run check:nesting && npm run check:architecture && npm run check:entries && npm run check:mikuos-root && npm run check:mikuos-account && npm run check:mikuos-first-boot && npm run check:mikuos-guest-startup && npm run check:mikuos-boot-output && npm run build && npm run check:mikuos && npm run check:static-shells && npm run check:routes",
         "check:nesting": "tsx scripts/check-conditional-nesting.mts",
         "check:architecture": "tsx scripts/check-architecture.mts",
         "check:entries": "tsx scripts/check-entry-contract.mts",
@@ -24,7 +24,8 @@
         "check:mikuos-root": "tsx scripts/check-mikuos-root.mts",
         "check:mikuos-account": "tsx scripts/check-mikuos-account.mts",
         "check:mikuos-first-boot": "tsx scripts/check-mikuos-first-boot.mts",
-        "check:mikuos-guest-startup": "tsx scripts/check-mikuos-guest-startup.mts"
+        "check:mikuos-guest-startup": "tsx scripts/check-mikuos-guest-startup.mts",
+        "check:mikuos-boot-output": "tsx scripts/check-mikuos-boot-output.mts"
     },
     "devDependencies": {
         "@types/node": "^25.2.3",
