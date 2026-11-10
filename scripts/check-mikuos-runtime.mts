@@ -121,6 +121,12 @@ const handle = await runtime!.launchThistle({
 });
 
 try {
+    const bootOutput = output.join("");
+    assert.ok(bootOutput.startsWith("Welcome to mikuOS v0.3."),
+        "Website terminal should open with the mikuOS welcome, not Teto diagnostics");
+    assert.ok(!bootOutput.includes("Baguette-generated WebAssembly"),
+        "Do not show the upstream kernel development banner on the website");
+
     assert.equal(handle.kernel, config.kernel === "auto" ? handle.kernel : config.kernel);
     assert.equal(handle.session.os.s.read("/etc/hostname").trim(), config.system.hostName);
 
