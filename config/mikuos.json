@@ -1,0 +1,8 @@
+{
+  "hostname": "kittycrypto",
+  "username": "guest",
+  "kernel": "teto",
+  "persistence": true,
+  "initialCommand": "",
+  "packages": []
+}
