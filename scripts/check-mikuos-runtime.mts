@@ -41,11 +41,13 @@ const rootManifest = JSON.parse(await readFile(join(assetRoot, "root/manifest.js
     entries: Array<{ p: string; k: string; mode: number; uid: number; gid: number }>;
 };
 const root = rootManifest.entries.find(entry => entry.p === "/");
-assert.equal(root?.k, "d", "The guest root inode must be present");
+assert.ok(root, "The guest root inode must be present");
+assert.equal(root.k, "d");
 assert.ok(root.mode & 0o400, "The guest root must be readable");
 
 const guestHome = rootManifest.entries.find(entry => entry.p === "/home/guest");
-assert.equal(guestHome?.k, "d", "The guest home must exist");
+assert.ok(guestHome, "The guest home must exist");
+assert.equal(guestHome.k, "d");
 assert.equal(guestHome.uid, 1000, "The guest home must belong to UID 1000");
 assert.equal(guestHome.gid, 1000, "The guest home must belong to GID 1000");
 
