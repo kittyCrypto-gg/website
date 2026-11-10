@@ -231,11 +231,18 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const guestTheme = document.documentElement.classList.contains("dark-mode")
         ? "dark" : "light";
     applyGuestStartup(runtime.session.os, guestTheme);
+    let firstBootStore: Storage | null = null;
+    try {
+        firstBootStore = window.localStorage;
+    } catch {
+        // A locked-down browser can still run the guest without localStorage.
+    }
     if (!userInteracted) {
         await runInitialCommand(runtime.session, {
             command: config.initialCommand,
             username: config.system.accounts.web.name,
-            persistent: runtime.persistent
+            persistent: runtime.persistent,
+            store: firstBootStore
         });
     }
 
