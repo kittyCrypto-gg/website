@@ -4,6 +4,7 @@ import * as helpers from "./helpers.ts";
 import { checkMobile } from "./terminal/dependencies.ts";
 import { attachExitControl } from "./terminal/exitControl.ts";
 import { runInitialCommand } from "./terminal/initialCommand.ts";
+import { applyGuestStartup, applyGuestTheme } from "./terminal/guestStartup.ts";
 import {
     attachSafeResizeFitting,
     attachScrollTracking,
@@ -32,6 +33,7 @@ interface EmbeddedConfig {
         accounts: {
             web: {
                 home: string;
+            name: string;
             };
         };
     };
@@ -44,10 +46,16 @@ interface MikuOSSession {
     key(data: string): void;
     os: {
         s: {
+            uid: number;
+            env(name: string): string | Map<string, string> | undefined;
+            setenv(name: string, value: string): void;
             read(path: string): string;
-            mkfile(path: string, content: string, mode?: number): void;
+            stat(path: string): { kind: string };
         };
-        flush(): Promise<void>;
+        sh: {
+            aliases: Map<string, string>;
+            prefs: { history: boolean };
+        };
     };
 }
 
@@ -220,10 +228,13 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         throw new Error("Terminal was disposed while mikuOS was booting");
     }
 
+    const guestTheme = document.documentElement.classList.contains("dark-mode")
+        ? "dark" : "light";
+    applyGuestStartup(runtime.session.os, guestTheme);
     if (!userInteracted) {
         await runInitialCommand(runtime.session, {
             command: config.initialCommand,
-            home: config.system.accounts.web.home,
+            username: config.system.accounts.web.name,
             persistent: runtime.persistent
         });
     }
@@ -246,8 +257,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             userInteracted = true;
             runtime?.session.key(seq);
         },
-        setWebUiTheme: (_theme: WebUiTheme): void => {
-            // Website themes already own the xterm colour and CRT presentation.
+        setWebUiTheme: (theme: WebUiTheme): void => {
+            if (!runtime) return;
+            applyGuestTheme(runtime.session.os, theme);
         },
         events,
         isReady: (): boolean => ready,
