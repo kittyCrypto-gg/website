@@ -51,7 +51,8 @@ interface GuestAccount {
 }
 
 interface PackedGuest extends GuestAccount {
-    nekofetch: boolean;
+    hostname: string;
+    nekofetch: string | null;
 }
 
 const upstream = resolve("vendor/mikuOS");
@@ -273,6 +274,24 @@ export async function resolveGuestAccount(username: string, rootDir: string = st
     return { name: username, uid, gid, home, shell, groups };
 }
 
+export async function selectGuestName(rootDir: string = stage): Promise<string> {
+    const passwd = await readFile(join(rootDir, "etc/passwd"), "utf8");
+    const candidates = passwd.split("\n").map(line => line.split(":")).filter(fields =>
+        fields.length >= 7 &&
+        validAccount(fields[0] ?? "") &&
+        Number.isSafeInteger(Number(fields[2])) &&
+        Number(fields[2]) >= 1000 &&
+        fields[5]?.startsWith("/home/"));
+    const custom = candidates.filter(fields => fields[0] !== "guest");
+    const available = custom.length > 0 ? custom : candidates;
+    if (available.length !== 1) {
+        throw new Error("Cannot infer the browser guest from /etc/passwd. " +
+            "Set username explicitly in config/mikuos.json. Found: " +
+            candidates.map(fields => fields[0]).join(", "));
+    }
+    return available[0]![0]!;
+}
+
 async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     await rm(stage, { recursive: true, force: true });
     await mkdir(dirname(stage), { recursive: true });
@@ -283,12 +302,23 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
 
     // Existing web accounts and ownership inside a supplied image are
     // authoritative. The default guest can still be renamed via config.
-    const guest = await resolveGuestAccount(config.username);
+    const username = config.username === "auto" ? await selectGuestName(stage) : config.username;
+    const guest = await resolveGuestAccount(username);
+    const hostname = config.hostname === "auto"
+        ? (await readFile(join(stage, "etc/hostname"), "utf8")).trim()
+        : config.hostname;
+    if (!validHost(hostname)) throw new Error("Invalid hostname in the guest base: " + hostname);
     await synchroniseRootMetadata(stage, guest);
 
-    await writeFile(join(stage, "etc/hostname"), config.hostname + "\n");
-    await writeFile(join(stage, "etc/hosts"),
-        "127.0.0.1 localhost " + config.hostname + "\n::1 localhost " + config.hostname + "\n");
+    // Identity from the supplied root wins in automatic mode. Explicit
+    // website overrides still behave as they did before.
+    if (config.hostname !== "auto") {
+        await writeFile(join(stage, "etc/hostname"), hostname + "\n");
+        await writeFile(join(stage, "etc/hosts"),
+            "127.0.0.1 localhost " + hostname + "\n::1 localhost " + hostname + "\n");
+    }
+    console.log("[mikuOS] Guest identity: " + guest.name + "@" + hostname +
+        " (UID " + String(guest.uid) + ").");
 
     const metadataPath = join(stage, ".thistle-meta.json");
     const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as RootMetadata;
@@ -339,15 +369,21 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
         };
     };
     await new module.WebRootPackage(stage, join(destination, "root"), manifest.image).build();
-    const nekofetch = metadata.ent.some(entry =>
-        ["/bin/nekofetch", "/usr/bin/nekofetch", "/usr/local/bin/nekofetch"].includes(entry.p) &&
-        (entry.k === "f" || entry.k === "l"));
-    return { ...guest, nekofetch };
+    const fetchers = metadata.ent.filter(entry =>
+        entry.p.endsWith("/nekofetch") &&
+        (entry.k === "l" || (entry.k === "f" && (entry.mode & 0o111) !== 0)));
+    const preferred = ["/bin/nekofetch", "/usr/bin/nekofetch",
+        "/usr/sbin/nekofetch", "/usr/local/bin/nekofetch"];
+    const found = preferred.map(path => fetchers.find(entry => entry.p === path))
+        .find(entry => entry !== undefined) ?? fetchers[0];
+    const nekofetch = found?.p ?? null;
+    return { ...guest, hostname, nekofetch };
 }
 
 export async function buildMikuOS(): Promise<void> {
     const config = JSON.parse(await readFile("config/mikuos.json", "utf8")) as WebsiteMikuOSConfig;
-    if (!validAccount(config.username) || !validHost(config.hostname)) {
+    if ((config.username !== "auto" && !validAccount(config.username)) ||
+        (config.hostname !== "auto" && !validHost(config.hostname))) {
         throw new Error("mikuOS username or hostname is invalid");
     }
     if (!["teto", "thistle", "auto"].includes(config.kernel)) throw new Error("Invalid mikuOS kernel");
@@ -367,7 +403,7 @@ export async function buildMikuOS(): Promise<void> {
     const accounts = base.accounts as Record<string, Record<string, unknown>>;
     const merged = {
         ...base,
-        hostName: config.hostname,
+        hostName: guest.hostname,
         // The kernel's development notice is useful upstream, but the
         // website banner should begin directly with the guest MOTD.
         messages: {
@@ -378,8 +414,8 @@ export async function buildMikuOS(): Promise<void> {
             ...accounts,
             web: {
                 ...accounts.web,
-                name: config.username,
-                displayName: config.username,
+                name: guest.name,
+                displayName: guest.name,
                 home: guest.home,
                 shell: guest.shell,
                 cred: { uid: guest.uid, gid: guest.gid, groups: guest.groups }
@@ -391,9 +427,14 @@ export async function buildMikuOS(): Promise<void> {
     };
     // Retain the old website's automatic nekofetch greeting when the
     // custom image provides it, without breaking the upstream fallback.
-    const initialCommand = config.initialCommand === "nekofetch" && !guest.nekofetch
-        ? "" : config.initialCommand;
-    if (config.initialCommand === "nekofetch" && !guest.nekofetch) {
+    const initialCommand = config.initialCommand === "nekofetch"
+        ? guest.nekofetch === null
+            ? ""
+            : ["/bin/nekofetch", "/usr/bin/nekofetch",
+                "/usr/sbin/nekofetch"].includes(guest.nekofetch)
+                ? "nekofetch" : guest.nekofetch
+        : config.initialCommand;
+    if (config.initialCommand === "nekofetch" && guest.nekofetch === null) {
         console.log("[mikuOS] No nekofetch in the guest root; skipping the optional startup greeting.");
     }
     await writeFile(join(destination, "website-config.json"),
