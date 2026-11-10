@@ -20,6 +20,7 @@ interface GuestSession {
         };
         sh: {
             prompt(): string;
+            ensureUserState(): void;
             aliases: Map<string, string>;
             prefs: { history: boolean };
         };
