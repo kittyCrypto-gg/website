@@ -264,7 +264,26 @@ try {
         const before = output.length;
         const status = await handle.session.os.run("nekofetch", [], false);
         const greeting = output.slice(before).join("");
-        assert.equal(status, 0, "Custom nekofetch must run by name via PATH");
+        console.log("[mikuOS custom Bash] nekofetch exit " + String(status) +
+            ", output " + JSON.stringify(greeting.slice(-3000)));
+        if (status !== 0) {
+            const explicitLogo = String(handle.session.os.s.env("ASCII_LOGO") ?? "");
+            console.log("[mikuOS custom Bash] guest environment: PATH=" +
+                String(handle.session.os.s.env("PATH")) +
+                ", ASCII_LOGO=" + explicitLogo +
+                ", TERM=" + String(handle.session.os.s.env("TERM")));
+            // Differentiate environment propagation from problems inside
+            // the binary without changing the browser's normal invocation.
+            if (explicitLogo) {
+                const beforeExplicit = output.length;
+                const explicitStatus = await handle.session.os.run(
+                    "nekofetch " + explicitLogo, [], false);
+                console.log("[mikuOS custom Bash] explicit logo exit " +
+                    String(explicitStatus) + ", output " +
+                    JSON.stringify(output.slice(beforeExplicit).join("").slice(-3000)));
+            }
+        }
+        assert.equal(status, 0, "Custom nekofetch failed. Review diagnostic output above.");
         assert.ok(!greeting.includes("No logo file specified"),
             "The custom ASCII_LOGO must be present before nekofetch starts");
         console.log("[mikuOS custom Bash] Nekofetch runs through PATH with its logo.");
