@@ -1,4 +1,11 @@
-import type { Terminal } from "@xterm/xterm";
+interface WritableTerminal {
+    readonly rows: number;
+    readonly cols: number;
+    focus(): void;
+    write(text: string): void;
+    onData(listener: (text: string) => void): { dispose(): void };
+    onResize(listener: (size: { rows: number; cols: number }) => void): { dispose(): void };
+}
 
 /**
  * mikuOS calls WebSession.start() before launchThistle() returns, which
@@ -6,7 +13,7 @@ import type { Terminal } from "@xterm/xterm";
  * kittyterm's Bash settings. Buffer only that first output and render it
  * after the guest configuration is applied.
  */
-export function bufferedGuestTerminal(term: Terminal): {
+export function bufferedGuestTerminal(term: WritableTerminal): {
     terminal: {
         readonly rows: number;
         readonly cols: number;
