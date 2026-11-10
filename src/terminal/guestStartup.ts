@@ -1,4 +1,4 @@
-import { configuredBashPrompt } from "./bashPrompt.ts";
+import { configuredBashPrompt } from "./bashPrompt.js";
 
 /**
  * Apply the supported parts of the custom UID-1001 Bash configuration to
