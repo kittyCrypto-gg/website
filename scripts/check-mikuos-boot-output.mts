@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import type { Terminal } from "@xterm/xterm";
 import { bufferedGuestTerminal } from "../src/terminal/bootOutput.js";
 
 const displayed: string[] = [];
@@ -10,7 +9,7 @@ const fake = {
     focus(): void {},
     onData(): { dispose(): void } { return { dispose(): void {} }; },
     onResize(): { dispose(): void } { return { dispose(): void {} }; }
-} as unknown as Terminal;
+};
 
 const buffer = bufferedGuestTerminal(fake);
 buffer.terminal.write("Welcome to mikuOS v0.3.\r\n");
