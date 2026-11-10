@@ -57,6 +57,7 @@ interface MikuOSSession {
             stat(path: string): { kind: string };
         };
         sh: {
+            prompt(): string;
             aliases: Map<string, string>;
             prefs: { history: boolean };
         };
