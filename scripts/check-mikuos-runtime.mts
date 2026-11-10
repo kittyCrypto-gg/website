@@ -4,9 +4,11 @@ import { readFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { runInNewContext } from "node:vm";
 import { applyGuestStartup } from "../src/terminal/guestStartup.js";
+import { attachBrowserHistory } from "../src/terminal/browserHistory.js";
 
 interface GuestSession {
     key(data: string): void;
+    restoreHistory(entries: readonly string[]): void;
     os: {
         run(command: string, heredocBodies?: readonly string[], recordHistory?: boolean): Promise<number>;
         prompt(): string;
@@ -26,7 +28,8 @@ interface GuestSession {
             saveHistory(): void;
             historyMatches(prefix: string): string[];
             aliases: Map<string, string>;
-            prefs: { history: boolean; autocomplete: boolean };
+            hist: string[];
+            prefs: { history: boolean; historySize: number; autocomplete: boolean };
         };
     };
 }
@@ -89,6 +92,12 @@ if (rootManifest.entries.some(entry => entry.p === "/opt/kittyterm/bin/nekofetch
     assert.match(config.startup!.bashrc, /^\s*alias\s+neofetch\s*=/m,
         "The custom base must retain its neofetch alias");
 }
+const historyItems = new Map<string, string>();
+const historyStore = {
+    getItem: (key: string): string | null => historyItems.get(key) ?? null,
+    setItem: (key: string, value: string): void => { historyItems.set(key, value); }
+};
+
 const account = config.system.accounts.web;
 const guestHome = rootManifest.entries.find(entry => entry.p === account.home);
 if (guestHome) {
@@ -242,6 +251,9 @@ try {
 
     assert.equal(handle.kernel, config.kernel === "auto" ? handle.kernel : config.kernel);
     const correctedHome = applyGuestStartup(handle.session.os, "light", config.startup);
+    if (account.cred.uid === 1001 && !guestHome) {
+        attachBrowserHistory(handle.session, account.name, historyStore);
+    }
     if (account.cred.uid === 1001 && config.startup?.bashrc.includes("/opt/kittyterm/bin")) {
         const fullPrompt = handle.session.os.prompt();
         const readablePrompt = fullPrompt.replace(/\x1b\[[0-9;]*m/g, "")
@@ -375,6 +387,18 @@ try {
         "survives a browser reload");
     assert.ok(reopened.session.os.s.read("/etc/passwd").includes(account.name),
         "The static base must remain present underneath the overlay");
+    if (account.cred.uid === 1001 && !guestHome) {
+        applyGuestStartup(reopened.session.os, "light", config.startup);
+        attachBrowserHistory(reopened.session, account.name, historyStore);
+        assert.ok(reopened.session.os.sh.historyMatches("echo website-")
+            .includes("echo website-mikuos-smoke"),
+            "Autocomplete must recover previous commands across page reloads");
+        const beforeHistory = output.length;
+        reopened.session.key("\x1b[A");
+        assert.ok(output.slice(beforeHistory).join("").includes("ls"),
+            "Up arrow must recall the last interactive command after reload");
+        console.log("[mikuOS history] Browser history survived a simulated reload.");
+    }
     console.log("[mikuOS overlay] Writable guest files survived a simulated page reload.");
 } finally {
     reopened.dispose();
