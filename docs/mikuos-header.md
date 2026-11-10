@@ -70,9 +70,13 @@ The `WEB_UI_THEME`, `ASCII_LOGO` and `NEKOFETCH_TEXT` environment
 values follow the current light/dark website theme. A literal
 `export ASCII_LOGO=/opt/kittyterm/data/miku.txt` in `/etc/bash.bashrc` is
 also honoured, while a sourced `asciilogo.sh` can override the logo for
-the current theme. The homeless guest keeps history in memory to support
-mikuOS autocomplete, but never creates a home or writes a history file.
-Tab-based command and path completion remains handled by mikuOS.
+the current theme. The homeless guest does not create a home or guest history file. The
+website instead saves the command history in origin-scoped browser
+`localStorage` and restores it through mikuOS's WebSession line editor.
+This preserves Up-arrow history and history-based autocomplete across
+ordinary browser reloads when browser storage is available. Clearing site
+storage also clears the saved command history. Tab-based command and path
+completion remains handled by mikuOS.
 
 `kernel` can be `teto`, `thistle` or `auto`. Teto WebAssembly is
 the default. The website suppresses the diagnostic Teto development
@@ -91,8 +95,13 @@ the baseline. mikuOS maps overlay inode identifiers separately from
 the original base so new files can be restored safely.
 
 Browser filesystem persistence does **not** preserve live processes
-or the in-memory kernel across a page reload; a fresh shell starts
-against the previous writable filesystem. The initial `nekofetch`
+or the in-memory kernel across a hard page reload; a fresh shell starts
+against the previous writable filesystem and restores browser-private
+command history. For ordinary links among Main, About, Blog, Resources and
+Guestbook, same-document navigation preserves the existing xterm.js
+instance and live mikuOS kernel instead of restarting it. Chat and Reader
+still use full document navigation, as do explicit browser refreshes.
+The initial `nekofetch`
 greeting runs once **after successful execution** per browser and account
 using a browser-local first-launch flag, not a guest-home marker.
 It is executed directly through the guest kernel, not typed into the
