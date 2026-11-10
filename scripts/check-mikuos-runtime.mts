@@ -90,6 +90,7 @@ const terminal = {
 const script = await readFile(join(assetRoot, "thistle.js"), "utf8");
 const context: Record<string, unknown> = {
     URL, Response, DecompressionStream, TextDecoder, TextEncoder,
+    AbortController, AbortSignal, Headers, Request,
     Uint8Array, ArrayBuffer, console, setTimeout, clearTimeout,
     WebAssembly: (globalThis as unknown as { WebAssembly: unknown }).WebAssembly,
     performance, fetch: localFetch, navigator: {},
