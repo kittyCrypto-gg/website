@@ -15,6 +15,7 @@ interface GuestShell {
     };
     sh: {
         prompt(): string;
+        ensureUserState(): void;
         aliases: Map<string, string>;
         prefs: { history: boolean };
     };
@@ -128,6 +129,10 @@ function correctMissingHome(shell: GuestShell): boolean {
         // No home directory is expected for the unprivileged website guest.
     }
 
+    // thsh reloads preferences on its first command. Initialise those
+    // settings now so the homeless guest's history disable is not lost
+    // when the automatic greeting executes.
+    shell.sh.ensureUserState();
     shell.sh.prefs.history = false;
     shell.s.cd("/");
     return true;
