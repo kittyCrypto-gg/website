@@ -352,6 +352,12 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
         throw new Error("Custom kittyterm image needs ASCII_LOGO configuration in " +
             "mikuOS/.thistle.base/opt/kittyterm/scripts/asciilogo.sh");
     }
+    if (isCustomKittyterm && !bashrc.includes("/opt/kittyterm/bin")) {
+        throw new Error("Custom /etc/bash.bashrc must add /opt/kittyterm/bin to PATH");
+    }
+    if (isCustomKittyterm && !/^\s*alias\s+neofetch\s*=/m.test(bashrc)) {
+        throw new Error("Custom /etc/bash.bashrc must define alias neofetch");
+    }
     const startup = bashrc ? { bashrc, logoScript } : null;
     if (startup) console.log("[mikuOS] Embedded Bash startup configuration from guest root " +
         "(PS1: " + String(/^[ \t]*(?:export[ \t]+)?PS1[ \t]*=/m.test(bashrc)) +
@@ -473,13 +479,10 @@ export async function buildMikuOS(): Promise<void> {
     };
     // Retain the old website's automatic nekofetch greeting when the
     // custom image provides it, without breaking the upstream fallback.
-    const initialCommand = config.initialCommand === "nekofetch"
-        ? guest.nekofetch === null
-            ? ""
-            : ["/bin/nekofetch", "/usr/bin/nekofetch",
-                "/usr/sbin/nekofetch"].includes(guest.nekofetch)
-                ? "nekofetch" : guest.nekofetch
-        : config.initialCommand;
+    // The guest's Bash-derived PATH must resolve nekofetch itself. An
+    // absolute path bypasses the user's shell configuration and aliases.
+    const initialCommand = config.initialCommand === "nekofetch" &&
+        guest.nekofetch === null ? "" : config.initialCommand;
     if (config.initialCommand === "nekofetch" && guest.nekofetch === null) {
         console.log("[mikuOS] No nekofetch in the guest root; skipping the optional startup greeting.");
     }
