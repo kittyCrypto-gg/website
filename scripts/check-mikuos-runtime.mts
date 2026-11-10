@@ -2,15 +2,25 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { runInNewContext } from "node:vm";
+import { applyGuestStartup } from "../src/terminal/guestStartup.js";
 
 interface GuestSession {
     os: {
         run(command: string): Promise<number>;
+        prompt(): string;
         flush(): Promise<void>;
         s: {
+            uid: number;
+            env(name: string): string | Map<string, string> | undefined;
+            setenv(name: string, value: string): void;
+            cd(path: string): void;
             read(path: string): string;
             mkfile(path: string, value: string, mode?: number): void;
             stat(path: string): { kind: string; mode: number; uid: number; gid: number };
+        };
+        sh: {
+            aliases: Map<string, string>;
+            prefs: { history: boolean };
         };
     };
 }
@@ -197,6 +207,12 @@ try {
         "Do not show the upstream kernel development banner on the website");
 
     assert.equal(handle.kernel, config.kernel === "auto" ? handle.kernel : config.kernel);
+    const correctedHome = applyGuestStartup(handle.session.os, "light");
+    if (account.cred.uid === 1001 && !guestHome) {
+        assert.equal(correctedHome, true, "Homeless UID-1001 shell must correct its working directory");
+        assert.match(handle.session.os.prompt(), /:\/\$ /,
+            "Homeless shell prompt must start at /, not the nonexistent home");
+    }
     assert.equal(handle.session.os.s.read("/etc/hostname").trim(), config.system.hostName);
 
     const passwd = handle.session.os.s.read("/etc/passwd");
