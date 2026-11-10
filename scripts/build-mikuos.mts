@@ -366,6 +366,23 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     const metadataPath = join(stage, ".thistle-meta.json");
     const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as RootMetadata;
     if (!Array.isArray(metadata.ent)) throw new Error("mikuOS base is missing root metadata");
+
+    // This binary launches a network helper through fork()/execl(). Both
+    // Teto and Thistle currently fault on that child-exec path, although
+    // nekofetch itself renders correctly without the helper. On the website
+    // only, clear its execute bits so nekofetch's access(X_OK) check skips
+    // it. Leave the helper file and the user's original .thistle.base intact.
+    const helper = isCustomKittyterm
+        ? metadata.ent.find(entry =>
+            entry.p === "/opt/kittyterm/bin/fetch_version" && entry.k === "f")
+        : undefined;
+    if (helper && (helper.mode & 0o111) !== 0) {
+        helper.mode &= ~0o111;
+        await chmod(join(stage, "opt/kittyterm/bin/fetch_version"), helper.mode);
+        console.log("[mikuOS] Disabled unsupported fetch_version subprocess in " +
+            "browser guest image; original .thistle.base is unchanged.");
+    }
+
     let id = Math.max(0, ...metadata.ent.map(entry => entry.id));
 
     for (const pkg of config.packages) {
