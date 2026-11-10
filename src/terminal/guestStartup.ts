@@ -77,15 +77,21 @@ function guestText(shell: GuestShell, path: string, packed = ""): string | null 
     return optionalRead(shell, path) ?? (packed || null);
 }
 
-function configuredLogos(script: string, theme: GuestTheme): string[] {
-    const paths = [...new Set(
-        [...script.matchAll(/\/opt\/kittyterm\/(?:data|scripts)\/[A-Za-z0-9._-]+\.txt/g)]
-            .map(match => match[0])
-            .filter(path => /miku/i.test(path))
-    )];
-    return paths.filter(path => theme === "dark"
+function configuredLogos(contents: string, theme: GuestTheme): string[] {
+    const directAssignments = [...contents.matchAll(
+        /^\s*(?:export\s+)?ASCII_LOGO\s*=\s*["']?(\/opt\/kittyterm\/[A-Za-z0-9/._-]+\.txt)["']?\s*(?:#.*)?$/gm
+    )].map(match => match[1]!);
+    // Support the user's explicit export ASCII_LOGO in /etc/bash.bashrc,
+    // as well as existing sourced scripts which declare literal paths.
+    const mentionedPaths = [...contents.matchAll(
+        /\/opt\/kittyterm\/[A-Za-z0-9/._-]+\.txt/g
+    )].map(match => match[0]);
+    const candidates = [...new Set([...directAssignments, ...mentionedPaths])]
+        .filter(path => /miku/i.test(path));
+    const matchesTheme = candidates.filter(path => theme === "dark"
         ? /dark/i.test(path)
         : !/dark/i.test(path));
+    return matchesTheme.length ? matchesTheme : candidates.filter(path => !/dark/i.test(path));
 }
 
 function applyAsciiLogo(
@@ -95,24 +101,29 @@ function applyAsciiLogo(
     packed?: PackedStartup | null
 ): void {
     const scriptPath = "/opt/kittyterm/scripts/asciilogo.sh";
-    if (!bashrc.includes(scriptPath)) return;
-    const script = guestText(shell, scriptPath, packed?.logoScript);
-    if (!script) return;
-
+    const script = bashrc.includes(scriptPath)
+        ? guestText(shell, scriptPath, packed?.logoScript)
+        : null;
     shell.s.setenv("WEB_UI_THEME", theme);
-    // Respect the filenames declared by asciilogo.sh, including different
-    // directories and miku-light.txt rather than guessing a fixed name.
-    for (const path of configuredLogos(script, theme)) {
+
+    // Bash's sourced script runs after /etc/bash.bashrc, so the script's
+    // explicit export takes precedence. Neither source is executed in thsh.
+    const paths = [
+        ...(script ? configuredLogos(script, theme) : []),
+        ...configuredLogos(bashrc, theme)
+    ];
+    for (const path of [...new Set(paths)]) {
         try {
             if (shell.s.stat(path).kind !== "file") continue;
             shell.s.setenv("ASCII_LOGO", path);
             break;
         } catch {
-            // A variant may be absent; preserve the remaining candidates.
+            // Retain the next explicitly configured logo path as fallback.
         }
     }
 
-    const colour = /(?:export\s+)?NEKOFETCH_TEXT\s*=\s*["']?([A-Fa-f0-9]{6})/m.exec(script);
+    const colourSource = script ?? bashrc;
+    const colour = /(?:export\s+)?NEKOFETCH_TEXT\s*=\s*["']?([A-Fa-f0-9]{6})/m.exec(colourSource);
     if (colour) shell.s.setenv("NEKOFETCH_TEXT", colour[1]!);
 }
 
