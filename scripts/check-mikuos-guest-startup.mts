@@ -126,4 +126,15 @@ assert.ok(inaccessible.sh.prompt().includes("\x1b[38;5;34m"));
 assert.equal(inaccessible.sh.prefs.history, true);
 assert.equal(inaccessible.sh.prefs.autocomplete, true);
 inaccessible.sh.saveHistory();
+// An explicit ASCII_LOGO export in the user's Bash configuration works
+// even without the optional sourced asciilogo.sh script.
+const directBashrc = bashrc
+    .replace("if [ -r /opt/kittyterm/scripts/asciilogo.sh ]; then", "")
+    .replace("  . /opt/kittyterm/scripts/asciilogo.sh", "")
+    .replace("fi", "fi") + "\nexport ASCII_LOGO=/opt/kittyterm/data/miku.txt\n";
+env.delete("ASCII_LOGO");
+applyGuestStartup(inaccessible, "light", { bashrc: directBashrc, logoScript: "" });
+assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku.txt",
+    "An explicit Bash ASCII_LOGO export must reach the real guest environment");
+
 console.log("[mikuOS guest startup] Bash colours, aliases and homeless UID verified.");
