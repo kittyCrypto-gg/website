@@ -19,6 +19,7 @@ interface GuestSession {
             stat(path: string): { kind: string; mode: number; uid: number; gid: number };
         };
         sh: {
+            prompt(): string;
             aliases: Map<string, string>;
             prefs: { history: boolean };
         };
