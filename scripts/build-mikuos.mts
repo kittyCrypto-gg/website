@@ -53,6 +53,7 @@ interface GuestAccount {
 interface PackedGuest extends GuestAccount {
     hostname: string;
     nekofetch: string | null;
+    startup: { bashrc: string; logoScript: string } | null;
 }
 
 const upstream = resolve("vendor/mikuOS");
@@ -295,7 +296,8 @@ export async function selectGuestName(rootDir: string = stage): Promise<string> 
 async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     await rm(stage, { recursive: true, force: true });
     await mkdir(dirname(stage), { recursive: true });
-    await cp(await rootSource(), stage, {
+    const sourceRoot = await rootSource();
+    await cp(sourceRoot, stage, {
         recursive: true,
         verbatimSymlinks: true
     });
@@ -326,6 +328,34 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     }
     console.log("[mikuOS] Guest identity: " + guest.name + "@" + hostname +
         " (UID " + String(guest.uid) + ").");
+
+    // Keep the source Bash configuration authoritative even when the guest
+    // user cannot synchronously read it under its restricted permissions.
+    // This is a translation for thsh, not execution of Bash in the browser.
+    const optionalText = async (path: string): Promise<string> => {
+        try {
+            return await readFile(join(stage, path), "utf8");
+        } catch (error: unknown) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") return "";
+            throw error;
+        }
+    };
+    const bashrc = await optionalText("etc/bash.bashrc");
+    const logoScript = await optionalText("opt/kittyterm/scripts/asciilogo.sh");
+    const isCustomKittyterm = guest.uid === 1001 &&
+        sourceRoot === resolve("mikuOS/.thistle.base");
+    if (isCustomKittyterm && !/^[ \t]*(?:export[ \t]+)?PS1[ \t]*=/m.test(bashrc)) {
+        throw new Error("Custom kittyterm image needs a PS1 assignment in " +
+            "mikuOS/.thistle.base/etc/bash.bashrc");
+    }
+    if (isCustomKittyterm && !logoScript.includes("ASCII_LOGO")) {
+        throw new Error("Custom kittyterm image needs ASCII_LOGO configuration in " +
+            "mikuOS/.thistle.base/opt/kittyterm/scripts/asciilogo.sh");
+    }
+    const startup = bashrc ? { bashrc, logoScript } : null;
+    if (startup) console.log("[mikuOS] Embedded Bash startup configuration from guest root " +
+        "(PS1: " + String(/^[ \t]*(?:export[ \t]+)?PS1[ \t]*=/m.test(bashrc)) +
+        ", logo script: " + String(Boolean(logoScript)) + ").");
 
     const metadataPath = join(stage, ".thistle-meta.json");
     const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as RootMetadata;
@@ -384,7 +414,7 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     const found = preferred.map(path => fetchers.find(entry => entry.p === path))
         .find(entry => entry !== undefined) ?? fetchers[0];
     const nekofetch = found?.p ?? null;
-    return { ...guest, hostname, nekofetch };
+    return { ...guest, hostname, nekofetch, startup };
 }
 
 export async function buildMikuOS(): Promise<void> {
@@ -455,7 +485,7 @@ export async function buildMikuOS(): Promise<void> {
     }
     await writeFile(join(destination, "website-config.json"),
         JSON.stringify({ system: system.mergeConfig(merged), kernel: config.kernel,
-            persistence: config.persistence, initialCommand }, null, 2) + "\n");
+            persistence: config.persistence, initialCommand, startup: guest.startup }, null, 2) + "\n");
 
     console.log("[mikuOS] Prepared complete standalone browser runtime and customised guest root.");
 }
