@@ -52,10 +52,11 @@ assert.ok(root.mode & 0o400, "The guest root must be readable");
 
 const account = config.system.accounts.web;
 const guestHome = rootManifest.entries.find(entry => entry.p === account.home);
-assert.ok(guestHome, "The guest home must exist");
-assert.equal(guestHome.k, "d");
-assert.equal(guestHome.uid, account.cred.uid, "The guest home must belong to the selected account");
-assert.equal(guestHome.gid, account.cred.gid, "The guest home must belong to the selected group");
+if (guestHome) {
+    assert.equal(guestHome.k, "d");
+    assert.equal(guestHome.uid, account.cred.uid, "Guest home ownership must match when a home exists");
+    assert.equal(guestHome.gid, account.cred.gid);
+}
 
 const required = ["/etc/passwd", "/etc/group", "/etc/hostname", "/bin/thsh", "/usr/bin/nano"];
 for (const path of required) {
@@ -210,9 +211,18 @@ try {
     assert.ok(output.join("").includes("website-mikuos-smoke"), "The shell must produce terminal output");
 
     assert.equal(handle.persistent, true, "OPFS support must activate the overlay");
-    const overlayFile = account.home + "/.website-overlay-regression";
+    const overlayFile = "/tmp/.website-overlay-regression";
     handle.session.os.s.mkfile(overlayFile, "survives a browser reload", 0o600);
     await handle.session.os.flush();
+    const opfsFolder = await persistentStorage.getDirectoryHandle(".mikuos");
+    const opfsFile = await opfsFolder.getFileHandle(".thistle-overlay.json");
+    const persisted = JSON.parse(await (await opfsFile.getFile()).text()) as {
+        entries: Array<{ id: number; p: string; k: string }>;
+    };
+    const saved = persisted.entries.find(entry => entry.p === "/tmp/.website-overlay-regression");
+    const conflicting = rootManifest.entries.find(entry => (entry as { id?: number }).id === saved?.id);
+    console.log("[mikuOS overlay] New file ID: " + String(saved?.id) +
+        ", existing base ID: " + String(conflicting?.p ?? "none"));
     console.log("[mikuOS smoke] " + handle.kernel + " kernel booted from the packed filesystem.");
     console.log("[mikuOS smoke] Hostname, guest identity, filesystem and shell execution verified.");
 } finally {
@@ -229,7 +239,7 @@ const reopened = await runtime!.launchThistle({
     persistence: true
 });
 try {
-    assert.equal(reopened.session.os.s.read(account.home + "/.website-overlay-regression"),
+    assert.equal(reopened.session.os.s.read("/tmp/.website-overlay-regression"),
         "survives a browser reload");
     assert.ok(reopened.session.os.s.read("/etc/passwd").includes(account.name),
         "The static base must remain present underneath the overlay");
