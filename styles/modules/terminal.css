@@ -94,15 +94,6 @@
     min-block-size: 0;
 }
 
-#terminal-loading {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-}
-
 #terminal-scroll {
     inline-size: 100%;
     block-size: var(--terminal-reserved-height);
