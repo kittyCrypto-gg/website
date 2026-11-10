@@ -20,6 +20,7 @@ import { applyHeadBits } from "./main/head.ts";
 import { loadCrtUi } from "./main/crtRoute.ts";
 import { loadReaderRuntime } from "./main/readerRoute.ts";
 import { startProgressivePageBoot } from "./main/progressive.ts";
+import { installSoftNavigation } from "./main/softNavigation.ts";
 
 // import { mkCurTheme } from "./cursors/cursorTheme.tsx";
 
@@ -388,6 +389,7 @@ const onReady = (): void => {
     initBadgeCopy();
     void initUi();
     startProgressivePageBoot();
+    installSoftNavigation(startProgressivePageBoot);
 };
 
 // Defer only while the HTML is still being parsed. ES modules typically run
