@@ -61,7 +61,9 @@ assert.ok(!filesystem.has("/home/kittyterm"));
 assert.equal(workingDirectory, "/", "Shell must start in a readable directory");
 
 const prompt = shell.sh.prompt();
-assert.ok(prompt.includes("kitty@mikuos:/"), "Bash PS1 must override the shell username");
+const plainPrompt = prompt.replace(/\x1b\[[0-9;]*m/g, "")
+    .replace(/\x1b\][^\x07]*\x07/g, "");
+assert.ok(plainPrompt.includes("kitty@mikuos:/"), "Bash PS1 must override the shell username");
 assert.ok(prompt.includes("\x1b[38;5;34m"), "Expected green username");
 assert.ok(prompt.includes("\x1b[38;5;135m"), "Expected purple directory");
 assert.ok(prompt.includes("\x1b]12;#00d7d7\x07"), "Expected cursor colour");
