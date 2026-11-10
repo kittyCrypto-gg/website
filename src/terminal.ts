@@ -42,6 +42,7 @@ interface EmbeddedConfig {
     kernel: "teto" | "thistle" | "auto";
     persistence: boolean;
     initialCommand: string;
+    startup?: { bashrc: string; logoScript: string } | null;
 }
 
 interface MikuOSSession {
@@ -238,7 +239,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const guestTheme = document.documentElement.classList.contains("dark-mode")
         ? "dark" : "light";
     const previousPrompt = runtime.session.os.prompt();
-    applyGuestStartup(runtime.session.os, guestTheme);
+    applyGuestStartup(runtime.session.os, guestTheme, config.startup);
     // The banner is released only after /etc/bash.bashrc has supplied the
     // correct colours, PATH, aliases and working directory.
     bootOutput.release(previousPrompt, runtime.session.os.prompt());
@@ -286,7 +287,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         },
         setWebUiTheme: (theme: WebUiTheme): void => {
             if (!runtime) return;
-            applyGuestTheme(runtime.session.os, theme);
+            applyGuestTheme(runtime.session.os, theme, config.startup);
         },
         events,
         isReady: (): boolean => ready,
