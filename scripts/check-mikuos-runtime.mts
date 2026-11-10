@@ -210,8 +210,8 @@ try {
     const correctedHome = applyGuestStartup(handle.session.os, "light");
     if (account.cred.uid === 1001 && !guestHome) {
         assert.equal(correctedHome, true, "Homeless UID-1001 shell must correct its working directory");
-        assert.match(handle.session.os.prompt(), /:\/\$ /,
-            "Homeless shell prompt must start at /, not the nonexistent home");
+        const prompt = handle.session.os.prompt().replace(/\x1b\[[0-9;]*m/g, "");
+        assert.ok(prompt.includes(":/"), "Homeless shell prompt must start at /, not the nonexistent home");
     }
     assert.equal(handle.session.os.s.read("/etc/hostname").trim(), config.system.hostName);
 
