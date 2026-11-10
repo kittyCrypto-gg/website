@@ -23,6 +23,7 @@ interface GuestSession {
             prompt(): string;
             ensureUserState(): void;
             saveHistory(): void;
+            historyMatches(prefix: string): string[];
             aliases: Map<string, string>;
             prefs: { history: boolean; autocomplete: boolean };
         };
@@ -277,6 +278,18 @@ try {
     }
     assert.equal(exitCode, 0);
     assert.ok(output.join("").includes("website-mikuos-smoke"), "The shell must produce terminal output");
+    if (account.cred.uid === 1001 && !guestHome) {
+        assert.equal(handle.session.os.sh.prefs.history, true,
+            "Homeless kittyterm must retain command history in memory");
+        if (handle.session.os.sh.prefs.autocomplete) {
+            assert.ok(handle.session.os.sh.historyMatches("echo website-")
+                .includes("echo website-mikuos-smoke"),
+                "Autocomplete should suggest commands from ephemeral guest history");
+            console.log("[mikuOS autocomplete] In-memory suggestions work without a home directory.");
+        } else {
+            console.log("[mikuOS autocomplete] Disabled by the supplied guest /opt/prefs.");
+        }
+    }
     if (account.cred.uid === 1001 &&
         rootManifest.entries.some(entry => entry.p === "/opt/kittyterm/bin/nekofetch")) {
         const before = output.length;
