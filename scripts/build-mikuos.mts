@@ -102,8 +102,8 @@ async function rootSource(): Promise<string> {
  * Reconcile it with the files actually supplied, otherwise freshly uploaded
  * binaries would be silently omitted from the deployed image.
  */
-async function synchroniseRootMetadata(): Promise<RootMetadata> {
-    const metadataPath = join(stage, ".thistle-meta.json");
+export async function synchroniseRootMetadata(rootDir: string = stage): Promise<RootMetadata> {
+    const metadataPath = join(rootDir, ".thistle-meta.json");
     let original: RootMetadata = { ent: [] };
 
     try {
@@ -124,7 +124,7 @@ async function synchroniseRootMetadata(): Promise<RootMetadata> {
 
     // The VFS requires the root inode itself. Git does not preserve POSIX
     // ownership or setuid bits, so metadata from the original image wins.
-    const rootInfo = await lstat(stage);
+    const rootInfo = await lstat(rootDir);
     const oldRoot = prior.get("/");
     const rootTime = Math.trunc(rootInfo.mtimeMs / 1000);
     entries.push({
@@ -141,7 +141,7 @@ async function synchroniseRootMetadata(): Promise<RootMetadata> {
 
     while (pending.length > 0) {
         const parent = pending.pop()!;
-        const hostParent = parent === "/" ? stage : join(stage, parent.slice(1));
+        const hostParent = parent === "/" ? rootDir : join(rootDir, parent.slice(1));
         const children = await readdir(hostParent, { withFileTypes: true });
 
         for (const child of children.sort((left, right) => left.name.localeCompare(right.name))) {
