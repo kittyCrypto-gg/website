@@ -6,7 +6,7 @@ import { applyGuestStartup } from "../src/terminal/guestStartup.js";
 
 interface GuestSession {
     os: {
-        run(command: string): Promise<number>;
+        run(command: string, heredocBodies?: readonly string[], recordHistory?: boolean): Promise<number>;
         prompt(): string;
         flush(): Promise<void>;
         s: {
