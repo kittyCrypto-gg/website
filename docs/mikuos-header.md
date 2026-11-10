@@ -62,6 +62,45 @@ upstream browser runtime under `dist/mikuos/`, and a **customised immutable
 root filesystem** at `dist/mikuos/root/`. `pages.config.ts` copies the
 entire `dist` directory to the deployed website.
 
+## Website-owned root filesystem
+
+To supply your customised userspace, add the **complete**
+`.thistle.base/` directory at the **website repository root**:
+
+```text
+website/
+├── .thistle.base/
+│   ├── bin/
+│   ├── etc/
+│   ├── home/
+│   ├── usr/
+│   └── .thistle-meta.json   (optional)
+├── config/mikuos.json
+└── vendor/mikuOS/           (unchanged upstream Git submodule)
+```
+
+When present, `npm run build` uses the **website's** `.thistle.base`
+as the entire guest filesystem. It never patches or replaces the
+submodule's `.thistle.base`. The site publishes only the generated
+`dist/mikuos/root/` image, not the raw source directory.
+
+The build enumerates the real directory and regenerates the
+`.thistle-meta.json` entry table before packing it. Added binaries,
+scripts, directories and symlinks are therefore included, even if the
+uploaded metadata has not yet been updated. Deleted files are excluded.
+Existing metadata supplies guest UID/GID where available; new files
+default to root ownership. If you need custom guest ownership, include
+the corresponding UID/GID entries in the metadata file.
+
+Until this customised directory is uploaded, the website build uses the
+upstream `vendor/mikuOS/.thistle.base` as a fallback. Once the local
+directory exists, it takes precedence, and errors during packaging
+fail the build rather than silently falling back.
+
+The website-owned image should be a **complete root filesystem**, not
+only a set of additions. If you only need to add a few extra guest
+programmes, use the `packages` array below instead.
+
 ## Guest packages
 
 The `packages` array currently supports:
