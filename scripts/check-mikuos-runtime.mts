@@ -64,6 +64,17 @@ assert.ok(root, "The guest root inode must be present");
 assert.equal(root.k, "d");
 assert.ok(root.mode & 0o400, "The guest root must be readable");
 
+// The website intentionally skips the helper that calls fork()/execl().
+// Preserve the helper's file and contents, but remove execute permissions
+// only from the packaged browser image, never from the source .thistle.base.
+const versionHelper = rootManifest.entries.find(entry =>
+    entry.p === "/opt/kittyterm/bin/fetch_version");
+if (versionHelper) {
+    assert.equal(versionHelper.k, "f");
+    assert.equal(versionHelper.mode & 0o111, 0,
+        "Browser image must not launch the unsupported fetch_version helper");
+}
+
 // The custom CLI entry must use PATH and aliases, never an absolute
 // filename baked into the website's first-launch configuration.
 if (rootManifest.entries.some(entry => entry.p === "/opt/kittyterm/bin/nekofetch")) {
