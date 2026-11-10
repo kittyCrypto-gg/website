@@ -1,14 +1,27 @@
 import assert from "node:assert/strict";
 import { applyGuestStartup, applyGuestTheme } from "../src/terminal/guestStartup.js";
 
-const ps1Body = "\\[\\e]12;#00d7d7\\a\\]\\[\\e[38;5;34m\\]kitty@\\H\\[\\e[38;5;44m\\]:\\[\\e[38;5;135m\\]\\w\\[\\e[38;5;44m\\]\\$ \\[\\e[0m\\]";
+// Mirror the real Debian Bash file: an earlier stock PS1 followed by
+// KittyTerm's five concatenated quoted fragments and UID 1001 guard.
+const customPrompt = [
+    "  PS1='\\[\\e]12;#00d7d7\\a\\]'\\",
+    "'\\[\\e[38;5;34m\\]kitty@\\H'\\",
+    "'\\[\\e[38;5;44m\\]:'\\",
+    "'\\[\\e[38;5;135m\\]\\w'\\",
+    "'\\[\\e[38;5;44m\\] \\$ '"
+];
 const bashrc = [
-    'if [ "$(id -u)" -eq 1001 ]; then',
-    '  export PATH="/opt/kittyterm/bin:/opt/kittyterm/node/bin:$PATH"',
-    "  alias neofetch='nekofetch'",
-    "  PS1=" + "$" + String.fromCharCode(39) + ps1Body + String.fromCharCode(39),
+    "# System-wide .bashrc file for interactive bash(1) shells.",
+    "if ! [ -n \"${SUDO_USER-}\" -a -n \"${SUDO_PS1-}\" ]; then",
+    "  PS1='${debian_chroot:+($debian_chroot)}\\u@\\H:\\w\\$ '",
+    "fi",
+    "[[ \"$(id -u)\" -eq 1001 ]] || return",
+    ...customPrompt,
+    'export PATH="/opt/kittyterm/bin:/opt/kittyterm/node/bin:$PATH"',
+    "alias neofetch='nekofetch'",
+    "if [ -r /opt/kittyterm/scripts/asciilogo.sh ]; then",
     "  . /opt/kittyterm/scripts/asciilogo.sh",
-    'fi'
+    "fi"
 ].join("\n");
 const logoScript = [
     'if [ "$WEB_UI_THEME" = "dark" ]; then',
