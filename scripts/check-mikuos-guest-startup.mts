@@ -58,6 +58,7 @@ const shell = {
         }
     },
     sh: {
+        ensureUserState(): void {},
         prompt(): string { return "kittyterm@mikuos:/$ "; },
         aliases,
         prefs: { history: true }
@@ -100,6 +101,7 @@ const inaccessible = {
         }
     },
     sh: {
+        ensureUserState(): void {},
         prompt(): string { return "kittyterm@mikuos:/$ "; },
         aliases: new Map<string, string>(),
         prefs: { history: true }
