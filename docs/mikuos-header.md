@@ -65,21 +65,23 @@ entire `dist` directory to the deployed website.
 ## Website-owned root filesystem
 
 To supply your customised userspace, add the **complete**
-`.thistle.base/` directory at the **website repository root**:
+`mikuOS/.thistle.base/` directory under the website's root-level
+`mikuOS/` folder:
 
 ```text
 website/
-├── .thistle.base/
-│   ├── bin/
-│   ├── etc/
-│   ├── home/
-│   ├── usr/
-│   └── .thistle-meta.json   (optional)
+├── mikuOS/
+│   └── .thistle.base/
+│       ├── bin/
+│       ├── etc/
+│       ├── home/
+│       ├── usr/
+│       └── .thistle-meta.json   (optional)
 ├── config/mikuos.json
 └── vendor/mikuOS/           (unchanged upstream Git submodule)
 ```
 
-When present, `npm run build` uses the **website's** `.thistle.base`
+When present, `npm run build` uses the **website's** `mikuOS/.thistle.base`
 as the entire guest filesystem. It never patches or replaces the
 submodule's `.thistle.base`. The site publishes only the generated
 `dist/mikuos/root/` image, not the raw source directory.
@@ -92,7 +94,7 @@ Existing metadata supplies guest UID/GID where available; new files
 default to root ownership. If you need custom guest ownership, include
 the corresponding UID/GID entries in the metadata file.
 
-Until this customised directory is uploaded, the website build uses the
+Until `mikuOS/.thistle.base/` is uploaded, the website build uses the
 upstream `vendor/mikuOS/.thistle.base` as a fallback. Once the local
 directory exists, it takes precedence, and errors during packaging
 fail the build rather than silently falling back.
