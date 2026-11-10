@@ -60,9 +60,12 @@ available without modifying the account.
 
 The interactive browser shell is mikuOS `thsh`, not Debian Bash. For
 UID 1001, the website reads `/etc/bash.bashrc` from the actual guest
-filesystem and applies the supported settings: a configured `PATH`,
-simple aliases, and `/opt/kittyterm/scripts/asciilogo.sh` logo colours
-and theme selection. This is **not** arbitrary Bash execution.
+filesystem and applies the supported settings: the configured `PATH`,
+simple aliases, the Bash `PS1` prompt (including ANSI colours), and
+`/opt/kittyterm/scripts/asciilogo.sh` logo colours and theme selection.
+This is **not** arbitrary Bash execution. The initial terminal output is
+buffered until these settings have been applied, so the original uncoloured
+prompt is never rendered.
 The `WEB_UI_THEME`, `ASCII_LOGO` and `NEKOFETCH_TEXT` environment
 values follow the current light/dark website theme. The homeless guest
 does not save interactive shell history.
@@ -74,17 +77,23 @@ banner and starts with the mikuOS welcome message.
 ### Browser persistence and first greeting
 
 The custom `.thistle.base` is packaged as an **immutable baseline**
-at `dist/mikuos/root/`. Each visitor gets their own browser OPFS
+at `dist/mikuos/root/`. Each visitor gets their own IndexedDB-backed
 writable overlay containing newly added, changed and removed files.
-The overlay is merged on every fresh boot without overwriting the
-baseline. mikuOS now maps overlay inode identifiers separately from
+This replaces native OPFS writable streams for the website because they
+are unreliable on iOS Safari. On first use, the website attempts to import
+a pre-existing OPFS overlay; it does not erase the original OPFS data.
+The writable overlay is merged on every fresh boot without overwriting
+the baseline. mikuOS maps overlay inode identifiers separately from
 the original base so new files can be restored safely.
 
 Browser filesystem persistence does **not** preserve live processes
 or the in-memory kernel across a page reload; a fresh shell starts
 against the previous writable filesystem. The initial `nekofetch`
-greeting runs once per browser and account using a browser-local
-first-launch flag, not a guest-home marker. When the guest root has
+greeting runs once **after successful execution** per browser and account
+using a browser-local first-launch flag, not a guest-home marker.
+It is executed directly through the guest kernel, not typed into the
+interactive line editor; long commands therefore cannot corrupt the
+mobile terminal output. When the guest root has
 no `nekofetch`, the build omits the command. Executables in the
 custom `/opt/kittyterm/bin` directory are also recognised. Set
 `initialCommand` to `""` to disable the greeting.
@@ -164,7 +173,9 @@ not fork the guest kernel to work around package requirements.
 
 `src/terminal.ts` loads `/dist/mikuos/thistle.js` with
 `data-mikuos-embed="true"`, suppressing mikuOS's standalone auto-launch.
-It passes the existing xterm.js instance and explicit
-`{ config, rootBase, tetoBase, kernel, persistence }` options to
+It passes a thin buffering adapter around the existing xterm.js instance
+and explicit `{ config, rootBase, tetoBase, kernel, persistence }` options to
 `Thistle.launchThistle()`. mikuOS owns shell input and output; the website
 continues to own terminal presentation, mobile keyboard, and disposal.
+The website temporarily supplies the IndexedDB storage root while the
+upstream mikuOS guest is launched; the upstream submodule is not patched.
