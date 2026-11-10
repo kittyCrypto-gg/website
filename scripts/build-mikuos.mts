@@ -78,22 +78,22 @@ function safeSource(source: string): string {
  * During the transition, builds can still use the untouched upstream root.
  */
 async function rootSource(): Promise<string> {
-    const local = resolve(".thistle.base");
+    const local = resolve("mikuOS/.thistle.base");
 
     try {
         const found = await lstat(local);
         if (!found.isDirectory() || found.isSymbolicLink()) {
-            throw new Error("Website .thistle.base must be a real directory");
+            throw new Error("Website mikuOS/.thistle.base must be a real directory");
         }
 
-        console.log("[mikuOS] Using website .thistle.base as the guest userland.");
+        console.log("[mikuOS] Using website mikuOS/.thistle.base as the guest userland.");
         return local;
     } catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
 
     const fallback = join(upstream, ".thistle.base");
-    console.log("[mikuOS] Website .thistle.base is not present; using upstream guest root.");
+    console.log("[mikuOS] Website mikuOS/.thistle.base is not present; using upstream guest root.");
     return fallback;
 }
 
