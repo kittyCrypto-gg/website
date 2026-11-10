@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resolveGuestAccount, synchroniseRootMetadata } from "./build-mikuos.mjs";
+import { resolveGuestAccount, selectGuestName, synchroniseRootMetadata } from "./build-mikuos.mjs";
 
 const root = await mkdtemp(join(tmpdir(), "website-mikuos-account-"));
 
@@ -26,6 +26,7 @@ try {
         ""
     ].join("\n"));
 
+    assert.equal(await selectGuestName(root), "kittyterm", "Prefer the custom non-guest account");
     const existing = await resolveGuestAccount("kittyterm", root);
     assert.equal(existing.uid, 1001);
     assert.equal(existing.gid, 1001);
