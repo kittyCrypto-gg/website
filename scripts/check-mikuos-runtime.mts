@@ -48,7 +48,9 @@ const origin = "https://mikuos-smoke.invalid";
 const assetRoot = resolve("dist/mikuos");
 const config = JSON.parse(await readFile(join(assetRoot, "website-config.json"), "utf8")) as {
     kernel: string;
-    system: { hostName: string; accounts: { web: {
+    initialCommand: string;
+    startup?: { bashrc: string; logoScript: string } | null;
+    system: { hostName: string; accounts: {
         name: string; home: string; cred: { uid: number; gid: number }
     } } };
 };
@@ -61,6 +63,16 @@ assert.ok(root, "The guest root inode must be present");
 assert.equal(root.k, "d");
 assert.ok(root.mode & 0o400, "The guest root must be readable");
 
+// The custom CLI entry must use PATH and aliases, never an absolute
+// filename baked into the website's first-launch configuration.
+if (rootManifest.entries.some(entry => entry.p === "/opt/kittyterm/bin/nekofetch")) {
+    assert.equal(config.initialCommand, "nekofetch",
+        "Custom nekofetch must execute by name through the guest PATH");
+    assert.ok(config.startup?.bashrc.includes("/opt/kittyterm/bin"),
+        "The custom base must provide the Bash PATH setup");
+    assert.match(config.startup!.bashrc, /^\s*alias\s+neofetch\s*=/m,
+        "The custom base must retain its neofetch alias");
+}
 const account = config.system.accounts.web;
 const guestHome = rootManifest.entries.find(entry => entry.p === account.home);
 if (guestHome) {
