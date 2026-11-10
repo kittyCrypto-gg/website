@@ -24,11 +24,13 @@ const filesystem = new Map([
 ]);
 const env = new Map([["PATH", "/bin:/usr/bin"], ["HOME", "/home/kittyterm"]]);
 const aliases = new Map<string, string>();
+let workingDirectory = "/home/kittyterm";
 const shell = {
     s: {
         uid: 1001,
         env(name: string): string | undefined { return env.get(name); },
         setenv(name: string, value: string): void { env.set(name, value); },
+        cd(path: string): void { workingDirectory = path; env.set("PWD", path); },
         read(path: string): string {
             const content = filesystem.get(path);
             if (content === undefined) throw Object.assign(new Error("not found"), { code: "ENOENT" });
@@ -45,13 +47,16 @@ const shell = {
     }
 };
 
-applyGuestStartup(shell, "light");
+assert.equal(applyGuestStartup(shell, "light"), true,
+    "A homeless guest must have its invalid working directory corrected");
 assert.equal(env.get("PATH"), "/opt/kittyterm/bin:/opt/kittyterm/node/bin:/bin:/usr/bin");
 assert.equal(aliases.get("neofetch"), "nekofetch");
 assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku.txt");
 assert.equal(env.get("NEKOFETCH_TEXT"), "00D7D7");
 assert.equal(shell.sh.prefs.history, false, "Homeless guest must not save history");
 assert.ok(!filesystem.has("/home/kittyterm"), "Startup must not create a home");
+assert.equal(workingDirectory, "/", "Homeless guest shell must start at a readable directory");
+assert.equal(env.get("HOME"), "/home/kittyterm", "Do not silently grant the guest a new home");
 
 applyGuestTheme(shell, "dark");
 assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku-dark.txt");
