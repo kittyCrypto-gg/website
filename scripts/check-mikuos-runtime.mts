@@ -22,8 +22,9 @@ interface GuestSession {
         sh: {
             prompt(): string;
             ensureUserState(): void;
+            saveHistory(): void;
             aliases: Map<string, string>;
-            prefs: { history: boolean };
+            prefs: { history: boolean; autocomplete: boolean };
         };
     };
 }
