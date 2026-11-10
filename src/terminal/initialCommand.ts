@@ -11,15 +11,7 @@ interface InitialOptions {
     command: string;
     username: string;
     persistent: boolean;
-    store?: FirstBootStore | null;
-}
-
-function browserStore(): FirstBootStore | null {
-    try {
-        return window.localStorage;
-    } catch {
-        return null;
-    }
+    store: FirstBootStore | null;
 }
 
 /**
@@ -29,7 +21,7 @@ function browserStore(): FirstBootStore | null {
  */
 function firstLaunch(options: InitialOptions): boolean {
     if (!options.persistent) return true;
-    const storage = options.store === undefined ? browserStore() : options.store;
+    const storage = options.store;
     if (!storage) return true;
     const key = "kc:mikuos:initial-command:" + options.username;
     try {
