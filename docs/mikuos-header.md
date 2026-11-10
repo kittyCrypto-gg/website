@@ -35,8 +35,8 @@ Edit `config/mikuos.json`:
 
 ```json
 {
-  "hostname": "kittycrypto",
-  "username": "guest",
+  "hostname": "auto",
+  "username": "auto",
   "kernel": "teto",
   "persistence": true,
   "initialCommand": "nekofetch",
@@ -46,33 +46,52 @@ Edit `config/mikuos.json`:
 }
 ```
 
-`hostname` and `username` are applied **before first boot**.
-If the customised image already has an `/etc/passwd` entry matching
-`username`, the build respects that account's existing UID, GID,
-home directory and declared login shell. Its supplementary groups are
-read from `/etc/group`. For example, a user with UID 1001 in your
-prepared `.thistle.base` remains UID 1001 in the browser. If no matching
-account exists, the build renames the upstream `guest` account (UID 1000)
-instead. No change is made to the upstream repository itself.
+With `hostname: "auto"`, the website uses `/etc/hostname` from
+the website-owned `.thistle.base`. With `username: "auto"`, it selects
+the unprivileged, non-default account from `/etc/passwd` when one is
+unambiguous. Its UID, GID, groups, home pathname and declared shell are
+respected. An explicit username or hostname overrides this automatic
+selection. Neither mode grants sudo access or creates a user home.
 
-mikuOS currently uses its own interactive Thistle shell in the browser.
-A different shell path in `/etc/passwd`, including `/bin/bash`, does
-not by itself make an incompatible native Linux shell executable.
+The current custom image uses `kittyterm` (UID/GID 1001), with a locked
+password, no sudo rights and no `/home/kittyterm` directory. The build
+preserves that absence. It also ensures a writable, sticky `/tmp` is
+available without modifying the account.
 
-`kernel` can be `teto`, `thistle` or `auto`. The Teto WebAssembly
-backend is the default. `persistence` selects the same browser OPFS-backed
-overlay used by standalone mikuOS. `initialCommand`, if set, is sent once
-to an untouched terminal session, not rerun whenever the visitor switches
-the website theme. With the default `initialCommand: "nekofetch"`, the
-build only enables that greeting when the custom guest root contains
-`nekofetch` in a standard executable directory. The upstream fallback
-therefore boots without an error. Set `initialCommand` to `""` to disable
-the automatic greeting.
+The interactive browser shell is mikuOS `thsh`, not Debian Bash. For
+UID 1001, the website reads `/etc/bash.bashrc` from the actual guest
+filesystem and applies the supported settings: a configured `PATH`,
+simple aliases, and `/opt/kittyterm/scripts/asciilogo.sh` logo colours
+and theme selection. This is **not** arbitrary Bash execution.
+The `WEB_UI_THEME`, `ASCII_LOGO` and `NEKOFETCH_TEXT` environment
+values follow the current light/dark website theme. The homeless guest
+does not save interactive shell history.
 
-The website build generates `dist/mikuos/website-config.json`, a complete
-upstream browser runtime under `dist/mikuos/`, and a **customised immutable
-root filesystem** at `dist/mikuos/root/`. `pages.config.ts` copies the
-entire `dist` directory to the deployed website.
+`kernel` can be `teto`, `thistle` or `auto`. Teto WebAssembly is
+the default. The website suppresses the diagnostic Teto development
+banner and starts with the mikuOS welcome message.
+
+### Browser persistence and first greeting
+
+The custom `.thistle.base` is packaged as an **immutable baseline**
+at `dist/mikuos/root/`. Each visitor gets their own browser OPFS
+writable overlay containing newly added, changed and removed files.
+The overlay is merged on every fresh boot without overwriting the
+baseline. mikuOS now maps overlay inode identifiers separately from
+the original base so new files can be restored safely.
+
+Browser filesystem persistence does **not** preserve live processes
+or the in-memory kernel across a page reload; a fresh shell starts
+against the previous writable filesystem. The initial `nekofetch`
+greeting runs once per browser and account using a browser-local
+first-launch flag, not a guest-home marker. When the guest root has
+no `nekofetch`, the build omits the command. Executables in the
+custom `/opt/kittyterm/bin` directory are also recognised. Set
+`initialCommand` to `""` to disable the greeting.
+
+The website build generates `dist/mikuos/website-config.json` and
+the complete runtime under `dist/mikuos/`. `pages.config.ts`
+publishes the `dist` tree.
 
 ## Website-owned root filesystem
 
@@ -115,8 +134,8 @@ fail the build rather than silently falling back.
 
 The website-owned image should be a **complete root filesystem**, not
 only a set of additions. Do not include credentials, private keys, shell
-history, personal files or other secrets in a public repository. If you only need to add a few extra guest
-programmes, use the `packages` array below instead.
+history, personal files or other secrets in a public repository. For a
+few extra guest programmes, use the `packages` array below.
 
 ## Guest packages
 
