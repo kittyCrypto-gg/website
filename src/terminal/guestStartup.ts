@@ -16,8 +16,9 @@ interface GuestShell {
     sh: {
         prompt(): string;
         ensureUserState(): void;
+        saveHistory(): void;
         aliases: Map<string, string>;
-        prefs: { history: boolean };
+        prefs: { history: boolean; autocomplete: boolean };
     };
 }
 
@@ -129,11 +130,12 @@ function correctMissingHome(shell: GuestShell): boolean {
         // No home directory is expected for the unprivileged website guest.
     }
 
-    // thsh reloads preferences on its first command. Initialise those
-    // settings now so the homeless guest's history disable is not lost
-    // when the automatic greeting executes.
+    // Initialise thsh preferences before disabling only disk history.
+    // Autocomplete suggestions read the in-memory history, so setting
+    // prefs.history=false would disable that feature as well.
+    // A homeless guest must never create /home/kittyterm or a history file.
     shell.sh.ensureUserState();
-    shell.sh.prefs.history = false;
+    shell.sh.saveHistory = (): void => {};
     shell.s.cd("/");
     return true;
 }
