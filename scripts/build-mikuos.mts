@@ -179,7 +179,8 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<void> {
     await rm(stage, { recursive: true, force: true });
     await mkdir(dirname(stage), { recursive: true });
     await cp(await rootSource(), stage, {
-        recursive: true
+        recursive: true,
+        verbatimSymlinks: true
     });
 
     // Metadata must be derived from the actual website image before applying
