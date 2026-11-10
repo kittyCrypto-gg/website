@@ -5,6 +5,7 @@ import { checkMobile } from "./terminal/dependencies.ts";
 import { attachExitControl } from "./terminal/exitControl.ts";
 import { runInitialCommand } from "./terminal/initialCommand.ts";
 import { applyGuestStartup, applyGuestTheme } from "./terminal/guestStartup.ts";
+import { launchWithGuestStorage } from "./terminal/guestStorage.ts";
 import {
     attachSafeResizeFitting,
     attachScrollTracking,
@@ -46,6 +47,7 @@ interface MikuOSSession {
     key(data: string): void;
     os: {
         prompt(): string;
+        run(command: string, heredocBodies?: readonly string[], recordHistory?: boolean): Promise<number>;
         s: {
             uid: number;
             env(name: string): string | Map<string, string> | undefined;
@@ -216,14 +218,14 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     if (disposed) throw new Error("Terminal was disposed before mikuOS booted");
 
     fitNow();
-    runtime = await api.launchThistle({
+    runtime = await launchWithGuestStorage(() => api.launchThistle({
         terminal: term,
         config: config.system,
         rootBase: "/dist/mikuos/root/",
         tetoBase: "/dist/mikuos/teto/",
         persistence: config.persistence,
         kernel: config.kernel
-    });
+    }));
 
     if (disposed) {
         runtime.dispose();
@@ -243,7 +245,16 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         // A locked-down browser can still run the guest without localStorage.
     }
     if (!userInteracted) {
-        await runInitialCommand(runtime.session, {
+        await runInitialCommand({
+            execute: async (command: string): Promise<boolean> => {
+                // Use the guest kernel directly. Sending a command through
+                // xterm's character editor causes mobile line-wrap artefacts.
+                term.write("\r\n");
+                const status = await runtime!.session.os.run(command, [], false);
+                term.write("\r\n" + runtime!.session.os.prompt());
+                return status === 0;
+            }
+        }, {
             command: config.initialCommand,
             username: config.system.accounts.web.name,
             persistent: runtime.persistent,
