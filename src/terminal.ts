@@ -58,6 +58,7 @@ interface MikuBootApi {
 
 interface MikuOSSession {
     key(data: string): void;
+    restoreHistory(entries: readonly string[]): void;
     os: {
         prompt(): string;
         run(command: string, heredocBodies?: readonly string[], recordHistory?: boolean): Promise<number>;
@@ -304,7 +305,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         // A locked-down browser can still run the guest without localStorage.
     }
     if (config.persistence) {
-        attachBrowserHistory(runtime.session.os, config.system.accounts.web.name, firstBootStore);
+        attachBrowserHistory(runtime.session, config.system.accounts.web.name, firstBootStore);
     }
     if (!userInteracted) {
         await runInitialCommand({
