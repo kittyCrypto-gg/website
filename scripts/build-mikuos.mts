@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { cp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, readFile, readdir, readlink, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -73,6 +73,102 @@ function safeSource(source: string): string {
     return result;
 }
 
+/**
+ * Prefer the website's own complete guest filesystem when provided.
+ * During the transition, builds can still use the untouched upstream root.
+ */
+async function rootSource(): Promise<string> {
+    const local = resolve(".thistle.base");
+
+    try {
+        const found = await lstat(local);
+        if (!found.isDirectory() || found.isSymbolicLink()) {
+            throw new Error("Website .thistle.base must be a real directory");
+        }
+
+        console.log("[mikuOS] Using website .thistle.base as the guest userland.");
+        return local;
+    } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+
+    const fallback = join(upstream, ".thistle.base");
+    console.log("[mikuOS] Website .thistle.base is not present; using upstream guest root.");
+    return fallback;
+}
+
+/**
+ * The browser root packager consumes .thistle-meta.json, not a directory scan.
+ * Reconcile it with the files actually supplied, otherwise freshly uploaded
+ * binaries would be silently omitted from the deployed image.
+ */
+async function synchroniseRootMetadata(): Promise<RootMetadata> {
+    const metadataPath = join(stage, ".thistle-meta.json");
+    let original: RootMetadata = { ent: [] };
+
+    try {
+        original = JSON.parse(await readFile(metadataPath, "utf8")) as RootMetadata;
+    } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+
+    if (!Array.isArray(original.ent)) {
+        throw new Error("Custom .thistle.base has an invalid .thistle-meta.json entry list");
+    }
+
+    const prior = new Map(original.ent.map(entry => [entry.p, entry]));
+    let nextId = original.ent.reduce((largest, entry) =>
+        Math.max(largest, Number.isSafeInteger(entry.id) ? entry.id : 0), 0);
+    const entries: RootEntry[] = [];
+    const pending = ["/"];
+
+    while (pending.length > 0) {
+        const parent = pending.pop()!;
+        const hostParent = parent === "/" ? stage : join(stage, parent.slice(1));
+        const children = await readdir(hostParent, { withFileTypes: true });
+
+        for (const child of children) {
+            if (parent === "/" && child.name === ".thistle-meta.json") continue;
+
+            const guestPath = parent === "/" ? "/" + child.name : parent + "/" + child.name;
+            const hostPath = join(hostParent, child.name);
+            const info = await lstat(hostPath);
+            const kind = info.isDirectory()
+                ? "d"
+                : info.isFile()
+                    ? "f"
+                    : info.isSymbolicLink()
+                        ? "l"
+                        : null;
+            if (!kind) throw new Error("Unsupported guest filesystem entry: " + guestPath);
+
+            const previous = prior.get(guestPath);
+            const matched = previous?.k === kind ? previous : undefined;
+            const id = matched?.id ?? ++nextId;
+            const time = Math.trunc(info.mtimeMs / 1000);
+            const entry: RootEntry = {
+                p: guestPath,
+                k: kind,
+                id,
+                mode: info.mode & 0o7777,
+                uid: matched?.uid ?? 0,
+                gid: matched?.gid ?? 0,
+                at: matched?.at ?? time,
+                mt: matched?.mt ?? time,
+                ct: matched?.ct ?? time,
+                ...(kind === "l" ? { to: await readlink(hostPath) } : {})
+            };
+            entries.push(entry);
+            if (kind === "d") pending.push(guestPath);
+        }
+    }
+
+    original.ent = entries;
+    await writeFile(metadataPath, JSON.stringify(original) + "\n");
+    console.log("[mikuOS] Indexed " + String(entries.length) + " guest filesystem entries.");
+    return original;
+}
+
 async function replaceText(file: string, pattern: RegExp, replacement: string): Promise<void> {
     const source = await readFile(file, "utf8");
     if (!pattern.test(source)) throw new Error("Missing expected guest identity in " + file);
@@ -82,10 +178,13 @@ async function replaceText(file: string, pattern: RegExp, replacement: string): 
 async function packRoot(config: WebsiteMikuOSConfig): Promise<void> {
     await rm(stage, { recursive: true, force: true });
     await mkdir(dirname(stage), { recursive: true });
-    await cp(join(upstream, ".thistle.base"), stage, {
-        recursive: true,
-        verbatimSymlinks: true
+    await cp(await rootSource(), stage, {
+        recursive: true
     });
+
+    // Metadata must be derived from the actual website image before applying
+    // guest identity changes and the optional package additions.
+    await synchroniseRootMetadata();
 
     const guest = config.username;
     await writeFile(join(stage, "etc/hostname"), config.hostname + "\n");
