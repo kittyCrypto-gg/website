@@ -368,6 +368,12 @@ export async function buildMikuOS(): Promise<void> {
     const merged = {
         ...base,
         hostName: config.hostname,
+        // The kernel's development notice is useful upstream, but the
+        // website banner should begin directly with the guest MOTD.
+        messages: {
+            ...(base.messages as Record<string, unknown>),
+            tetoBanner: ""
+        },
         accounts: {
             ...accounts,
             web: {
