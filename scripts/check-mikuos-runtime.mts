@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -200,6 +201,9 @@ const context: Record<string, unknown> = {
     Uint8Array, ArrayBuffer, console, setTimeout, clearTimeout, queueMicrotask,
     WebAssembly: (globalThis as unknown as { WebAssembly: unknown }).WebAssembly,
     performance, fetch: localFetch,
+    // Browser realms expose global crypto. Node's vm context does not
+    // inherit it, but mikuOS guest syscalls need Web Crypto entropy.
+    crypto: webcrypto,
     navigator: { storage: { getDirectory: async () => persistentStorage } },
     location: { href: origin + "/" },
     document: {
@@ -210,6 +214,8 @@ const context: Record<string, unknown> = {
     }
 };
 context.window = context;
+assert.equal(typeof webcrypto.getRandomValues, "function",
+    "The browser test must supply Web Crypto to the isolated guest realm");
 
 runInNewContext(script, context, { filename: "mikuos/thistle.js", timeout: 5000 });
 const runtime = context.Thistle as BrowserApi | undefined;
