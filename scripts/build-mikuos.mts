@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { cp, lstat, mkdir, readFile, readdir, readlink, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, cp, lstat, mkdir, readFile, readdir, readlink, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -299,6 +299,13 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
         recursive: true,
         verbatimSymlinks: true
     });
+
+    // A homeless account still needs /tmp. Keep the temporary directory
+    // writable and sticky, but do not synthesise the user's home.
+    const tmp = join(stage, "tmp");
+    await mkdir(tmp, { recursive: true, mode: 0o1777 });
+    if (!(await lstat(tmp)).isDirectory()) throw new Error("Guest /tmp is not a directory");
+    await chmod(tmp, 0o1777);
 
     // Existing web accounts and ownership inside a supplied image are
     // authoritative. The default guest can still be renamed via config.
