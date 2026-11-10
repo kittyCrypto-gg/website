@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { runInitialCommand } from "../src/terminal/initialCommand.ts";
+import { runInitialCommand } from "../src/terminal/initialCommand.js";
 
 const files = new Map<string, string>();
 const sent: string[] = [];
