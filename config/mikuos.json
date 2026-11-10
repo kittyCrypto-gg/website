@@ -1,6 +1,6 @@
 {
-  "hostname": "kittycrypto",
-  "username": "guest",
+  "hostname": "auto",
+  "username": "auto",
   "kernel": "teto",
   "persistence": true,
   "initialCommand": "nekofetch",
