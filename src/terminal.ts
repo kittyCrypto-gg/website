@@ -5,6 +5,7 @@ import { checkMobile } from "./terminal/dependencies.ts";
 import { attachExitControl } from "./terminal/exitControl.ts";
 import { runInitialCommand } from "./terminal/initialCommand.ts";
 import { applyGuestStartup, applyGuestTheme } from "./terminal/guestStartup.ts";
+import { attachBrowserHistory } from "./terminal/browserHistory.ts";
 import { launchWithGuestStorage } from "./terminal/guestStorage.ts";
 import { bufferedGuestTerminal } from "./terminal/bootOutput.ts";
 import {
@@ -73,7 +74,8 @@ interface MikuOSSession {
             ensureUserState(): void;
             saveHistory(): void;
             aliases: Map<string, string>;
-            prefs: { history: boolean; autocomplete: boolean };
+            hist: string[];
+            prefs: { history: boolean; historySize: number; autocomplete: boolean };
         };
     };
 }
@@ -300,6 +302,9 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         firstBootStore = window.localStorage;
     } catch {
         // A locked-down browser can still run the guest without localStorage.
+    }
+    if (config.persistence) {
+        attachBrowserHistory(runtime.session.os, config.system.accounts.web.name, firstBootStore);
     }
     if (!userInteracted) {
         await runInitialCommand({
