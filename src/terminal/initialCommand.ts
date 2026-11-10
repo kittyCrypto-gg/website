@@ -32,6 +32,28 @@ function firstBootMarker(home: string): string {
  * A browser without OPFS runs the greeting every fresh boot, because it
  * has no persistent guest filesystem to carry the marker across visits.
  */
+async function claimFirstBoot(session: InitialSession, home: string): Promise<boolean> {
+    const marker = firstBootMarker(home);
+    try {
+        session.os.s.read(marker);
+        return false;
+    } catch (error: unknown) {
+        const code = (error as { code?: unknown } | null)?.code;
+        if (code !== "ENOENT") {
+            console.warn("[mikuOS] Unable to check first-launch marker:", error);
+            return false;
+        }
+    }
+
+    try {
+        session.os.s.mkfile(marker, "Website banner initialised.\n", 0o600);
+        await session.os.flush();
+    } catch (error: unknown) {
+        console.warn("[mikuOS] Could not persist first-launch marker:", error);
+    }
+    return true;
+}
+
 export async function runInitialCommand(
     session: InitialSession,
     options: InitialOptions
@@ -39,31 +61,9 @@ export async function runInitialCommand(
     const command = options.command.trim();
     if (!command) return false;
 
-    if (options.persistent) {
-        const marker = firstBootMarker(options.home);
-        let seen = false;
-        try {
-            session.os.s.read(marker);
-            seen = true;
-        } catch (error: unknown) {
-            const code = (error as { code?: unknown } | null)?.code;
-            if (code !== "ENOENT") {
-                console.warn("[mikuOS] Unable to check first-launch marker:", error);
-                return false;
-            }
-        }
-        if (seen) return false;
-
-        try {
-            session.os.s.mkfile(marker, "Website banner initialised.\n", 0o600);
-            await session.os.flush();
-        } catch (error: unknown) {
-            // Storage may become unavailable after the kernel starts.
-            // A transient save error must not prevent an otherwise usable
-            // guest session and its first greeting from appearing.
-            console.warn("[mikuOS] Could not persist first-launch marker:", error);
-        }
-    }
+    const shouldRun = !options.persistent ||
+        await claimFirstBoot(session, options.home);
+    if (!shouldRun) return false;
 
     session.key(command + "\r");
     return true;
