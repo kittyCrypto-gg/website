@@ -122,12 +122,29 @@ async function synchroniseRootMetadata(): Promise<RootMetadata> {
     const entries: RootEntry[] = [];
     const pending = ["/"];
 
+    // The VFS requires the root inode itself. Git does not preserve POSIX
+    // ownership or setuid bits, so metadata from the original image wins.
+    const rootInfo = await lstat(stage);
+    const oldRoot = prior.get("/");
+    const rootTime = Math.trunc(rootInfo.mtimeMs / 1000);
+    entries.push({
+        p: "/",
+        k: "d",
+        id: oldRoot?.k === "d" ? oldRoot.id : ++nextId,
+        mode: oldRoot?.k === "d" ? oldRoot.mode : 0o755,
+        uid: oldRoot?.k === "d" ? oldRoot.uid : 0,
+        gid: oldRoot?.k === "d" ? oldRoot.gid : 0,
+        at: oldRoot?.at ?? rootTime,
+        mt: oldRoot?.mt ?? rootTime,
+        ct: oldRoot?.ct ?? rootTime
+    });
+
     while (pending.length > 0) {
         const parent = pending.pop()!;
         const hostParent = parent === "/" ? stage : join(stage, parent.slice(1));
         const children = await readdir(hostParent, { withFileTypes: true });
 
-        for (const child of children) {
+        for (const child of children.sort((left, right) => left.name.localeCompare(right.name))) {
             if (parent === "/" && child.name === ".thistle-meta.json") continue;
 
             const guestPath = parent === "/" ? "/" + child.name : parent + "/" + child.name;
@@ -146,13 +163,15 @@ async function synchroniseRootMetadata(): Promise<RootMetadata> {
             const matched = previous?.k === kind ? previous : undefined;
             const id = matched?.id ?? ++nextId;
             const time = Math.trunc(info.mtimeMs / 1000);
+            const home = guestPath === "/home/guest" ||
+                guestPath.startsWith("/home/guest/");
             const entry: RootEntry = {
                 p: guestPath,
                 k: kind,
                 id,
-                mode: info.mode & 0o7777,
-                uid: matched?.uid ?? 0,
-                gid: matched?.gid ?? 0,
+                mode: matched?.mode ?? (info.mode & 0o7777),
+                uid: matched?.uid ?? (home ? 1000 : 0),
+                gid: matched?.gid ?? (home ? 1000 : 0),
                 at: matched?.at ?? time,
                 mt: matched?.mt ?? time,
                 ct: matched?.ct ?? time,
