@@ -1,57 +1,44 @@
 interface InitialSession {
     key(input: string): void;
-    os: {
-        s: {
-            read(path: string): string;
-            mkfile(path: string, value: string, mode?: number): void;
-        };
-        flush(): Promise<void>;
-    };
+}
+
+interface FirstBootStore {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
 }
 
 interface InitialOptions {
     command: string;
-    home: string;
+    username: string;
     persistent: boolean;
+    store?: FirstBootStore | null;
 }
 
-const MARKER = ".kittycrypto-web-banner-started";
-
-function firstBootMarker(home: string): string {
-    if (!home.startsWith("/") || home.includes("..")) {
-        throw new Error("The guest home is not an absolute safe path");
+function browserStore(): FirstBootStore | null {
+    try {
+        return window.localStorage;
+    } catch {
+        return null;
     }
-    return home.replace(/\/$/, "") + "/" + MARKER;
 }
 
 /**
- * Start the optional greeting only once for a persistent guest filesystem.
- * The marker is itself a user-owned guest file, so it lives in the browser's
- * OPFS overlay, not the repository's immutable .thistle.base.
- *
- * A browser without OPFS runs the greeting every fresh boot, because it
- * has no persistent guest filesystem to carry the marker across visits.
+ * Save the first-run flag outside the guest root. This works for a homeless,
+ * unprivileged account and does not write anything to .thistle.base or the
+ * writable OPFS filesystem overlay.
  */
-async function claimFirstBoot(session: InitialSession, home: string): Promise<boolean> {
-    const marker = firstBootMarker(home);
+function firstLaunch(options: InitialOptions): boolean {
+    if (!options.persistent) return true;
+    const storage = options.store === undefined ? browserStore() : options.store;
+    if (!storage) return true;
+    const key = "kc:mikuos:initial-command:" + options.username;
     try {
-        session.os.s.read(marker);
-        return false;
-    } catch (error: unknown) {
-        const code = (error as { code?: unknown } | null)?.code;
-        if (code !== "ENOENT") {
-            console.warn("[mikuOS] Unable to check first-launch marker:", error);
-            return false;
-        }
+        if (storage.getItem(key) === "1") return false;
+        storage.setItem(key, "1");
+        return true;
+    } catch {
+        return true;
     }
-
-    try {
-        session.os.s.mkfile(marker, "Website banner initialised.\n", 0o600);
-        await session.os.flush();
-    } catch (error: unknown) {
-        console.warn("[mikuOS] Could not persist first-launch marker:", error);
-    }
-    return true;
 }
 
 export async function runInitialCommand(
@@ -59,12 +46,7 @@ export async function runInitialCommand(
     options: InitialOptions
 ): Promise<boolean> {
     const command = options.command.trim();
-    if (!command) return false;
-
-    const shouldRun = !options.persistent ||
-        await claimFirstBoot(session, options.home);
-    if (!shouldRun) return false;
-
+    if (!command || !firstLaunch(options)) return false;
     session.key(command + "\r");
     return true;
 }
