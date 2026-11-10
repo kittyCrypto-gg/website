@@ -11,24 +11,67 @@ export interface PromptContext {
     root: boolean;
 }
 
-function bashValue(text: string): string | null {
-    const line = text.split("\n").find(value =>
-        /^\s*(?:export\s+)?PS1\s*=/.test(value));
-    if (!line) return null;
-    const raw = line.replace(/^\s*(?:export\s+)?PS1\s*=\s*/, "").trim();
-    const prefix = raw.startsWith("$'") ? 2 : 1;
-    const quote = raw.startsWith("$'") ? "'" : raw.charAt(0);
-    if (quote !== "'" && quote !== '"') return null;
-    const chars: string[] = [];
-    let escaped = false;
-    for (let i = prefix; i < raw.length; i++) {
-        const char = raw.charAt(i);
-        if (char === quote && !escaped) return chars.join("");
-        chars.push(char);
-        if (char === "\\" && !escaped) escaped = true;
-        else escaped = false;
+/**
+ * Bash accepts adjacent quoted fragments as one assignment:
+ *
+ * PS1='\[\e[32m\]kitty@'\
+ * '\H:\w\$ '
+ *
+ * It also allows an earlier Debian default PS1 to be overridden by a
+ * later account-specific assignment. Evaluate those literals in order,
+ * without evaluating commands or arbitrary Bash expressions.
+ */
+function quotedFragments(expression: string): string | null {
+    let offset = 0;
+    let output = "";
+    let fragments = 0;
+    while (offset < expression.length) {
+        while (/\s/.test(expression.charAt(offset))) offset++;
+        if (offset >= expression.length || expression.charAt(offset) === "#") break;
+
+        const ansiQuoted = expression.startsWith("$'", offset);
+        if (ansiQuoted) offset++;
+        const quote = expression.charAt(offset);
+        if (quote !== "'" && quote !== '"') return null;
+        offset++;
+
+        const beginning = offset;
+        let escaped = false;
+        while (offset < expression.length) {
+            const char = expression.charAt(offset);
+            if (quote === '"' && char === "\\" && !escaped) {
+                escaped = true;
+                offset++;
+                continue;
+            }
+            if (char === quote && !escaped) break;
+            escaped = false;
+            offset++;
+        }
+        if (offset >= expression.length) return null;
+        output += expression.slice(beginning, offset);
+        fragments++;
+        offset++;
     }
-    return null;
+    return fragments > 0 ? output : null;
+}
+
+function bashValue(text: string): string | null {
+    const lines = text.split(/\r?\n/);
+    let last: string | null = null;
+    for (let i = 0; i < lines.length; i++) {
+        const assignment = /^\s*(?:export\s+)?PS1\s*=\s*(.*)$/.exec(lines[i]!);
+        if (!assignment) continue;
+        let expression = assignment[1]!;
+        // Shell line-continuation removes the backslash and newline
+        // before joining the next quoted fragment.
+        while (/\\\s*$/.test(expression) && i + 1 < lines.length) {
+            expression = expression.replace(/\\\s*$/, "") + lines[++i]!.trimStart();
+        }
+        const value = quotedFragments(expression);
+        if (value !== null) last = value;
+    }
+    return last;
 }
 
 function decodeEscape(value: string, context: PromptContext): string {
