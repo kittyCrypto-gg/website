@@ -34,7 +34,9 @@ const origin = "https://mikuos-smoke.invalid";
 const assetRoot = resolve("dist/mikuos");
 const config = JSON.parse(await readFile(join(assetRoot, "website-config.json"), "utf8")) as {
     kernel: string;
-    system: { hostName: string; accounts: { web: { name: string } } };
+    system: { hostName: string; accounts: { web: {
+        name: string; home: string; cred: { uid: number; gid: number }
+    } } };
 };
 
 const rootManifest = JSON.parse(await readFile(join(assetRoot, "root/manifest.json"), "utf8")) as {
@@ -45,11 +47,12 @@ assert.ok(root, "The guest root inode must be present");
 assert.equal(root.k, "d");
 assert.ok(root.mode & 0o400, "The guest root must be readable");
 
-const guestHome = rootManifest.entries.find(entry => entry.p === "/home/guest");
+const account = config.system.accounts.web;
+const guestHome = rootManifest.entries.find(entry => entry.p === account.home);
 assert.ok(guestHome, "The guest home must exist");
 assert.equal(guestHome.k, "d");
-assert.equal(guestHome.uid, 1000, "The guest home must belong to UID 1000");
-assert.equal(guestHome.gid, 1000, "The guest home must belong to GID 1000");
+assert.equal(guestHome.uid, account.cred.uid, "The guest home must belong to the selected account");
+assert.equal(guestHome.gid, account.cred.gid, "The guest home must belong to the selected group");
 
 const required = ["/etc/passwd", "/etc/group", "/etc/hostname", "/bin/thsh", "/usr/bin/nano"];
 for (const path of required) {
@@ -122,7 +125,7 @@ try {
     assert.equal(handle.session.os.s.read("/etc/hostname").trim(), config.system.hostName);
 
     const passwd = handle.session.os.s.read("/etc/passwd");
-    assert.match(passwd, new RegExp("^" + config.system.accounts.web.name + ":x:1000:1000:", "m"));
+    assert.match(passwd, new RegExp("^" + account.name + ":x:" + String(account.cred.uid) + ":" + String(account.cred.gid) + ":", "m"));
 
     const exitCode = await handle.session.os.run("echo website-mikuos-smoke");
     if (exitCode !== 0) {
