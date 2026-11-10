@@ -57,14 +57,14 @@ interface MikuOSApi {
     }): Promise<MikuOSHandle>;
 }
 
-interface MikuOSWindow extends Window {
+interface MikuOSGlobal {
     Thistle?: MikuOSApi;
 }
 
 let bundlePromise: Promise<MikuOSApi> | null = null;
 
 async function loadMikuOS(): Promise<MikuOSApi> {
-    const existing = (window as MikuOSWindow).Thistle;
+    const existing = (window as unknown as MikuOSGlobal).Thistle;
     if (existing) return existing;
 
     if (bundlePromise) return bundlePromise;
@@ -74,7 +74,7 @@ async function loadMikuOS(): Promise<MikuOSApi> {
         script.src = "/dist/mikuos/thistle.js";
         script.setAttribute("data-mikuos-embed", "true");
         script.onload = () => {
-            const api = (window as MikuOSWindow).Thistle;
+            const api = (window as unknown as MikuOSGlobal).Thistle;
             if (api && typeof api.launchThistle === "function") {
                 resolve(api);
                 return;
