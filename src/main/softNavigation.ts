@@ -36,6 +36,19 @@ function terminalDock(root: HTMLElement): Comment | null {
     return null;
 }
 
+/** Keep the exact live terminal node or its floating window dock. */
+function positionLiveShell(
+    current: HTMLElement, shellSlot: Element, liveShell: HTMLElement
+): void {
+    if (current.contains(liveShell)) {
+        shellSlot.replaceWith(liveShell);
+        return;
+    }
+    const placeholder = terminalDock(current);
+    if (!placeholder) throw new Error("Floating terminal has no docking placeholder");
+    shellSlot.replaceWith(placeholder);
+}
+
 export function installSoftNavigation(onRoute: () => void): void {
     let navigating = false;
 
@@ -58,13 +71,7 @@ export function installSoftNavigation(onRoute: () => void): void {
             const shellSlot = replacement.querySelector("#shell-wrapper");
             const menuSlot = replacement.querySelector("#main-menu");
             if (!shellSlot || !menuSlot) throw new Error("Missing destination terminal slot");
-            if (current.contains(liveShell)) {
-                shellSlot.replaceWith(liveShell);
-            } else {
-                const placeholder = terminalDock(current);
-                if (!placeholder) throw new Error("Floating terminal has no docking placeholder");
-                shellSlot.replaceWith(placeholder);
-            }
+            positionLiveShell(current, shellSlot, liveShell);
             menuSlot.replaceWith(liveMenu);
             current.className = replacement.className;
             current.replaceChildren(...Array.from(replacement.childNodes));
