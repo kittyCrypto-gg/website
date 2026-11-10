@@ -65,24 +65,52 @@ function addConfiguredAliases(shell: GuestShell, bashrc: string): void {
     }
 }
 
-function applyAsciiLogo(shell: GuestShell, theme: GuestTheme, bashrc: string): void {
-    if (!bashrc.includes("/opt/kittyterm/scripts/asciilogo.sh")) return;
-    const script = optionalRead(shell, "/opt/kittyterm/scripts/asciilogo.sh");
-    if (!script) return;
-    shell.s.setenv("WEB_UI_THEME", theme);
+interface PackedStartup {
+    bashrc: string;
+    logoScript: string;
+}
 
-    const base = "/opt/kittyterm/data/";
-    const filename = theme === "dark" ? "miku-dark.txt" : "miku.txt";
-    if (script.includes(filename)) {
+/** The live guest overlay takes priority over the packaged base. */
+function guestText(shell: GuestShell, path: string, packed = ""): string | null {
+    return optionalRead(shell, path) ?? (packed || null);
+}
+
+function configuredLogos(script: string, theme: GuestTheme): string[] {
+    const paths = [...new Set(
+        [...script.matchAll(/\/opt\/kittyterm\/(?:data|scripts)\/[A-Za-z0-9._-]+\.txt/g)]
+            .map(match => match[0])
+            .filter(path => /miku/i.test(path))
+    )];
+    return paths.filter(path => theme === "dark"
+        ? /dark/i.test(path)
+        : !/dark/i.test(path));
+}
+
+function applyAsciiLogo(
+    shell: GuestShell,
+    theme: GuestTheme,
+    bashrc: string,
+    packed?: PackedStartup | null
+): void {
+    const scriptPath = "/opt/kittyterm/scripts/asciilogo.sh";
+    if (!bashrc.includes(scriptPath)) return;
+    const script = guestText(shell, scriptPath, packed?.logoScript);
+    if (!script) return;
+
+    shell.s.setenv("WEB_UI_THEME", theme);
+    // Respect the filenames declared by asciilogo.sh, including different
+    // directories and miku-light.txt rather than guessing a fixed name.
+    for (const path of configuredLogos(script, theme)) {
         try {
-            shell.s.stat(base + filename);
-            shell.s.setenv("ASCII_LOGO", base + filename);
+            if (shell.s.stat(path).kind !== "file") continue;
+            shell.s.setenv("ASCII_LOGO", path);
+            break;
         } catch {
-            // The user's custom image may omit a logo variant.
+            // A variant may be absent; preserve the remaining candidates.
         }
     }
 
-    const colour = /(?:export\s+)?NEKOFETCH_TEXT\s*=\s*["']?([A-Fa-f0-9]{6})/.exec(script);
+    const colour = /(?:export\s+)?NEKOFETCH_TEXT\s*=\s*["']?([A-Fa-f0-9]{6})/m.exec(script);
     if (colour) shell.s.setenv("NEKOFETCH_TEXT", colour[1]!);
 }
 
@@ -119,22 +147,33 @@ function applyConfiguredPrompt(shell: GuestShell, bashrc: string): boolean {
     return true;
 }
 
-export function applyGuestStartup(shell: GuestShell, theme: GuestTheme): boolean {
+export function applyGuestStartup(
+    shell: GuestShell,
+    theme: GuestTheme,
+    packed?: PackedStartup | null
+): boolean {
     if (shell.s.uid !== 1001) return false;
     const corrected = correctMissingHome(shell);
-    const bashrc = optionalRead(shell, "/etc/bash.bashrc");
-    if (!bashrc) return corrected;
+    const bashrc = guestText(shell, "/etc/bash.bashrc", packed?.bashrc);
+    if (!bashrc) {
+        console.warn("[mikuOS] UID-1001 Bash configuration is missing or unreadable.");
+        return corrected;
+    }
 
     addConfiguredPath(shell, bashrc);
     addConfiguredAliases(shell, bashrc);
-    applyAsciiLogo(shell, theme, bashrc);
+    applyAsciiLogo(shell, theme, bashrc, packed);
     const colouredPrompt = applyConfiguredPrompt(shell, bashrc);
     return corrected || colouredPrompt;
 }
 
-export function applyGuestTheme(shell: GuestShell, theme: GuestTheme): void {
+export function applyGuestTheme(
+    shell: GuestShell,
+    theme: GuestTheme,
+    packed?: PackedStartup | null
+): void {
     if (shell.s.uid !== 1001) return;
-    const bashrc = optionalRead(shell, "/etc/bash.bashrc");
+    const bashrc = guestText(shell, "/etc/bash.bashrc", packed?.bashrc);
     if (!bashrc) return;
-    applyAsciiLogo(shell, theme, bashrc);
+    applyAsciiLogo(shell, theme, bashrc, packed);
 }
