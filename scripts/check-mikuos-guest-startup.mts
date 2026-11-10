@@ -73,4 +73,34 @@ assert.equal(env.get("HOME"), "/home/kittyterm");
 applyGuestTheme(shell, "dark");
 assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku-dark.txt");
 assert.equal(env.get("WEB_UI_THEME"), "dark");
+// The actual guest may not be permitted to read root-owned Bash config.
+// The build embeds it without changing the guest UID or file permissions.
+const inaccessible = {
+    s: {
+        ...shell.s,
+        read(path: string): string {
+            if (path === "/etc/bash.bashrc" ||
+                path === "/opt/kittyterm/scripts/asciilogo.sh") {
+                throw Object.assign(new Error("permission denied"), { code: "EACCES" });
+            }
+            return shell.s.read(path);
+        }
+    },
+    sh: {
+        prompt(): string { return "kittyterm@mikuos:/$ "; },
+        aliases: new Map<string, string>(),
+        prefs: { history: true }
+    }
+};
+env.set("PATH", "/bin:/usr/bin");
+env.delete("ASCII_LOGO");
+env.delete("NEKOFETCH_TEXT");
+assert.equal(applyGuestStartup(inaccessible, "dark", {
+    bashrc, logoScript
+}), true);
+assert.ok(String(env.get("PATH")).startsWith("/opt/kittyterm/bin:"));
+assert.equal(inaccessible.sh.aliases.get("neofetch"), "nekofetch");
+assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku-dark.txt");
+assert.equal(env.get("NEKOFETCH_TEXT"), "00D7D7");
+assert.ok(inaccessible.sh.prompt().includes("\x1b[38;5;34m"));
 console.log("[mikuOS guest startup] Bash colours, aliases and homeless UID verified.");
