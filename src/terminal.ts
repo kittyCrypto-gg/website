@@ -3,6 +3,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import * as helpers from "./helpers.ts";
 import { checkMobile } from "./terminal/dependencies.ts";
 import { attachExitControl } from "./terminal/exitControl.ts";
+import { runInitialCommand } from "./terminal/initialCommand.ts";
 import {
     attachSafeResizeFitting,
     attachScrollTracking,
@@ -27,7 +28,13 @@ export type {
 export const TERMINAL_READY_EVENT = "kc:terminal-ready";
 
 interface EmbeddedConfig {
-    system: object;
+    system: {
+        accounts: {
+            web: {
+                home: string;
+            };
+        };
+    };
     kernel: "teto" | "thistle" | "auto";
     persistence: boolean;
     initialCommand: string;
@@ -35,10 +42,18 @@ interface EmbeddedConfig {
 
 interface MikuOSSession {
     key(data: string): void;
+    os: {
+        s: {
+            read(path: string): string;
+            mkfile(path: string, content: string, mode?: number): void;
+        };
+        flush(): Promise<void>;
+    };
 }
 
 interface MikuOSHandle {
     session: MikuOSSession;
+    persistent: boolean;
     dispose(): void;
 }
 
@@ -100,7 +115,9 @@ async function loadConfig(): Promise<EmbeddedConfig> {
     }
 
     const value = config as Partial<EmbeddedConfig>;
+    const accounts = value.system?.accounts;
     if (!value.system || typeof value.system !== "object" ||
+        !accounts || typeof accounts.web?.home !== "string" ||
         (value.kernel !== "thistle" && value.kernel !== "teto" && value.kernel !== "auto") ||
         typeof value.persistence !== "boolean" || typeof value.initialCommand !== "string") {
         throw new Error("Incomplete mikuOS configuration");
@@ -170,8 +187,18 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const detachResizeObserver = attachTerminalResizeObserver(shellWrapper, scheduleFit);
     const interaction = term.onData(() => { userInteracted = true; });
 
+    // Never scroll synchronously from xterm's renderer callback: doing so
+    // can recursively schedule another render on some browser versions.
+    let scrollScheduled = false;
     if (typeof term.onRender === "function") {
-        term.onRender(() => scrollCtl.maybeScroll());
+        term.onRender(() => {
+            if (scrollScheduled || disposed) return;
+            scrollScheduled = true;
+            window.requestAnimationFrame(() => {
+                scrollScheduled = false;
+                if (!disposed) scrollCtl.maybeScroll();
+            });
+        });
     }
 
     scheduleFit();
@@ -194,8 +221,12 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
         throw new Error("Terminal was disposed while mikuOS was booting");
     }
 
-    if (config.initialCommand.trim() && !userInteracted) {
-        runtime.session.key(config.initialCommand + "\r");
+    if (!userInteracted) {
+        await runInitialCommand(runtime.session, {
+            command: config.initialCommand,
+            home: config.system.accounts.web.home,
+            persistent: runtime.persistent
+        });
     }
 
     const textarea = await waitForTerminalTextarea(term);
