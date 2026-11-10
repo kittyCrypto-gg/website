@@ -1,3 +1,5 @@
+import { configuredBashPrompt } from "./bashPrompt.ts";
+
 /**
  * Apply the supported parts of the custom UID-1001 Bash configuration to
  * mikuOS's actual shell, thsh. Bash is not executed by the browser kernel.
@@ -12,6 +14,7 @@ interface GuestShell {
         stat(path: string): { kind: string };
     };
     sh: {
+        prompt(): string;
         aliases: Map<string, string>;
         prefs: { history: boolean };
     };
@@ -102,6 +105,20 @@ function correctMissingHome(shell: GuestShell): boolean {
     return true;
 }
 
+function applyConfiguredPrompt(shell: GuestShell, bashrc: string): boolean {
+    const nativePrompt = shell.sh.prompt.bind(shell.sh);
+    const context = (): Parameters<typeof configuredBashPrompt>[1] => ({
+        user: String(shell.s.env("USER") ?? "kittyterm"),
+        host: String(shell.s.env("HOSTNAME") ?? "mikuos"),
+        cwd: String(shell.s.env("PWD") ?? "/"),
+        home: String(shell.s.env("HOME") ?? "/home/kittyterm"),
+        root: shell.s.uid === 0
+    });
+    if (configuredBashPrompt(bashrc, context()) === null) return false;
+    shell.sh.prompt = () => configuredBashPrompt(bashrc, context()) ?? nativePrompt();
+    return true;
+}
+
 export function applyGuestStartup(shell: GuestShell, theme: GuestTheme): boolean {
     if (shell.s.uid !== 1001) return false;
     const corrected = correctMissingHome(shell);
@@ -111,7 +128,8 @@ export function applyGuestStartup(shell: GuestShell, theme: GuestTheme): boolean
     addConfiguredPath(shell, bashrc);
     addConfiguredAliases(shell, bashrc);
     applyAsciiLogo(shell, theme, bashrc);
-    return corrected;
+    const colouredPrompt = applyConfiguredPrompt(shell, bashrc);
+    return corrected || colouredPrompt;
 }
 
 export function applyGuestTheme(shell: GuestShell, theme: GuestTheme): void {
