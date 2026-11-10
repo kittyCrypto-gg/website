@@ -41,6 +41,15 @@ interface RootMetadata {
     [field: string]: unknown;
 }
 
+interface GuestAccount {
+    name: string;
+    uid: number;
+    gid: number;
+    home: string;
+    shell: string;
+    groups: number[];
+}
+
 const upstream = resolve("vendor/mikuOS");
 const destination = resolve("dist/mikuos");
 const stage = resolve(".build/mikuos-root");
@@ -102,7 +111,7 @@ async function rootSource(): Promise<string> {
  * Reconcile it with the files actually supplied, otherwise freshly uploaded
  * binaries would be silently omitted from the deployed image.
  */
-export async function synchroniseRootMetadata(rootDir: string = stage): Promise<RootMetadata> {
+export async function synchroniseRootMetadata(rootDir: string = stage, account: Pick<GuestAccount, "home" | "uid" | "gid"> = { home: "/home/guest", uid: 1000, gid: 1000 }): Promise<RootMetadata> {
     const metadataPath = join(rootDir, ".thistle-meta.json");
     let original: RootMetadata = { ent: [] };
 
@@ -163,15 +172,15 @@ export async function synchroniseRootMetadata(rootDir: string = stage): Promise<
             const matched = previous?.k === kind ? previous : undefined;
             const id = matched?.id ?? ++nextId;
             const time = Math.trunc(info.mtimeMs / 1000);
-            const home = guestPath === "/home/guest" ||
-                guestPath.startsWith("/home/guest/");
+            const home = guestPath === account.home ||
+                guestPath.startsWith(account.home + "/");
             const entry: RootEntry = {
                 p: guestPath,
                 k: kind,
                 id,
                 mode: matched?.mode ?? (info.mode & 0o7777),
-                uid: matched?.uid ?? (home ? 1000 : 0),
-                gid: matched?.gid ?? (home ? 1000 : 0),
+                uid: matched?.uid ?? (home ? account.uid : 0),
+                gid: matched?.gid ?? (home ? account.gid : 0),
                 at: matched?.at ?? time,
                 mt: matched?.mt ?? time,
                 ct: matched?.ct ?? time,
@@ -188,13 +197,79 @@ export async function synchroniseRootMetadata(rootDir: string = stage): Promise<
     return original;
 }
 
-async function replaceText(file: string, pattern: RegExp, replacement: string): Promise<void> {
-    const source = await readFile(file, "utf8");
-    if (!pattern.test(source)) throw new Error("Missing expected guest identity in " + file);
-    await writeFile(file, source.replace(pattern, replacement));
+function guestPath(path: string): string {
+    if (!path.startsWith("/") || path.split("/").some(part => part === ".." || part === ".")) {
+        throw new Error("Guest account uses an unsafe absolute path: " + path);
+    }
+    return path;
 }
 
-async function packRoot(config: WebsiteMikuOSConfig): Promise<void> {
+function renameGroupMembership(content: string, from: string, to: string, shadow: boolean): string {
+    return content.split("\n").map(line => {
+        if (!line.trim()) return line;
+        const fields = line.split(":");
+        for (const index of shadow ? [2, 3] : [3]) {
+            const members = fields[index];
+            if (members === undefined) continue;
+            fields[index] = members.split(",").map(member => member === from ? to : member).join(",");
+        }
+        return fields.join(":");
+    }).join("\n");
+}
+
+async function resolveGuestAccount(config: WebsiteMikuOSConfig): Promise<GuestAccount> {
+    const passwdPath = join(stage, "etc/passwd");
+    const passwd = await readFile(passwdPath, "utf8");
+    let rows = passwd.split("\n");
+    let chosen = rows.find(row => row.startsWith(config.username + ":"));
+
+    if (!chosen) {
+        const fallback = rows.findIndex(row => row.startsWith("guest:"));
+        if (fallback < 0) {
+            throw new Error("The custom userland has no account called " + config.username +
+                " and no default guest account to rename");
+        }
+
+        rows[fallback] = config.username + rows[fallback]!.slice("guest".length);
+        await writeFile(passwdPath, rows.join("\n"));
+        const shadow = join(stage, "etc/shadow");
+        const currentShadow = await readFile(shadow, "utf8");
+        if (!currentShadow.split("\n").some(row => row.startsWith("guest:"))) {
+            throw new Error("Cannot rename guest: missing /etc/shadow record");
+        }
+        await writeFile(shadow, currentShadow.replace(/^guest:/m, config.username + ":"));
+
+        for (const [file, shadowGroups] of [["group", false], ["gshadow", true]] as const) {
+            const path = join(stage, "etc", file);
+            const members = await readFile(path, "utf8");
+            await writeFile(path, renameGroupMembership(members, "guest", config.username, shadowGroups));
+        }
+        chosen = rows[fallback];
+        console.log("[mikuOS] Renamed the upstream guest account to " + config.username + ".");
+    }
+
+    const columns = chosen.split(":");
+    if (columns.length < 7) throw new Error("Invalid /etc/passwd record for " + config.username);
+    const uid = Number(columns[2]);
+    const gid = Number(columns[3]);
+    if (!Number.isSafeInteger(uid) || uid < 1 || !Number.isSafeInteger(gid) || gid < 1) {
+        throw new Error("The browser guest must have valid, non-root UID/GID");
+    }
+
+    const home = guestPath(columns[5]!);
+    const shell = guestPath(columns[6]!);
+    const memberships = (await readFile(join(stage, "etc/group"), "utf8"))
+        .split("\n")
+        .map(row => row.split(":"))
+        .filter(fields => (fields[3] ?? "").split(",").includes(config.username))
+        .map(fields => Number(fields[2]))
+        .filter(value => Number.isSafeInteger(value) && value >= 0);
+    const groups = [...new Set([gid, ...memberships])];
+
+    return { name: config.username, uid, gid, home, shell, groups };
+}
+
+async function packRoot(config: WebsiteMikuOSConfig): Promise<GuestAccount> {
     await rm(stage, { recursive: true, force: true });
     await mkdir(dirname(stage), { recursive: true });
     await cp(await rootSource(), stage, {
@@ -202,23 +277,14 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<void> {
         verbatimSymlinks: true
     });
 
-    // Metadata must be derived from the actual website image before applying
-    // guest identity changes and the optional package additions.
-    await synchroniseRootMetadata();
+    // Existing web accounts and ownership inside a supplied image are
+    // authoritative. The default guest can still be renamed via config.
+    const guest = await resolveGuestAccount(config);
+    await synchroniseRootMetadata(stage, guest);
 
-    const guest = config.username;
     await writeFile(join(stage, "etc/hostname"), config.hostname + "\n");
     await writeFile(join(stage, "etc/hosts"),
         "127.0.0.1 localhost " + config.hostname + "\n::1 localhost " + config.hostname + "\n");
-    await replaceText(join(stage, "etc/passwd"),
-        /^guest:x:1000:1000:[^\n]*$/m,
-        guest + ":x:1000:1000:" + guest + ":/home/guest:/bin/thsh");
-    await replaceText(join(stage, "etc/shadow"),
-        /^guest:/m, guest + ":");
-    await replaceText(join(stage, "etc/group"),
-        /^(users:x:1000:)[^\n]*$/m, "$1" + guest);
-    await replaceText(join(stage, "etc/gshadow"),
-        /^(users:!::)[^\n]*$/m, "$1" + guest);
 
     const metadataPath = join(stage, ".thistle-meta.json");
     const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as RootMetadata;
@@ -269,6 +335,7 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<void> {
         };
     };
     await new module.WebRootPackage(stage, join(destination, "root"), manifest.image).build();
+    return guest;
 }
 
 export async function buildMikuOS(): Promise<void> {
@@ -287,7 +354,7 @@ export async function buildMikuOS(): Promise<void> {
     execFileSync("npm", ["run", "build"], { cwd: upstream, stdio: "inherit" });
 
     await cp(join(upstream, "dist/web"), destination, { recursive: true });
-    await packRoot(config);
+    const guest = await packRoot(config);
 
     const base = JSON.parse(await readFile(join(upstream, "mikuos.config.json"), "utf8")) as Record<string, unknown>;
     const accounts = base.accounts as Record<string, Record<string, unknown>>;
@@ -300,7 +367,9 @@ export async function buildMikuOS(): Promise<void> {
                 ...accounts.web,
                 name: config.username,
                 displayName: config.username,
-                home: "/home/guest"
+                home: guest.home,
+                shell: guest.shell,
+                cred: { uid: guest.uid, gid: guest.gid, groups: guest.groups }
             }
         }
     };
