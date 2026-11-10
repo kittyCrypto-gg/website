@@ -214,8 +214,8 @@ const context: Record<string, unknown> = {
     }
 };
 context.window = context;
-assert.equal(typeof webcrypto.getRandomValues, "function",
-    "The browser test must supply Web Crypto to the isolated guest realm");
+assert.equal(runInNewContext("crypto.getRandomValues(new Uint8Array(8)).length", context), 8,
+    "The isolated browser realm must expose a working Web Crypto API");
 
 runInNewContext(script, context, { filename: "mikuos/thistle.js", timeout: 5000 });
 const runtime = context.Thistle as BrowserApi | undefined;
