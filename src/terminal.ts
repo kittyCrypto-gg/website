@@ -4,6 +4,7 @@ import * as helpers from "./helpers.ts";
 import { checkMobile } from "./terminal/dependencies.ts";
 import { attachExitControl } from "./terminal/exitControl.ts";
 import { runInitialCommand } from "./terminal/initialCommand.ts";
+import { populateNekofetchMetrics } from "./terminal/nekofetchMetrics.ts";
 import { applyGuestStartup, applyGuestTheme } from "./terminal/guestStartup.ts";
 import { attachBrowserHistory } from "./terminal/browserHistory.ts";
 import { launchWithGuestStorage } from "./terminal/guestStorage.ts";
@@ -60,10 +61,13 @@ interface MikuOSSession {
     key(data: string): void;
     restoreHistory(entries: readonly string[]): void;
     os: {
+        activeKernelMode: "teto" | "thistle";
+        k: { release: string; fs: { cap: number; used(): number } };
         prompt(): string;
         run(command: string, heredocBodies?: readonly string[], recordHistory?: boolean): Promise<number>;
         s: {
             uid: number;
+            uptime(): number;
             env(name: string): string | Map<string, string> | undefined;
             setenv(name: string, value: string): void;
             cd(path: string): void;
@@ -307,6 +311,20 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     if (config.persistence) {
         attachBrowserHistory(runtime.session, config.system.accounts.web.name, firstBootStore);
     }
+
+    // Keep the existing guest executable name and PATH. mikuOS's kernel
+    // identifies WASM by its magic bytes, independently of the filename.
+    // Refresh host metrics immediately before every invocation of nekofetch,
+    // including the first greeting, without slowing unrelated commands.
+    const guestOS = runtime.session.os;
+    const originalRun = guestOS.run.bind(guestOS);
+    guestOS.run = async (command, heredocBodies, recordHistory): Promise<number> => {
+        if (/^\s*(?:\/opt\/kittyterm\/bin\/)?(?:nekofetch(?:\.wasm)?|neofetch)(?:\s|$)/.test(command)) {
+            await populateNekofetchMetrics(guestOS);
+        }
+        return originalRun(command, heredocBodies, recordHistory);
+    };
+
     if (!userInteracted) {
         await runInitialCommand({
             execute: async (command: string): Promise<boolean> => {
