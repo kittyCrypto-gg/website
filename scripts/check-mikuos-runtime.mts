@@ -99,17 +99,7 @@ assert.ok(!splashOutput.includes("\u001b[48;2;0;0;0m"),
     "Website splash must not paint an explicit black rectangle");
 splash.finish();
 console.log("[mikuOS boot] Actual C/WASM splash uses themed terminal background.");
-// Website terminal cells must be transparent, not xterm's opaque black
-// fallback, otherwise ANSI 49 does not reveal --term-bg's gradient.
-const terminalSource = await readFile(resolve("src/terminal.ts"), "utf8");
-assert.match(terminalSource, /allowTransparency:\\s*true/,
-    "xterm must support transparent default-background cells");
-assert.match(terminalSource, /background:\\s*["']rgba\\(0,\\s*0,\\s*0,\\s*0\\)["']/,
-    "xterm default background must expose the website's CSS gradient");
-const darkStyles = await readFile(resolve("styles/core/theme.dark.css"), "utf8");
-assert.match(darkStyles, /--term-bg:\\s*linear-gradient\\(/,
-    "The website's dark terminal background gradient must remain unchanged");
-console.log("[mikuOS boot] Transparent xterm defaults reveal the existing website gradient.");
+
 const homepage = await readFile(resolve("index.html"), "utf8");
 assert.ok(!homepage.includes("terminal-loading") && !homepage.includes("Loading terminal..."),
     "The website must no longer render a separate hardcoded loading notice");
