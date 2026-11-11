@@ -2,7 +2,7 @@ import type { PresenceRuntimeState } from "./presence/model.ts";
 import { PresenceLoadingCard } from "./presence/view.tsx";
 import { getPresenceMounts, getPresenceRefreshInterval, clearPresenceRefreshTimer, clearPresenceClockTimer, renderIntoPresenceMounts, synchronisePresenceClock, observePresenceVisibility } from "./presence/runtime.tsx";
 
-(() => {
+export function mountPresence(): void {
     const mounts = getPresenceMounts();
     if (mounts.length === 0) return;
 
@@ -28,4 +28,4 @@ import { getPresenceMounts, getPresenceRefreshInterval, clearPresenceRefreshTime
     });
 
     observePresenceVisibility(mounts, refreshIntervalMs, runtimeState);
-})();
+}

@@ -1,0 +1,13 @@
+{
+  "hostname": "auto",
+  "username": "auto",
+  "kernel": "teto",
+  "persistence": true,
+  "initialCommand": "nekofetch",
+  "packages": [
+    {
+      "kind": "upstream",
+      "name": "nano"
+    }
+  ]
+}

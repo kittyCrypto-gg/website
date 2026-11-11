@@ -1,0 +1,140 @@
+import assert from "node:assert/strict";
+import { applyGuestStartup, applyGuestTheme } from "../src/terminal/guestStartup.js";
+
+// Mirror the real Debian Bash file: an earlier stock PS1 followed by
+// KittyTerm's five concatenated quoted fragments and UID 1001 guard.
+const customPrompt = [
+    "  PS1='\\[\\e]12;#00d7d7\\a\\]'\\",
+    "'\\[\\e[38;5;34m\\]kitty@\\H'\\",
+    "'\\[\\e[38;5;44m\\]:'\\",
+    "'\\[\\e[38;5;135m\\]\\w'\\",
+    "'\\[\\e[38;5;44m\\] \\$ '"
+];
+const bashrc = [
+    "# System-wide .bashrc file for interactive bash(1) shells.",
+    "if ! [ -n \"${SUDO_USER-}\" -a -n \"${SUDO_PS1-}\" ]; then",
+    "  PS1='${debian_chroot:+($debian_chroot)}\\u@\\H:\\w\\$ '",
+    "fi",
+    "[[ \"$(id -u)\" -eq 1001 ]] || return",
+    ...customPrompt,
+    'export PATH="/opt/kittyterm/bin:/opt/kittyterm/node/bin:$PATH"',
+    "alias neofetch='nekofetch'",
+    "if [ -r /opt/kittyterm/scripts/asciilogo.sh ]; then",
+    "  . /opt/kittyterm/scripts/asciilogo.sh",
+    "fi"
+].join("\n");
+const logoScript = [
+    'if [ "$WEB_UI_THEME" = "dark" ]; then',
+    '  export ASCII_LOGO=/opt/kittyterm/data/miku-dark.txt',
+    'else',
+    '  export ASCII_LOGO=/opt/kittyterm/data/miku.txt',
+    'fi',
+    'export NEKOFETCH_TEXT=00D7D7'
+].join("\n");
+const filesystem = new Map([
+    ["/etc/bash.bashrc", bashrc],
+    ["/opt/kittyterm/scripts/asciilogo.sh", logoScript],
+    ["/opt/kittyterm/data/miku.txt", "test light logo"],
+    ["/opt/kittyterm/data/miku-dark.txt", "test dark logo"]
+]);
+const env = new Map([["PATH", "/bin:/usr/bin"], ["HOME", "/home/kittyterm"],
+    ["HOSTNAME", "mikuos"], ["USER", "kittyterm"]]);
+const aliases = new Map<string, string>();
+let workingDirectory = "/home/kittyterm";
+const shell = {
+    s: {
+        uid: 1001,
+        env(name: string): string | undefined { return env.get(name); },
+        setenv(name: string, value: string): void { env.set(name, value); },
+        cd(path: string): void { workingDirectory = path; env.set("PWD", path); },
+        read(path: string): string {
+            const content = filesystem.get(path);
+            if (content === undefined) throw Object.assign(new Error("not found"), { code: "ENOENT" });
+            return content;
+        },
+        stat(path: string): { kind: string } {
+            if (!filesystem.has(path)) throw Object.assign(new Error("not found"), { code: "ENOENT" });
+            return { kind: "file" };
+        }
+    },
+    sh: {
+        ensureUserState(): void {},
+        saveHistory(): void { throw new Error("Homeless shell must not write history"); },
+        prompt(): string { return "kittyterm@mikuos:/$ "; },
+        aliases,
+        prefs: { history: true, autocomplete: true }
+    }
+};
+
+assert.equal(applyGuestStartup(shell, "light"), true);
+assert.equal(env.get("PATH"), "/opt/kittyterm/bin:/opt/kittyterm/node/bin:/bin:/usr/bin");
+assert.equal(aliases.get("neofetch"), "nekofetch");
+assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku.txt");
+assert.equal(env.get("NEKOFETCH_TEXT"), "00D7D7");
+assert.equal(shell.sh.prefs.history, true, "Autocomplete requires in-memory shell history");
+assert.equal(shell.sh.prefs.autocomplete, true, "Do not disable the upstream autocomplete setting");
+shell.sh.saveHistory(); // A homeless guest must not touch the filesystem.
+assert.equal(filesystem.has("/home/kittyterm/.thsh_history"), false);
+assert.ok(!filesystem.has("/home/kittyterm"));
+assert.equal(workingDirectory, "/", "Shell must start in a readable directory");
+
+const prompt = shell.sh.prompt();
+const plainPrompt = prompt.replace(/\x1b\[[0-9;]*m/g, "")
+    .replace(/\x1b\][^\x07]*\x07/g, "");
+assert.ok(plainPrompt.includes("kitty@mikuos:/"), "Bash PS1 must override the shell username");
+assert.ok(prompt.includes("\x1b[38;5;34m"), "Expected green username");
+assert.ok(prompt.includes("\x1b[38;5;135m"), "Expected purple directory");
+assert.ok(prompt.includes("\x1b]12;#00d7d7\x07"), "Expected cursor colour");
+assert.ok(!prompt.includes("kittyterm@"));
+assert.equal(env.get("HOME"), "/home/kittyterm");
+
+applyGuestTheme(shell, "dark");
+assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku-dark.txt");
+assert.equal(env.get("WEB_UI_THEME"), "dark");
+// The actual guest may not be permitted to read root-owned Bash config.
+// The build embeds it without changing the guest UID or file permissions.
+const inaccessible = {
+    s: {
+        ...shell.s,
+        read(path: string): string {
+            if (path === "/etc/bash.bashrc" ||
+                path === "/opt/kittyterm/scripts/asciilogo.sh") {
+                throw Object.assign(new Error("permission denied"), { code: "EACCES" });
+            }
+            return shell.s.read(path);
+        }
+    },
+    sh: {
+        ensureUserState(): void {},
+        saveHistory(): void { throw new Error("Homeless shell must not write history"); },
+        prompt(): string { return "kittyterm@mikuos:/$ "; },
+        aliases: new Map<string, string>(),
+        prefs: { history: true, autocomplete: true }
+    }
+};
+env.set("PATH", "/bin:/usr/bin");
+env.delete("ASCII_LOGO");
+env.delete("NEKOFETCH_TEXT");
+assert.equal(applyGuestStartup(inaccessible, "dark", {
+    bashrc, logoScript
+}), true);
+assert.ok(String(env.get("PATH")).startsWith("/opt/kittyterm/bin:"));
+assert.equal(inaccessible.sh.aliases.get("neofetch"), "nekofetch");
+assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku-dark.txt");
+assert.equal(env.get("NEKOFETCH_TEXT"), "00D7D7");
+assert.ok(inaccessible.sh.prompt().includes("\x1b[38;5;34m"));
+assert.equal(inaccessible.sh.prefs.history, true);
+assert.equal(inaccessible.sh.prefs.autocomplete, true);
+inaccessible.sh.saveHistory();
+// An explicit ASCII_LOGO export in the user's Bash configuration works
+// even without the optional sourced asciilogo.sh script.
+const directBashrc = bashrc
+    .replace("if [ -r /opt/kittyterm/scripts/asciilogo.sh ]; then", "")
+    .replace("  . /opt/kittyterm/scripts/asciilogo.sh", "")
+    .replace("fi", "fi") + "\nexport ASCII_LOGO=/opt/kittyterm/data/miku.txt\n";
+env.delete("ASCII_LOGO");
+applyGuestStartup(inaccessible, "light", { bashrc: directBashrc, logoScript: "" });
+assert.equal(env.get("ASCII_LOGO"), "/opt/kittyterm/data/miku.txt",
+    "An explicit Bash ASCII_LOGO export must reach the real guest environment");
+
+console.log("[mikuOS guest startup] Bash colours, aliases and homeless UID verified.");
