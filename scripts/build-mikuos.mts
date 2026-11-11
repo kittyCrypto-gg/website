@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { chmod, cp, lstat, mkdir, readFile, readdir, readlink, rm, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, cp, lstat, mkdir, readFile, readdir, readlink, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { transform } from "esbuild";
@@ -52,6 +53,7 @@ interface GuestAccount {
 }
 
 interface PackedGuest extends GuestAccount {
+    rootBase: string;
     hostname: string;
     nekofetch: string | null;
     startup: { bashrc: string; logoScript: string } | null;
@@ -490,6 +492,18 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
         };
     };
     await new module.WebRootPackage(stage, join(destination, "root"), manifest.image).build();
+
+    // Each deployment must publish its root manifest, core and lazy blobs as
+    // one immutable unit. Fixed URLs caused stale core.gz and a fresh manifest
+    // to be mixed by browser/CDN caches, preventing the guest from mounting.
+    const packedRoot = join(destination, "root");
+    const packedManifest = await readFile(join(packedRoot, "manifest.json"));
+    const fingerprint = createHash("sha256").update(packedManifest).digest("hex").slice(0, 16);
+    const versionedName = "root-" + fingerprint;
+    await rename(packedRoot, join(destination, versionedName));
+    const rootBase = "/dist/mikuos/" + versionedName + "/";
+    console.log("[mikuOS] Versioned immutable browser root: " + rootBase);
+
     const fetchers = metadata.ent.filter(entry =>
         entry.p.endsWith("/nekofetch") &&
         (entry.k === "l" || (entry.k === "f" && (entry.mode & 0o111) !== 0)));
@@ -498,7 +512,7 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     const found = preferred.map(path => fetchers.find(entry => entry.p === path))
         .find(entry => entry !== undefined) ?? fetchers[0];
     const nekofetch = found?.p ?? null;
-    return { ...guest, hostname, nekofetch, startup };
+    return { ...guest, hostname, nekofetch, startup, rootBase };
 }
 
 export async function buildMikuOS(): Promise<void> {
@@ -588,7 +602,8 @@ export async function buildMikuOS(): Promise<void> {
     }
     await writeFile(join(destination, "website-config.json"),
         JSON.stringify({ system: system.mergeConfig(merged), kernel: config.kernel,
-            persistence: config.persistence, initialCommand, startup: guest.startup }, null, 2) + "\n");
+            persistence: config.persistence, initialCommand, startup: guest.startup,
+            rootBase: guest.rootBase }, null, 2) + "\n");
 
     console.log("[mikuOS] Prepared complete standalone browser runtime and customised guest root.");
 }
