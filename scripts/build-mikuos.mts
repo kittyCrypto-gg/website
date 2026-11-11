@@ -509,9 +509,15 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     const packedManifest = await readFile(join(packedRoot, "manifest.json"));
     const fingerprint = createHash("sha256").update(packedManifest).digest("hex").slice(0, 16);
     const versionedName = "root-" + fingerprint;
-    await rename(packedRoot, join(destination, versionedName));
+    const versionedRoot = join(destination, versionedName);
+    await rename(packedRoot, versionedRoot);
+
+    // Keep the original URL working for terminal bundles already cached by
+    // the local test browser. The versioned copy remains authoritative for
+    // new sessions; the fallback is a complete copy, including lazy blobs.
+    await cp(versionedRoot, packedRoot, { recursive: true });
     const rootBase = "/dist/mikuos/" + versionedName + "/";
-    console.log("[mikuOS] Versioned immutable browser root: " + rootBase);
+    console.log("[mikuOS] Versioned root: " + rootBase + " (legacy /dist/mikuos/root/ retained).");
 
     const fetchers = metadata.ent.filter(entry =>
         entry.p.endsWith("/nekofetch") &&
