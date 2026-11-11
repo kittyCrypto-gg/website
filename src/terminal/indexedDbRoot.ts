@@ -9,7 +9,7 @@
 interface StoredEntry {
     path: string;
     kind: "file" | "directory";
-    data?: Blob;
+    data?: Blob | ArrayBuffer;
 }
 
 const DB_NAME = "kittycrypto-mikuos-overlay-v1";
@@ -40,14 +40,28 @@ async function readEntry(db: IDBDatabase, path: string): Promise<StoredEntry | u
     return requestResult(tx.objectStore(STORE).get(path)) as Promise<StoredEntry | undefined>;
 }
 
-async function writeEntry(db: IDBDatabase, entry: StoredEntry): Promise<void> {
+async function storeEntry(db: IDBDatabase, entry: StoredEntry): Promise<void> {
     await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put(entry);
+        const request = tx.objectStore(STORE).put(entry);
         tx.oncomplete = () => resolve();
-        tx.onabort = () => reject(tx.error ?? new Error("IndexedDB write aborted"));
-        tx.onerror = () => reject(tx.error ?? new Error("IndexedDB write failed"));
+        tx.onabort = () => reject(request.error ?? tx.error ??
+            new Error("IndexedDB transaction aborted for " + entry.path));
+        tx.onerror = () => reject(request.error ?? tx.error ??
+            new Error("IndexedDB transaction failed for " + entry.path));
     });
+}
+
+async function writeEntry(db: IDBDatabase, entry: StoredEntry): Promise<void> {
+    try {
+        await storeEntry(db, entry);
+    } catch (error) {
+        // Some WebKit builds fail when structured-cloning Blob objects into
+        // IndexedDB. Retry the same complete record as an ArrayBuffer. An
+        // aborted transaction cannot corrupt the record that already exists.
+        if (!(entry.data instanceof Blob)) throw error;
+        await storeEntry(db, { ...entry, data: await entry.data.arrayBuffer() });
+    }
 }
 
 async function deleteEntry(db: IDBDatabase, path: string, recursive: boolean): Promise<void> {
@@ -136,7 +150,7 @@ export class IndexedDirectory {
         const entry = await readEntry(this.db, path);
         if (entry?.kind === "directory") throw mismatched(path);
         if (!entry && !options.create) throw missing(path);
-        if (!entry) await writeEntry(this.db, { path, kind: "file", data: new Blob() });
+        if (!entry) await writeEntry(this.db, { path, kind: "file", data: new ArrayBuffer(0) });
         return new IndexedFile(name, path, this.db);
     }
 
