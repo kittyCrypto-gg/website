@@ -1,5 +1,13 @@
 import assert from "node:assert/strict";
-import { populateNekofetchMetrics } from "../src/terminal/nekofetchMetrics.js";
+// Load browser code at runtime so the Node-only tools typecheck stays isolated.
+const metricsModule = new URL("../src/terminal/nekofetchMetrics.ts", import.meta.url).href;
+const { populateNekofetchMetrics } = await import(metricsModule) as {
+    populateNekofetchMetrics(os: {
+        activeKernelMode: "teto" | "thistle";
+        k: { name: string; release: string; config: { kernel: { machine: string } } };
+        s: { uptime(): number; setenv(name: string, value: string): void };
+    }): Promise<void>;
+};
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
