@@ -44,6 +44,7 @@ interface EmbeddedConfig {
     kernel: "teto" | "thistle" | "auto";
     persistence: boolean;
     initialCommand: string;
+    rootBase: string;
     startup?: { bashrc: string; logoScript: string } | null;
 }
 
@@ -161,7 +162,8 @@ async function loadMikuOS(): Promise<MikuOSApi> {
 }
 
 async function loadConfig(): Promise<EmbeddedConfig> {
-    const response = await fetch("/dist/mikuos/website-config.json");
+    const response = await fetch("/dist/mikuos/website-config.json?v=" + String(Date.now()),
+        { cache: "no-store" });
     if (!response.ok) {
         throw new Error("Unable to load mikuOS configuration (HTTP " + String(response.status) + ")");
     }
@@ -176,7 +178,9 @@ async function loadConfig(): Promise<EmbeddedConfig> {
     if (!value.system || typeof value.system !== "object" ||
         !accounts || typeof accounts.web?.home !== "string" ||
         (value.kernel !== "thistle" && value.kernel !== "teto" && value.kernel !== "auto") ||
-        typeof value.persistence !== "boolean" || typeof value.initialCommand !== "string") {
+        typeof value.persistence !== "boolean" || typeof value.initialCommand !== "string" ||
+        typeof value.rootBase !== "string" ||
+        !/^\/dist\/mikuos\/root-[0-9a-f]{16}\/$/.test(value.rootBase)) {
         throw new Error("Incomplete mikuOS configuration");
     }
 
@@ -280,7 +284,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             terminal: bootOutput.terminal,
             boot,
             config: config.system,
-            rootBase: "/dist/mikuos/root/",
+            rootBase: config.rootBase,
             tetoBase: "/dist/mikuos/teto/",
             persistence: config.persistence,
             kernel: config.kernel
