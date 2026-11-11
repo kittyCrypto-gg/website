@@ -61,6 +61,44 @@ assert.equal(bootWasm.subarray(0, 4).toString("hex"), "0061736d",
     "The boot screen must be genuine WebAssembly, not a CSS mock");
 const bootstrap = await readFile(join(assetRoot, "bootloader.js"), "utf8");
 assert.ok(bootstrap.includes("MikuBoot"), "Missing upstream mikuOS boot bridge");
+
+// Exercise the genuine C/WASM boot output through the website's adapted
+// loader, rather than checking only that a string replacement is present.
+// The panel must use ANSI default-background cells so its fill matches the
+// gradient behind the logo and the rest of the website terminal.
+interface SplashApi {
+    create(terminal: {
+        cols: number;
+        rows: number;
+        write(text: string): void;
+    }, base: URL): Promise<{ finish(): void }>;
+}
+const splashGlobal: { MikuBoot?: SplashApi } = {};
+runInNewContext(bootstrap, {
+    globalThis: splashGlobal,
+    TextDecoder,
+    URL,
+    WebAssembly,
+    Response,
+    fetch: async () => new Response(new Uint8Array(bootWasm)),
+    setInterval: () => 1,
+    clearInterval: () => undefined,
+    document: { baseURI: origin }
+});
+assert.ok(splashGlobal.MikuBoot, "Website splash bridge failed to initialise");
+const splashWrites: string[] = [];
+const splash = await splashGlobal.MikuBoot.create({
+    cols: 120,
+    rows: 27,
+    write(text: string): void { splashWrites.push(text); }
+}, new URL(origin + "/dist/mikuos/"));
+const splashOutput = splashWrites.join("");
+assert.ok(splashOutput.includes("\u001b[49m"),
+    "Website splash panel must use the xterm theme's default background");
+assert.ok(!splashOutput.includes("\u001b[48;2;0;0;0m"),
+    "Website splash must not paint an explicit black rectangle");
+splash.finish();
+console.log("[mikuOS boot] Actual C/WASM splash uses themed terminal background.");
 const homepage = await readFile(resolve("index.html"), "utf8");
 assert.ok(!homepage.includes("terminal-loading") && !homepage.includes("Loading terminal..."),
     "The website must no longer render a separate hardcoded loading notice");
