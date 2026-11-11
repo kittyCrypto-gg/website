@@ -85,13 +85,16 @@ banner and starts with the mikuOS welcome message.
 ### Browser persistence and first greeting
 
 The custom `.thistle.base` is packaged as an **immutable baseline**
-at `dist/mikuos/root/`. Each visitor gets their own IndexedDB-backed
+at a build-specific `dist/mikuos/root-<manifest-sha>/` path. Each visitor gets their own IndexedDB-backed
 writable overlay containing newly added, changed and removed files.
 This replaces native OPFS writable streams for the website because they
 are unreliable on iOS Safari. On first use, the website attempts to import
 a pre-existing OPFS overlay; it does not erase the original OPFS data.
-The writable overlay is merged on every fresh boot without overwriting
-the baseline. mikuOS maps overlay inode identifiers separately from
+The website fetches its configuration without using a cached response, then
+pins each guest session to the matching root manifest, compressed core and blobs.
+This prevents a cached filesystem asset from a different build causing the
+`static web-root core size mismatch` error. The writable overlay is merged on
+every fresh boot without overwriting the baseline. mikuOS maps overlay inode identifiers separately from
 the original base so new files can be restored safely.
 
 Browser filesystem persistence does **not** preserve live processes
@@ -169,7 +172,7 @@ website/
 When present, `npm run build` uses the **website's** `mikuOS/.thistle.base`
 as the entire guest filesystem. It never patches or replaces the
 submodule's `.thistle.base`. The site publishes only the generated
-`dist/mikuos/root/` image, not the raw source directory.
+`dist/mikuos/root-<manifest-sha>/` image, not the raw source directory.
 
 The build enumerates the real directory and regenerates the
 `.thistle-meta.json` entry table before packing it. Added binaries,
