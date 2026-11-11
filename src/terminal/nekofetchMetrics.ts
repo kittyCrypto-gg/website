@@ -102,7 +102,11 @@ async function hostGpuDescription(nav: BrowserNavigator): Promise<string | null>
         const adapter = await nav.gpu?.requestAdapter({ powerPreference: "high-performance" });
         if (!adapter) return null;
         const info = adapter.info;
-        const vendor = info?.vendor?.trim() ?? "";
+        const reportedVendor = info?.vendor?.trim() ?? "";
+        const vendorNames: Record<string, string> = {
+            apple: "Apple", nvidia: "NVIDIA", amd: "AMD", intel: "Intel", qualcomm: "Qualcomm"
+        };
+        const vendor = vendorNames[reportedVendor.toLowerCase()] ?? reportedVendor;
         const candidates = [info?.description, info?.device, info?.architecture, vendor]
             .filter((value): value is string => typeof value === "string" && !!value.trim())
             .map(value => value.trim());
