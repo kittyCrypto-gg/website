@@ -450,6 +450,22 @@ export async function buildMikuOS(): Promise<void> {
     execFileSync("npm", ["run", "build"], { cwd: upstream, stdio: "inherit" });
 
     await cp(join(upstream, "dist/web"), destination, { recursive: true });
+
+    // Website-only colour adaptation: upstream paints its splash panel
+    // with explicit pure black, while the website has a themed terminal
+    // gradient. Use ANSI default background cells for the panel, just as
+    // the Unicode logo already does, so no contrasting rectangle appears.
+    // The pinned C/WASM boot programme and its artwork remain unmodified.
+    const bootloaderPath = join(destination, "bootloader.js");
+    const bootloader = await readFile(bootloaderPath, "utf8");
+    const sourceWrite = "terminal.write(decoder.decode(data));";
+    const themedWrite = 'terminal.write(decoder.decode(data).replaceAll("\\x1b[48;2;0;0;0m", "\\x1b[49m"));';
+    if (bootloader.split(sourceWrite).length !== 2) {
+        throw new Error("Pinned mikuOS bootloader output changed; check the website splash colour patch");
+    }
+    await writeFile(bootloaderPath, bootloader.replace(sourceWrite, themedWrite));
+    console.log("[mikuOS] Website splash uses the themed xterm background instead of pure black.");
+
     const guest = await packRoot(config);
 
     const base = JSON.parse(await readFile(join(upstream, "mikuos.config.json"), "utf8")) as Record<string, unknown>;
