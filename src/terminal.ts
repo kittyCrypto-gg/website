@@ -63,7 +63,7 @@ interface MikuOSSession {
     restoreHistory(entries: readonly string[]): void;
     os: {
         activeKernelMode: "teto" | "thistle";
-        k: { release: string; fs: { cap: number; used(): number } };
+        k: { name: string; release: string; config: { kernel: { machine: string } } };
         prompt(): string;
         run(command: string, heredocBodies?: readonly string[], recordHistory?: boolean): Promise<number>;
         s: {
