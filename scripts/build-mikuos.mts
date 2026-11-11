@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { chmod, cp, lstat, mkdir, readFile, readdir, readlink, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { transform } from "esbuild";
 
 interface UpstreamPackage {
     kind: "upstream";
@@ -457,13 +458,20 @@ export async function buildMikuOS(): Promise<void> {
     // the Unicode logo already does, so no contrasting rectangle appears.
     // The pinned C/WASM boot programme and its artwork remain unmodified.
     const bootloaderPath = join(destination, "bootloader.js");
-    const bootloader = await readFile(bootloaderPath, "utf8");
+    const bootloader = await readFile(join(upstream, "src/boot/loader.js"), "utf8");
     const sourceWrite = "terminal.write(decoder.decode(data));";
     const themedWrite = 'terminal.write(decoder.decode(data).replaceAll("\\x1b[48;2;0;0;0m", "\\x1b[49m"));';
     if (bootloader.split(sourceWrite).length !== 2) {
-        throw new Error("Pinned mikuOS bootloader output changed; check the website splash colour patch");
+        throw new Error("Pinned mikuOS bootloader source changed; check the website splash colour patch");
     }
-    await writeFile(bootloaderPath, bootloader.replace(sourceWrite, themedWrite));
+    const websiteBoot = await transform(bootloader.replace(sourceWrite, themedWrite), {
+        loader: "js",
+        format: "iife",
+        target: "es2022",
+        minify: true,
+        legalComments: "none"
+    });
+    await writeFile(bootloaderPath, websiteBoot.code);
     console.log("[mikuOS] Website splash uses the themed xterm background instead of pure black.");
 
     const guest = await packRoot(config);
