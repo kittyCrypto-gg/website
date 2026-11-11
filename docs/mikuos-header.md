@@ -112,8 +112,35 @@ no `nekofetch`, the build omits the command. With the custom
 `/opt/kittyterm/bin` to `PATH` and define `alias neofetch='nekofetch'`.
 It starts the command by its bare name, `nekofetch`, not by an absolute
 path. The dedicated `kitty-crow/nekofetch:mikuOS` build disables the legacy
-version-fetch subprocess at compile time. The website does not modify
-executable permissions in the supplied guest userland.
+version-fetch subprocess at compile time. During a website build, if the
+custom guest contains `/opt/kittyterm/bin/nekofetch`, the build compiles
+its C source to WASI WebAssembly and replaces the **staged** executable
+with the new module, retaining the original command name and PATH. It also
+installs `nekofetch.wasm` beside it. mikuOS dispatches either file by its
+WASM magic header, not by filename. The source guest filesystem is untouched.
+
+The build requires [wasi-sdk](https://github.com/WebAssembly/wasi-sdk)
+installed at `/opt/wasi-sdk` or referenced by `WASI_SDK_PATH`. It requires a
+local checkout of the private `kitty-crow/nekofetch` repository on its
+`mikuOS` branch, selected with `NEKOFETCH_SOURCE_DIR`. For convenience,
+`../nekofetch`, `../../nekofetch`, `~/nekofetch`,
+`~/nodeapps/nekofetch`, and `mikuOS/nekofetch-src` are also checked.
+A missing compiler or source fails explicitly rather than silently
+publishing an outdated native binary. No private source is fetched or
+published by the website build.
+
+The website injects mikuOS's kernel identity, kernel uptime and virtual
+filesystem memory into the WASI environment when `nekofetch` starts.
+Browser-side signals supply the visitor's logical processor count,
+optional architecture hint, approximate RAM and optional WebGPU adapter.
+Browsers do not expose reliable exact physical CPU models or RAM values.
+`Battery` is a latency-derived score against `srv.kittycrow.dev`, and
+`Signal` against Cloudflare, using cross-origin HTTPS request timing
+rather than ICMP ping. The baseline is the fastest recorded successful
+request for that endpoint on this browser: 100% at that latency and
+proportionally less when the response takes longer. A failed probe is
+reported as unavailable. These values are recomputed before each
+interactive `nekofetch` command, with no background polling.
 Set `initialCommand` to `""` to disable the greeting.
 
 The website build generates `dist/mikuos/website-config.json` and
