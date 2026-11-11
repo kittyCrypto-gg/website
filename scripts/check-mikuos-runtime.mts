@@ -93,12 +93,12 @@ const splash = await splashGlobal.MikuBoot.create({
     write(text: string): void { splashWrites.push(text); }
 }, new URL(origin + "/dist/mikuos/"));
 const splashOutput = splashWrites.join("");
-assert.ok(splashOutput.includes("\u001b[49m"),
-    "Website splash panel must use the xterm theme's default background");
+assert.ok(splashOutput.includes("\u001b[48;2;21;21;21m"),
+    "Website splash panel must use the #151515 midpoint of the dark grey gradient");
 assert.ok(!splashOutput.includes("\u001b[48;2;0;0;0m"),
     "Website splash must not paint an explicit black rectangle");
 splash.finish();
-console.log("[mikuOS boot] Actual C/WASM splash uses themed terminal background.");
+console.log("[mikuOS boot] Actual C/WASM splash uses ANSI #151515 without changing the terminal.");
 
 const homepage = await readFile(resolve("index.html"), "utf8");
 assert.ok(!homepage.includes("terminal-loading") && !homepage.includes("Loading terminal..."),
