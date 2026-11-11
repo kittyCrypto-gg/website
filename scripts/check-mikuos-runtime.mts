@@ -78,7 +78,7 @@ runInNewContext(bootstrap, {
     globalThis: splashGlobal,
     TextDecoder,
     URL,
-    WebAssembly,
+    WebAssembly: (globalThis as unknown as Record<string, unknown>).WebAssembly,
     Response,
     fetch: async () => new Response(new Uint8Array(bootWasm)),
     setInterval: () => 1,
