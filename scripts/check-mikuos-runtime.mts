@@ -132,6 +132,18 @@ assert.equal(packedCore.length, rootManifest.core.packedSize,
     "The staged root core must match its manifest compressed size");
 assert.equal(gunzipSync(packedCore).length, rootManifest.core.unpackedSize,
     "The staged root core must decompress to the manifest's expected size");
+
+// Older terminal scripts still request the original root path. Both URL
+// variants must contain matching assets until those scripts have expired.
+const legacyRoot = resolve("dist/mikuos/root");
+const legacyManifest = await readFile(join(legacyRoot, "manifest.json"));
+assert.equal(legacyManifest.toString("utf8"), packedManifest.toString("utf8"),
+    "The legacy guest manifest must match the versioned root");
+const legacyCore = await readFile(join(legacyRoot, rootManifest.core.path));
+assert.equal(createHash("sha256").update(legacyCore).digest("hex"),
+    createHash("sha256").update(packedCore).digest("hex"),
+    "The legacy guest core must match the versioned root");
+console.log("[mikuOS root] Versioned and legacy filesystem assets verified.");
 const root = rootManifest.entries.find(entry => entry.p === "/");
 assert.ok(root, "The guest root inode must be present");
 assert.equal(root.k, "d");
