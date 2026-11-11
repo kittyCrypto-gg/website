@@ -1,15 +1,13 @@
 /**
- * Browser measurements for the visitor's device and network. These are
- * passed to the WASI guest through its existing environment map.
- *
- * mikuOS kernel identity and virtual memory come exclusively from mikuOS.
- * Browser APIs cannot expose a trustworthy physical CPU model or exact RAM.
+ * Browser measurements for the visitor's GPU and network.
+ * Virtual processor identity, kernel details and uptime come from mikuOS.
  */
 interface GuestMetricsOS {
     activeKernelMode: "teto" | "thistle";
     k: {
+        name: string;
         release: string;
-        fs: { cap: number; used(): number };
+        config: { kernel: { machine: string } };
     };
     s: {
         uptime(): number;
@@ -17,19 +15,17 @@ interface GuestMetricsOS {
     };
 }
 
-interface BrowserCpuHints {
-    architecture?: string;
-    bitness?: string;
-}
-
 interface BrowserNavigator extends Navigator {
-    deviceMemory?: number;
-    userAgentData?: {
-        getHighEntropyValues(hints: string[]): Promise<BrowserCpuHints>;
-    };
     gpu?: {
         requestAdapter(options?: { powerPreference?: string }): Promise<{
-            info?: { vendor?: string; architecture?: string; device?: string };
+            info?: {
+                vendor?: string;
+                architecture?: string;
+                device?: string;
+                description?: string;
+            };
+            limits?: { maxTextureDimension2D?: number };
+            features?: { has(feature: string): boolean };
         } | null>;
     };
 }
@@ -41,7 +37,7 @@ interface LatencyResult {
 
 const endpoints = {
     battery: "https://srv.kittycrow.dev/",
-    signal: "https://www.cloudflare.com/cdn-cgi/trace"
+    signal: "/dist/mikuos/website-config.json"
 } as const;
 
 const baselineKeys = {
@@ -71,13 +67,16 @@ async function fetchLatency(url: string): Promise<number | null> {
     const deadline = window.setTimeout(() => timeout.abort(), 3000);
     const started = performance.now();
     try {
-        await fetch(url, {
+        const target = new URL(url, window.location.href);
+        const sameOrigin = target.origin === window.location.origin;
+        const response = await fetch(target.href, {
             method: "GET",
-            mode: "no-cors",
+            mode: sameOrigin ? "same-origin" : "no-cors",
             cache: "no-store",
             credentials: "omit",
             signal: timeout.signal
         });
+        if (!response.ok && response.type !== "opaque") return null;
         return performance.now() - started;
     } catch {
         return null;
@@ -98,61 +97,46 @@ async function measureLatency(url: string, storageKey: string): Promise<LatencyR
     return { milliseconds: current, score: Math.max(0, Math.min(100, 100 * minimum / current)) };
 }
 
-async function hostCpuDescription(nav: BrowserNavigator): Promise<string | null> {
-    const count = nav.hardwareConcurrency;
-    const logical = Number.isInteger(count) && count > 0
-        ? String(count) + " logical processors" : "";
-    let architecture = "";
-    try {
-        const hints = await nav.userAgentData?.getHighEntropyValues(["architecture", "bitness"]);
-        if (hints?.architecture) {
-            architecture = hints.architecture + (hints.bitness ? "-" + hints.bitness : "");
-        }
-    } catch {
-        // Some browsers intentionally conceal architecture hints.
-    }
-    const parts = [architecture, logical].filter(Boolean);
-    return parts.length ? parts.join(", ") + " (browser-reported)" : null;
-}
-
 async function hostGpuDescription(nav: BrowserNavigator): Promise<string | null> {
     try {
         const adapter = await nav.gpu?.requestAdapter({ powerPreference: "high-performance" });
-        if (!adapter?.info) return null;
+        if (!adapter) return null;
         const info = adapter.info;
-        const values = [info.vendor, info.architecture, info.device]
-            .filter((value): value is string => typeof value === "string" && !!value.trim());
-        return values.length ? values.join(" ") : null;
+        const vendor = info?.vendor?.trim() ?? "";
+        const candidates = [info?.description, info?.device, info?.architecture, vendor]
+            .filter((value): value is string => typeof value === "string" && !!value.trim())
+            .map(value => value.trim());
+        const names = candidates.filter((value, index) =>
+            candidates.findIndex(candidate => candidate.toLowerCase() === value.toLowerCase()) === index);
+        const specific = names.find(value => value.toLowerCase() !== vendor.toLowerCase());
+        const name = specific
+            ? (vendor && !specific.toLowerCase().includes(vendor.toLowerCase()) ? vendor + " " + specific : specific)
+            : (vendor ? vendor + " GPU" : "WebGPU adapter");
+        const texture = adapter.limits?.maxTextureDimension2D;
+        const capabilities = [
+            "WebGPU",
+            Number.isSafeInteger(texture) && (texture ?? 0) > 0 ? "texture " + texture + "px" : "",
+            adapter.features?.has("shader-f16") ? "FP16" : ""
+        ].filter(Boolean);
+        return name + " (" + capabilities.join(", ") + ")";
     } catch {
         return null;
     }
 }
 
-/** Refreshes each metric without claiming access to private physical hardware. */
+/** Read actual mikuOS identity and browser GPU/network measurements. */
 export async function populateNekofetchMetrics(os: GuestMetricsOS): Promise<void> {
-    os.s.setenv("NEKOFETCH_KERNEL",
-        (os.activeKernelMode === "teto" ? "Teto" : "Thistle") + " " + os.k.release);
+    os.s.setenv("NEKOFETCH_KERNEL", os.k.name + " " + os.k.release);
+    os.s.setenv("NEKOFETCH_CPU", os.k.config.kernel.machine + " (virtual)");
     os.s.setenv("NEKOFETCH_UPTIME_SECONDS",
         String(Math.max(0, Math.floor(os.s.uptime() / 1000))));
-    const total = os.k.fs.cap;
-    const used = os.k.fs.used();
-    if (Number.isFinite(total) && total > 0 && Number.isFinite(used) && used >= 0 && used <= total) {
-        os.s.setenv("NEKOFETCH_GUEST_TOTAL_BYTES", String(total));
-        os.s.setenv("NEKOFETCH_GUEST_USED_BYTES", String(used));
-    }
     const nav = navigator as BrowserNavigator;
-    const [cpu, gpu, battery, signal] = await Promise.all([
-        hostCpuDescription(nav),
+    const [gpu, battery, signal] = await Promise.all([
         hostGpuDescription(nav),
         measureLatency(endpoints.battery, baselineKeys.battery),
         measureLatency(endpoints.signal, baselineKeys.signal)
     ]);
-    if (cpu) os.s.setenv("NEKOFETCH_CPU", cpu);
     if (gpu) os.s.setenv("NEKOFETCH_GPU", gpu);
-    if (Number.isFinite(nav.deviceMemory) && (nav.deviceMemory ?? 0) > 0) {
-        os.s.setenv("NEKOFETCH_DEVICE_MEMORY_GIB", String(nav.deviceMemory));
-    }
-    // Failed probes must not leave a stale success from a previous refresh.
     os.s.setenv("NEKOFETCH_BATTERY_PCT", battery ? battery.score.toFixed(1) : "");
     os.s.setenv("NEKOFETCH_SIGNAL_PCT", signal ? signal.score.toFixed(1) : "");
 }
