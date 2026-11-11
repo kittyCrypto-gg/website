@@ -208,6 +208,11 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const term = new Terminal({
         cursorBlink: true,
         convertEol: true,
+        // The site's --term-bg is a gradient, so xterm must leave default
+        // background cells transparent instead of painting opaque black.
+        // This includes the mikuOS splash after its website-only ANSI patch.
+        allowTransparency: true,
+        theme: { background: "rgba(0, 0, 0, 0)" },
         fontSize: checkMobile() ? 12 : 14
     });
     const fitAddon = new FitAddon();
