@@ -110,8 +110,17 @@ async function rootSource(): Promise<string> {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
 
+    // The real website depends on the locally supplied custom root. Cloudflare
+    // builds from GitHub cannot see that untracked directory, so silently
+    // swapping to upstream would publish a guest without nekofetch or Bash.
+    if (process.env.CF_PAGES) {
+        throw new Error("Refusing Cloudflare Pages deployment without mikuOS/.thistle.base. " +
+            "Build with the custom filesystem and deploy the generated dist directory, " +
+            "or provide that filesystem securely in the Cloudflare build environment.");
+    }
+
     const fallback = join(upstream, ".thistle.base");
-    console.log("[mikuOS] Website mikuOS/.thistle.base is not present; using upstream guest root.");
+    console.log("[mikuOS] Website mikuOS/.thistle.base is not present; using upstream guest root for local/CI checks.");
     return fallback;
 }
 
