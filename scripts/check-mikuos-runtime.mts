@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
+import { gunzipSync } from "node:zlib";
 import { runInNewContext } from "node:vm";
 import { applyGuestStartup } from "../src/terminal/guestStartup.js";
 import { attachBrowserHistory } from "../src/terminal/browserHistory.js";
@@ -107,15 +109,29 @@ console.log("[mikuOS boot] Precompiled C/WASM splash and upstream bridge verifie
 const config = JSON.parse(await readFile(join(assetRoot, "website-config.json"), "utf8")) as {
     kernel: string;
     initialCommand: string;
+    rootBase: string;
     startup?: { bashrc: string; logoScript: string } | null;
     system: { hostName: string; accounts: { web: {
         name: string; home: string; cred: { uid: number; gid: number }
     } } };
 };
 
-const rootManifest = JSON.parse(await readFile(join(assetRoot, "root/manifest.json"), "utf8")) as {
+assert.match(config.rootBase, /^\/dist\/mikuos\/root-[0-9a-f]{16}\/$/,
+    "The guest root must use a content-addressed path to prevent mixed build assets");
+const rootDir = resolve("." + config.rootBase);
+const packedManifest = await readFile(join(rootDir, "manifest.json"));
+const version = createHash("sha256").update(packedManifest).digest("hex").slice(0, 16);
+assert.equal(config.rootBase, "/dist/mikuos/root-" + version + "/",
+    "The guest root path must match the manifest content");
+const rootManifest = JSON.parse(packedManifest.toString("utf8")) as {
+    core: { path: string; packedSize: number; unpackedSize: number };
     entries: Array<{ p: string; k: string; mode: number; uid: number; gid: number }>;
 };
+const packedCore = await readFile(join(rootDir, rootManifest.core.path));
+assert.equal(packedCore.length, rootManifest.core.packedSize,
+    "The staged root core must match its manifest compressed size");
+assert.equal(gunzipSync(packedCore).length, rootManifest.core.unpackedSize,
+    "The staged root core must decompress to the manifest's expected size");
 const root = rootManifest.entries.find(entry => entry.p === "/");
 assert.ok(root, "The guest root inode must be present");
 assert.equal(root.k, "d");
@@ -276,7 +292,7 @@ const handle = await runtime!.launchThistle({
     terminal,
     config: config.system,
     kernel: config.kernel,
-    rootBase: origin + "/dist/mikuos/root/",
+    rootBase: origin + config.rootBase,
     tetoBase: origin + "/dist/mikuos/teto/",
     persistence: true
 });
@@ -417,7 +433,7 @@ const reopened = await runtime!.launchThistle({
     terminal,
     config: config.system,
     kernel: config.kernel,
-    rootBase: origin + "/dist/mikuos/root/",
+    rootBase: origin + config.rootBase,
     tetoBase: origin + "/dist/mikuos/teto/",
     persistence: true
 });
