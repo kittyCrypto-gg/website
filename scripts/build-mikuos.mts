@@ -294,6 +294,81 @@ export async function selectGuestName(rootDir: string = stage): Promise<string> 
     return available[0]![0]!;
 }
 
+/**
+ * The private nekofetch repository is kept outside the public website.
+ * A local website build compiles its C source into a WASI module and
+ * replaces the staged .39 executable with WASM, preserving the command name.
+ * mikuOS recognises WASM magic bytes without requiring a .wasm suffix.
+ */
+async function buildNekofetchWasm(): Promise<void> {
+    const target = join(stage, "opt/kittyterm/bin/nekofetch");
+    try {
+        if (!(await lstat(target)).isFile()) throw new Error("Custom nekofetch must be a regular file");
+    } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+        throw error;
+    }
+
+    const home = process.env.HOME ?? "";
+    const candidates = [
+        process.env.NEKOFETCH_SOURCE_DIR,
+        resolve("mikuOS/nekofetch-src"),
+        resolve("../nekofetch"),
+        resolve("../../nekofetch"),
+        join(home, "nekofetch"),
+        join(home, "nodeapps/nekofetch")
+    ].filter((value): value is string => Boolean(value));
+    let source: string | null = null;
+
+    for (const candidate of candidates) {
+        const root = resolve(candidate);
+        try {
+            const [code, header] = await Promise.all([
+                stat(join(root, "nekofetch.c")),
+                stat(join(root, "colour_tags.h"))
+            ]);
+            if (code.isFile() && header.isFile()) {
+                source = root;
+                break;
+            }
+        } catch (error: unknown) {
+            if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        }
+    }
+
+    if (!source) {
+        throw new Error("The custom guest contains nekofetch, but its C source is unavailable. " +
+            "Clone kitty-crow/nekofetch:mikuOS and set NEKOFETCH_SOURCE_DIR to that checkout.");
+    }
+
+    const compiler = join(process.env.WASI_SDK_PATH ?? "/opt/wasi-sdk", "bin/clang");
+    try {
+        if (!(await stat(compiler)).isFile()) throw new Error("WASI clang is not a regular file");
+    } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            throw new Error("A WASI SDK is required to compile nekofetch in the website build. " +
+                "Set WASI_SDK_PATH to the installed wasi-sdk directory.");
+        }
+        throw error;
+    }
+
+    const output = join(stage, "opt/kittyterm/bin/nekofetch.wasm");
+    execFileSync(compiler, [
+        "-DNEKOFETCH_MIKUOS", "-std=c11", "-O2",
+        "-Wall", "-Wextra", "-Wpedantic",
+        "-Wl,-z,stack-size=2097152",
+        join(source, "nekofetch.c"), "-o", output
+    ], { cwd: source, stdio: "inherit" });
+    const compiled = await readFile(output);
+    if (compiled.length < 8 || compiled.subarray(0, 4).toString("hex") !== "0061736d") {
+        throw new Error("nekofetch build did not produce a WebAssembly module");
+    }
+    await cp(output, target);
+    await chmod(target, 0o755);
+    await chmod(output, 0o755);
+    console.log("[mikuOS] Compiled nekofetch to WASM and replaced the staged native executable.");
+}
+
 async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
     await rm(stage, { recursive: true, force: true });
     await mkdir(dirname(stage), { recursive: true });
@@ -302,6 +377,7 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
         recursive: true,
         verbatimSymlinks: true
     });
+    await buildNekofetchWasm();
 
     // A homeless account still needs /tmp. Keep the temporary directory
     // writable and sticky, but do not synthesise the user's home.
