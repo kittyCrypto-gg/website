@@ -174,6 +174,12 @@ as the entire guest filesystem. It never patches or replaces the
 submodule's `.thistle.base`. The site publishes only the generated
 `dist/mikuos/root-<manifest-sha>/` image, not the raw source directory.
 
+A Cloudflare Pages build started directly from GitHub cannot see an
+untracked local `.thistle.base`. Such a deployment is refused rather
+than silently publishing the upstream guest without custom commands.
+Build locally with the custom filesystem and deploy the resulting
+`dist` directory, or provision that filesystem in the build environment.
+
 The build enumerates the real directory and regenerates the
 `.thistle-meta.json` entry table before packing it. Added binaries,
 scripts, directories and symlinks are therefore included, even if the
