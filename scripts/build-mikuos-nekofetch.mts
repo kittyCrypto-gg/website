@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 // Reviewed kitty-crow/nekofetch:mikuOS revision. The repository is private:
 // read it from the established local checkout instead of an unauthenticated
 // download or embedding its source in the public website repository.
-const sourceRevision = "372daa8b61b62bef2635d0efc9ba592d8df882fa";
+const sourceRevision = "1f18ff09dc7a567a416ec22d1c009f6ecbec84d3";
 
 function git(args: string[]): string {
     return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
