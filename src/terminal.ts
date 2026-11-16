@@ -7,6 +7,7 @@ import { runInitialCommand } from "./terminal/initialCommand.ts";
 import { populateNekofetchMetrics } from "./terminal/nekofetchMetrics.ts";
 import { applyGuestStartup, applyGuestTheme } from "./terminal/guestStartup.ts";
 import { attachBrowserHistory } from "./terminal/browserHistory.ts";
+import { attachTerminalClipboard } from "./terminal/clipboard.ts";
 import { launchWithGuestStorage } from "./terminal/guestStorage.ts";
 import { bufferedGuestTerminal } from "./terminal/bootOutput.ts";
 import {
@@ -217,6 +218,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(termDiv);
+    const detachClipboard = attachTerminalClipboard(term, termDiv);
 
     const followState: FollowState = { value: true };
     const scrollCtl: ScrollTrackingController = attachScrollTracking(term, followState);
@@ -376,6 +378,7 @@ export async function setupTerminalModule(): Promise<TerminalModule> {
             disposed = true;
             detachResizeHandlers();
             detachResizeObserver();
+            detachClipboard();
             interaction.dispose();
             runtime?.dispose();
             term.dispose();
