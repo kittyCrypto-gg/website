@@ -1,9 +1,11 @@
 import type { XtermTerminal } from "./types.ts";
+import { populateNekofetchMetrics } from "./nekofetchMetrics.ts";
+import type { GuestMetricsOS } from "./nekofetchMetrics.ts";
 
 export interface MikuOSSession {
     key(data: string): void;
     idle(): Promise<void>;
-    os: {
+    os: GuestMetricsOS & {
         run(command: string, heredocs?: readonly string[], recordHistory?: boolean): Promise<number>;
     };
 }
@@ -126,6 +128,10 @@ export async function startMikuOS(term: XtermTerminal): Promise<MikuOSHandle> {
         rootBase: new URL("/dist/mikuos/root/", window.location.origin),
         tetoBase: new URL("/dist/mikuos/teto/", window.location.origin)
     });
+
+    // The guest must receive its live kernel, uptime and browser measurements
+    // before the first nekofetch invocation, not merely in a standalone test.
+    await populateNekofetchMetrics(handle.session.os);
 
     // A host-specific welcome command runs only after the real guest is ready.
     // Do not contaminate its shell history with the website's presentation.

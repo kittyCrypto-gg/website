@@ -79,3 +79,70 @@ try {
     restore("navigator", originalNavigator);
     restore("window", originalWindow);
 }
+
+
+// Integration regression: opening the actual website terminal must inject
+// measurements before the initial Nekofetch command is executed.
+const priorSessionStorage = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
+const startupEnv = new Map<string, string>();
+const startupCommands: string[] = [];
+const startupOs = {
+    activeKernelMode: "teto" as const,
+    k: { name: "Teto", release: "2.1.0", config: { kernel: { machine: "Thistle64 RV64GC" } } },
+    s: {
+        uptime(): number { return 3661000; },
+        setenv(name: string, value: string): void { startupEnv.set(name, value); }
+    },
+    async run(command: string): Promise<number> {
+        startupCommands.push(command);
+        assert.equal(startupEnv.get("NEKOFETCH_KERNEL"), "Teto 2.1.0");
+        assert.equal(startupEnv.get("NEKOFETCH_UPTIME_SECONDS"), "3661");
+        assert.equal(startupEnv.get("NEKOFETCH_CPU"), "Thistle64 RV64GC (virtual)");
+        return 0;
+    }
+};
+const startupWindow = {
+    ...browserWindow,
+    Thistle: {
+        async launchThistle(): Promise<object> {
+            return {
+                session: { os: startupOs },
+                kernel: "teto",
+                persistent: true,
+                dispose(): void {}
+            };
+        }
+    }
+};
+try {
+    Object.defineProperty(globalThis, "window", { configurable: true, value: startupWindow });
+    Object.defineProperty(globalThis, "navigator", { configurable: true, value: browserNavigator });
+    Object.defineProperty(globalThis, "sessionStorage", {
+        configurable: true, value: { getItem(): null { return null; } }
+    });
+    Object.defineProperty(globalThis, "fetch", {
+        configurable: true,
+        value: async (input: string): Promise<Response> => {
+            if (input === "/dist/mikuos/website-config.json") {
+                return new Response(JSON.stringify({
+                    system: {}, kernel: "teto", persistence: true, initialCommand: "nekofetch"
+                }), { status: 200 });
+            }
+            return new Response(null, { status: 204 });
+        }
+    });
+    const terminalModule = new URL("../src/terminal/mikuos.ts", import.meta.url).href;
+    const { startMikuOS } = await import(terminalModule) as {
+        startMikuOS(terminal: never): Promise<unknown>;
+    };
+    await startMikuOS({} as never);
+    assert.deepEqual(startupCommands, ["nekofetch"]);
+    assert.equal(startupEnv.get("NEKOFETCH_KERNEL"), "Teto 2.1.0");
+    assert.equal(startupEnv.get("NEKOFETCH_UPTIME_SECONDS"), "3661");
+    console.log("[nekofetch] Website header injects live telemetry before startup Nekofetch.");
+} finally {
+    restore("fetch", originalFetch);
+    restore("sessionStorage", priorSessionStorage);
+    restore("navigator", originalNavigator);
+    restore("window", originalWindow);
+}

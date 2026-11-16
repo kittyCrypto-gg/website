@@ -264,9 +264,12 @@ class MemoryFolder {
 
 const persistentStorage = new MemoryFolder({ kind: "directory", entries: new Map() });
 const output: string[] = [];
+// Native Nekofetch renders its telemetry beside a large supplied logo only
+// when both fit. Test telemetry using a wide virtual terminal rather than
+// asserting fields that its narrow-screen layout deliberately suppresses.
 const terminal = {
-    rows: 24,
-    cols: 80,
+    rows: 64,
+    cols: 320,
     focus(): void {},
     write(value: string): void { output.push(value); },
     onData(): { dispose(): void } { return { dispose(): void {} }; },
@@ -405,7 +408,16 @@ try {
         assert.equal(status, 0, "Custom nekofetch failed. Review diagnostic output above.");
         assert.ok(!greeting.includes("No logo file specified"),
             "The custom ASCII_LOGO must be present before nekofetch starts");
-        console.log("[mikuOS custom Bash] Nekofetch runs through PATH with its logo.");
+        // A restored old binary can exit successfully and draw the logo while
+        // silently losing the previously working mikuOS telemetry.
+        const plainGreeting = greeting.replace(/\x1b\[[0-9;]*m/g, "");
+        for (const label of ["Kernel", "Uptime", "Memory"]) {
+            assert.match(plainGreeting, new RegExp(label + ":\\s*(?!unavailable\\b)\\S+", "i"),
+                "Guest Nekofetch has missing " + label + " telemetry: the mikuOS-native .39 build is required");
+        }
+        assert.doesNotMatch(plainGreeting, /Guest memory:/i,
+            "An obsolete Nekofetch binary was packaged instead of the mikuOS branch");
+        console.log("[mikuOS custom Bash] Nekofetch telemetry and logo verified.");
     }
 
     // These two simple commands previously printed their result and then

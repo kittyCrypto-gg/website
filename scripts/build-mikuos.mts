@@ -4,6 +4,7 @@ import { chmod, cp, lstat, mkdir, readFile, readdir, readlink, rename, rm, stat,
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { transform } from "esbuild";
+import { buildMikuOSNekofetch } from "./build-mikuos-nekofetch.mjs";
 
 interface UpstreamPackage {
     kind: "upstream";
@@ -304,6 +305,13 @@ async function packRoot(config: WebsiteMikuOSConfig): Promise<PackedGuest> {
         recursive: true,
         verbatimSymlinks: true
     });
+
+    // Compile the source-controlled mikuOS variant before indexing the staged
+    // userland. Restoring a filesystem backup must never silently restore an
+    // obsolete Nekofetch. The private source tree is deliberately read-only.
+    if (sourceRoot === resolve("mikuOS/.thistle.base")) {
+        await buildMikuOSNekofetch(stage, upstream);
+    }
 
     // A homeless account still needs /tmp. Keep the temporary directory
     // writable and sticky, but do not synthesise the user's home.
