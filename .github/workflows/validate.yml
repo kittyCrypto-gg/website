@@ -37,6 +37,10 @@ jobs:
         run: npm run validate
         working-directory: candidate
 
+      - name: Cross-compile mikuOS Nekofetch (native RV64GC)
+        run: npx tsx scripts/check-mikuos-native-nekofetch.mts
+        working-directory: candidate
+
       - name: Upload esbuild architecture report
         if: always()
         uses: actions/upload-artifact@v4
