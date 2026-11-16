@@ -5,14 +5,14 @@ import {
     type ClipboardTerminal
 } from "../src/terminal/clipboard.ts";
 
-let keyHandler: ((event: KeyboardEvent) => boolean) | undefined;
+const handlers: { key?: (event: KeyboardEvent) => boolean } = {};
 let selection = "line one\nline two";
 let focusCount = 0;
 const pasted: string[] = [];
 const written: string[] = [];
 let clipboardText = "pasted from browser";
 const term: ClipboardTerminal = {
-    attachCustomKeyEventHandler(handler) { keyHandler = handler; },
+    attachCustomKeyEventHandler(handler) { handlers.key = handler; },
     hasSelection: () => selection.length > 0,
     getSelection: () => selection,
     paste(value) { pasted.push(value); },
@@ -24,7 +24,7 @@ const clipboard: ClipboardAccess = {
 };
 const element = new EventTarget() as HTMLElement;
 const detach = attachTerminalClipboard(term, element, clipboard);
-assert.ok(keyHandler, "xterm keyboard handler was not registered");
+assert.ok(handlers.key, "xterm keyboard handler was not registered");
 
 function key(
     character: string,
@@ -42,7 +42,8 @@ function key(
         repeat: options.repeat ?? false,
         preventDefault: () => { prevented = true; }
     } as KeyboardEvent;
-    return { handled: keyHandler!(event), prevented };
+    assert.ok(handlers.key);
+    return { handled: handlers.key(event), prevented };
 }
 
 async function settle(): Promise<void> {
@@ -105,18 +106,18 @@ await settle();
 assert.equal(pasted.length, 2, "Clipboard listener survived terminal disposal");
 
 // A pending clipboard read must not inject input after disposal.
-let resolveRead: ((text: string) => void) | undefined;
+const pending: { resolve?: (text: string) => void } = {};
 const delayed: ClipboardAccess = {
     async writeText() {},
     readText() {
-        return new Promise<string>(resolve => { resolveRead = resolve; });
+        return new Promise<string>(resolve => { pending.resolve = resolve; });
     }
 };
 const delayedElement = new EventTarget() as HTMLElement;
 const disposeDelayed = attachTerminalClipboard(term, delayedElement, delayed);
 key("v");
 disposeDelayed();
-resolveRead?.("must not paste");
+pending.resolve?.("must not paste");
 await settle();
 assert.equal(pasted.length, 2, "Clipboard read pasted into a disposed terminal");
 
