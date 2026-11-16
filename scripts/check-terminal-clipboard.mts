@@ -3,7 +3,7 @@ import {
     attachTerminalClipboard,
     type ClipboardAccess,
     type ClipboardTerminal
-} from "../src/terminal/clipboard.ts";
+} from "../src/terminal/clipboard.js";
 
 const handlers: { key?: (event: KeyboardEvent) => boolean } = {};
 let selection = "line one\nline two";
