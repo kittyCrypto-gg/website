@@ -270,7 +270,7 @@ async function renderSocials(
  *
  * @returns {Promise<void>} Nothing.
  */
-async function initialiseSocialsSegment(): Promise<void> {
+export async function initialiseSocialsSegment(): Promise<void> {
     const gridElement: HTMLElement | null = document.querySelector(".socials-segment__grid");
 
     if (!gridElement) {
@@ -286,4 +286,3 @@ async function initialiseSocialsSegment(): Promise<void> {
     await renderSocials(gridElement, payload.social);
 }
 
-void initialiseSocialsSegment();

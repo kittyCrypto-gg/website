@@ -134,6 +134,8 @@ export function attachScrollTracking(
 
     const maybeScroll = (): void => {
         if (!followState.value) return;
+        const current = resolveViewport();
+        if (current && atBottom(current)) return;
         scrollToBottom();
     };
 

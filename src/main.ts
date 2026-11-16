@@ -19,8 +19,8 @@ import { ensureFloatBtns } from "./main/floatingControls.ts";
 import { applyHeadBits } from "./main/head.ts";
 import { loadCrtUi } from "./main/crtRoute.ts";
 import { loadReaderRuntime } from "./main/readerRoute.ts";
-import { fetchStatus } from "./main/status.ts";
 import { startProgressivePageBoot } from "./main/progressive.ts";
+import { installSoftNavigation } from "./main/softNavigation.ts";
 
 // import { mkCurTheme } from "./cursors/cursorTheme.tsx";
 
@@ -68,12 +68,9 @@ const FLOAT_TOGGLE_ICON_SPEC = {
  * @returns {Promise<void>}
  */
 async function bootTerm(): Promise<void> {
-    void fetchStatus(2000);
-
     const terminalPromise = import("./terminal.ts")
         .then((mod) => mod.setupTerminalModule())
         .then((mod) => {
-            document.getElementById("terminal-loading")?.style.setProperty("display", "none");
             return mod as TermMod;
         })
         .catch((err: unknown) => {
@@ -120,7 +117,6 @@ async function bootTerm(): Promise<void> {
         nextTheme = null;
     }
 
-    void status;
 }
 
 /**
@@ -380,6 +376,19 @@ async function initUi(): Promise<void> {
     }
 }
 
+/** Hydrate new page windows without touching the existing mikuOS window. */
+async function onSoftRoute(): Promise<void> {
+    startProgressivePageBoot();
+    try {
+        const data = await fetchUiData();
+        if (!data.windows) return;
+        const windows = await import("./window.ts");
+        await windows.instantiateWindows(data.windows);
+    } catch (error: unknown) {
+        console.error("Failed to hydrate navigated page windows:", error);
+    }
+}
+
 /**
  * DOM ready handler for this module.
  * Kicks off terminal boot, UI init, and the badge copy button.
@@ -393,6 +402,7 @@ const onReady = (): void => {
     initBadgeCopy();
     void initUi();
     startProgressivePageBoot();
+    installSoftNavigation(() => { void onSoftRoute(); });
 };
 
 // Defer only while the HTML is still being parsed. ES modules typically run

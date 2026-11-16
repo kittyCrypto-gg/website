@@ -18,7 +18,8 @@
         "verbatimModuleSyntax": true,
         "rewriteRelativeImportExtensions": true,
         "allowImportingTsExtensions": true,
-        "experimentalDecorators": false
+        "experimentalDecorators": false,
+        "types": []
     },
     "include": [
         "src"

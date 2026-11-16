@@ -72,7 +72,7 @@ function has(selector: string): boolean {
 }
 
 function bootVisitLogger(): void {
-    void import("../visitLogger.ts");
+    void import("../visitLogger.ts").then(module => module.startVisitLogger());
 }
 
 async function bootVisitCounters(): Promise<void> {
@@ -105,7 +105,7 @@ async function bootVisitCounters(): Promise<void> {
 
 function bootComments(): void {
     if (!has("#comments, #comments-box")) return;
-    void import("../comments.ts");
+    void import("../comments.ts").then(module => module.bootPageComments());
 }
 
 function bootPresence(): void {
@@ -113,7 +113,7 @@ function bootPresence(): void {
     if (!(root instanceof HTMLElement)) return;
 
     const load = (): void => {
-        void import("../presence.tsx").catch((error: unknown) => {
+        void import("../presence.tsx").then(module => module.mountPresence()).catch((error: unknown) => {
             console.error("Presence module failed to load:", error);
         });
     };
@@ -137,7 +137,7 @@ function bootGithub(): void {
     if (!(root instanceof HTMLElement)) return;
 
     const loadTracker = (): void => {
-        void import("../github.tsx").catch((error: unknown) => {
+        void import("../github.tsx").then(module => module.mountGithub()).catch((error: unknown) => {
             console.error("GitHub tracker failed to load:", error);
         });
     };
@@ -158,7 +158,7 @@ function bootGithub(): void {
 
 function bootRss(): void {
     if (!has(".blog-wrapper, #resources-wrapper")) return;
-    void import("../rss.tsx");
+    void import("../rss.tsx").then(module => module.mountRss());
 }
 
 function bootSocials(): void {
@@ -166,7 +166,7 @@ function bootSocials(): void {
     if (!grid) return;
     // About's static social list is already complete in the built HTML.
     if (grid.dataset.kcSocialsStatic === "1") return;
-    void import("../socials.ts");
+    void import("../socials.ts").then(module => module.initialiseSocialsSegment());
 }
 
 async function bootAboutTategaki(): Promise<void> {
@@ -214,5 +214,7 @@ function bootProgressiveFeatures(): void {
 }
 
 export function startProgressivePageBoot(): void {
+    // A new DOM route may contain a fresh webring mount.
+    webringBooted = false;
     afterFirstPaint(bootProgressiveFeatures);
 }

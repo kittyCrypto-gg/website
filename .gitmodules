@@ -1,3 +1,8 @@
 [submodule "vendor/pages"]
 	path = vendor/pages
 	url = https://github.com/kitty-crow/github-pages-template.git
+
+[submodule "vendor/mikuOS"]
+	path = vendor/mikuOS
+	url = https://github.com/kitty-crow/mikuOS.git
+	branch = main

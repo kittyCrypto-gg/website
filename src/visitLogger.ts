@@ -44,7 +44,7 @@ function markVisitAsLoggedThisSession(page: string): void {
  *
  * @returns {Promise<void>}
  */
-async function logCurrentPageVisit(): Promise<void> {
+export async function logCurrentPageVisit(): Promise<void> {
     const page = getCurrentPage()
 
     if (hasVisitBeenLoggedThisSession(page)) {
@@ -73,7 +73,7 @@ async function logCurrentPageVisit(): Promise<void> {
  *
  * @returns {void}
  */
-function startVisitLogger(): void {
+export function startVisitLogger(): void {
     if (typeof window === "undefined") {
         return
     }
@@ -83,4 +83,3 @@ function startVisitLogger(): void {
     })
 }
 
-startVisitLogger()

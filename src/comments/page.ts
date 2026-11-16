@@ -101,7 +101,7 @@ function initPagePost(): void {
     button.addEventListener("click", () => void onPost());
 }
 
-async function bootPageComments(): Promise<void> {
+export async function bootPageComments(): Promise<void> {
     const hasComments =
         document.getElementById("comments") !== null ||
         document.getElementById("comments-box") !== null;
@@ -114,4 +114,4 @@ async function bootPageComments(): Promise<void> {
     initPagePost();
 }
 
-void helpers.waitForDomReady().then(bootPageComments);
+

@@ -20,6 +20,9 @@ for (const path of routes) {
     if (!html.includes('id="main-menu-links"')) errors.push(path + ": navigation links missing");
     if (!html.includes('id="main-menu-themes"')) errors.push(path + ": theme picker missing");
     if (!html.includes('id="kc-static-ui-data"')) errors.push(path + ": embedded UI configuration missing");
+    if (!/src="\.\/dist\/main\.js\?v=[a-f0-9]{16}"/.test(html)) {
+        errors.push(path + ": entry script must be fingerprinted to avoid stale terminal bundles");
+    }
     if (!/<footer\b[^>]*\bid="main-footer"[^>]*>\s*[^\s<]/i.test(html)) {
         errors.push(path + ": empty generated footer");
     }

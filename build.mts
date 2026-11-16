@@ -561,6 +561,10 @@ async function main(): Promise<void> {
     console.log("[build] Bundling shared CSS.");
     await runCssBuild();
 
+    console.log("[build] Building the client-side mikuOS header runtime.");
+    const { buildMikuOS } = await import("./scripts/build-mikuos.mjs");
+    await buildMikuOS();
+
     await writeLocalManifest(currentManifest);
     console.log(`[build] Build complete: wrote ${localManifestPath}.`);
 

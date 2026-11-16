@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderWindowsInHtml } from "./window-shells.ts";
@@ -221,7 +222,7 @@ function addButtons(html: string, buttons: readonly string[]): string {
     return html.replace(/<\/body>/i, buttons.join("\n") + "\n</body>");
 }
 
-async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record<string, string>>, terminalUrl: string): Promise<void> {
+async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record<string, string>>, terminalUrl: string, assetVersion: string): Promise<void> {
     const path = join("templates", page);
     let html = await readFile(path, "utf8");
 
@@ -287,6 +288,10 @@ async function buildShell(page: string, data: MainJson, iconMap: Readonly<Record
     html = renderWindowsInHtml(html, data);
     html = addButtons(html, buttons);
     html = addInlineData(html, data);
+    // main.js has a stable filename but imports content-hashed chunks.
+    // A version tied to the built main module and mikuOS guest configuration
+    // prevents returning browsers loading a stale terminal against a new root.
+    html = html.replaceAll('src="./dist/main.js"', 'src="./dist/main.js?v=' + assetVersion + '"');
 
     await writeFile(page, html, "utf8");
 }
@@ -301,6 +306,10 @@ export async function renderStaticShells(): Promise<void> {
     }
 
     const terminalUrl = await terminalModulePath();
-    for (const page of pages) await buildShell(page, data, iconMap, terminalUrl);
+    const mainScript = await readFile("dist/main.js");
+    const guestConfig = await readFile("dist/mikuos/website-config.json");
+    const assetVersion = createHash("sha256").update(mainScript).update(guestConfig)
+        .digest("hex").slice(0, 16);
+    for (const page of pages) await buildShell(page, data, iconMap, terminalUrl, assetVersion);
     console.log("[pages] Generated eight flat HTML pages into repository root from templates/.");
 }

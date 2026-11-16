@@ -139,7 +139,11 @@ async function bootRepository(
 
 // The two API fetches and all identicon digests run in parallel off the main thread.
 // Each panel can complete or fail without waiting for the other repository.
-void Promise.all([
-    bootRepository("website", "github-commits-frontend", "frontendClusteriser"),
-    bootRepository("server", "github-commits-backend", "backendClusteriser")
-]);
+export async function mountGithub(): Promise<void> {
+    window.frontendClusteriser = undefined;
+    window.backendClusteriser = undefined;
+    await Promise.all([
+        bootRepository("website", "github-commits-frontend", "frontendClusteriser"),
+        bootRepository("server", "github-commits-backend", "backendClusteriser")
+    ]);
+}
