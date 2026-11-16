@@ -2,7 +2,7 @@
  * Browser measurements for the visitor's GPU and network.
  * Virtual processor identity, kernel details and uptime come from mikuOS.
  */
-interface GuestMetricsOS {
+export interface GuestMetricsOS {
     activeKernelMode: "teto" | "thistle";
     k: {
         name: string;
