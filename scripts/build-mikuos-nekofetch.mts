@@ -71,6 +71,13 @@ export async function buildMikuOSNekofetch(rootDir: string, mikuOSHome: string):
     ], { encoding: "utf8" });
     const sourcePath = join(buildDir, "nekofetch.c");
     await writeFile(sourcePath, nativeSource);
+    // The native C translation unit includes this project-owned header.
+    // Stage it from the same immutable commit, rather than the possibly
+    // modified local checkout or a header from another Nekofetch revision.
+    const colourTags = execFileSync("git", [
+        "-C", sourceRepo, "show", sourceRevision + ":colour_tags.h"
+    ], { encoding: "utf8" });
+    await writeFile(join(buildDir, "colour_tags.h"), colourTags);
 
     const compiler = join(mikuOSHome, "thistlecc/bin/thistlecc.ts");
     const result = join(buildDir, "nekofetch.39");
