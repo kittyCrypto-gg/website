@@ -1,55 +1,84 @@
 import { execFileSync } from "node:child_process";
-import { chmod, copyFile, lstat, mkdir, readFile, rename, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { chmod, copyFile, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-// Verified head of kitty-crow/nekofetch:mikuOS. Never silently pick up changes
-// to native guest executables without reviewing and updating this revision.
+// Reviewed kitty-crow/nekofetch:mikuOS revision. The repository is private:
+// read it from the established local checkout instead of an unauthenticated
+// download or embedding its source in the public website repository.
 const sourceRevision = "372daa8b61b62bef2635d0efc9ba592d8df882fa";
-const sourceUrl = "https://github.com/kitty-crow/nekofetch.git";
 
 function git(args: string[]): string {
-    return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] }).trim();
+    return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+}
+
+function availableRevision(repository: string, ref: string): string | null {
+    try {
+        return git(["-C", repository, "rev-parse", "--verify", ref]);
+    } catch {
+        return null;
+    }
+}
+
+function localSourceRepository(): string {
+    const candidates = [
+        process.env.NEKOFETCH_MIKUOS_SOURCE,
+        join(homedir(), "mikuOSWeb/nekofetch"),
+        join(homedir(), "server/kittycrypto/nekofetch")
+    ];
+    for (const path of candidates) {
+        if (path && existsSync(join(path, ".git"))) return resolve(path);
+    }
+    throw new Error("Private Nekofetch checkout not found. Expected " +
+        "~/mikuOSWeb/nekofetch or ~/server/kittycrypto/nekofetch; " +
+        "override with NEKOFETCH_MIKUOS_SOURCE.");
 }
 
 /**
- * Replace ONLY the disposable packed guest's Nekofetch, not the user's
- * private mikuOS/.thistle.base, its logo, or any unrelated guest binary.
+ * Build from the source-controlled mikuOS branch into ONLY the disposable
+ * packed guest root. The source checkout, private userland and node.39 are
+ * never modified, even when compilation fails.
  */
 export async function buildMikuOSNekofetch(rootDir: string, mikuOSHome: string): Promise<void> {
     const target = join(rootDir, "opt/kittyterm/bin/nekofetch");
     const binDir = dirname(target);
     const directory = await lstat(binDir);
     if (!directory.isDirectory() || directory.isSymbolicLink()) {
-        throw new Error("Custom kittyterm bin directory must be a real directory: " + binDir);
+        throw new Error("Custom kittyterm bin must be a real directory: " + binDir);
     }
-    // Do not depend on an old Nekofetch already being present. A new custom
-    // root must also get the pinned native build.
 
-    const checkout = resolve(".build/nekofetch-mikuos-source");
-    // This is disposable, ignored build output. The private guest source is
-    // never touched, even if the fetch or cross-compile fails.
-    await rm(checkout, { recursive: true, force: true });
-    await mkdir(dirname(checkout), { recursive: true });
-    execFileSync("git", [
-        "clone", "--quiet", "--depth", "1", "--single-branch", "--branch", "mikuOS",
-        sourceUrl, checkout
-    ], { stdio: "inherit" });
-
-    const revision = git(["-C", checkout, "rev-parse", "HEAD"]);
-    if (revision !== sourceRevision) {
-        throw new Error("Nekofetch mikuOS branch advanced to " + revision +
-            "; review it and update the pinned source revision before building");
+    const sourceRepo = localSourceRepository();
+    const heads = [
+        availableRevision(sourceRepo, "refs/heads/mikuOS"),
+        availableRevision(sourceRepo, "refs/remotes/origin/mikuOS")
+    ];
+    if (!heads.includes(sourceRevision)) {
+        throw new Error("Local Nekofetch mikuOS ref does not match pinned " +
+            sourceRevision.slice(0, 8) + " (found " + heads.filter(Boolean).join(", ") +
+            "). Fetch the mikuOS branch in " + sourceRepo +
+            " and review source updates before changing the pinned revision.");
     }
+
+    const buildDir = resolve(".build/nekofetch-mikuos-source");
+    await rm(buildDir, { recursive: true, force: true });
+    await mkdir(buildDir, { recursive: true });
+
+    // git show reads the immutable pinned commit, NOT potentially edited
+    // working-tree files. No checkout, reset, clone, branch switch or fetch.
+    const nativeSource = execFileSync("git", [
+        "-C", sourceRepo, "show", sourceRevision + ":nekofetch.c"
+    ], { encoding: "utf8" });
+    const sourcePath = join(buildDir, "nekofetch.c");
+    await writeFile(sourcePath, nativeSource);
 
     const compiler = join(mikuOSHome, "thistlecc/bin/thistlecc.ts");
-    const source = join(checkout, "nekofetch.c");
-    const result = join(checkout, "nekofetch.39");
-
+    const result = join(buildDir, "nekofetch.39");
     execFileSync("bun", [
         compiler, "--mikuos-home", mikuOSHome,
         "-DNEKOFETCH_MIKUOS", "-std=c11", "-O2",
         "-Wall", "-Wextra", "-Wpedantic",
-        source, "-o", result
+        sourcePath, "-o", result
     ], { cwd: mikuOSHome, stdio: "inherit" });
 
     const binary = await readFile(result);
@@ -57,11 +86,10 @@ export async function buildMikuOSNekofetch(rootDir: string, mikuOSHome: string):
         throw new Error("ThistleCC did not produce an RV64GC THX2 Nekofetch executable");
     }
 
-    // Only the staged copy is updated, atomically, after successful compilation.
     const next = target + ".new";
     await copyFile(result, next);
     await chmod(next, 0o755);
     await rename(next, target);
-    console.log("[mikuOS] Installed nekofetch:mikuOS " + revision.slice(0, 8) +
-        " into disposable packed guest root; private source filesystem unchanged.");
+    console.log("[mikuOS] Built private nekofetch:mikuOS " + sourceRevision.slice(0, 8) +
+        " into disposable packed guest root; source checkout and custom root untouched.");
 }
