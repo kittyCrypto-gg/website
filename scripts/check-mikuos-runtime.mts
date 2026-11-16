@@ -264,9 +264,12 @@ class MemoryFolder {
 
 const persistentStorage = new MemoryFolder({ kind: "directory", entries: new Map() });
 const output: string[] = [];
+// Native Nekofetch renders its telemetry beside a large supplied logo only
+// when both fit. Test telemetry using a wide virtual terminal rather than
+// asserting fields that its narrow-screen layout deliberately suppresses.
 const terminal = {
-    rows: 24,
-    cols: 80,
+    rows: 64,
+    cols: 320,
     focus(): void {},
     write(value: string): void { output.push(value); },
     onData(): { dispose(): void } { return { dispose(): void {} }; },
