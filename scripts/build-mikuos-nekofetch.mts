@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { chmod, copyFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
+import { chmod, copyFile, lstat, mkdir, readFile, rename, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 // Verified head of kitty-crow/nekofetch:mikuOS. Never silently pick up changes
@@ -17,14 +17,13 @@ function git(args: string[]): string {
  */
 export async function buildMikuOSNekofetch(rootDir: string, mikuOSHome: string): Promise<void> {
     const target = join(rootDir, "opt/kittyterm/bin/nekofetch");
-    try {
-        if (!(await stat(target)).isFile()) {
-            throw new Error("Custom Nekofetch target is not a regular file: " + target);
-        }
-    } catch (error: unknown) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
-        throw error;
+    const binDir = dirname(target);
+    const directory = await lstat(binDir);
+    if (!directory.isDirectory() || directory.isSymbolicLink()) {
+        throw new Error("Custom kittyterm bin directory must be a real directory: " + binDir);
     }
+    // Do not depend on an old Nekofetch already being present. A new custom
+    // root must also get the pinned native build.
 
     const checkout = resolve(".build/nekofetch-mikuos-source");
     // This is disposable, ignored build output. The private guest source is
