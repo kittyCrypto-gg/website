@@ -4,7 +4,7 @@ import { chmod, cp, lstat, mkdir, readFile, readdir, readlink, rename, rm, stat,
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { transform } from "esbuild";
-import { buildMikuOSNekofetch } from "./build-mikuos-nekofetch.mts";
+import { buildMikuOSNekofetch } from "./build-mikuos-nekofetch.mjs";
 
 interface UpstreamPackage {
     kind: "upstream";
